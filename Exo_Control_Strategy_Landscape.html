@@ -397,7 +397,8 @@ const data = [
     nameEn:'ExoPulse Digital Twin DRL',
     desc:'透過數位孿生 + NMS + DRL，在意圖預測框架下同時實現軌跡規劃與力量放大的即時連續調節。',
     descEn:'Digital Twin + NMS + DRL enables real-time continuous trajectory planning and force amplification under intent prediction framework.',
-    ref:'本研究',
+    ref:'This Study',
+    refZh:'本研究',
     adv:'✦ 軌跡+力量雙重前饋、即時個人化',
     advEn:'✦ Dual feedforward (trajectory + force), real-time personalization',
     lim:'✧ 技術缺口：尚待實機驗證',
@@ -426,6 +427,7 @@ data.forEach(d => {
   label.dataset.nameZh = d.name;
   label.dataset.nameEn = d.nameEn;
   label.dataset.ref = d.ref;
+  label.dataset.refZh = d.refZh || d.ref;
   label.innerHTML = d.nameEn + ' <span class="ref-tag">' + d.ref + '</span>';
   // position label to the right, or left if too far right
   if (d.x > 0.75) {
@@ -453,13 +455,14 @@ data.forEach(d => {
       `;
     } else {
       const tierLabel = d.tier === 'ours' ? '本研究' : `Tier ${d.tier}`;
+      const refLabel = d.refZh || d.ref;
       tooltip.innerHTML = `
         <div class="tt-title">${d.name}</div>
         <div class="tt-tier ${tierClass}">${tierLabel}</div>
         <div class="tt-desc">${d.nameEn}<br>${d.desc}</div>
         <div class="tt-adv">${d.adv}</div>
         <div class="tt-lim">${d.lim}</div>
-        <div class="tt-ref">Ref: ${d.ref}</div>
+        <div class="tt-ref">Ref: ${refLabel}</div>
       `;
     }
     tooltip.style.display = 'block';
@@ -489,7 +492,8 @@ function toggleLang() {
   // Update dot labels
   document.querySelectorAll('.dot-label').forEach(label => {
     const name = currentLang === 'en' ? label.dataset.nameEn : label.dataset.nameZh;
-    label.innerHTML = name + ' <span class="ref-tag">' + label.dataset.ref + '</span>';
+    const ref = currentLang === 'en' ? label.dataset.ref : (label.dataset.refZh || label.dataset.ref);
+    label.innerHTML = name + ' <span class="ref-tag">' + ref + '</span>';
   });
 }
 </script>
