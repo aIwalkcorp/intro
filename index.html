@@ -384,6 +384,38 @@
   }
   .edge-link:hover .edge-arrow { color: var(--orange); }
 
+  /* ===== LOOP FLOW ===== */
+  .loop-section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .loop-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .loop-card .loop-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--navy); margin-bottom: 12px;
+    text-align: center;
+  }
+  .loop-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; flex-wrap: wrap; padding: 4px 0;
+  }
+  .loop-chip {
+    color: #fff; padding: 6px 14px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+  }
+  .loop-arrow { font-size: 16px; color: #ccc; }
+  .loop-sub {
+    text-align: center; margin-top: 6px;
+    font-size: 10px; color: #aaa;
+  }
+
   .footer {
     text-align: center; padding: 16px;
     font-size: 10px; color: #bbb; letter-spacing: 1px;
@@ -535,6 +567,9 @@
     .edge-link { padding: 16px; gap: 10px; }
     .edge-link .edge-icon { width: 40px; height: 40px; font-size: 18px; }
     .edge-link .edge-title { font-size: 14px; }
+    .loop-card { padding: 16px; }
+    .loop-chip { padding: 4px 9px; font-size: 10px; }
+    .loop-arrow { font-size: 12px; }
     .lang-toggle { top: 10px; right: 10px; }
   }
 
@@ -572,6 +607,26 @@
         aIwalk Co., Ltd. develops AI-driven rehabilitation technology through three core products: <strong>NTKCAP</strong>, a portable markerless motion capture system for personalized biomechanical analysis; <strong>ExoPulse Patient Cloud</strong>, a clinical data platform enabling therapists to monitor gait metrics and adjust treatment strategies in real time; and <strong>ExoPulse Exoskeleton</strong>, a digital-twin-powered wearable robot that delivers intent-predictive, individualized walking assistance from fall prevention to full mobility support.
       </span>
     </div>
+  </div>
+</div>
+
+<!-- CLOSED-LOOP LIFECYCLE -->
+<div class="loop-section">
+  <div class="loop-card">
+    <div class="loop-title">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
+    <div class="loop-flow">
+      <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
+      <span class="loop-arrow">⟳</span>
+    </div>
+    <div class="loop-sub">ExoPulse Patient Cloud × ExoPulse Studio</div>
   </div>
 </div>
 
