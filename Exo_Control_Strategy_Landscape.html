@@ -175,6 +175,66 @@
     transform: translateY(-1px);
   }
   .lang-zh { display: none; }
+
+  /* Reference sections */
+  .ref-section {
+    max-width: 920px;
+    margin: 24px auto 0;
+    display: flex; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .ref-card {
+    flex: 1; min-width: 280px;
+    background: #fff;
+    border: 1px solid #e0dbd2;
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+  }
+  .ref-title {
+    font-size: 13px; font-weight: 700;
+    color: #2c2c2c; margin-bottom: 12px;
+    letter-spacing: 0.3px;
+  }
+  .tier-row {
+    display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;
+  }
+  .tier-badge {
+    flex: 0 0 54px; padding: 3px 0;
+    border-radius: 5px; font-size: 9px;
+    font-weight: 700; text-align: center;
+    color: #fff; letter-spacing: 0.3px;
+  }
+  .tb-1 { background: #64748b; }
+  .tb-2 { background: #3b82f6; }
+  .tb-3 { background: #8b5cf6; }
+  .tb-ex { background: linear-gradient(135deg, #c06a1a, #e8573a); }
+  .tier-desc {
+    font-size: 11.5px; color: #666; line-height: 1.55; flex: 1;
+  }
+  .tier-desc strong { color: #2c2c2c; font-weight: 600; }
+  .loop-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 5px; flex-wrap: wrap; padding: 6px 0;
+  }
+  .loop-chip {
+    color: #fff; padding: 4px 10px; border-radius: 5px;
+    font-size: 10px; font-weight: 600;
+  }
+  .loop-arrow { font-size: 14px; color: #ccc; }
+  .loop-sub {
+    text-align: center; margin-top: 4px;
+    font-size: 10px; color: #aaa;
+  }
+
+  @media (max-width: 760px) {
+    .ref-section { flex-direction: column; padding: 0 16px; }
+    .tier-row { flex-direction: column; gap: 3px; }
+    .tier-badge { flex: none; display: inline-block; width: auto; padding: 2px 10px; }
+    .loop-chip { padding: 3px 7px; font-size: 9px; }
+    .loop-arrow { font-size: 11px; }
+    .legend { flex-wrap: wrap; gap: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -223,6 +283,46 @@
   <div class="legend-item"><div class="legend-dot ld-t2"></div><span class="lang-zh">Tier 2 反應式感知</span><span class="lang-en">Tier 2 Reactive Sensing</span></div>
   <div class="legend-item"><div class="legend-dot ld-t3"></div><span class="lang-zh">Tier 3 前饋預測</span><span class="lang-en">Tier 3 Feedforward Prediction</span></div>
   <div class="legend-item"><div class="legend-dot ld-ours"></div><span class="lang-zh">ExoPulse (本研究)</span><span class="lang-en">ExoPulse (This Study)</span></div>
+</div>
+
+<!-- REFERENCE SECTIONS -->
+<div class="ref-section">
+  <div class="ref-card">
+    <div class="ref-title"><span class="lang-zh">控制策略層級對照</span><span class="lang-en">Control Strategy Tier Comparison</span></div>
+    <div class="tier-row">
+      <div class="tier-badge tb-1">Tier 1</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>預定義驅動</strong> ─ CPG、固定軌跡、能量最佳化。無使用者意圖感知。</span><span class="lang-en"><strong>Predefined Drive</strong> ─ CPG, fixed trajectory, energy optimization. No user intent sensing.</span></div>
+    </div>
+    <div class="tier-row">
+      <div class="tier-badge tb-2">Tier 2</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>反應式感知</strong> ─ EMG 阻抗控制、sEMG 疲勞監測、pHRI 互動力分析。</span><span class="lang-en"><strong>Reactive Sensing</strong> ─ EMG impedance control, sEMG fatigue monitoring, pHRI interaction force analysis.</span></div>
+    </div>
+    <div class="tier-row">
+      <div class="tier-badge tb-3">Tier 3</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>前饋式意圖預測</strong> ─ EMG-NMS 力矩、NMS+ML、EMG-DRL 共享控制、LSTM 軌跡預測。</span><span class="lang-en"><strong>Feedforward Intent Prediction</strong> ─ EMG-NMS torque, NMS+ML, EMG-DRL shared control, LSTM trajectory prediction.</span></div>
+    </div>
+    <div class="tier-row">
+      <div class="tier-badge tb-ex">ExoPulse</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>意圖預測 × 個體適應性最高</strong> ─ 數位孿生 + DRL 雙代理 + Wrapper 臨床介面 + 腦機介面與數位永生。</span><span class="lang-en"><strong>Intent Prediction × Highest Individual Adaptability</strong> ─ Digital Twin + DRL dual-agent + Wrapper clinical interface + BCI & Digital Immortality.</span></div>
+    </div>
+  </div>
+
+  <div class="ref-card">
+    <div class="ref-title">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
+    <div class="loop-flow">
+      <span class="loop-chip" style="background:#3b82f6;"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:#8b5cf6;"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:#ec4899;"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:#f59e0b;"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-chip" style="background:#ef4444;"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
+      <span class="loop-arrow">⟳</span>
+    </div>
+    <div class="loop-sub">ExoPulse Patient Cloud × ExoPulse Studio</div>
+  </div>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
