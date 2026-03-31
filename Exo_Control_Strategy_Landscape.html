@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exoskeleton Control Strategy Landscape</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+    background: #faf8f2;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 24px;
+  }
+  h1 {
+    font-size: 22px; font-weight: 700; color: #2c2c2c;
+    margin-bottom: 4px; letter-spacing: 0.5px;
+  }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 18px; }
+
+  .chart-wrapper {
+    position: relative;
+    width: 920px; height: 640px;
+    background: linear-gradient(135deg, #fefefe 0%, #f5f0e6 100%);
+    border: 1.5px solid #d4cfc4;
+    border-radius: 10px;
+    overflow: visible;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+
+  /* Tier zones */
+  .zone {
+    position: absolute; border-radius: 14px; opacity: 0.18;
+    pointer-events: none; transition: opacity 0.3s;
+  }
+  .zone-t1 { background: #94a3b8; left: 40px; top: 280px; width: 260px; height: 320px; }
+  .zone-t2 { background: #60a5fa; left: 250px; top: 80px; width: 380px; height: 480px; }
+  .zone-t3 { background: #a78bfa; left: 560px; top: 40px; width: 340px; height: 360px; }
+
+  /* Zone labels */
+  .zone-label {
+    position: absolute; font-size: 13px; font-weight: 600;
+    opacity: 0.45; pointer-events: none; letter-spacing: 1px;
+  }
+  .zl-t1 { left: 80px; top: 565px; color: #475569; }
+  .zl-t2 { left: 370px; top: 530px; color: #2563eb; }
+  .zl-t3 { left: 680px; top: 370px; color: #7c3aed; }
+
+  /* Axes */
+  .axis-x, .axis-y {
+    position: absolute; background: #b0a89a;
+  }
+  .axis-x { left: 40px; bottom: 40px; width: 840px; height: 1.5px; }
+  .axis-y { left: 40px; bottom: 40px; width: 1.5px; height: 560px; }
+
+  /* Axis arrows */
+  .arrow-x, .arrow-y {
+    position: absolute; width: 0; height: 0;
+  }
+  .arrow-x {
+    right: 30px; bottom: 35px;
+    border-left: 10px solid #b0a89a;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+  }
+  .arrow-y {
+    left: 35px; top: 30px;
+    border-bottom: 10px solid #b0a89a;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+  }
+
+  /* Axis labels */
+  .axis-label-x {
+    position: absolute; bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px; font-weight: 600; color: #5a534a;
+  }
+  .axis-label-y {
+    position: absolute; left: -8px; top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-size: 14px; font-weight: 600; color: #5a534a;
+    white-space: nowrap;
+  }
+  .axis-end-label {
+    position: absolute; font-size: 11px; color: #999; font-weight: 500;
+  }
+  .ael-xl { left: 50px; bottom: 18px; }
+  .ael-xr { right: 40px; bottom: 18px; }
+  .ael-yb { left: 50px; bottom: 44px; }
+  .ael-yt { left: 50px; top: 32px; }
+
+  /* Data points */
+  .dot {
+    position: absolute; border-radius: 50%;
+    cursor: pointer; transition: all 0.25s ease;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .dot:hover { transform: scale(1.35); z-index: 100; }
+  .dot.tier1 { background: #64748b; border: 2px solid #475569; }
+  .dot.tier2 { background: #3b82f6; border: 2px solid #1d4ed8; }
+  .dot.tier3 { background: #8b5cf6; border: 2px solid #6d28d9; }
+  .dot.ours  { background: #ef4444; border: 2.5px solid #b91c1c; animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  }
+
+  /* Labels next to dots */
+  .dot-label {
+    position: absolute; font-size: 11px; color: #3c3c3c;
+    white-space: nowrap; pointer-events: none; font-weight: 500;
+    text-shadow: 0 0 4px #faf8f2, 0 0 4px #faf8f2, 0 0 4px #faf8f2;
+  }
+  .dot-label .ref-tag {
+    font-size: 10px; color: #888; font-weight: 400;
+    margin-left: 2px;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    display: none; position: fixed;
+    background: #fff; border: 1px solid #d4cfc4;
+    border-radius: 8px; padding: 14px 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    max-width: 340px; z-index: 999; font-size: 13px;
+    line-height: 1.6; pointer-events: none;
+  }
+  .tooltip .tt-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .tooltip .tt-tier { font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px; color: #fff; }
+  .tooltip .tt-t1 { background: #64748b; }
+  .tooltip .tt-t2 { background: #3b82f6; }
+  .tooltip .tt-t3 { background: #8b5cf6; }
+  .tooltip .tt-ours { background: #ef4444; }
+  .tooltip .tt-desc { color: #555; }
+  .tooltip .tt-ref { color: #999; font-size: 11px; margin-top: 4px; }
+  .tooltip .tt-adv { color: #16a34a; font-weight: 600; font-size: 12px; margin-top: 4px; }
+  .tooltip .tt-lim { color: #dc2626; font-weight: 600; font-size: 12px; margin-top: 2px; }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 20px; margin-top: 16px; font-size: 13px; color: #555;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .ld-t1 { background: #64748b; }
+  .ld-t2 { background: #3b82f6; }
+  .ld-t3 { background: #8b5cf6; }
+  .ld-ours { background: #ef4444; }
+
+  /* Gap arrow */
+  .gap-arrow {
+    position: absolute;
+    pointer-events: none; z-index: 5;
+  }
+
+  /* Language toggle button */
+  .lang-toggle {
+    position: fixed; top: 18px; right: 24px; z-index: 1000;
+    background: linear-gradient(135deg, #5a534a 0%, #3c3c3c 100%);
+    color: #faf8f2; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 13px; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    transition: all 0.25s ease;
+    font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+  }
+  .lang-toggle:hover {
+    background: linear-gradient(135deg, #7c7368 0%, #5a534a 100%);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+  }
+  .lang-en { display: none; }
+</style>
+</head>
+<body>
+
+<button class="lang-toggle" onclick="toggleLang()">English</button>
+
+<h1><span class="lang-zh">外骨骼控制策略技術版圖</span><span class="lang-en">Exoskeleton Control Strategy Landscape</span></h1>
+<p class="subtitle"><span class="lang-zh">X: 意圖感知前饋性 &nbsp;|&nbsp; Y: 個體適應性</span><span class="lang-en">X: Intent Prediction Lead Time &nbsp;|&nbsp; Y: Individual Adaptability</span></p>
+
+<div class="chart-wrapper" id="chart">
+  <!-- Tier zones -->
+  <div class="zone zone-t1"></div>
+  <div class="zone zone-t2"></div>
+  <div class="zone zone-t3"></div>
+  <div class="zone-label zl-t1"><span class="lang-zh">TIER 1 預定義驅動</span><span class="lang-en">TIER 1 Pre-defined Drive</span></div>
+  <div class="zone-label zl-t2"><span class="lang-zh">TIER 2 反應式感知</span><span class="lang-en">TIER 2 Reactive Sensing</span></div>
+  <div class="zone-label zl-t3"><span class="lang-zh">TIER 3 前饋預測</span><span class="lang-en">TIER 3 Feedforward Prediction</span></div>
+
+  <!-- Axes -->
+  <div class="axis-x"></div>
+  <div class="axis-y"></div>
+  <div class="arrow-x"></div>
+  <div class="arrow-y"></div>
+
+  <div class="axis-label-x"><span class="lang-zh">意圖感知前饋性 →</span><span class="lang-en">Intent Prediction Lead Time →</span></div>
+  <div class="axis-label-y"><span class="lang-zh">個體適應性 →</span><span class="lang-en">Individual Adaptability →</span></div>
+  <div class="axis-end-label ael-xl"><span class="lang-zh">事後補償</span><span class="lang-en">Reactive</span></div>
+  <div class="axis-end-label ael-xr"><span class="lang-zh">前饋預測</span><span class="lang-en">Feedforward</span></div>
+  <div class="axis-end-label ael-yb"><span class="lang-zh">固定族群</span><span class="lang-en">Population-fixed</span></div>
+  <div class="axis-end-label ael-yt"><span class="lang-zh">即時個人化</span><span class="lang-en">Real-time Personalized</span></div>
+
+  <!-- SVG layer for the gap arrow -->
+  <svg class="gap-arrow" style="left:0;top:0;width:100%;height:100%;">
+    <defs>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#ef4444" opacity="0.6"/>
+      </marker>
+    </defs>
+    <line x1="680" y1="200" x2="790" y2="110" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4" opacity="0.5" marker-end="url(#arrowhead)"/>
+    <text x="720" y="170" fill="#ef4444" font-size="11" font-weight="600" opacity="0.7"><tspan class="lang-zh">技術缺口</tspan><tspan class="lang-en" style="display:none">Gap</tspan></text>
+  </svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot ld-t1"></div><span class="lang-zh">Tier 1 預定義驅動</span><span class="lang-en">Tier 1 Pre-defined Drive</span></div>
+  <div class="legend-item"><div class="legend-dot ld-t2"></div><span class="lang-zh">Tier 2 反應式感知</span><span class="lang-en">Tier 2 Reactive Sensing</span></div>
+  <div class="legend-item"><div class="legend-dot ld-t3"></div><span class="lang-zh">Tier 3 前饋預測</span><span class="lang-en">Tier 3 Feedforward Prediction</span></div>
+  <div class="legend-item"><div class="legend-dot ld-ours"></div><span class="lang-zh">ExoPulse (本研究)</span><span class="lang-en">ExoPulse (This Study)</span></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+let currentLang = 'zh';
+const CHART_LEFT = 60, CHART_BOTTOM = 60, CHART_W = 820, CHART_H = 540;
+const chart = document.getElementById('chart');
+const tooltip = document.getElementById('tooltip');
+
+// x: 0–1 (reactive → feedforward), y: 0–1 (population-fixed → personalized)
+const data = [
+  // === TIER 1 ===
+  { id:'cpg', x:0.08, y:0.12, size:20, tier:1,
+    name:'CPG 節律步態',
+    nameEn:'CPG Rhythmic Gait',
+    desc:'以中樞模式生成器輸出固定節律步態，使用者被動跟隨。',
+    descEn:'Central Pattern Generator outputs fixed rhythmic gait; user follows passively.',
+    ref:'[15]',
+    adv:'✦ 部署簡便、穩定性高',
+    advEn:'✦ Easy deployment, high stability',
+    lim:'✧ 無法適應個體差異',
+    limEn:'✧ Cannot adapt to individual differences' },
+  { id:'fixed', x:0.10, y:0.08, size:18, tier:1,
+    name:'固定軌跡控制',
+    nameEn:'Fixed Trajectory',
+    desc:'針對特定任務設計的預定義關節軌跡。',
+    descEn:'Pre-defined joint trajectories designed for specific tasks.',
+    ref:'[10, 16, 17]',
+    adv:'✦ 特定任務表現可靠',
+    advEn:'✦ Reliable for specific tasks',
+    lim:'✧ 軌跡與任務綁定，泛化能力低',
+    limEn:'✧ Trajectory bound to task, low generalization' },
+  { id:'energy', x:0.15, y:0.22, size:18, tier:1,
+    name:'能量最佳化軌跡',
+    nameEn:'Energy-Optimized Trajectory',
+    desc:'基於最佳化能量準則的任務不變軌跡規劃。',
+    descEn:'Task-invariant trajectory planning based on energy optimization criteria.',
+    ref:'[18]',
+    adv:'✦ 能量效率佳，任務不變性',
+    advEn:'✦ Good energy efficiency, task invariance',
+    lim:'✧ 仍為離線規劃，無即時適應',
+    limEn:'✧ Still offline planning, no real-time adaptation' },
+
+  // === TIER 2 ===
+  { id:'emg_imp', x:0.30, y:0.52, size:22, tier:2,
+    name:'EMG 自適應阻抗控制',
+    nameEn:'EMG Adaptive Impedance',
+    desc:'利用 EMG 推估使用者出力狀態以調整機械阻抗。',
+    descEn:'Uses EMG to estimate user effort and adjust mechanical impedance.',
+    ref:'[19]',
+    adv:'✦ 即時力量適應',
+    advEn:'✦ Real-time force adaptation',
+    lim:'✧ 仍為事後補償，非前饋',
+    limEn:'✧ Still reactive compensation, not feedforward' },
+  { id:'semg_fatigue', x:0.33, y:0.60, size:20, tier:2,
+    name:'sEMG 疲勞變阻抗',
+    nameEn:'sEMG Fatigue-Adaptive Impedance',
+    desc:'將肌肉疲勞指標納入阻抗調節迴路。',
+    descEn:'Incorporates muscle fatigue indicators into impedance regulation loop.',
+    ref:'[20]',
+    adv:'✦ 考慮疲勞狀態，長時間使用更安全',
+    advEn:'✦ Accounts for fatigue, safer for extended use',
+    lim:'✧ 疲勞檢測延遲，仍為反應式',
+    limEn:'✧ Fatigue detection delay, still reactive' },
+  { id:'smo', x:0.28, y:0.45, size:19, tier:2,
+    name:'滑模觀測器協同控制',
+    nameEn:'Sliding Mode Observer',
+    desc:'結合滑模觀測器與人體關節動態模型進行即時力矩補償。',
+    descEn:'Combines sliding mode observer with human joint dynamics for real-time torque compensation.',
+    ref:'[21]',
+    adv:'✦ 動態模型補償，魯棒性強',
+    advEn:'✦ Dynamic model compensation, high robustness',
+    lim:'✧ 依賴準確動態模型參數',
+    limEn:'✧ Depends on accurate dynamic model parameters' },
+  { id:'multimode', x:0.25, y:0.40, size:21, tier:2,
+    name:'多模式按需輔助',
+    nameEn:'Multi-mode On-demand',
+    desc:'依據復健階段在被動、主動輔助與主動抵抗模式間切換。',
+    descEn:'Switches between passive, active-assist, and active-resist modes based on rehab stage.',
+    ref:'[24]',
+    adv:'✦ 覆蓋復健全階段',
+    advEn:'✦ Covers all rehabilitation stages',
+    lim:'✧ 模式切換離散，非連續適應',
+    limEn:'✧ Discrete mode switching, not continuous adaptation' },
+  { id:'rl_mirror', x:0.42, y:0.65, size:22, tier:2,
+    name:'RL 鏡像自適應阻抗',
+    nameEn:'RL Mirror Adaptive Impedance',
+    desc:'在健側-患側對稱性目標下動態優化阻抗參數。',
+    descEn:'Dynamically optimizes impedance parameters under healthy-affected limb symmetry objective.',
+    ref:'[25]',
+    adv:'✦ 強化學習自動優化，個人化程度高',
+    advEn:'✦ RL auto-optimization, high personalization',
+    lim:'✧ 仍基於互動力的事後回饋',
+    limEn:'✧ Still based on reactive interaction force feedback' },
+  { id:'phri', x:0.38, y:0.58, size:20, tier:2,
+    name:'pHRI 合作控制',
+    nameEn:'pHRI Cooperative Control',
+    desc:'透過迭代學習或 Bayesian 優化尋找最佳互動力曲線。',
+    descEn:'Finds optimal interaction force profile via iterative learning or Bayesian optimization.',
+    ref:'[26, 27]',
+    adv:'✦ 數據驅動，收斂至個人最優',
+    advEn:'✦ Data-driven, converges to personal optimum',
+    lim:'✧ 需多次迭代才收斂',
+    limEn:'✧ Requires multiple iterations to converge' },
+  { id:'admittance', x:0.32, y:0.48, size:19, tier:2,
+    name:'導納控制優化',
+    nameEn:'Admittance Optimization',
+    desc:'以步態對稱性為目標函數調節導納增益。',
+    descEn:'Adjusts admittance gains using gait symmetry as objective function.',
+    ref:'[22]',
+    adv:'✦ 步態對稱性量化指標',
+    advEn:'✦ Quantified gait symmetry metric',
+    lim:'✧ 僅優化增益，未預測意圖',
+    limEn:'✧ Only optimizes gains, no intent prediction' },
+  { id:'hydraulic', x:0.35, y:0.38, size:18, tier:2,
+    name:'精密液壓力矩追蹤',
+    nameEn:'Hydraulic Precision Force',
+    desc:'結合力感測器與液壓致動器實現高頻寬力矩追蹤。',
+    descEn:'Combines force sensors with hydraulic actuators for high-bandwidth torque tracking.',
+    ref:'[28]',
+    adv:'✦ 高頻寬、高精度力控',
+    advEn:'✦ High bandwidth, high precision force control',
+    lim:'✧ 系統笨重，無意圖預測',
+    limEn:'✧ Bulky system, no intent prediction' },
+
+  // === TIER 3 ===
+  { id:'nms_torque', x:0.68, y:0.62, size:24, tier:3,
+    name:'EMG-NMS 即時力矩預測',
+    nameEn:'EMG-NMS Real-time Torque',
+    desc:'以 EMG 驅動 NMS 模型在肌肉收縮初期預測力矩輸出。',
+    descEn:'EMG-driven NMS model predicts torque output at early muscle contraction.',
+    ref:'[52, 6, 29]',
+    adv:'✦ 200ms 預測領先，生理依據強',
+    advEn:'✦ 200ms prediction lead, strong physiological basis',
+    lim:'✧ 僅驗證力量放大端點',
+    limEn:'✧ Only validated for force amplification endpoint' },
+  { id:'nms_ml', x:0.72, y:0.70, size:22, tier:3,
+    name:'NMS+ML 膝關節外骨骼',
+    nameEn:'NMS+ML Knee Exo',
+    desc:'結合 NMS 模型與機器學習，透過不確定性量化提高預測穩定性。',
+    descEn:'Combines NMS model with ML; improves prediction stability via uncertainty quantification.',
+    ref:'[30]',
+    adv:'✦ 不確定性量化，穩定性更好',
+    advEn:'✦ Uncertainty quantification, better stability',
+    lim:'✧ 僅限膝關節單自由度',
+    limEn:'✧ Limited to single-DOF knee joint' },
+  { id:'drl_shared', x:0.76, y:0.75, size:23, tier:3,
+    name:'EMG-DRL 共享控制',
+    nameEn:'EMG-DRL Shared Control',
+    desc:'DRL 學習人機之間的最佳力矩分配比例。',
+    descEn:'DRL learns optimal torque distribution ratio between human and machine.',
+    ref:'[31]',
+    adv:'✦ 自動學習最佳分配，端到端',
+    advEn:'✦ Auto-learns optimal allocation, end-to-end',
+    lim:'✧ 仍僅驗證力量放大',
+    limEn:'✧ Only validated for force amplification' },
+  { id:'lstm_traj', x:0.65, y:0.68, size:21, tier:3,
+    name:'LSTM 運動軌跡預測',
+    nameEn:'LSTM Trajectory Prediction',
+    desc:'利用 EMG 時序特徵進行運動軌跡預測。',
+    descEn:'Uses EMG temporal features for motion trajectory prediction.',
+    ref:'[32]',
+    adv:'✦ 時序建模能力強',
+    advEn:'✦ Strong temporal modeling capability',
+    lim:'✧ 開環預測，未閉環控制',
+    limEn:'✧ Open-loop prediction, no closed-loop control' },
+
+  // === ExoPulse (本研究) ===
+  { id:'exopulse', x:0.90, y:0.88, size:28, tier:'ours',
+    name:'ExoPulse（本研究）',
+    nameEn:'ExoPulse Digital Twin DRL',
+    desc:'透過數位孿生 + NMS + DRL，在意圖預測框架下同時實現軌跡規劃與力量放大的即時連續調節。',
+    descEn:'Digital Twin + NMS + DRL enables real-time continuous trajectory planning and force amplification under intent prediction framework.',
+    ref:'本研究',
+    adv:'✦ 軌跡+力量雙重前饋、即時個人化',
+    advEn:'✦ Dual feedforward (trajectory + force), real-time personalization',
+    lim:'✧ 技術缺口：尚待實機驗證',
+    limEn:'✧ Gap: pending physical validation' },
+];
+
+// Render dots
+data.forEach(d => {
+  const px = CHART_LEFT + d.x * CHART_W;
+  const py = chart.offsetHeight - CHART_BOTTOM - d.y * CHART_H;
+  const half = d.size / 2;
+
+  // dot
+  const dot = document.createElement('div');
+  dot.className = `dot ${d.tier === 'ours' ? 'ours' : 'tier' + d.tier}`;
+  dot.style.left = (px - half) + 'px';
+  dot.style.top = (py - half) + 'px';
+  dot.style.width = d.size + 'px';
+  dot.style.height = d.size + 'px';
+  dot.dataset.id = d.id;
+  chart.appendChild(dot);
+
+  // label
+  const label = document.createElement('div');
+  label.className = 'dot-label';
+  label.dataset.nameZh = d.name;
+  label.dataset.nameEn = d.nameEn;
+  label.dataset.ref = d.ref;
+  label.innerHTML = d.name + ' <span class="ref-tag">' + d.ref + '</span>';
+  // position label to the right, or left if too far right
+  if (d.x > 0.75) {
+    label.style.right = (chart.offsetWidth - px + half + 6) + 'px';
+    label.style.top = (py - 7) + 'px';
+    label.style.textAlign = 'right';
+  } else {
+    label.style.left = (px + half + 6) + 'px';
+    label.style.top = (py - 7) + 'px';
+  }
+  chart.appendChild(label);
+
+  // hover
+  dot.addEventListener('mouseenter', e => {
+    const tierClass = d.tier === 'ours' ? 'tt-ours' : `tt-t${d.tier}`;
+    if (currentLang === 'en') {
+      const tierLabel = d.tier === 'ours' ? 'This Study' : `Tier ${d.tier}`;
+      tooltip.innerHTML = `
+        <div class="tt-title">${d.nameEn}</div>
+        <div class="tt-tier ${tierClass}">${tierLabel}</div>
+        <div class="tt-desc">${d.descEn || d.desc}</div>
+        <div class="tt-adv">${d.advEn || d.adv}</div>
+        <div class="tt-lim">${d.limEn || d.lim}</div>
+        <div class="tt-ref">Ref: ${d.ref}</div>
+      `;
+    } else {
+      const tierLabel = d.tier === 'ours' ? '本研究' : `Tier ${d.tier}`;
+      tooltip.innerHTML = `
+        <div class="tt-title">${d.name}</div>
+        <div class="tt-tier ${tierClass}">${tierLabel}</div>
+        <div class="tt-desc">${d.nameEn}<br>${d.desc}</div>
+        <div class="tt-adv">${d.adv}</div>
+        <div class="tt-lim">${d.lim}</div>
+        <div class="tt-ref">Ref: ${d.ref}</div>
+      `;
+    }
+    tooltip.style.display = 'block';
+  });
+  dot.addEventListener('mousemove', e => {
+    tooltip.style.left = (e.clientX + 16) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+  });
+  dot.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+});
+
+function toggleLang() {
+  const btn = document.querySelector('.lang-toggle');
+  if (currentLang === 'zh') {
+    currentLang = 'en';
+    btn.textContent = '中文';
+    document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.lang-en').forEach(el => el.style.display = '');
+  } else {
+    currentLang = 'zh';
+    btn.textContent = 'English';
+    document.querySelectorAll('.lang-zh').forEach(el => el.style.display = '');
+    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
+  }
+  // Update dot labels
+  document.querySelectorAll('.dot-label').forEach(label => {
+    const name = currentLang === 'en' ? label.dataset.nameEn : label.dataset.nameZh;
+    label.innerHTML = name + ' <span class="ref-tag">' + label.dataset.ref + '</span>';
+  });
+}
+</script>
+</body>
+</html>

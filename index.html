@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExoPulse Technology Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --navy: #1a3a5c;
+    --navy-light: #2a5580;
+    --orange: #c06a1a;
+    --orange-glow: #e8a85c;
+    --bg: #faf8f2;
+    --card-bg: #ffffff;
+    --text: #2c2c2c;
+    --text-secondary: #5a6a7a;
+    --border: #e8e2d8;
+    --phase1: #3b82f6;
+    --phase2: #8b5cf6;
+    --phase3: #ec4899;
+    --phase4: #f59e0b;
+    --phase5: #ef4444;
+  }
+
+  body {
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== LANGUAGE TOGGLE ===== */
+  .lang-toggle {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    border-radius: 24px;
+    padding: 3px;
+    box-shadow: 0 4px 16px rgba(26,58,92,0.35);
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.3s ease;
+  }
+  .lang-toggle:hover {
+    box-shadow: 0 6px 24px rgba(26,58,92,0.45);
+  }
+  .lang-toggle .lang-opt {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    color: rgba(255,255,255,0.5);
+  }
+  .lang-toggle .lang-opt.active {
+    background: var(--orange);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(192,106,26,0.4);
+  }
+  .lang-en { display: none !important; }
+  body.en .lang-en { display: inline !important; }
+  body.en .lang-zh { display: none !important; }
+
+  /* ===== HEADER ===== */
+  .header {
+    text-align: center;
+    padding: 44px 24px 18px;
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 3px;
+    background: linear-gradient(90deg, var(--navy), var(--orange));
+    border-radius: 2px;
+  }
+  .header h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: 26px; font-weight: 800;
+    color: var(--navy);
+    letter-spacing: 1px;
+  }
+  .header h1 .ai { color: var(--orange); }
+  .header h1 .serif-i { font-family: 'Noto Serif TC', serif; }
+  .header .subtitle {
+    font-size: 13px; color: var(--text-secondary);
+    letter-spacing: 2px; font-weight: 400; margin-top: 5px;
+  }
+  .header .subtitle-zh {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 12px; color: #999; margin-top: 3px; letter-spacing: 1px;
+  }
+
+  /* ===== VISION BAR ===== */
+  .vision-bar {
+    max-width: 960px;
+    margin: 24px auto 0;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    color: #fff; font-size: 12.5px; font-weight: 500; letter-spacing: 0.5px;
+    box-shadow: 0 4px 20px rgba(26,58,92,0.25);
+  }
+  .vision-bar span.hl { color: var(--orange-glow); font-weight: 700; }
+
+  /* ===== ROADMAP CONTAINER ===== */
+  .roadmap {
+    max-width: 960px;
+    margin: 28px auto 0;
+    padding: 0 16px 48px;
+  }
+
+  /* ===== PROGRESS RAIL ===== */
+  .rail {
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    gap: 0;
+  }
+  /* The horizontal colored line behind nodes */
+  .rail::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 24px; right: 24px;
+    height: 5px;
+    border-radius: 3px;
+    background: linear-gradient(90deg,
+      var(--phase1) 0%, var(--phase2) 25%, var(--phase3) 50%, var(--phase4) 75%, var(--phase5) 100%);
+    z-index: 0;
+  }
+
+  /* ===== PHASE COLUMN ===== */
+  .phase-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+  }
+
+  /* Node circle */
+  .node {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; color: #fff;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+    border: 3px solid var(--bg);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+  }
+  .phase-col:hover .node { transform: scale(1.12); }
+  .phase-col.active .node { transform: scale(1.18); box-shadow: 0 4px 24px rgba(0,0,0,0.28); }
+  .n1 { background: var(--phase1); }
+  .n2 { background: var(--phase2); }
+  .n3 { background: var(--phase3); }
+  .n4 { background: var(--phase4); }
+  .n5 { background: var(--phase5); }
+
+  /* Phase mini-info below each node */
+  .phase-info {
+    text-align: center;
+    margin-top: 10px;
+    padding: 0 4px;
+    flex: 1;
+  }
+  .phase-info .pi-title-zh {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px; font-weight: 700; color: var(--navy);
+    line-height: 1.35;
+    margin-bottom: 3px;
+  }
+  .phase-info .pi-title-en {
+    font-size: 9.5px; font-weight: 600;
+    color: #999; letter-spacing: 0.3px;
+    line-height: 1.3; margin-bottom: 6px;
+  }
+  .phase-info .pi-year {
+    font-size: 9px; font-weight: 700;
+    color: #bbb; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .phase-info .pi-target {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 10px; color: #888;
+    line-height: 1.4;
+    padding: 4px 6px;
+    background: rgba(0,0,0,0.025);
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .phase-info .pi-techs {
+    display: flex; flex-wrap: wrap; gap: 3px;
+    justify-content: center;
+  }
+  .phase-info .pi-tech {
+    font-size: 9px; font-weight: 600;
+    padding: 1px 5px; border-radius: 3px;
+    background: #f0ebe3; color: var(--navy);
+    border: 1px solid #e0d8c8;
+    line-height: 1.5;
+  }
+
+  /* Drop connector from node to detail panel */
+  .phase-col .drop-line {
+    width: 2px;
+    height: 0;
+    transition: height 0.3s ease;
+    margin-top: -2px;
+  }
+  .phase-col.active .drop-line { height: 12px; }
+
+  /* ===== DETAIL PANEL (below rail) ===== */
+  .detail-panel {
+    margin-top: 8px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    background: var(--card-bg);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 0;
+    opacity: 0;
+  }
+  .detail-panel.open {
+    max-height: 600px;
+    opacity: 1;
+  }
+
+  .dp-inner {
+    padding: 22px 28px 20px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  /* Left: description */
+  .dp-left {
+    flex: 1.1;
+    min-width: 0;
+  }
+  .dp-left .dp-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: #fff; margin-bottom: 8px;
+  }
+  .dp-left .dp-title {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--navy); line-height: 1.4;
+    margin-bottom: 3px;
+  }
+  .dp-left .dp-title-en {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-secondary); letter-spacing: 0.3px;
+    margin-bottom: 10px;
+  }
+  .dp-left .dp-desc {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px; line-height: 1.85;
+    color: #555;
+  }
+  .dp-left .dp-desc strong { color: var(--navy); }
+
+  /* Right: product outputs */
+  .dp-right {
+    flex: 0.9;
+    min-width: 0;
+  }
+  .dp-right .output-box {
+    background: linear-gradient(135deg, #fefcf8, #f8f4ec);
+    border: 1px solid #e8dfd0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .dp-right .ob-label {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .dp-right .output-box ul {
+    list-style: none; padding: 0;
+  }
+  .dp-right .output-box li {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 12px; color: #444;
+    padding: 3px 0 3px 16px;
+    position: relative; line-height: 1.55;
+  }
+  .dp-right .output-box li::before {
+    content: '▸'; position: absolute; left: 0; font-size: 10px;
+  }
+  .dp-right .output-box li strong { color: var(--navy); }
+
+  .dp-right .target-box {
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(26,58,92,0.04);
+    border-left: 3px solid;
+  }
+  .dp-right .tb-label {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; color: #999;
+    margin-bottom: 2px;
+  }
+  .dp-right .tb-text {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 11.5px; color: #555; line-height: 1.5;
+  }
+
+  /* ===== BOTTOM REFERENCE CARDS ===== */
+  .ref-section {
+    max-width: 960px;
+    margin: 0 auto 20px;
+    padding: 0 16px;
+  }
+  .ref-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 22px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    margin-bottom: 12px;
+  }
+  .ref-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--navy); letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tier-row {
+    display: flex; gap: 10px; margin-bottom: 6px; align-items: center;
+  }
+  .tier-badge {
+    flex: 0 0 60px; padding: 4px 0;
+    border-radius: 6px; font-size: 10px;
+    font-weight: 700; text-align: center;
+    color: #fff; letter-spacing: 0.5px;
+  }
+  .tier-badge.t1 { background: #94a3b8; }
+  .tier-badge.t2 { background: #60a5fa; }
+  .tier-badge.t3 { background: #a78bfa; }
+  .tier-badge.tex { background: linear-gradient(135deg, var(--orange), #e8573a); }
+  .tier-desc {
+    font-size: 11.5px; color: #666; line-height: 1.5; flex: 1;
+  }
+  .tier-desc strong { color: var(--navy); font-weight: 600; }
+
+  .loop-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; flex-wrap: wrap; padding: 8px 0;
+  }
+  .loop-chip {
+    color: #fff; padding: 5px 12px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+  }
+  .loop-arrow { font-size: 16px; color: #ccc; }
+
+  .footer {
+    text-align: center; padding: 16px;
+    font-size: 10px; color: #bbb; letter-spacing: 1px;
+  }
+
+  /* Landscape link card */
+  .landscape-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    max-width: 960px;
+    margin: 0 auto 20px;
+    padding: 0 16px;
+  }
+  .landscape-link a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+  }
+  .landscape-link a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    border-color: var(--orange);
+  }
+  .landscape-link .ll-icon { font-size: 28px; }
+  .landscape-link .ll-text { flex: 1; }
+  .landscape-link .ll-title {
+    font-size: 14px; font-weight: 700; color: var(--navy);
+  }
+  .landscape-link .ll-desc {
+    font-size: 12px; color: #888; margin-top: 2px;
+  }
+  .landscape-link .ll-arrow {
+    font-size: 20px; color: #ccc; transition: color 0.3s;
+  }
+  .landscape-link a:hover .ll-arrow { color: var(--orange); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 760px) {
+    .rail { flex-direction: column; gap: 16px; align-items: stretch; }
+    .rail::before { display: none; }
+    .phase-col { flex-direction: row; gap: 12px; align-items: flex-start; }
+    .phase-info { text-align: left; }
+    .phase-info .pi-techs { justify-content: flex-start; }
+    .dp-inner { flex-direction: column; }
+    .tier-row { flex-direction: column; gap: 3px; }
+    .lang-toggle { top: 10px; right: 10px; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .detail-panel { max-height: none !important; opacity: 1 !important; }
+    .lang-toggle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LANGUAGE TOGGLE -->
+<div class="lang-toggle" onclick="toggleLang()">
+  <span class="lang-opt active" id="lang-zh-btn">中文</span>
+  <span class="lang-opt" id="lang-en-btn">EN</span>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <h1><span class="ai">a<span class="serif-i">I</span></span>walk — ExoPulse Technology Roadmap</h1>
+  <div class="subtitle">LIFELONG WEARABLE ROBOT PARTNER</div>
+  <div class="subtitle-zh"><span class="lang-zh">智意行科技 ─ 五階段技術藍圖與階段性產品產出</span><span class="lang-en">ExoPulse Corp ─ Five-Phase Technology Blueprint & Milestone Deliverables</span></div>
+</div>
+
+<!-- VISION BAR -->
+<div class="vision-bar">
+  <span class="lang-zh">🎯 核心願景：以 <span class="hl">數位孿生</span> 驅動的個人化外骨骼控制框架，從 IMU 感測到 <span class="hl">數位永生</span>，實現終身照護閉迴路</span><span class="lang-en">🎯 Core Vision: A personalized exoskeleton control framework driven by <span class="hl">Digital Twin</span> technology, from IMU sensing to <span class="hl">Digital Immortality</span>, achieving a lifelong care closed loop</span>
+</div>
+
+<!-- ROADMAP -->
+<div class="roadmap">
+
+  <!-- ===== PROGRESS RAIL ===== -->
+  <div class="rail">
+
+    <!-- Phase 1 -->
+    <div class="phase-col active" data-phase="1" onclick="selectPhase(1)">
+      <div class="node n1">1</div>
+      <div class="drop-line" style="background:var(--phase1);"></div>
+      <div class="phase-info">
+        <div class="pi-title-zh"><span class="lang-zh">IMU 感測<br>跌倒預防</span><span class="lang-en">IMU Sensing<br>Fall Prevention</span></div>
+        <div class="pi-title-en">Inertial Sensing<br>& Pre-Fail Detection</div>
+        <div class="pi-year"><span class="lang-zh">YEAR 1 ─ 博一</span><span class="lang-en">YEAR 1 ─ PhD Year 1</span></div>
+        <div class="pi-target"><span class="lang-zh">🎯 衰弱前期個體<br>獨居長者</span><span class="lang-en">🎯 Pre-frail individuals<br>Elderly living alone</span></div>
+        <div class="pi-techs">
+          <span class="pi-tech">IMU</span>
+          <span class="pi-tech">Edge AI</span>
+          <span class="pi-tech">PCB</span>
+          <span class="pi-tech">FPGA</span>
+          <span class="pi-tech">IRB</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-col" data-phase="2" onclick="selectPhase(2)">
+      <div class="node n2">2</div>
+      <div class="drop-line" style="background:var(--phase2);"></div>
+      <div class="phase-info">
+        <div class="pi-title-zh"><span class="lang-zh">EMG 驅動<br>偏癱復健</span><span class="lang-en">EMG-Driven<br>Hemiplegia Rehab</span></div>
+        <div class="pi-title-en">EMG-Driven NMS<br>Stroke Rehabilitation</div>
+        <div class="pi-year"><span class="lang-zh">YEAR 2 ─ 博二</span><span class="lang-en">YEAR 2 ─ PhD Year 2</span></div>
+        <div class="pi-target"><span class="lang-zh">🎯 中風後偏癱<br>多發性硬化症</span><span class="lang-en">🎯 Post-stroke hemiplegia<br>Multiple Sclerosis</span></div>
+        <div class="pi-techs">
+          <span class="pi-tech">sEMG</span>
+          <span class="pi-tech">NMS</span>
+          <span class="pi-tech">Hill-type</span>
+          <span class="pi-tech">DRL</span>
+          <span class="pi-tech"><span class="lang-zh">力矩倍率</span><span class="lang-en">Torque Ratio</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-col" data-phase="3" onclick="selectPhase(3)">
+      <div class="node n3">3</div>
+      <div class="drop-line" style="background:var(--phase3);"></div>
+      <div class="phase-info">
+        <div class="pi-title-zh"><span class="lang-zh">資料生成<br>族群擴展</span><span class="lang-en">Data Synthesis<br>Population Expansion</span></div>
+        <div class="pi-title-en">Data Synthesis<br>& Generalization</div>
+        <div class="pi-year"><span class="lang-zh">YEAR 3 ─ 博三</span><span class="lang-en">YEAR 3 ─ PhD Year 3</span></div>
+        <div class="pi-target"><span class="lang-zh">🎯 重度失能族群<br>凍結步態 · TBI</span><span class="lang-en">🎯 Severe disability<br>Freezing of Gait · TBI</span></div>
+        <div class="pi-techs">
+          <span class="pi-tech"><span class="lang-zh">資料合成</span><span class="lang-en">Data Synth</span></span>
+          <span class="pi-tech"><span class="lang-zh">NMS虛擬環境</span><span class="lang-en">NMS Virtual Env</span></span>
+          <span class="pi-tech">Sim2Real</span>
+          <span class="pi-tech"><span class="lang-zh">泛化</span><span class="lang-en">Generalize</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-col" data-phase="4" onclick="selectPhase(4)">
+      <div class="node n4">4</div>
+      <div class="drop-line" style="background:var(--phase4);"></div>
+      <div class="phase-info">
+        <div class="pi-title-zh"><span class="lang-zh">腦機介面<br>全癱瘓控制</span><span class="lang-en">Brain-Computer<br>Interface Control</span></div>
+        <div class="pi-title-en">BCI Integration<br>Full-Paralysis Control</div>
+        <div class="pi-year"><span class="lang-zh">YEAR 4+ ─ 博四</span><span class="lang-en">YEAR 4+ ─ PhD Year 4</span></div>
+        <div class="pi-target"><span class="lang-zh">🎯 完全癱瘓族群<br>脊髓損傷</span><span class="lang-en">🎯 Full paralysis<br>Spinal cord injury</span></div>
+        <div class="pi-techs">
+          <span class="pi-tech">EEG</span>
+          <span class="pi-tech">BCI</span>
+          <span class="pi-tech">Avatar</span>
+          <span class="pi-tech"><span class="lang-zh">意圖鏈</span><span class="lang-en">Intent Chain</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase-col" data-phase="5" onclick="selectPhase(5)">
+      <div class="node n5">5</div>
+      <div class="drop-line" style="background:var(--phase5);"></div>
+      <div class="phase-info">
+        <div class="pi-title-zh"><span class="lang-zh">數位永生</span><span class="lang-en">Digital Immortality</span></div>
+        <div class="pi-title-en">Digital Immortality<br>Consciousness Continuity</div>
+        <div class="pi-year">LONG-TERM VISION</div>
+        <div class="pi-target"><span class="lang-zh">🎯 所有人<br>終身機器人夥伴</span><span class="lang-en">🎯 Everyone<br>Lifelong robot partner</span></div>
+        <div class="pi-techs">
+          <span class="pi-tech"><span class="lang-zh">數位分身</span><span class="lang-en">Digital Twin</span></span>
+          <span class="pi-tech"><span class="lang-zh">運動記憶</span><span class="lang-en">Motor Memory</span></span>
+          <span class="pi-tech"><span class="lang-zh">AI延續</span><span class="lang-en">AI Continuity</span></span>
+          <span class="pi-tech">SaaS</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /rail -->
+
+  <!-- ===== DETAIL PANELS ===== -->
+
+  <!-- Phase 1 Detail -->
+  <div class="detail-panel open" id="dp-1">
+    <div class="dp-inner">
+      <div class="dp-left">
+        <div class="dp-badge" style="background:var(--phase1);">Phase 1</div>
+        <div class="dp-title"><span class="lang-zh">IMU 感測與跌倒預防</span><span class="lang-en">IMU Sensing & Fall Prevention</span></div>
+        <div class="dp-title-en">Inertial Sensing & Pre-Fail Detection</div>
+        <div class="dp-desc">
+          <span class="lang-zh">聚焦於 ExoPulse 系統之<strong>基礎感測架構</strong>建立。完成 PCB 佈局與原型機製作，整合 IMU 慣性感測模組與 Edge AI 即時運算晶片，實現步態相位即時估計與<strong>跌倒風險預警功能</strong>。此階段建立 ExoPulse 硬體平台基線，取得醫院 IRB 倫理審查核准，啟動不穩定步態族群之臨床資料蒐集。產品定位面向衰弱前期個體與獨居長者的<strong>跌倒預防</strong>，研究產出將直接轉化為企業之復健訓練與跌倒預防軟體模組。</span><span class="lang-en">Focuses on establishing the <strong>foundational sensing architecture</strong> for the ExoPulse system. Complete PCB layout and prototype fabrication, integrating IMU inertial sensing modules with Edge AI real-time computing chips to achieve real-time gait phase estimation and <strong>fall risk early warning</strong>. This phase establishes the ExoPulse hardware platform baseline, obtains hospital IRB ethics approval, and initiates clinical data collection for unstable gait populations. Product positioning targets <strong>fall prevention</strong> for pre-frail individuals and elderly living alone, with research outputs directly converted into rehabilitation training and fall prevention software modules.</span>
+        </div>
+      </div>
+      <div class="dp-right">
+        <div class="output-box">
+          <div class="ob-label" style="color:var(--phase1);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <ul>
+            <li><span class="lang-zh"><strong>復健訓練與跌倒預防軟體模組</strong>（Rehab Training & Falling Prevention）</span><span class="lang-en"><strong>Rehab Training & Fall Prevention Software Module</strong></span></li>
+            <li><span class="lang-zh">ExoPulse 硬體平台原型機（U 型框架、三自由度髖關節、BLDC 馬達）</span><span class="lang-en">ExoPulse hardware platform prototype (U-frame, 3-DOF hip joint, BLDC motors)</span></li>
+            <li><span class="lang-zh">IMU 跌倒偵測與風險預警演算法</span><span class="lang-en">IMU fall detection & risk early warning algorithm</span></li>
+            <li><span class="lang-zh">臨床 IRB 核准與基線資料蒐集系統</span><span class="lang-en">Clinical IRB approval & baseline data collection system</span></li>
+          </ul>
+        </div>
+        <div class="target-box" style="border-color:var(--phase1);">
+          <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
+          <div class="tb-text"><span class="lang-zh">衰弱前期（Pre-frail）個體、獨居長者 ─ 跌倒預防與安全保障</span><span class="lang-en">Pre-frail individuals, elderly living alone ─ fall prevention & safety assurance</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 2 Detail -->
+  <div class="detail-panel" id="dp-2">
+    <div class="dp-inner">
+      <div class="dp-left">
+        <div class="dp-badge" style="background:var(--phase2);">Phase 2</div>
+        <div class="dp-title"><span class="lang-zh">EMG 驅動的神經肌肉骨骼建模</span><span class="lang-en">EMG-Driven Neuromusculoskeletal Modeling</span></div>
+        <div class="dp-title-en">EMG-Driven NMS Modeling & Stroke Rehabilitation</div>
+        <div class="dp-desc">
+          <span class="lang-zh">導入 sEMG 肌電感測與<strong>神經肌肉骨骼（NMS）模型</strong>校準流程，透過雲端平台完成個人化數位孿生建模。針對中風後偏癱患者之不對稱步態特徵，開發 EMG 驅動的<strong>即時肌力估測與輔助力矩計算演算法</strong>，完成軌跡補償連續調節之可行性驗證。DRL 雙代理架構中，Human Agent（TunedMPO）作為意圖預測引擎，Exoskeleton Agent（D4PG-LSTM）學習最佳人機互動策略。此階段產品定位由預防轉向<strong>主動復健與行動輔助</strong>。</span><span class="lang-en">Introduces sEMG electromyographic sensing and <strong>Neuromusculoskeletal (NMS) model</strong> calibration workflow, completing personalized digital twin modeling via cloud platform. Targeting asymmetric gait characteristics of post-stroke hemiplegia patients, develops EMG-driven <strong>real-time muscle force estimation and assistive torque calculation algorithms</strong>, verifying feasibility of continuous trajectory compensation. In the DRL dual-agent architecture, the Human Agent (TunedMPO) serves as the intent prediction engine, while the Exoskeleton Agent (D4PG-LSTM) learns optimal human-robot interaction strategies. This phase shifts product positioning from prevention to <strong>active rehabilitation & mobility assistance</strong>.</span>
+        </div>
+      </div>
+      <div class="dp-right">
+        <div class="output-box">
+          <div class="ob-label" style="color:var(--phase2);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <ul>
+            <li><span class="lang-zh"><strong>監測與關節保護模組</strong>（Monitoring & Joint Protection）</span><span class="lang-en"><strong>Monitoring & Joint Protection Module</strong></span></li>
+            <li><span class="lang-zh"><strong>行動輔助軟體模組</strong>（Mobility Assistance）</span><span class="lang-en"><strong>Mobility Assistance Software Module</strong></span></li>
+            <li><span class="lang-zh">EMG 驅動即時肌力估測系統</span><span class="lang-en">EMG-driven real-time muscle force estimation system</span></li>
+            <li><span class="lang-zh">DRL Human Agent + Exoskeleton Agent 雙代理架構</span><span class="lang-en">DRL Human Agent + Exoskeleton Agent dual-agent architecture</span></li>
+            <li><span class="lang-zh">MS 族群臨床資料庫建立</span><span class="lang-en">MS population clinical database establishment</span></li>
+          </ul>
+        </div>
+        <div class="target-box" style="border-color:var(--phase2);">
+          <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
+          <div class="tb-text"><span class="lang-zh">中風後偏癱患者、多發性硬化症（MS）族群 ─ 步態復健與肌力輔助</span><span class="lang-en">Post-stroke hemiplegia patients, Multiple Sclerosis (MS) population ─ gait rehabilitation & muscle strength assistance</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 3 Detail -->
+  <div class="detail-panel" id="dp-3">
+    <div class="dp-inner">
+      <div class="dp-left">
+        <div class="dp-badge" style="background:var(--phase3);">Phase 3</div>
+        <div class="dp-title"><span class="lang-zh">資料生成技術與族群擴展</span><span class="lang-en">Data Synthesis & Population Expansion</span></div>
+        <div class="dp-title-en">Data Synthesis & Cross-Population Generalization</div>
+        <div class="dp-desc">
+          <span class="lang-zh">聚焦於數位孿生之<strong>前向資料合成技術</strong>（Forward Data Synthesis），利用已校準之 NMS 模型在虛擬環境中合成使用者未被實際記錄的運動場景數據（如不同地形、不同退化程度之步態模式），解決<strong>無法行動族群的臨床資料稀缺</strong>問題。使 ExoPulse 系統可服務於無法進行大量實體測試的重度失能族群——包含凍結步態（Freezing of Gait）患者及創傷性腦損傷（TBI）患者。驗證架構泛化與批量個人化能力，實現多地形、多疾病條件之 <strong>Sim-to-Real 轉移</strong>。</span><span class="lang-en">Focuses on <strong>Forward Data Synthesis</strong> technology for digital twins, using calibrated NMS models to synthesize movement scenario data in virtual environments that were never physically recorded (e.g., gait patterns across different terrains and degradation levels), solving the <strong>clinical data scarcity problem for immobile populations</strong>. This enables the ExoPulse system to serve severely disabled populations who cannot undergo extensive physical testing ─ including Freezing of Gait (FoG) and Traumatic Brain Injury (TBI) patients. Validates architecture generalization and batch personalization capabilities, achieving multi-terrain, multi-condition <strong>Sim-to-Real transfer</strong>.</span>
+        </div>
+      </div>
+      <div class="dp-right">
+        <div class="output-box">
+          <div class="ob-label" style="color:var(--phase3);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <ul>
+            <li><span class="lang-zh"><strong>資料合成引擎</strong> ─ 虛擬場景運動資料批量生成系統</span><span class="lang-en"><strong>Data Synthesis Engine</strong> ─ batch motion data generation in virtual scenarios</span></li>
+            <li><span class="lang-zh"><strong>跨族群泛化模型</strong> ─ 一套框架批量應用於不同疾病族群</span><span class="lang-en"><strong>Cross-population generalization model</strong> ─ one framework for batch application across disease groups</span></li>
+            <li><span class="lang-zh">凍結步態（Freezing of Gait）控制模組</span><span class="lang-en">Freezing of Gait (FoG) control module</span></li>
+            <li><span class="lang-zh">Sim-to-Real 驗證報告與臨床轉化數據</span><span class="lang-en">Sim-to-Real validation report & clinical translation data</span></li>
+          </ul>
+        </div>
+        <div class="target-box" style="border-color:var(--phase3);">
+          <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
+          <div class="tb-text"><span class="lang-zh">無法自主行動之重度失能族群、凍結步態（FoG）患者、創傷性腦損傷（TBI）患者</span><span class="lang-en">Severely disabled populations unable to move independently, Freezing of Gait (FoG) patients, Traumatic Brain Injury (TBI) patients</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 4 Detail -->
+  <div class="detail-panel" id="dp-4">
+    <div class="dp-inner">
+      <div class="dp-left">
+        <div class="dp-badge" style="background:var(--phase4);">Phase 4</div>
+        <div class="dp-title"><span class="lang-zh">腦機介面整合與全癱瘓族群控制</span><span class="lang-en">BCI Integration & Full-Paralysis Control</span></div>
+        <div class="dp-title-en">BCI Integration & Full-Paralysis Exoskeleton Control</div>
+        <div class="dp-desc">
+          <span class="lang-zh">此階段為長期願景之<strong>探索性研究</strong>，探討結合腦電訊號作為運動意圖之最上游輸入源。使完全喪失自主運動能力之癱瘓患者可透過<strong>腦機介面（BCI）</strong>控制數位孿生虛擬人體，進而驅動外骨骼執行目標動作，形成 <strong>EEG → 虛擬人體意圖預測 → 外骨骼力矩輸出</strong>之完整控制鏈。同時探索癱瘓者透過意念控制虛擬人物（Avatar）的可能性，將 ExoPulse 服務對象進一步擴展至完全癱瘓族群，實現「<strong>Train. Assist. Live.</strong>」。</span><span class="lang-en">This phase represents <strong>exploratory research</strong> toward the long-term vision, investigating the integration of brain electrical signals as the most upstream source of motor intent. Enabling fully paralyzed patients who have lost all voluntary motor ability to control a digital twin virtual body through <strong>Brain-Computer Interface (BCI)</strong>, which then drives the exoskeleton to execute target movements, forming the complete control chain: <strong>EEG → Virtual body intent prediction → Exoskeleton torque output</strong>. Also explores the possibility of paralyzed individuals controlling virtual avatars through thought, further extending ExoPulse services to fully paralyzed populations, realizing "<strong>Train. Assist. Live.</strong>".</span>
+        </div>
+      </div>
+      <div class="dp-right">
+        <div class="output-box">
+          <div class="ob-label" style="color:var(--phase4);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <ul>
+            <li><span class="lang-zh"><strong>EEG → 外骨骼完整控制鏈</strong>原型系統</span><span class="lang-en"><strong>EEG → Exoskeleton complete control chain</strong> prototype system</span></li>
+            <li><span class="lang-zh"><strong>虛擬人體（Avatar）意念控制</strong>模組</span><span class="lang-en"><strong>Virtual body (Avatar) mind control</strong> module</span></li>
+            <li><span class="lang-zh">下一世代產品線技術基礎 ─「Train. Assist. Live.」</span><span class="lang-en">Next-generation product line technology foundation ─ "Train. Assist. Live."</span></li>
+            <li><span class="lang-zh">BCI 數位孿生整合驗證報告</span><span class="lang-en">BCI digital twin integration validation report</span></li>
+          </ul>
+        </div>
+        <div class="target-box" style="border-color:var(--phase4);">
+          <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
+          <div class="tb-text"><span class="lang-zh">完全癱瘓族群、脊髓損傷患者 ─ 透過意念重獲行動自由</span><span class="lang-en">Fully paralyzed populations, spinal cord injury patients ─ regaining mobility through thought</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 5 Detail -->
+  <div class="detail-panel" id="dp-5">
+    <div class="dp-inner">
+      <div class="dp-left">
+        <div class="dp-badge" style="background: linear-gradient(135deg, var(--phase5), #c026d3);">Phase 5</div>
+        <div class="dp-title"><span class="lang-zh">數位永生</span><span class="lang-en">Digital Immortality</span></div>
+        <div class="dp-title-en">Digital Immortality — Consciousness Continuity</div>
+        <div class="dp-desc">
+          <span class="lang-zh">ExoPulse 從 Phase 1 到 Phase 4 累積的<strong>個人化數位孿生</strong>——涵蓋神經肌肉骨骼模型、運動意圖模式、腦電訊號特徵、肌肉激活模式、步態習慣——構成了一個人最完整的<strong>身體運動數位分身</strong>。當這些數據與 AI 模型持續學習並演化，使用者的運動特徵、反應模式、甚至意圖預測都能在數位世界中<strong>被忠實重現與延續</strong>。這不僅是復健或輔助，而是邁向<strong>人類運動記憶的永久保存</strong>——一個真正的「Lifelong Wearable Robot Partner」的終極意義：<strong>Train. Assist. Live. Forever.</strong></span><span class="lang-en">The <strong>personalized digital twin</strong> accumulated by ExoPulse from Phase 1 to Phase 4 ─ encompassing neuromusculoskeletal models, motor intent patterns, EEG signal features, muscle activation patterns, and gait habits ─ constitutes a person's most complete <strong>physical movement digital avatar</strong>. As these data and AI models continuously learn and evolve, the user's movement characteristics, response patterns, and even intent predictions can be <strong>faithfully reproduced and continued</strong> in the digital world. This is not merely rehabilitation or assistance, but a step toward <strong>permanent preservation of human motor memory</strong> ─ the ultimate meaning of a true "Lifelong Wearable Robot Partner": <strong>Train. Assist. Live. Forever.</strong></span>
+        </div>
+      </div>
+      <div class="dp-right">
+        <div class="output-box">
+          <div class="ob-label" style="color:var(--phase5);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <ul>
+            <li><span class="lang-zh"><strong>個人運動數位分身</strong> ─ 持續演化的終身 NMS + 腦電模型</span><span class="lang-en"><strong>Personal movement digital avatar</strong> ─ continuously evolving lifelong NMS + EEG model</span></li>
+            <li><span class="lang-zh"><strong>ExoPulse Lifelong Archive</strong> ─ 運動記憶雲端永久保存系統</span><span class="lang-en"><strong>ExoPulse Lifelong Archive</strong> ─ cloud-based permanent motor memory preservation system</span></li>
+            <li><span class="lang-zh">數位分身跨載體遷移技術（機器人、虛擬世界、下一代外骨骼）</span><span class="lang-en">Digital avatar cross-platform migration technology (robots, virtual worlds, next-gen exoskeletons)</span></li>
+            <li><span class="lang-zh">SaaS 終身照護訂閱服務</span><span class="lang-en">SaaS lifelong care subscription service</span></li>
+          </ul>
+        </div>
+        <div class="target-box" style="border-color:var(--phase5);">
+          <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
+          <div class="tb-text"><span class="lang-zh">所有人 ─ 從亞健康到完全癱瘓，每個人都值得擁有一個理解自己的終身機器人夥伴</span><span class="lang-en">Everyone ─ from sub-health to full paralysis, every person deserves a lifelong robot partner that understands them</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /roadmap -->
+
+<!-- REFERENCE SECTIONS -->
+<div class="ref-section">
+  <div class="ref-card">
+    <div class="ref-title"><span class="lang-zh">📊 外骨骼控制策略 ─ 意圖感知層級對照</span><span class="lang-en">📊 Exoskeleton Control Strategy ─ Intent Perception Tier Comparison</span></div>
+    <div class="tier-row">
+      <div class="tier-badge t1">Tier 1</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>預定義驅動</strong> ─ CPG、固定軌跡、能量最佳化。無使用者意圖感知。對應 Phase 1 基線。</span><span class="lang-en"><strong>Predefined Drive</strong> ─ CPG, fixed trajectory, energy optimization. No user intent sensing. Corresponds to Phase 1 baseline.</span></div>
+    </div>
+    <div class="tier-row">
+      <div class="tier-badge t2">Tier 2</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>反應式感知</strong> ─ EMG 阻抗控制、sEMG 疲勞監測、pHRI 互動力分析。對應 Phase 2 起步。</span><span class="lang-en"><strong>Reactive Sensing</strong> ─ EMG impedance control, sEMG fatigue monitoring, pHRI interaction force analysis. Corresponds to Phase 2 start.</span></div>
+    </div>
+    <div class="tier-row">
+      <div class="tier-badge t3">Tier 3</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>前饋式意圖預測</strong> ─ EMG-NMS 力矩、NMS+ML、EMG-DRL 共享控制、LSTM 軌跡預測。對應 Phase 2–3。</span><span class="lang-en"><strong>Feedforward Intent Prediction</strong> ─ EMG-NMS torque, NMS+ML, EMG-DRL shared control, LSTM trajectory prediction. Corresponds to Phase 2-3.</span></div>
+    </div>
+    <div class="tier-row">
+      <div class="tier-badge tex">ExoPulse</div>
+      <div class="tier-desc"><span class="lang-zh"><strong>意圖預測 × 個體適應性最高</strong> ─ 數位孿生 + DRL 雙代理 + Wrapper 臨床介面 + Phase 4–5 腦機介面與數位永生。</span><span class="lang-en"><strong>Intent Prediction × Highest Individual Adaptability</strong> ─ Digital Twin + DRL dual-agent + Wrapper clinical interface + Phase 4-5 BCI & Digital Immortality.</span></div>
+    </div>
+  </div>
+
+  <div class="ref-card">
+    <div class="ref-title">🔄 ExoPulse Closed-Loop Lifecycle</div>
+    <div class="loop-flow">
+      <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測回傳雲端</span><span class="lang-en">Gait Sensing to Cloud</span></span>
+      <span class="loop-arrow">&rarr;</span>
+      <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">Wrapper 指標分析</span><span class="lang-en">Wrapper Metrics Analysis</span></span>
+      <span class="loop-arrow">&rarr;</span>
+      <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">治療師策略建議</span><span class="lang-en">Therapist Strategy Advice</span></span>
+      <span class="loop-arrow">&rarr;</span>
+      <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">患者執行訓練</span><span class="lang-en">Patient Training Execution</span></span>
+      <span class="loop-arrow">&rarr;</span>
+      <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sensing</span></span>
+      <span class="loop-arrow">&#10227;</span>
+    </div>
+    <div style="text-align:center;margin-top:4px;font-size:11px;color:#999;">
+      <span class="lang-zh">ExoPulse Patient Cloud（醫療端）× ExoPulse Studio（患者端）</span><span class="lang-en">ExoPulse Patient Cloud (Medical) × ExoPulse Studio (Patient)</span>
+    </div>
+  </div>
+</div>
+
+<div class="landscape-link">
+  <a href="Exo_Control_Strategy_Landscape.html">
+    <span class="ll-icon">📊</span>
+    <span class="ll-text">
+      <div class="ll-title"><span class="lang-zh">外骨骼控制策略技術版圖</span><span class="lang-en">Exoskeleton Control Strategy Landscape</span></div>
+      <div class="ll-desc"><span class="lang-zh">以意圖感知前饋性與個體適應性為雙軸，定位 ExoPulse 的技術座標</span><span class="lang-en">Positioning ExoPulse on axes of intent prediction and individual adaptability</span></div>
+    </span>
+    <span class="ll-arrow">→</span>
+  </a>
+</div>
+
+<div class="footer">
+  <span class="lang-zh">智意行科技股份有限公司 aIwalk Co., Ltd. — ExoPulse Technology Roadmap — 2026</span><span class="lang-en">ExoPulse Corp (aIwalk Co., Ltd.) — ExoPulse Technology Roadmap — 2026</span>
+</div>
+
+<script>
+  let currentPhase = 1;
+  let currentLang = 'zh';
+
+  function selectPhase(n) {
+    if (currentPhase === n) return;
+    // Deactivate old
+    document.querySelector('.phase-col.active')?.classList.remove('active');
+    document.querySelector('.detail-panel.open')?.classList.remove('open');
+    // Activate new
+    document.querySelector(`.phase-col[data-phase="${n}"]`).classList.add('active');
+    document.getElementById('dp-' + n).classList.add('open');
+    currentPhase = n;
+  }
+
+  function toggleLang() {
+    if (currentLang === 'zh') {
+      currentLang = 'en';
+      document.body.classList.add('en');
+      document.getElementById('lang-zh-btn').classList.remove('active');
+      document.getElementById('lang-en-btn').classList.add('active');
+    } else {
+      currentLang = 'zh';
+      document.body.classList.remove('en');
+      document.getElementById('lang-en-btn').classList.remove('active');
+      document.getElementById('lang-zh-btn').classList.add('active');
+    }
+  }
+</script>
+
+</body>
+</html>
