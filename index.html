@@ -583,12 +583,12 @@
   }
 </style>
 </head>
-<body>
+<body class="en">
 
 <!-- LANGUAGE TOGGLE -->
 <div class="lang-toggle" onclick="toggleLang()">
-  <span class="lang-opt active" id="lang-zh-btn">中文</span>
-  <span class="lang-opt" id="lang-en-btn">EN</span>
+  <span class="lang-opt" id="lang-zh-btn">中文</span>
+  <span class="lang-opt active" id="lang-en-btn">EN</span>
 </div>
 
 <!-- HEADER -->
@@ -631,7 +631,7 @@
     </div>
     <div class="demo-card">
       <div class="demo-video">
-        <iframe src="https://www.youtube.com/embed/AqCmBuTe" allowfullscreen loading="lazy"></iframe>
+        <iframe src="https://www.youtube.com/embed/AqCmBuTejRg" allowfullscreen loading="lazy"></iframe>
       </div>
       <div class="demo-info">
         <img src="assets/patientcloud-logo.png" alt="Patient Cloud" class="demo-logo">
@@ -666,7 +666,7 @@
     </span>
     <span class="el-arrow">→</span>
   </a>
-  <a class="extra-link-card" href="#vcard" id="vcard-link">
+  <a class="extra-link-card" href="card.html">
     <span class="el-icon">📇</span>
     <span class="el-text">
       <div class="el-title"><span class="lang-zh">數位名片</span><span class="lang-en">Digital Business Card</span></div>
@@ -988,8 +988,8 @@
   <a href="Exo_Control_Strategy_Landscape.html">
     <span class="ll-icon">📊</span>
     <span class="ll-text">
-      <div class="ll-title"><span class="lang-zh">外骨骼控制策略技術版圖</span><span class="lang-en">Exoskeleton Control Strategy Landscape</span></div>
-      <div class="ll-desc"><span class="lang-zh">以意圖感知前饋性與個體適應性為雙軸，定位 ExoPulse 的技術座標</span><span class="lang-en">Positioning ExoPulse on axes of intent prediction and individual adaptability</span></div>
+      <div class="ll-title"><span class="lang-zh">我們的競爭優勢</span><span class="lang-en">Our Competitive Edge</span></div>
+      <div class="ll-desc"><span class="lang-zh">ExoPulse 在意圖預測與個體適應性雙維度上領先現有技術</span><span class="lang-en">See how ExoPulse leads in intent prediction and individual adaptability</span></div>
     </span>
     <span class="ll-arrow">→</span>
   </a>
@@ -1001,7 +1001,7 @@
 
 <script>
   let currentPhase = 1;
-  let currentLang = 'zh';
+  let currentLang = 'en';
 
   function selectPhase(n) {
     if (currentPhase === n) return;
