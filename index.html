@@ -341,94 +341,48 @@
     font-size: 11.5px; color: #555; line-height: 1.5;
   }
 
-  /* ===== COMPETITIVE EDGE SECTION ===== */
+  /* ===== COMPETITIVE EDGE LINK ===== */
   .edge-section {
     max-width: 960px;
     margin: 0 auto 20px;
     padding: 0 16px;
   }
-  .edge-card {
+  .edge-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 24px;
     background: var(--card-bg);
     border: 1.5px solid var(--border);
     border-radius: 14px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
   }
-  .edge-header {
-    padding: 20px 24px 16px;
-    display: flex; align-items: center; gap: 12px;
-    cursor: pointer;
-    transition: background 0.2s;
+  .edge-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+    border-color: var(--orange);
   }
-  .edge-header:hover { background: rgba(0,0,0,0.015); }
-  .edge-header .edge-icon {
-    width: 44px; height: 44px;
+  .edge-link .edge-icon {
+    width: 48px; height: 48px;
     background: linear-gradient(135deg, var(--navy), var(--orange));
-    border-radius: 10px;
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
+    font-size: 22px; flex-shrink: 0;
   }
-  .edge-header .edge-text { flex: 1; }
-  .edge-header .edge-title {
+  .edge-link .edge-text { flex: 1; }
+  .edge-link .edge-title {
     font-size: 16px; font-weight: 700; color: var(--navy);
   }
-  .edge-header .edge-desc {
-    font-size: 12px; color: #888; margin-top: 2px;
+  .edge-link .edge-desc {
+    font-size: 12px; color: #888; margin-top: 3px; line-height: 1.4;
   }
-  .edge-inner {
-    padding: 0 24px 20px;
+  .edge-link .edge-arrow {
+    font-size: 22px; color: #ccc; transition: color 0.3s;
   }
-  .edge-inner .ref-subtitle {
-    font-size: 12px; font-weight: 700;
-    color: var(--navy); letter-spacing: 0.5px;
-    margin-bottom: 10px; margin-top: 4px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .edge-divider {
-    height: 1px; background: var(--border);
-    margin: 16px 0;
-  }
-
-  .tier-row {
-    display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start;
-  }
-  .tier-badge {
-    flex: 0 0 56px; padding: 4px 0;
-    border-radius: 6px; font-size: 10px;
-    font-weight: 700; text-align: center;
-    color: #fff; letter-spacing: 0.5px;
-  }
-  .tier-badge.t1 { background: #94a3b8; }
-  .tier-badge.t2 { background: #60a5fa; }
-  .tier-badge.t3 { background: #a78bfa; }
-  .tier-badge.tex { background: linear-gradient(135deg, var(--orange), #e8573a); }
-  .tier-desc {
-    font-size: 12px; color: #666; line-height: 1.6; flex: 1;
-  }
-  .tier-desc strong { color: var(--navy); font-weight: 600; }
-
-  .loop-flow {
-    display: flex; align-items: center; justify-content: center;
-    gap: 6px; flex-wrap: wrap; padding: 8px 0;
-  }
-  .loop-chip {
-    color: #fff; padding: 5px 12px; border-radius: 6px;
-    font-size: 11px; font-weight: 600;
-  }
-  .loop-arrow { font-size: 16px; color: #ccc; }
-
-  .edge-landscape-link {
-    display: inline-flex; align-items: center; gap: 6px;
-    margin-top: 12px; padding: 8px 16px;
-    background: linear-gradient(135deg, var(--navy), var(--navy-light));
-    color: #fff; text-decoration: none;
-    border-radius: 8px; font-size: 12px; font-weight: 600;
-    transition: all 0.3s;
-  }
-  .edge-landscape-link:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(26,58,92,0.3);
-  }
+  .edge-link:hover .edge-arrow { color: var(--orange); }
 
   .footer {
     text-align: center; padding: 16px;
@@ -578,13 +532,9 @@
     .phase-info { text-align: left; }
     .phase-info .pi-techs { justify-content: flex-start; }
     .dp-inner { flex-direction: column; }
-    .tier-row { flex-direction: column; gap: 4px; }
-    .tier-badge { flex: none; display: inline-block; width: auto; padding: 3px 10px; }
-    .loop-flow { gap: 4px; }
-    .loop-chip { padding: 4px 8px; font-size: 10px; }
-    .loop-arrow { font-size: 12px; }
-    .edge-header { padding: 16px; }
-    .edge-inner { padding: 0 16px 16px; }
+    .edge-link { padding: 16px; gap: 10px; }
+    .edge-link .edge-icon { width: 40px; height: 40px; font-size: 18px; }
+    .edge-link .edge-title { font-size: 14px; }
     .lang-toggle { top: 10px; right: 10px; }
   }
 
@@ -956,37 +906,14 @@
 
 <!-- COMPETITIVE EDGE -->
 <div class="edge-section">
-  <div class="edge-card">
-    <div class="edge-header">
-      <div class="edge-icon">📊</div>
-      <div class="edge-text">
-        <div class="edge-title"><span class="lang-zh">我們的競爭優勢</span><span class="lang-en">Our Competitive Edge</span></div>
-        <div class="edge-desc"><span class="lang-zh">ExoPulse 在意圖預測與個體適應性雙維度上領先現有技術</span><span class="lang-en">See how ExoPulse leads in intent prediction and individual adaptability</span></div>
-      </div>
+  <a class="edge-link" href="Exo_Control_Strategy_Landscape.html">
+    <div class="edge-icon">📊</div>
+    <div class="edge-text">
+      <div class="edge-title"><span class="lang-zh">我們的競爭優勢</span><span class="lang-en">Our Competitive Edge</span></div>
+      <div class="edge-desc"><span class="lang-zh">ExoPulse 在意圖預測與個體適應性雙維度上領先現有技術</span><span class="lang-en">See how ExoPulse leads in intent prediction and individual adaptability</span></div>
     </div>
-    <div class="edge-inner" style="padding-top:0;">
-
-      <div class="ref-subtitle">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
-      <div class="loop-flow">
-        <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
-        <span class="loop-arrow">&rarr;</span>
-        <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
-        <span class="loop-arrow">&rarr;</span>
-        <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
-        <span class="loop-arrow">&rarr;</span>
-        <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
-        <span class="loop-arrow">&rarr;</span>
-        <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
-        <span class="loop-arrow">&#10227;</span>
-      </div>
-
-      <div style="margin-top:16px;">
-        <a class="edge-landscape-link" href="Exo_Control_Strategy_Landscape.html">
-          <span class="lang-zh">查看完整技術版圖 →</span><span class="lang-en">View Full Technology Landscape →</span>
-        </a>
-      </div>
-    </div>
-  </div>
+    <span class="edge-arrow">→</span>
+  </a>
 </div>
 
 <div class="footer">
