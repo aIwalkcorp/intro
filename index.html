@@ -375,20 +375,6 @@
   .edge-header .edge-desc {
     font-size: 12px; color: #888; margin-top: 2px;
   }
-  .edge-header .edge-arrow {
-    font-size: 20px; color: #ccc;
-    transition: transform 0.3s, color 0.3s;
-  }
-  .edge-card.open .edge-header .edge-arrow {
-    transform: rotate(90deg); color: var(--orange);
-  }
-  .edge-body {
-    max-height: 0; overflow: hidden;
-    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .edge-card.open .edge-body {
-    max-height: 800px;
-  }
   .edge-inner {
     padding: 0 24px 20px;
   }
@@ -970,53 +956,31 @@
 
 <!-- COMPETITIVE EDGE -->
 <div class="edge-section">
-  <div class="edge-card open" id="edge-card">
-    <div class="edge-header" onclick="document.getElementById('edge-card').classList.toggle('open')">
+  <div class="edge-card">
+    <div class="edge-header">
       <div class="edge-icon">📊</div>
       <div class="edge-text">
         <div class="edge-title"><span class="lang-zh">我們的競爭優勢</span><span class="lang-en">Our Competitive Edge</span></div>
         <div class="edge-desc"><span class="lang-zh">ExoPulse 在意圖預測與個體適應性雙維度上領先現有技術</span><span class="lang-en">See how ExoPulse leads in intent prediction and individual adaptability</span></div>
       </div>
-      <span class="edge-arrow">→</span>
     </div>
-    <div class="edge-body">
-      <div class="edge-inner">
-        <div class="ref-subtitle"><span class="lang-zh">控制策略層級對照</span><span class="lang-en">Control Strategy Tier Comparison</span></div>
-        <div class="tier-row">
-          <div class="tier-badge t1">Tier 1</div>
-          <div class="tier-desc"><span class="lang-zh"><strong>預定義驅動</strong> ─ CPG、固定軌跡、能量最佳化。無使用者意圖感知。</span><span class="lang-en"><strong>Predefined Drive</strong> ─ CPG, fixed trajectory, energy optimization. No user intent sensing.</span></div>
-        </div>
-        <div class="tier-row">
-          <div class="tier-badge t2">Tier 2</div>
-          <div class="tier-desc"><span class="lang-zh"><strong>反應式感知</strong> ─ EMG 阻抗控制、sEMG 疲勞監測、pHRI 互動力分析。</span><span class="lang-en"><strong>Reactive Sensing</strong> ─ EMG impedance control, sEMG fatigue monitoring, pHRI interaction force analysis.</span></div>
-        </div>
-        <div class="tier-row">
-          <div class="tier-badge t3">Tier 3</div>
-          <div class="tier-desc"><span class="lang-zh"><strong>前饋式意圖預測</strong> ─ EMG-NMS 力矩、NMS+ML、EMG-DRL 共享控制、LSTM 軌跡預測。</span><span class="lang-en"><strong>Feedforward Intent Prediction</strong> ─ EMG-NMS torque, NMS+ML, EMG-DRL shared control, LSTM trajectory prediction.</span></div>
-        </div>
-        <div class="tier-row">
-          <div class="tier-badge tex">ExoPulse</div>
-          <div class="tier-desc"><span class="lang-zh"><strong>意圖預測 × 個體適應性最高</strong> ─ 數位孿生 + DRL 雙代理 + Wrapper 臨床介面 + 腦機介面與數位永生。</span><span class="lang-en"><strong>Intent Prediction × Highest Individual Adaptability</strong> ─ Digital Twin + DRL dual-agent + Wrapper clinical interface + BCI & Digital Immortality.</span></div>
-        </div>
+    <div class="edge-inner" style="padding-top:0;">
 
-        <div class="edge-divider"></div>
+      <div class="ref-subtitle">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
+      <div class="loop-flow">
+        <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
+        <span class="loop-arrow">&rarr;</span>
+        <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
+        <span class="loop-arrow">&rarr;</span>
+        <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
+        <span class="loop-arrow">&rarr;</span>
+        <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
+        <span class="loop-arrow">&rarr;</span>
+        <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
+        <span class="loop-arrow">&#10227;</span>
+      </div>
 
-        <div class="ref-subtitle">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
-        <div class="loop-flow">
-          <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
-          <span class="loop-arrow">&rarr;</span>
-          <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
-          <span class="loop-arrow">&rarr;</span>
-          <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
-          <span class="loop-arrow">&rarr;</span>
-          <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
-          <span class="loop-arrow">&rarr;</span>
-          <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
-          <span class="loop-arrow">&#10227;</span>
-        </div>
-
-        <div class="edge-divider"></div>
-
+      <div style="margin-top:16px;">
         <a class="edge-landscape-link" href="Exo_Control_Strategy_Landscape.html">
           <span class="lang-zh">查看完整技術版圖 →</span><span class="lang-en">View Full Technology Landscape →</span>
         </a>
