@@ -479,11 +479,11 @@ function toggleLang() {
     currentLang = 'en';
     btn.textContent = '中文';
     document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.lang-en').forEach(el => el.style.display = '');
+    document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'inline');
   } else {
     currentLang = 'zh';
     btn.textContent = 'English';
-    document.querySelectorAll('.lang-zh').forEach(el => el.style.display = '');
+    document.querySelectorAll('.lang-zh').forEach(el => el.style.display = 'inline');
     document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'none');
   }
   // Update dot labels
