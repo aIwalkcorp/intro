@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ExoPulse Technology Roadmap</title>
+<title>aIwalk — ExoPulse | AI-Driven Rehabilitation Technology</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
 
@@ -86,6 +86,12 @@
     width: 120px; height: 3px;
     background: linear-gradient(90deg, var(--navy), var(--orange));
     border-radius: 2px;
+  }
+  .header .corp-logo {
+    width: 64px; height: 64px;
+    border-radius: 14px;
+    object-fit: cover;
+    margin-bottom: 10px;
   }
   .header h1 {
     font-family: 'Inter', sans-serif;
@@ -424,6 +430,140 @@
   }
   .landscape-link a:hover .ll-arrow { color: var(--orange); }
 
+  /* ===== ABOUT SECTION ===== */
+  .about-section {
+    max-width: 960px;
+    margin: 28px auto 0;
+    padding: 0 16px;
+  }
+  .about-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .about-card .about-title {
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.5px;
+  }
+  .about-card .about-desc {
+    font-size: 13.5px; line-height: 1.9;
+    color: #555;
+  }
+  .about-card .about-desc strong { color: var(--navy); }
+
+  /* ===== PRODUCTS / DEMOS ===== */
+  .demos-section {
+    max-width: 960px;
+    margin: 24px auto 0;
+    padding: 0 16px;
+  }
+  .demos-title {
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.5px;
+  }
+  .demos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .demo-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    transition: all 0.3s ease;
+  }
+  .demo-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+    border-color: var(--orange);
+  }
+  .demo-card .demo-video {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    background: #000;
+  }
+  .demo-card .demo-video iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+  .demo-card .demo-info {
+    padding: 14px 16px;
+  }
+  .demo-card .demo-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .demo-card .demo-logo {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .demo-card .demo-name {
+    font-size: 14px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  .demo-card .demo-desc {
+    font-size: 11.5px; color: #888; line-height: 1.5;
+  }
+
+  /* ===== TUTORIAL & VCARD LINKS ===== */
+  .extra-links {
+    max-width: 960px;
+    margin: 20px auto 0;
+    padding: 0 16px;
+    display: flex;
+    gap: 12px;
+  }
+  .extra-link-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+  }
+  .extra-link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    border-color: var(--orange);
+  }
+  .extra-link-card .el-icon { font-size: 26px; flex-shrink: 0; }
+  .extra-link-card .el-text { flex: 1; }
+  .extra-link-card .el-title {
+    font-size: 13px; font-weight: 700; color: var(--navy);
+  }
+  .extra-link-card .el-desc {
+    font-size: 11px; color: #888; margin-top: 2px;
+  }
+  .extra-link-card .el-arrow {
+    font-size: 18px; color: #ccc; transition: color 0.3s;
+  }
+  .extra-link-card:hover .el-arrow { color: var(--orange); }
+
+  @media (max-width: 760px) {
+    .demos-grid { grid-template-columns: 1fr; }
+    .extra-links { flex-direction: column; }
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 760px) {
     .rail { flex-direction: column; gap: 16px; align-items: stretch; }
@@ -453,6 +593,7 @@
 
 <!-- HEADER -->
 <div class="header">
+  <img src="assets/corp-logo.png" alt="aIwalk" class="corp-logo">
   <h1><span class="ai">a<span class="serif-i">I</span></span>walk — ExoPulse Technology Roadmap</h1>
   <div class="subtitle">LIFELONG WEARABLE ROBOT PARTNER</div>
   <div class="subtitle-zh"><span class="lang-zh">智意行科技 ─ 五階段技術藍圖與階段性產品產出</span><span class="lang-en">ExoPulse Corp ─ Five-Phase Technology Blueprint & Milestone Deliverables</span></div>
@@ -461,6 +602,84 @@
 <!-- VISION BAR -->
 <div class="vision-bar">
   <span class="lang-zh">🎯 核心願景：以 <span class="hl">數位孿生</span> 驅動的個人化外骨骼控制框架，從 IMU 感測到 <span class="hl">數位永生</span>，實現終身照護閉迴路</span><span class="lang-en">🎯 Core Vision: A personalized exoskeleton control framework driven by <span class="hl">Digital Twin</span> technology, from IMU sensing to <span class="hl">Digital Immortality</span>, achieving a lifelong care closed loop</span>
+</div>
+
+<!-- ABOUT -->
+<div class="about-section">
+  <div class="about-card">
+    <div class="about-title"><span class="lang-zh">🏢 關於智意行科技</span><span class="lang-en">🏢 About aIwalk Co., Ltd.</span></div>
+    <div class="about-desc">
+      <span class="lang-zh">
+        智意行科技透過三大核心產品開發 AI 驅動的復健科技：<strong>NTKCAP</strong>，一套可攜式無標記動作捕捉系統，提供個人化生物力學分析；<strong>ExoPulse Patient Cloud</strong>，臨床數據平台，讓治療師即時監控步態指標並調整治療策略；以及 <strong>ExoPulse Exoskeleton</strong>，一款以數位孿生驅動的穿戴式機器人，從跌倒預防到完整行動支援，提供意圖預測式的個人化步行輔助。
+      </span>
+      <span class="lang-en">
+        aIwalk Co., Ltd. develops AI-driven rehabilitation technology through three core products: <strong>NTKCAP</strong>, a portable markerless motion capture system for personalized biomechanical analysis; <strong>ExoPulse Patient Cloud</strong>, a clinical data platform enabling therapists to monitor gait metrics and adjust treatment strategies in real time; and <strong>ExoPulse Exoskeleton</strong>, a digital-twin-powered wearable robot that delivers intent-predictive, individualized walking assistance from fall prevention to full mobility support.
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT DEMOS -->
+<div class="demos-section">
+  <div class="demos-title"><span class="lang-zh">🎬 產品展示</span><span class="lang-en">🎬 Product Demos</span></div>
+  <div class="demos-grid">
+    <div class="demo-card">
+      <div class="demo-video">
+        <iframe src="https://www.youtube.com/embed/SLfpquFBDcY" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="demo-info">
+        <img src="assets/ntkcap-logo.jpg" alt="NTKCAP" class="demo-logo">
+        <div>
+          <div class="demo-name">NTKCAP</div>
+          <div class="demo-desc"><span class="lang-zh">可攜式無標記動作捕捉系統</span><span class="lang-en">Portable Markerless Motion Capture</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="demo-card">
+      <div class="demo-video">
+        <iframe src="https://www.youtube.com/embed/AqCmBuTe" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="demo-info">
+        <img src="assets/patientcloud-logo.png" alt="Patient Cloud" class="demo-logo">
+        <div>
+          <div class="demo-name">ExoPulse Patient Cloud</div>
+          <div class="demo-desc"><span class="lang-zh">臨床數據平台</span><span class="lang-en">Clinical Data Platform</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="demo-card">
+      <div class="demo-video">
+        <iframe src="https://www.youtube.com/embed/mBgwVSGpGes" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="demo-info">
+        <img src="assets/exopulse-logo.png" alt="ExoPulse" class="demo-logo">
+        <div>
+          <div class="demo-name">ExoPulse Local APP</div>
+          <div class="demo-desc"><span class="lang-zh">本地端應用程式</span><span class="lang-en">Local Application</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXTRA LINKS -->
+<div class="extra-links">
+  <a class="extra-link-card" href="https://www.youtube.com/playlist?list=PLdnwWh-r3WYt02FhSLbTEzlGEcCGB9FfJ" target="_blank">
+    <span class="el-icon">📚</span>
+    <span class="el-text">
+      <div class="el-title"><span class="lang-zh">系統使用教學專區</span><span class="lang-en">System Tutorials</span></div>
+      <div class="el-desc"><span class="lang-zh">完整的系統操作教學影片播放清單</span><span class="lang-en">Complete system operation tutorial playlist</span></div>
+    </span>
+    <span class="el-arrow">→</span>
+  </a>
+  <a class="extra-link-card" href="#vcard" id="vcard-link">
+    <span class="el-icon">📇</span>
+    <span class="el-text">
+      <div class="el-title"><span class="lang-zh">數位名片</span><span class="lang-en">Digital Business Card</span></div>
+      <div class="el-desc"><span class="lang-zh">聯絡資訊與社群連結</span><span class="lang-en">Contact info & social links</span></div>
+    </span>
+    <span class="el-arrow">→</span>
+  </a>
 </div>
 
 <!-- ROADMAP -->
