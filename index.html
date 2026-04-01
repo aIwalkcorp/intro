@@ -113,11 +113,42 @@
     border-radius: 52px;
     border: 1px solid rgba(255,255,255,0.6);
     box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(.4,0,.2,1);
   }
   .navbar.scrolled {
     background: rgba(255,255,255,0.92);
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  /* Vertical sidebar mode after hero */
+  .navbar--sidebar {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    flex-direction: column;
+    border-radius: 0 16px 16px 0;
+    padding: 14px 10px;
+    gap: 6px;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  .navbar--sidebar .nav-links {
+    flex-direction: column;
+    gap: 0;
+  }
+  .navbar--sidebar .nav-link {
+    font-size: 12px;
+    padding: 5px 10px;
+    text-align: center;
+  }
+  .navbar--sidebar .nav-brand {
+    font-size: 13px;
+    padding: 0;
+  }
+  .navbar--sidebar .nav-logo {
+    width: 28px; height: 28px;
+  }
+  .navbar--sidebar .lang-toggle {
+    transform: scale(0.85);
   }
   .navbar .nav-logo {
     width: 32px; height: 32px;
@@ -296,12 +327,13 @@
     transform: translateY(-2px);
   }
 
-  /* Stats sidebar (vertical, right edge) */
+  /* Stats sidebar (vertical, fixed — right on hero, left elsewhere) */
   .hero-stats {
-    position: absolute;
-    right: 0; top: 50%;
+    position: fixed;
+    top: 50%;
+    right: 0;
     transform: translateY(-50%);
-    z-index: 3;
+    z-index: 100;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -310,9 +342,20 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-left: 1px solid rgba(255,255,255,0.06);
+    border-right: none;
     border-radius: 12px 0 0 12px;
     font-size: 12px;
     color: rgba(255,255,255,0.35);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  .hero-stats.transitioning { opacity: 0; }
+  .hero-stats--left {
+    right: auto;
+    left: 0;
+    border-radius: 0 12px 12px 0;
+    border-left: none;
+    border-right: 1px solid rgba(255,255,255,0.06);
   }
   .hero-stat {
     display: flex;
@@ -472,15 +515,11 @@
     margin: 0 auto;
     display: block;
   }
-  /* Mobile: allow horizontal scroll for detailed diagram */
+  /* Overview scroll container */
   .loop-overview-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
     margin: 0 -4px;
     padding: 0 4px;
-  }
-  .loop-overview-scroll .loop-overview-img {
-    min-width: 580px;
   }
 
   /* ===== INTERACTIVE OVERVIEW ===== */
@@ -526,7 +565,114 @@
     background: rgba(255,255,255,0.15);
     backdrop-filter: brightness(1.8);
   }
-  /* No pill labels — the image already has section titles */
+  /* ===== OVERVIEW TITLE TABS ===== */
+  .ov-titles {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: -2px;
+    position: relative;
+    z-index: 3;
+  }
+  .ov-title-tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--navy);
+    background: #f5f5f5;
+    border: 1px solid var(--border);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .ov-title-tab:first-child { border-radius: 10px 0 0 0; }
+  .ov-title-tab:last-child { border-radius: 0 10px 0 0; }
+  .ov-title-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%;
+    width: 0; height: 2px;
+    background: var(--orange-glow);
+    transition: all 0.4s cubic-bezier(.4,0,.2,1);
+    transform: translateX(-50%);
+  }
+  .ov-title-tab:hover { background: #fff; }
+  .ov-title-tab:hover::after,
+  .ov-title-tab.active::after {
+    width: 100%;
+  }
+  .ov-title-tab.active {
+    background: #fff;
+    color: var(--orange-glow);
+    border-bottom-color: var(--orange-glow);
+  }
+  .ov-title-tab .tab-letter {
+    display: inline-block;
+    font-weight: 900;
+    margin-right: 4px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: tabLetterIn 0.5s ease forwards;
+  }
+  @keyframes tabLetterIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* Close-loop arrow overlay */
+  .ov-loop-arrow {
+    position: absolute;
+    top: -36px;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .ov-loop-arrow.show { opacity: 1; }
+  .ov-loop-arrow svg { width: 100%; height: 100%; }
+  .ov-loop-arrow .arrow-path {
+    fill: none;
+    stroke: var(--orange-glow);
+    stroke-width: 2;
+    stroke-dasharray: 800;
+    stroke-dashoffset: 800;
+  }
+  .ov-loop-arrow.show .arrow-path {
+    animation: drawArrow 1s ease forwards;
+  }
+  .ov-loop-arrow .arrow-head {
+    fill: var(--orange-glow);
+    opacity: 0;
+  }
+  .ov-loop-arrow.show .arrow-head {
+    animation: fadeIn 0.3s ease 0.8s forwards;
+  }
+  .ov-loop-label {
+    position: absolute;
+    top: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--orange-glow);
+    white-space: nowrap;
+    opacity: 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .ov-loop-arrow.show .ov-loop-label {
+    animation: fadeIn 0.3s ease 1s forwards;
+  }
+  @keyframes drawArrow {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
   /* Tooltip card */
   .ov-tooltip {
     position: absolute;
@@ -1118,6 +1264,8 @@
     .edge-link .edge-desc { font-size: 12px; }
     .loop-card { padding: 16px; }
     .loop-overview-img { border-radius: 8px; }
+    .ov-title-tab { font-size: 11px; padding: 8px 4px; }
+    .ov-loop-arrow { top: -28px; height: 32px; }
     .section-header { gap: 10px; }
     .section-icon { width: 34px; height: 34px; border-radius: 10px; }
     .section-icon svg { width: 17px; height: 17px; }
@@ -1321,9 +1469,32 @@
       <span class="lang-zh">Ecosystem Overview</span>
       <span class="lang-en">Ecosystem Overview</span>
     </div>
-    <div class="loop-overview-scroll">
+    <div class="loop-overview-scroll" style="overflow:visible;">
+      <!-- Animated title tabs -->
+      <div class="ov-titles" id="ovTitles">
+        <div class="ov-title-tab" data-zone="collect">
+          <span class="tab-letter" style="animation-delay:0s">(a)</span>
+          <span class="lang-zh">個人化資料蒐集</span><span class="lang-en">Personalized Data Collection</span>
+        </div>
+        <div class="ov-title-tab" data-zone="twin">
+          <span class="tab-letter" style="animation-delay:0.15s">(b)</span>
+          <span class="lang-zh">數位孿生資料合成</span><span class="lang-en">Digital Twin Data Synthesis</span>
+        </div>
+        <div class="ov-title-tab" data-zone="deploy">
+          <span class="tab-letter" style="animation-delay:0.3s">(c)</span>
+          <span class="lang-zh">部署與執行</span><span class="lang-en">Deployment</span>
+        </div>
+      </div>
       <div class="overview-interactive" id="overviewInteractive">
-        <img src="assets/new-overview.png" alt="Ecosystem Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
+        <!-- Close-loop arrow overlay: (c) → (a) -->
+        <div class="ov-loop-arrow" id="ovLoopArrow">
+          <span class="ov-loop-label">Close-Loop</span>
+          <svg viewBox="0 0 800 40" preserveAspectRatio="none">
+            <path class="arrow-path" d="M 700 35 C 600 5, 200 5, 100 35" />
+            <polygon class="arrow-head" points="92,30 100,38 108,30" />
+          </svg>
+        </div>
+        <img src="assets/new-overview.png" alt="Ecosystem Overview" class="loop-overview-img" loading="lazy" style="clip-path:inset(3.5% 0 0 0);">
 
         <!-- Hotspot: (a) Personalized data collection — left ~0-34% -->
         <div class="ov-hotspot" data-zone="collect" style="left:0%; top:0%; width:34%; height:100%;"></div>
@@ -1770,15 +1941,49 @@
 
   document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
-  // Navbar scroll effect
+  // Navbar + hero-stats scroll-based layout toggle
   const navbar = document.querySelector('.navbar');
+  const heroStats = document.querySelector('.hero-stats');
+  const heroSection = document.querySelector('.hero');
   let lastScroll = 0;
+  let navSidebarActive = false;
+  let statsLeftActive = false;
   window.addEventListener('scroll', () => {
     const scrollY = window.scrollY;
-    if (scrollY > 60) {
+    const heroBottom = heroSection ? heroSection.offsetHeight : 600;
+    const pastHero = scrollY > heroBottom - 100;
+
+    // Navbar: horizontal on hero, vertical sidebar after
+    if (pastHero && !navSidebarActive) {
       navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
+      navbar.classList.add('navbar--sidebar');
+      navSidebarActive = true;
+    } else if (!pastHero && navSidebarActive) {
+      navbar.classList.remove('navbar--sidebar');
+      navSidebarActive = false;
+    }
+    if (!pastHero) {
+      if (scrollY > 60) navbar.classList.add('scrolled');
+      else navbar.classList.remove('scrolled');
+    }
+
+    // Stats bar: right on hero, left after
+    if (heroStats && heroSection) {
+      if (pastHero && !statsLeftActive) {
+        heroStats.classList.add('transitioning');
+        setTimeout(() => {
+          heroStats.classList.add('hero-stats--left');
+          heroStats.classList.remove('transitioning');
+        }, 300);
+        statsLeftActive = true;
+      } else if (!pastHero && statsLeftActive) {
+        heroStats.classList.add('transitioning');
+        setTimeout(() => {
+          heroStats.classList.remove('hero-stats--left');
+          heroStats.classList.remove('transitioning');
+        }, 300);
+        statsLeftActive = false;
+      }
     }
     lastScroll = scrollY;
   }, { passive: true });
@@ -1817,45 +2022,75 @@
     });
   }
 
-  // Overview interactive hotspots
+  // Overview interactive hotspots + title tabs + close-loop arrow
   const ovContainer = document.getElementById('overviewInteractive');
+  const ovTitles = document.getElementById('ovTitles');
+  const ovLoopArrow = document.getElementById('ovLoopArrow');
   if (ovContainer) {
     const hotspots = ovContainer.querySelectorAll('.ov-hotspot');
+    const titleTabs = ovTitles ? ovTitles.querySelectorAll('.ov-title-tab') : [];
     let activeZone = null;
 
-    hotspots.forEach(hs => {
-      const zone = hs.dataset.zone;
+    function activateZone(zone) {
+      const hs = ovContainer.querySelector(`.ov-hotspot[data-zone="${zone}"]`);
       const tip = document.getElementById('tip-' + zone);
+      if (!hs || !tip) return;
 
+      if (activeZone === zone) {
+        // Deactivate
+        hs.classList.remove('active');
+        tip.classList.remove('show');
+        ovContainer.classList.remove('has-active');
+        titleTabs.forEach(t => t.classList.remove('active'));
+        if (ovLoopArrow) ovLoopArrow.classList.remove('show');
+        activeZone = null;
+      } else {
+        // Deactivate previous
+        hotspots.forEach(h => h.classList.remove('active'));
+        ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
+        titleTabs.forEach(t => t.classList.remove('active'));
+        if (ovLoopArrow) ovLoopArrow.classList.remove('show');
+        // Activate this
+        hs.classList.add('active');
+        tip.classList.add('show');
+        ovContainer.classList.add('has-active');
+        // Highlight matching title tab
+        const matchTab = ovTitles && ovTitles.querySelector(`.ov-title-tab[data-zone="${zone}"]`);
+        if (matchTab) matchTab.classList.add('active');
+        // Show close-loop arrow when (c) Deployment is active
+        if (zone === 'deploy' && ovLoopArrow) {
+          // Re-trigger animation by removing and re-adding
+          ovLoopArrow.classList.remove('show');
+          void ovLoopArrow.offsetWidth;
+          ovLoopArrow.classList.add('show');
+        }
+        activeZone = zone;
+      }
+    }
+
+    hotspots.forEach(hs => {
       hs.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (activeZone === zone) {
-          // Deactivate
-          hs.classList.remove('active');
-          tip.classList.remove('show');
-          ovContainer.classList.remove('has-active');
-          activeZone = null;
-        } else {
-          // Deactivate previous
-          hotspots.forEach(h => h.classList.remove('active'));
-          ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
-          // Activate this
-          hs.classList.add('active');
-          tip.classList.add('show');
-          ovContainer.classList.add('has-active');
-          activeZone = zone;
-        }
+        activateZone(hs.dataset.zone);
       });
+    });
 
-      // (pills removed — image has its own labels)
+    // Title tabs click
+    titleTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activateZone(tab.dataset.zone);
+      });
     });
 
     // Click outside to dismiss
     document.addEventListener('click', (e) => {
-      if (activeZone && !ovContainer.contains(e.target)) {
+      if (activeZone && !ovContainer.contains(e.target) && !(ovTitles && ovTitles.contains(e.target))) {
         hotspots.forEach(h => h.classList.remove('active'));
         ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
         ovContainer.classList.remove('has-active');
+        titleTabs.forEach(t => t.classList.remove('active'));
+        if (ovLoopArrow) ovLoopArrow.classList.remove('show');
         activeZone = null;
       }
     });
