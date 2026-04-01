@@ -161,6 +161,21 @@
   }
   .side-label.zh { color: #1a3a5c; font-weight: 600; }
 
+  /* Flip button */
+  .flip-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; margin-top: 6px;
+    border-radius: 24px; border: 1px solid rgba(26,58,92,0.15);
+    background: rgba(255,255,255,0.8); backdrop-filter: blur(8px);
+    font-size: 12px; font-weight: 600; color: #1a3a5c;
+    cursor: pointer; transition: all 0.2s ease;
+    letter-spacing: 0.3px;
+  }
+  .flip-btn:hover { background: #fff; border-color: #1a3a5c; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .flip-btn:active { transform: scale(0.97); }
+  .flip-btn svg { width: 14px; height: 14px; transition: transform 0.3s ease; }
+  .flip-btn.flipped svg { transform: rotate(180deg); }
+
   .swipe-hint {
     font-size: 10px; color: #b0a89a; letter-spacing: 0.5px;
     text-align: center; margin-top: 4px;
@@ -227,9 +242,13 @@
 
   <div class="controls">
     <div class="dots" id="dots"></div>
+    <button class="flip-btn" id="flipBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      <span id="flipBtnText">翻面 Flip</span>
+    </button>
     <div class="side-label zh" id="sideLabel">正面 FRONT</div>
   </div>
-  <div class="swipe-hint" id="swipeHint">← → 換人 &nbsp; ↓ 翻面</div>
+  <div class="swipe-hint" id="swipeHint">← → 換人 &nbsp;|&nbsp; 點擊翻面 或 ↑↓ 鍵</div>
 </div>
 
 <script>
@@ -297,12 +316,19 @@ function renderPerson(idx) {
   btnNext.classList.toggle('disabled', idx === PEOPLE.length - 1);
 }
 
+const flipBtn = document.getElementById('flipBtn');
+const flipBtnText = document.getElementById('flipBtnText');
+
 function setFlip(flip) {
   isFlipped = flip;
   flipper.classList.toggle('flipped', flip);
+  flipBtn.classList.toggle('flipped', flip);
   sideLabel.textContent = flip ? '背面 BACK (EN)' : '正面 FRONT';
   sideLabel.classList.toggle('zh', !flip);
+  flipBtnText.textContent = flip ? '翻回 Flip Back' : '翻面 Flip';
 }
+
+flipBtn.addEventListener('click', () => setFlip(!isFlipped));
 
 function goToPerson(idx, direction) {
   if (idx < 0 || idx >= PEOPLE.length || idx === current) return;
