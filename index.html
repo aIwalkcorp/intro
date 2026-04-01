@@ -531,11 +531,12 @@
     cursor: pointer;
     transition: all 0.3s ease;
     border: 2px solid transparent;
+    display: flex;
   }
   .ov-panel img {
     width: 100%;
-    height: auto;
-    object-fit: contain;
+    height: 100%;
+    object-fit: cover;
     display: block;
     border-radius: 10px;
     transition: filter 0.3s ease;
@@ -553,14 +554,14 @@
   }
   /* ===== OVERVIEW TITLE TABS ===== */
   .ov-titles {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr;
+    gap: 8px;
     margin-bottom: -2px;
     position: relative;
     z-index: 3;
   }
   .ov-title-tab {
-    flex: 1;
     text-align: center;
     padding: 10px 8px;
     font-size: 13px;
@@ -1281,7 +1282,27 @@
     .navbar .nav-logo { width: 26px; height: 26px; border-radius: 6px; }
     .navbar .nav-brand { font-size: 13px; }
     .navbar .nav-links { display: none; }
-    .navbar--sidebar .nav-links { display: flex; }
+    .navbar--sidebar {
+      top: auto;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: row;
+      border-radius: 50px;
+      width: auto;
+      max-width: 92vw;
+      padding: 8px 16px;
+      gap: 12px;
+    }
+    .navbar--sidebar .nav-links {
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+    }
+    .navbar--sidebar .nav-brand { display: none; }
+    .navbar--sidebar .nav-logo { width: 24px; height: 24px; }
+    .navbar--sidebar .nav-link { font-size: 11px; padding: 4px 8px; }
+    .navbar--sidebar .lang-toggle { margin-left: 0; transform: scale(0.8); }
     .lang-toggle .lang-opt { padding: 4px 10px; font-size: 10px; }
     .section { padding: 0 14px; }
     .about-card { padding: 18px 14px; }
