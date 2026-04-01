@@ -244,11 +244,11 @@
     <div class="dots" id="dots"></div>
     <button class="flip-btn" id="flipBtn">
       <svg id="flipBtnIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
-      <span id="flipBtnText">下滑看背面 ↓</span>
+      <span id="flipBtnText"></span>
     </button>
-    <div class="side-label zh" id="sideLabel">正面 FRONT</div>
+    <div class="side-label zh" id="sideLabel"></div>
   </div>
-  <div class="swipe-hint" id="swipeHint">← → 換人 &nbsp;|&nbsp; 點擊翻面 或 ↑↓ 鍵</div>
+  <div class="swipe-hint" id="swipeHint"></div>
 </div>
 
 <script>
@@ -287,6 +287,8 @@ const PEOPLE = [
 
 let current = 0;
 let isFlipped = false;
+let currentLang = localStorage.getItem('aiwalk-lang') || 'en';
+const hint = document.getElementById('swipeHint');
 const scene = document.getElementById('cardScene');
 const flipper = document.getElementById('cardFlipper');
 const frontEl = document.getElementById('cardFront');
@@ -323,13 +325,38 @@ function renderPerson(idx) {
 const flipBtn = document.getElementById('flipBtn');
 const flipBtnText = document.getElementById('flipBtnText');
 
+// Bilingual UI texts
+const uiTexts = {
+  en: {
+    front: 'FRONT (中文)',
+    back: 'BACK (EN)',
+    swipeDown: 'Swipe down for back ↓',
+    swipeUp: 'Swipe up for front ↑',
+    hint: '← → Switch | Click or ↑↓ to flip'
+  },
+  zh: {
+    front: '正面 (中文)',
+    back: '背面 (EN)',
+    swipeDown: '下滑看背面 ↓',
+    swipeUp: '上滑回正面 ↑',
+    hint: '← → 換人 | 點擊翻面 或 ↑↓ 鍵'
+  }
+};
+
+function updateUIText() {
+  const t = uiTexts[currentLang];
+  hint.textContent = t.hint;
+  sideLabel.textContent = isFlipped ? t.back : t.front;
+  flipBtnText.textContent = isFlipped ? t.swipeUp : t.swipeDown;
+}
+
 function setFlip(flip) {
   isFlipped = flip;
+  currentLang = flip ? 'en' : 'zh';
   flipper.classList.toggle('flipped', flip);
   flipBtn.classList.toggle('flipped', flip);
-  sideLabel.textContent = flip ? '背面 BACK (EN)' : '正面 FRONT';
   sideLabel.classList.toggle('zh', !flip);
-  flipBtnText.textContent = flip ? '上滑回正面 ↑' : '下滑看背面 ↓';
+  updateUIText();
   // Update icon direction
   const icon = document.getElementById('flipBtnIcon');
   if (flip) {
@@ -420,6 +447,8 @@ renderPerson(current);
 const savedLang = localStorage.getItem('aiwalk-lang');
 if (savedLang === 'en') {
   setFlip(true);  // Show back (English) side
+} else {
+  updateUIText();  // Initialize UI text for default (zh) state
 }
 </script>
 </body>
