@@ -55,6 +55,28 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* ===== PAGE BACKGROUND TEXTURE ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(ellipse 50% 40% at 10% 90%, rgba(59,130,246,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 50% at 90% 10%, rgba(192,106,26,0.035) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 50% 50%, rgba(26,58,92,0.02) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.3;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='g' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='30' cy='30' r='0.8' fill='%23b0a89a' opacity='0.25'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
   /* ===== SCROLL REVEAL ===== */
   .reveal {
     opacity: 0;
@@ -166,16 +188,33 @@
     text-align: center;
     padding: 100px 24px 60px;
     overflow: hidden;
+    background: linear-gradient(180deg, #f0ede6 0%, var(--bg) 100%);
   }
   .hero::before {
     content: '';
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(59,130,246,0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 20%, rgba(192,106,26,0.07) 0%, transparent 55%),
-      radial-gradient(ellipse 90% 70% at 50% 50%, rgba(26,58,92,0.03) 0%, transparent 70%);
+      radial-gradient(ellipse 70% 50% at 15% 85%, rgba(59,130,246,0.1) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 45% at 85% 15%, rgba(192,106,26,0.09) 0%, transparent 55%),
+      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(26,58,92,0.05) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 30% at 70% 70%, rgba(139,92,246,0.04) 0%, transparent 50%);
     z-index: 0;
+  }
+  /* Subtle grid overlay on hero */
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(rgba(26,58,92,0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,58,92,0.3) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 70%);
+    pointer-events: none;
   }
   /* Animated floating orbs */
   .hero-orb {
@@ -215,14 +254,6 @@
     position: relative;
     z-index: 1;
     max-width: 800px;
-  }
-  .hero .corp-logo {
-    width: 80px; height: 80px;
-    border-radius: 20px;
-    object-fit: cover;
-    margin-bottom: 20px;
-    box-shadow: var(--shadow-lg);
-    border: 3px solid rgba(255,255,255,0.8);
   }
   .hero h1 {
     font-size: 52px;
@@ -372,6 +403,28 @@
     color: #475569;
   }
   .about-desc strong { color: var(--navy); font-weight: 600; }
+  .about-card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: rgba(26,58,92,0.04);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--navy);
+    text-decoration: none;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+  .about-card-link:hover {
+    background: rgba(26,58,92,0.08);
+    border-color: var(--navy);
+    transform: translateX(3px);
+  }
+  .about-card-link svg { width: 18px; height: 18px; }
 
   /* ===== LOOP CARD ===== */
   .loop-card {
@@ -879,11 +932,6 @@
     align-items: center;
     gap: 10px;
   }
-  .footer-brand img {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    object-fit: cover;
-  }
   .footer-brand-name {
     font-size: 15px;
     font-weight: 700;
@@ -926,7 +974,6 @@
   @media (max-width: 480px) {
     .hero { min-height: 80vh; padding: 90px 16px 40px; }
     .hero h1 { font-size: 28px; }
-    .hero .corp-logo { width: 60px; height: 60px; }
     .hero-cta { padding: 11px 22px; font-size: 13px; }
     .navbar { top: 10px; padding: 6px 10px; }
     .section { padding: 0 16px; }
@@ -970,7 +1017,6 @@
   <div class="hero-orb hero-orb-2"></div>
   <div class="hero-orb hero-orb-3"></div>
   <div class="hero-content">
-    <img src="assets/corp-logo.png" alt="aIwalk" class="corp-logo">
     <h1><span class="ai">a<span class="serif-i">I</span></span>walk</h1>
     <div class="hero-company">
       <span class="lang-zh">智意行科技股份有限公司</span>
@@ -1016,6 +1062,12 @@
         aIwalk Co., Ltd. develops AI-driven rehabilitation technology through three core products: <strong>NTKCAP</strong>, a portable markerless motion capture system for personalized biomechanical analysis; <strong>ExoPulse Patient Cloud</strong>, a clinical data platform enabling therapists to monitor gait metrics and adjust treatment strategies in real time; and <strong>ExoPulse Exoskeleton</strong>, a digital-twin-powered wearable robot that delivers intent-predictive, individualized walking assistance from fall prevention to full mobility support.
       </span>
     </div>
+    <a class="about-card-link" href="card.html">
+      <i data-lucide="contact"></i>
+      <span class="lang-zh">數位名片 &amp; 聯絡資訊</span>
+      <span class="lang-en">Digital Business Card &amp; Contact</span>
+      <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+    </a>
   </div>
 </div>
 
@@ -1102,14 +1154,6 @@
       <span class="el-text">
         <div class="el-title"><span class="lang-zh">系統使用教學專區</span><span class="lang-en">System Tutorials</span></div>
         <div class="el-desc"><span class="lang-zh">完整的系統操作教學影片播放清單</span><span class="lang-en">Complete system operation tutorial playlist</span></div>
-      </span>
-      <span class="el-arrow"><i data-lucide="arrow-right"></i></span>
-    </a>
-    <a class="extra-link-card" href="card.html">
-      <div class="el-icon-box el-icon-card"><i data-lucide="contact"></i></div>
-      <span class="el-text">
-        <div class="el-title"><span class="lang-zh">數位名片</span><span class="lang-en">Digital Business Card</span></div>
-        <div class="el-desc"><span class="lang-zh">聯絡資訊與社群連結</span><span class="lang-en">Contact info & social links</span></div>
       </span>
       <span class="el-arrow"><i data-lucide="arrow-right"></i></span>
     </a>
@@ -1402,7 +1446,6 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-brand">
-      <img src="assets/corp-logo.png" alt="aIwalk">
       <span class="footer-brand-name"><span class="ai">a<span class="serif-i">I</span></span>walk</span>
     </div>
     <div class="footer-copy">
