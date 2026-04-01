@@ -620,17 +620,16 @@
   @keyframes tabLetterIn {
     to { opacity: 1; transform: translateY(0); }
   }
-  /* Close-loop arrow overlay */
+  /* Close-loop arrow below image */
   .ov-loop-arrow {
-    position: absolute;
-    top: -36px;
-    left: 0;
+    position: relative;
     width: 100%;
-    height: 40px;
+    height: 44px;
     z-index: 5;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.4s ease;
+    margin-top: 4px;
   }
   .ov-loop-arrow.show { opacity: 1; }
   .ov-loop-arrow svg { width: 100%; height: 100%; }
@@ -653,7 +652,7 @@
   }
   .ov-loop-label {
     position: absolute;
-    top: -32px;
+    bottom: -18px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 11px;
@@ -1004,9 +1003,9 @@
   .rail::before {
     content: '';
     position: absolute;
-    top: 24px;
+    top: 20px;
     left: 24px; right: 24px;
-    height: 5px;
+    height: 4px;
     border-radius: 3px;
     background: linear-gradient(90deg,
       var(--phase1) 0%, var(--phase2) 25%, var(--phase3) 50%, var(--phase4) 75%, var(--phase5) 100%);
@@ -1024,10 +1023,10 @@
     cursor: pointer;
   }
   .node {
-    width: 48px; height: 48px;
+    width: 40px; height: 40px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 900; color: #fff;
+    font-size: 14px; font-weight: 900; color: #fff;
     box-shadow: 0 3px 14px rgba(0,0,0,0.18);
     border: 3px solid var(--bg);
     transition: all 0.3s ease;
@@ -1265,7 +1264,7 @@
     .loop-card { padding: 16px; }
     .loop-overview-img { border-radius: 8px; }
     .ov-title-tab { font-size: 11px; padding: 8px 4px; }
-    .ov-loop-arrow { top: -28px; height: 32px; }
+    .ov-loop-arrow { height: 32px; }
     .section-header { gap: 10px; }
     .section-icon { width: 34px; height: 34px; border-radius: 10px; }
     .section-icon svg { width: 17px; height: 17px; }
@@ -1485,16 +1484,8 @@
           <span class="lang-zh">部署與執行</span><span class="lang-en">Deployment</span>
         </div>
       </div>
-      <div class="overview-interactive" id="overviewInteractive">
-        <!-- Close-loop arrow overlay: (c) → (a) -->
-        <div class="ov-loop-arrow" id="ovLoopArrow">
-          <span class="ov-loop-label">Close-Loop</span>
-          <svg viewBox="0 0 800 40" preserveAspectRatio="none">
-            <path class="arrow-path" d="M 700 35 C 600 5, 200 5, 100 35" />
-            <polygon class="arrow-head" points="92,30 100,38 108,30" />
-          </svg>
-        </div>
-        <img src="assets/new-overview.png" alt="Ecosystem Overview" class="loop-overview-img" loading="lazy" style="clip-path:inset(3.5% 0 0 0);">
+      <div class="overview-interactive" id="overviewInteractive" style="overflow:hidden;">
+        <img src="assets/new-overview.png" alt="Ecosystem Overview" class="loop-overview-img" loading="lazy" style="margin-top:-3.8%;">
 
         <!-- Hotspot: (a) Personalized data collection — left ~0-34% -->
         <div class="ov-hotspot" data-zone="collect" style="left:0%; top:0%; width:34%; height:100%;"></div>
@@ -1532,6 +1523,14 @@
             <span class="ov-tooltip-tech">EMG Sensors</span>
           </div>
         </div>
+      </div>
+      <!-- Close-loop arrow: (c) → (a), shown below image -->
+      <div class="ov-loop-arrow" id="ovLoopArrow">
+        <span class="ov-loop-label">Close-Loop</span>
+        <svg viewBox="0 0 800 44" preserveAspectRatio="none">
+          <path class="arrow-path" d="M 680 5 C 580 40, 220 40, 120 5" />
+          <polygon class="arrow-head" points="112,2 120,10 128,2" />
+        </svg>
       </div>
     </div>
   </div>
