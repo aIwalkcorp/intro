@@ -476,6 +476,120 @@
     min-width: 580px;
   }
 
+  /* ===== INTERACTIVE OVERVIEW ===== */
+  .overview-interactive {
+    position: relative;
+    display: inline-block;
+    cursor: crosshair;
+  }
+  .overview-interactive .loop-overview-img {
+    transition: filter 0.3s ease;
+  }
+  .overview-interactive.has-active .loop-overview-img {
+    filter: brightness(0.6);
+  }
+  /* Hotspot zones */
+  .ov-hotspot {
+    position: absolute;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 2;
+    border: 2px solid transparent;
+  }
+  .ov-hotspot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: rgba(255,255,255,0);
+    transition: background 0.3s ease;
+  }
+  .ov-hotspot:hover::before,
+  .ov-hotspot.active::before {
+    background: rgba(255,255,255,0.12);
+  }
+  .ov-hotspot:hover,
+  .ov-hotspot.active {
+    border-color: var(--orange-glow);
+    box-shadow: 0 0 20px rgba(192,106,26,0.2);
+  }
+  /* When a hotspot is active, brighten only that zone */
+  .overview-interactive.has-active .ov-hotspot.active {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: brightness(1.8);
+  }
+  /* Label pill on hotspot */
+  .ov-hotspot .ov-pill {
+    position: absolute;
+    top: 6px; left: 8px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.25s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .ov-hotspot:hover .ov-pill,
+  .ov-hotspot.active .ov-pill {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  /* Tooltip card */
+  .ov-tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    width: 280px;
+    padding: 16px 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+  }
+  .ov-tooltip.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .ov-tooltip-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .ov-tooltip-desc {
+    font-size: 12.5px;
+    color: #475569;
+    line-height: 1.65;
+  }
+  .ov-tooltip-techs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .ov-tooltip-tech {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(26,58,92,0.06);
+    color: var(--navy);
+    border: 1px solid rgba(26,58,92,0.1);
+  }
+
   /* ===== DEMOS GRID ===== */
   .demos-grid {
     display: grid;
@@ -1179,7 +1293,52 @@
       <span class="lang-en">Ecosystem Overview</span>
     </div>
     <div class="loop-overview-scroll">
-      <img src="assets/new-overview.png" alt="Ecosystem Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
+      <div class="overview-interactive" id="overviewInteractive">
+        <img src="assets/new-overview.png" alt="Ecosystem Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
+
+        <!-- Hotspot: (a) Data Collection — left ~0-38% -->
+        <div class="ov-hotspot" data-zone="collect" style="left:0%; top:0%; width:38%; height:100%;">
+          <span class="ov-pill">(a) Data Collection</span>
+        </div>
+        <!-- Hotspot: (b) Digital Twin — center ~38-72% -->
+        <div class="ov-hotspot" data-zone="twin" style="left:38%; top:0%; width:34%; height:100%;">
+          <span class="ov-pill">(b) Digital Twin</span>
+        </div>
+        <!-- Hotspot: (c) Deployment — right ~72-100% -->
+        <div class="ov-hotspot" data-zone="deploy" style="left:72%; top:0%; width:28%; height:100%;">
+          <span class="ov-pill">(c) Deployment</span>
+        </div>
+
+        <!-- Tooltips (positioned by JS) -->
+        <div class="ov-tooltip" id="tip-collect">
+          <div class="ov-tooltip-title"><span class="lang-zh">個人化資料蒐集</span><span class="lang-en">Personalized Data Collection</span></div>
+          <div class="ov-tooltip-desc"><span class="lang-zh">透過動作捕捉系統與 EMG 感測器，蒐集個人關節運動學與肌電數據，建立個人化基線。</span><span class="lang-en">Collecting personalized joint kinematics and EMG data through motion capture and sensors to establish individual baselines.</span></div>
+          <div class="ov-tooltip-techs">
+            <span class="ov-tooltip-tech">Motion Capture</span>
+            <span class="ov-tooltip-tech">sEMG</span>
+            <span class="ov-tooltip-tech">Joint Kinematics</span>
+          </div>
+        </div>
+        <div class="ov-tooltip" id="tip-twin">
+          <div class="ov-tooltip-title"><span class="lang-zh">數位孿生資料合成</span><span class="lang-en">Digital Twin Data Synthesis</span></div>
+          <div class="ov-tooltip-desc"><span class="lang-zh">以神經肌肉骨骼模型校準數位孿生，透過 DRL 雙代理架構訓練外骨骼在虛擬場景中的最佳控制策略。</span><span class="lang-en">Calibrating digital twins via NMS models and training optimal exoskeleton control strategies through DRL dual-agent architecture in virtual scenarios.</span></div>
+          <div class="ov-tooltip-techs">
+            <span class="ov-tooltip-tech">NMS Model</span>
+            <span class="ov-tooltip-tech">Hill-type Muscle</span>
+            <span class="ov-tooltip-tech">DRL Dual-Agent</span>
+          </div>
+        </div>
+        <div class="ov-tooltip" id="tip-deploy">
+          <div class="ov-tooltip-title"><span class="lang-zh">部署與執行</span><span class="lang-en">Deployment</span></div>
+          <div class="ov-tooltip-desc"><span class="lang-zh">將訓練完成的控制策略部署至 FPGA 邊緣運算晶片，驅動 BLDC 馬達實現即時外骨骼輔助。</span><span class="lang-en">Deploying trained control policies to FPGA edge computing chips, driving BLDC motors for real-time exoskeleton assistance.</span></div>
+          <div class="ov-tooltip-techs">
+            <span class="ov-tooltip-tech">FPGA</span>
+            <span class="ov-tooltip-tech">BLDC Motor</span>
+            <span class="ov-tooltip-tech">Exoskeleton</span>
+            <span class="ov-tooltip-tech">EMG Sensors</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1597,6 +1756,56 @@
     }
     lastScroll = scrollY;
   }, { passive: true });
+
+  // Overview interactive hotspots
+  const ovContainer = document.getElementById('overviewInteractive');
+  if (ovContainer) {
+    const hotspots = ovContainer.querySelectorAll('.ov-hotspot');
+    let activeZone = null;
+
+    hotspots.forEach(hs => {
+      const zone = hs.dataset.zone;
+      const tip = document.getElementById('tip-' + zone);
+
+      hs.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (activeZone === zone) {
+          // Deactivate
+          hs.classList.remove('active');
+          tip.classList.remove('show');
+          ovContainer.classList.remove('has-active');
+          activeZone = null;
+        } else {
+          // Deactivate previous
+          hotspots.forEach(h => h.classList.remove('active'));
+          ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
+          // Activate this
+          hs.classList.add('active');
+          tip.classList.add('show');
+          ovContainer.classList.add('has-active');
+          activeZone = zone;
+        }
+      });
+
+      // Desktop hover (show pill label only, tooltip on click)
+      hs.addEventListener('mouseenter', () => {
+        if (!activeZone) hs.querySelector('.ov-pill').style.opacity = '1';
+      });
+      hs.addEventListener('mouseleave', () => {
+        if (!hs.classList.contains('active')) hs.querySelector('.ov-pill').style.opacity = '';
+      });
+    });
+
+    // Click outside to dismiss
+    document.addEventListener('click', (e) => {
+      if (activeZone && !ovContainer.contains(e.target)) {
+        hotspots.forEach(h => h.classList.remove('active'));
+        ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
+        ovContainer.classList.remove('has-active');
+        activeZone = null;
+      }
+    });
+  }
 </script>
 
 </body>
