@@ -1937,7 +1937,18 @@
   lucide.createIcons();
 
   let currentPhase = 1;
-  let currentLang = 'en';
+  let currentLang = localStorage.getItem('aiwalk-lang') || 'en';
+  
+  // Apply saved language on load
+  if (currentLang === 'zh') {
+    document.body.classList.remove('en');
+    document.getElementById('lang-en-btn').classList.remove('active');
+    document.getElementById('lang-zh-btn').classList.add('active');
+  } else {
+    document.body.classList.add('en');
+    document.getElementById('lang-zh-btn').classList.remove('active');
+    document.getElementById('lang-en-btn').classList.add('active');
+  }
 
   function selectPhase(n) {
     if (currentPhase === n) return;
@@ -1995,6 +2006,7 @@
       document.getElementById('lang-en-btn').classList.remove('active');
       document.getElementById('lang-zh-btn').classList.add('active');
     }
+    localStorage.setItem('aiwalk-lang', currentLang);
   }
 
   // Scroll reveal
