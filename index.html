@@ -177,7 +177,7 @@
     box-shadow: 0 2px 8px rgba(192,106,26,0.35);
   }
 
-  /* ===== HERO SECTION ===== */
+  /* ===== HERO SECTION — Editorial Engine Style ===== */
   .hero {
     position: relative;
     min-height: 92vh;
@@ -188,105 +188,78 @@
     text-align: center;
     padding: 100px 24px 60px;
     overflow: hidden;
-    background: linear-gradient(180deg, #f0ede6 0%, var(--bg) 100%);
+    background: #0c1a2a;
   }
+  /* Background image layer */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url('assets/ecosystem-hero.png') center center / cover no-repeat;
+    opacity: 0.35;
+    filter: saturate(0.7);
+    transition: opacity 1.2s ease;
+  }
+  /* Dark gradient overlay */
   .hero::before {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 1;
     background:
-      radial-gradient(ellipse 70% 50% at 15% 85%, rgba(59,130,246,0.1) 0%, transparent 60%),
-      radial-gradient(ellipse 55% 45% at 85% 15%, rgba(192,106,26,0.09) 0%, transparent 55%),
-      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(26,58,92,0.05) 0%, transparent 65%),
-      radial-gradient(ellipse 40% 30% at 70% 70%, rgba(139,92,246,0.04) 0%, transparent 50%);
-    z-index: 0;
+      linear-gradient(180deg, rgba(10,18,32,0.85) 0%, rgba(15,38,64,0.6) 40%, rgba(10,18,32,0.9) 100%),
+      radial-gradient(ellipse 60% 50% at 50% 45%, rgba(192,106,26,0.08) 0%, transparent 70%);
   }
-  /* Subtle grid overlay on hero */
+  /* Subtle vignette */
   .hero::after {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: 0;
-    opacity: 0.06;
-    background-image:
-      linear-gradient(rgba(26,58,92,0.3) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(26,58,92,0.3) 1px, transparent 1px);
-    background-size: 80px 80px;
-    mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 70%);
+    z-index: 1;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(6,10,18,0.5) 100%);
     pointer-events: none;
-  }
-  /* Animated floating orbs */
-  .hero-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.4;
-    animation: float 12s ease-in-out infinite;
-    z-index: 0;
-  }
-  .hero-orb-1 {
-    width: 400px; height: 400px;
-    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.1));
-    top: 10%; left: -5%;
-    animation-delay: 0s;
-  }
-  .hero-orb-2 {
-    width: 350px; height: 350px;
-    background: linear-gradient(135deg, rgba(192,106,26,0.12), rgba(245,158,11,0.08));
-    bottom: 5%; right: -5%;
-    animation-delay: -4s;
-  }
-  .hero-orb-3 {
-    width: 250px; height: 250px;
-    background: linear-gradient(135deg, rgba(26,58,92,0.1), rgba(59,130,246,0.08));
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    animation-delay: -8s;
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0) scale(1); }
-    33% { transform: translateY(-20px) scale(1.03); }
-    66% { transform: translateY(12px) scale(0.97); }
   }
 
   .hero-content {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     max-width: 800px;
   }
   .hero h1 {
-    font-size: 52px;
+    font-size: 56px;
     font-weight: 900;
-    color: var(--navy);
-    letter-spacing: 1.5px;
+    color: #ffffff;
+    letter-spacing: 2px;
     line-height: 1.1;
     margin-bottom: 8px;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.3);
   }
-  .hero h1 .ai { color: var(--orange); }
+  .hero h1 .ai { color: var(--orange-glow); }
   .hero h1 .serif-i { font-family: 'Noto Serif TC', serif; }
   .hero .hero-company {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 14px;
-    color: var(--text-secondary);
-    letter-spacing: 2px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 3px;
+    text-transform: uppercase;
     margin-bottom: 28px;
   }
   .hero .hero-tagline {
+    font-family: 'Noto Serif TC', 'Inter', serif;
     font-size: 20px;
-    font-weight: 300;
-    color: var(--text-secondary);
-    line-height: 1.6;
+    font-weight: 400;
+    color: rgba(232,228,220,0.9);
+    line-height: 1.7;
     max-width: 640px;
-    margin: 0 auto 36px;
+    margin: 0 auto 40px;
   }
   .hero .hero-tagline strong {
-    font-weight: 600;
-    color: var(--navy);
+    font-weight: 700;
+    color: var(--orange-glow);
   }
   .hero-cta-row {
     display: flex;
-    gap: 12px;
+    gap: 14px;
     justify-content: center;
     flex-wrap: wrap;
   }
@@ -303,43 +276,73 @@
     cursor: pointer;
   }
   .hero-cta-primary {
-    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    background: linear-gradient(135deg, var(--orange), #d4893a);
     color: #fff;
-    box-shadow: 0 4px 16px rgba(26,58,92,0.3);
+    box-shadow: 0 4px 20px rgba(192,106,26,0.35);
   }
   .hero-cta-primary:hover {
-    box-shadow: 0 8px 28px rgba(26,58,92,0.4);
+    box-shadow: 0 8px 32px rgba(192,106,26,0.5);
     transform: translateY(-2px);
   }
   .hero-cta-secondary {
-    background: rgba(255,255,255,0.7);
-    color: var(--navy);
-    border: 1.5px solid var(--border);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.85);
+    border: 1.5px solid rgba(255,255,255,0.2);
     backdrop-filter: blur(8px);
   }
   .hero-cta-secondary:hover {
-    background: #fff;
-    border-color: var(--navy);
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.4);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+  }
+
+  /* Stats bar (Editorial Engine inspired) */
+  .hero-stats {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding: 14px 24px;
+    background: rgba(6,10,18,0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+  .hero-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-stat-value {
+    color: var(--orange-glow);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+  .hero-stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
   /* Scroll indicator */
   .hero-scroll {
     position: absolute;
-    bottom: 32px;
+    bottom: 64px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    color: var(--text-secondary);
-    opacity: 0.5;
-    animation: bounce 2s ease-in-out infinite;
-    z-index: 1;
+    color: rgba(255,255,255,0.35);
+    animation: bounce 2.5s ease-in-out infinite;
+    z-index: 3;
   }
-  .hero-scroll span { font-size: 11px; font-weight: 500; letter-spacing: 1px; }
   @keyframes bounce {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(8px); }
@@ -426,7 +429,7 @@
   }
   .about-card-link svg { width: 18px; height: 18px; }
 
-  /* ===== LOOP CARD ===== */
+  /* ===== OVERVIEW / LOOP CARD ===== */
   .loop-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -434,6 +437,7 @@
     padding: 28px 32px;
     box-shadow: var(--shadow-md);
     text-align: center;
+    overflow: hidden;
   }
   .loop-title {
     font-size: 16px;
@@ -453,31 +457,13 @@
     color: #fff;
   }
   .loop-title-icon svg { width: 16px; height: 16px; }
-  .loop-flow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    padding: 8px 0;
-  }
-  .loop-chip {
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    transition: transform 0.2s ease;
-  }
-  .loop-chip:hover { transform: translateY(-2px); }
-  .loop-arrow { font-size: 18px; color: #cbd5e1; font-weight: 300; }
-  .loop-sub {
-    text-align: center;
-    margin-top: 10px;
-    font-size: 12px;
-    color: var(--text-secondary);
-    letter-spacing: 0.5px;
+  .loop-overview-img {
+    width: 100%;
+    max-width: 920px;
+    height: auto;
+    border-radius: var(--radius-sm);
+    margin: 0 auto;
+    display: block;
   }
 
   /* ===== DEMOS GRID ===== */
@@ -961,9 +947,9 @@
     .edge-link { padding: 18px; gap: 12px; }
     .edge-link .edge-icon { width: 44px; height: 44px; }
     .edge-link .edge-title { font-size: 15px; }
-    .loop-card { padding: 20px; }
-    .loop-chip { padding: 6px 12px; font-size: 12px; }
-    .loop-arrow { font-size: 14px; }
+    .loop-card { padding: 16px; }
+    .hero-stats { gap: 20px; flex-wrap: wrap; justify-content: center; }
+    .hero-stats .hero-stat-label { font-size: 9px; }
     .footer-inner { flex-direction: column; text-align: center; }
     .footer-copy { text-align: center; }
     .section-gap { margin-top: 40px; }
@@ -972,7 +958,8 @@
   }
 
   @media (max-width: 480px) {
-    .hero { min-height: 80vh; padding: 90px 16px 40px; }
+    .hero { min-height: 80vh; padding: 90px 16px 70px; }
+    .hero-stats { gap: 14px; padding: 10px 16px; }
     .hero h1 { font-size: 28px; }
     .hero-cta { padding: 11px 22px; font-size: 13px; }
     .navbar { top: 10px; padding: 6px 10px; }
@@ -982,13 +969,15 @@
   @media print {
     body { background: #fff; }
     .detail-panel { max-height: none !important; opacity: 1 !important; }
-    .navbar, .hero-scroll { display: none; }
-    .hero { min-height: auto; padding: 40px 24px; }
+    .navbar, .hero-scroll, .hero-stats { display: none; }
+    .hero { min-height: auto; padding: 40px 24px; background: #fff; }
+    .hero h1 { color: var(--navy); }
+    .hero .hero-tagline { color: var(--text); }
+    .hero .hero-company { color: var(--text-secondary); }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
-    .hero-orb { animation: none; }
     .hero-scroll { animation: none; }
     *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }
@@ -1013,9 +1002,7 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-orb hero-orb-1"></div>
-  <div class="hero-orb hero-orb-2"></div>
-  <div class="hero-orb hero-orb-3"></div>
+  <div class="hero-bg" aria-hidden="true"></div>
   <div class="hero-content">
     <h1><span class="ai">a<span class="serif-i">I</span></span>walk</h1>
     <div class="hero-company">
@@ -1039,6 +1026,24 @@
   </div>
   <div class="hero-scroll">
     <i data-lucide="chevrons-down" style="width:20px;height:20px;"></i>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-value">3</span>
+      <span class="hero-stat-label"><span class="lang-zh">核心產品</span><span class="lang-en">Core Products</span></span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-value">5</span>
+      <span class="hero-stat-label"><span class="lang-zh">技術階段</span><span class="lang-en">Tech Phases</span></span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-value">DRL</span>
+      <span class="hero-stat-label"><span class="lang-zh">雙代理架構</span><span class="lang-en">Dual-Agent</span></span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-value">NMS</span>
+      <span class="hero-stat-label"><span class="lang-zh">數位孿生</span><span class="lang-en">Digital Twin</span></span>
+    </div>
   </div>
 </section>
 
@@ -1071,27 +1076,15 @@
   </div>
 </div>
 
-<!-- CLOSED-LOOP LIFECYCLE -->
+<!-- SYSTEM OVERVIEW -->
 <div class="section section-gap-sm reveal">
   <div class="loop-card">
     <div class="loop-title">
       <span class="loop-title-icon"><i data-lucide="refresh-cw"></i></span>
-      <span class="lang-zh">ExoPulse 閉迴路生態</span>
-      <span class="lang-en">ExoPulse Closed-Loop Lifecycle</span>
+      <span class="lang-zh">ExoPulse 系統全貌</span>
+      <span class="lang-en">ExoPulse System Overview</span>
     </div>
-    <div class="loop-flow">
-      <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
-      <span class="loop-arrow">&rarr;</span>
-      <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
-      <span class="loop-arrow">&rarr;</span>
-      <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
-      <span class="loop-arrow">&rarr;</span>
-      <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
-      <span class="loop-arrow">&rarr;</span>
-      <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
-      <span class="loop-arrow">&#x27F3;</span>
-    </div>
-    <div class="loop-sub">ExoPulse Patient Cloud &times; ExoPulse Studio</div>
+    <img src="assets/new-overview.png" alt="ExoPulse System Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
   </div>
 </div>
 
