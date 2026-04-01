@@ -519,34 +519,13 @@
     background: rgba(255,255,255,0.15);
     backdrop-filter: brightness(1.8);
   }
-  /* Label pill on hotspot */
-  .ov-hotspot .ov-pill {
-    position: absolute;
-    top: 6px; left: 8px;
-    padding: 3px 10px;
-    border-radius: 6px;
-    background: var(--navy);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    opacity: 0;
-    transform: translateY(-4px);
-    transition: all 0.25s ease;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .ov-hotspot:hover .ov-pill,
-  .ov-hotspot.active .ov-pill {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  /* No pill labels — the image already has section titles */
   /* Tooltip card */
   .ov-tooltip {
     position: absolute;
-    bottom: calc(100% + 12px);
+    top: calc(100% + 12px);
     left: 50%;
-    transform: translateX(-50%) translateY(8px);
+    transform: translateX(-50%) translateY(-8px);
     width: 280px;
     padding: 16px 18px;
     background: var(--card-bg);
@@ -1340,18 +1319,12 @@
       <div class="overview-interactive" id="overviewInteractive">
         <img src="assets/new-overview.png" alt="Ecosystem Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
 
-        <!-- Hotspot: (a) Data Collection — left ~0-38% -->
-        <div class="ov-hotspot" data-zone="collect" style="left:0%; top:0%; width:38%; height:100%;">
-          <span class="ov-pill">(a) Data Collection</span>
-        </div>
-        <!-- Hotspot: (b) Digital Twin — center ~38-72% -->
-        <div class="ov-hotspot" data-zone="twin" style="left:38%; top:0%; width:34%; height:100%;">
-          <span class="ov-pill">(b) Digital Twin</span>
-        </div>
-        <!-- Hotspot: (c) Deployment — right ~72-100% -->
-        <div class="ov-hotspot" data-zone="deploy" style="left:72%; top:0%; width:28%; height:100%;">
-          <span class="ov-pill">(c) Deployment</span>
-        </div>
+        <!-- Hotspot: (a) Personalized data collection — left ~0-34% -->
+        <div class="ov-hotspot" data-zone="collect" style="left:0%; top:0%; width:34%; height:100%;"></div>
+        <!-- Hotspot: (b) Digital twin data synthesis — center ~34-75% -->
+        <div class="ov-hotspot" data-zone="twin" style="left:34%; top:0%; width:41%; height:100%;"></div>
+        <!-- Hotspot: (c) Deployment — right ~75-100% -->
+        <div class="ov-hotspot" data-zone="deploy" style="left:75%; top:0%; width:25%; height:100%;"></div>
 
         <!-- Tooltips (positioned by JS) -->
         <div class="ov-tooltip" id="tip-collect">
@@ -1868,13 +1841,7 @@
         }
       });
 
-      // Desktop hover (show pill label only, tooltip on click)
-      hs.addEventListener('mouseenter', () => {
-        if (!activeZone) hs.querySelector('.ov-pill').style.opacity = '1';
-      });
-      hs.addEventListener('mouseleave', () => {
-        if (!hs.classList.contains('active')) hs.querySelector('.ov-pill').style.opacity = '';
-      });
+      // (pills removed — image has its own labels)
     });
 
     // Click outside to dismiss
