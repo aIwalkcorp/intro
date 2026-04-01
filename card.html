@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>智意行科技 名片設計 — 白底商務</title>
+<title>智意行科技 Digital Business Card</title>
+<meta name="description" content="aIwalk Co., Ltd. - 智意行科技數位名片">
+<meta property="og:title" content="智意行科技 Digital Business Card">
+<meta property="og:description" content="aIwalk Co., Ltd. 數位名片">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aiwalkcorp.github.io/intro/card.html">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -372,11 +377,12 @@ flipBtn.addEventListener('click', () => setFlip(!isFlipped));
 function goToPerson(idx, direction) {
   if (idx < 0 || idx >= PEOPLE.length || idx === current) return;
   const dir = direction || (idx > current ? 'left' : 'right');
+  const keepFlipped = isFlipped;  // Remember current flip state
   // Exit animation
   scene.classList.add('exit-' + dir);
   setTimeout(() => {
     current = idx;
-    setFlip(false);
+    setFlip(keepFlipped);  // Maintain language/flip state
     renderPerson(idx);
     scene.classList.remove('exit-' + dir);
     scene.classList.add('enter-' + (dir === 'left' ? 'right' : 'left'));
