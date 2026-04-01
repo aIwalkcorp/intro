@@ -349,13 +349,9 @@
     opacity: 1;
     transition: opacity 0.3s ease;
   }
-  .hero-stats.transitioning { opacity: 0; }
-  .hero-stats--left {
-    right: auto;
-    left: 0;
-    border-radius: 0 12px 12px 0;
-    border-left: none;
-    border-right: 1px solid rgba(255,255,255,0.06);
+  .hero-stats--hidden {
+    opacity: 0;
+    pointer-events: none;
   }
   .hero-stat {
     display: flex;
@@ -1946,7 +1942,6 @@
   const heroSection = document.querySelector('.hero');
   let lastScroll = 0;
   let navSidebarActive = false;
-  let statsLeftActive = false;
   window.addEventListener('scroll', () => {
     const scrollY = window.scrollY;
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
@@ -1966,23 +1961,9 @@
       else navbar.classList.remove('scrolled');
     }
 
-    // Stats bar: right on hero, left after
-    if (heroStats && heroSection) {
-      if (pastHero && !statsLeftActive) {
-        heroStats.classList.add('transitioning');
-        setTimeout(() => {
-          heroStats.classList.add('hero-stats--left');
-          heroStats.classList.remove('transitioning');
-        }, 300);
-        statsLeftActive = true;
-      } else if (!pastHero && statsLeftActive) {
-        heroStats.classList.add('transitioning');
-        setTimeout(() => {
-          heroStats.classList.remove('hero-stats--left');
-          heroStats.classList.remove('transitioning');
-        }, 300);
-        statsLeftActive = false;
-      }
+    // Stats bar: visible on hero, hidden after
+    if (heroStats) {
+      heroStats.classList.toggle('hero-stats--hidden', pastHero);
     }
     lastScroll = scrollY;
   }, { passive: true });
