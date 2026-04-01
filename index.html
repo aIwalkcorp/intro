@@ -819,11 +819,47 @@
   .edge-link .edge-arrow svg { width: 24px; height: 24px; }
   .edge-link:hover .edge-arrow { color: var(--orange); transform: translateX(3px); }
 
-  /* ===== ROADMAP ===== */
+  /* ===== READING GUIDE LINE ===== */
   .roadmap {
     max-width: 1040px;
     margin: 28px auto 0;
     padding: 0 24px 60px;
+    position: relative;
+  }
+  .reading-guide {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ef4444 10%, #ef4444 90%, transparent);
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 0 8px rgba(239,68,68,0.3);
+  }
+  .roadmap.guide-active .reading-guide {
+    opacity: 1;
+  }
+  .roadmap.guide-active {
+    cursor: ns-resize;
+  }
+  .guide-hint {
+    position: absolute;
+    right: 8px;
+    top: -8px;
+    transform: translateY(-100%);
+    font-size: 10px;
+    color: #ef4444;
+    background: rgba(255,255,255,0.9);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .roadmap.guide-active .guide-hint {
+    opacity: 0.7;
   }
 
   /* ===== PROGRESS RAIL ===== */
@@ -1070,14 +1106,23 @@
     .hero-scroll { bottom: 56px; }
     .demos-grid { grid-template-columns: 1fr; }
     .extra-links { flex-direction: column; }
-    .rail { flex-direction: column; gap: 16px; align-items: stretch; }
+    .rail { flex-direction: column; gap: 10px; align-items: stretch; }
     .rail::before { display: none; }
-    .phase-col { flex-direction: row; gap: 12px; align-items: flex-start; }
+    .phase-col { flex-direction: row; gap: 10px; align-items: center; }
+    .phase-col .drop-line { display: none; }
+    /* Compact pill nodes on mobile */
+    .node { width: 28px; height: 28px; font-size: 12px; border-width: 2px; flex-shrink: 0; }
+    .phase-col:hover .node { transform: scale(1.05); }
+    .phase-col.active .node { transform: scale(1.1); }
     .phase-info { text-align: left; }
+    .phase-info .pi-title-en { display: none; }
+    .phase-info .pi-target { display: none; }
     .phase-info .pi-techs { justify-content: flex-start; }
-    .dp-inner { flex-direction: column; padding: 18px 20px; }
-    .dp-left .dp-title { font-size: 17px; }
-    .dp-left .dp-desc { font-size: 13px; }
+    /* Fix detail panel overflow */
+    .detail-panel.open { max-height: 1200px; }
+    .dp-inner { flex-direction: column; padding: 18px 16px; gap: 16px; }
+    .dp-left .dp-title { font-size: 16px; }
+    .dp-left .dp-desc { font-size: 13px; line-height: 1.8; }
     .dp-right .output-box { padding: 14px; }
     .dp-right .output-box li { font-size: 12px; }
     .edge-link { padding: 16px; gap: 12px; }
@@ -1103,7 +1148,6 @@
     .section-gap { margin-top: 40px; }
     .section-gap-sm { margin-top: 24px; }
     .section-divider { margin-top: 40px; }
-    .node { width: 40px; height: 40px; font-size: 14px; }
   }
 
   /* ===== RESPONSIVE — Small phone (<=480px, e.g. iPhone SE) ===== */
@@ -1446,7 +1490,10 @@
 </div>
 
 <!-- ROADMAP PHASES -->
-<div class="roadmap">
+<div class="roadmap" id="roadmapArea">
+  <div class="reading-guide" id="readingGuide">
+    <span class="guide-hint"><span class="lang-zh">拖曳輔助線</span><span class="lang-en">drag to read</span></span>
+  </div>
   <div class="rail">
     <!-- Phase 1 -->
     <div class="phase-col active" data-phase="1" onclick="selectPhase(1)">
@@ -1756,6 +1803,40 @@
     }
     lastScroll = scrollY;
   }, { passive: true });
+
+  // Reading guide line in roadmap
+  const roadmapArea = document.getElementById('roadmapArea');
+  const guide = document.getElementById('readingGuide');
+  if (roadmapArea && guide) {
+    let guideActive = false;
+    let guideY = 0;
+
+    roadmapArea.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.phase-col') || e.target.closest('.detail-panel')) return;
+      const rect = roadmapArea.getBoundingClientRect();
+      guideY = e.clientY - rect.top;
+      guide.style.top = guideY + 'px';
+      roadmapArea.classList.add('guide-active');
+      guideActive = true;
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!guideActive) return;
+      const rect = roadmapArea.getBoundingClientRect();
+      guideY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+      guide.style.top = guideY + 'px';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (guideActive) {
+        guideActive = false;
+        setTimeout(() => {
+          roadmapArea.classList.remove('guide-active');
+        }, 2000);
+      }
+    });
+  }
 
   // Overview interactive hotspots
   const ovContainer = document.getElementById('overviewInteractive');
