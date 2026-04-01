@@ -10,26 +10,39 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://aiwalkcorp.github.io/intro/">
 <meta property="og:image" content="https://aiwalkcorp.github.io/intro/assets/corp-logo.png">
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
 
   :root {
     --navy: #1a3a5c;
     --navy-light: #2a5580;
+    --navy-dark: #0f2640;
     --orange: #c06a1a;
     --orange-glow: #e8a85c;
-    --bg: #faf8f2;
+    --orange-light: #f5dfc4;
+    --bg: #f8f6f1;
+    --bg-warm: #faf8f2;
     --card-bg: #ffffff;
-    --text: #2c2c2c;
-    --text-secondary: #5a6a7a;
-    --border: #e8e2d8;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --border-warm: #e8e2d8;
     --phase1: #3b82f6;
     --phase2: #8b5cf6;
     --phase3: #ec4899;
     --phase4: #f59e0b;
     --phase5: #ef4444;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    --shadow-xl: 0 20px 60px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.06);
+    --radius: 16px;
+    --radius-sm: 10px;
   }
 
   body {
@@ -38,102 +51,616 @@
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
+  /* ===== SCROLL REVEAL ===== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+
   /* ===== LANGUAGE TOGGLE ===== */
-  .lang-toggle {
-    position: fixed;
-    top: 18px;
-    right: 18px;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-    border-radius: 24px;
-    padding: 3px;
-    box-shadow: 0 4px 16px rgba(26,58,92,0.35);
-    cursor: pointer;
-    user-select: none;
-    transition: box-shadow 0.3s ease;
-  }
-  .lang-toggle:hover {
-    box-shadow: 0 6px 24px rgba(26,58,92,0.45);
-  }
-  .lang-toggle .lang-opt {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    color: rgba(255,255,255,0.5);
-  }
-  .lang-toggle .lang-opt.active {
-    background: var(--orange);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(192,106,26,0.4);
-  }
   .lang-en { display: none !important; }
   body.en .lang-en { display: inline !important; }
   body.en .lang-zh { display: none !important; }
 
-  /* ===== HEADER ===== */
-  .header {
-    text-align: center;
-    padding: 44px 24px 18px;
-    position: relative;
+  /* ===== NAVBAR ===== */
+  .navbar {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.82);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-radius: 52px;
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+    transition: all 0.3s ease;
   }
-  .header::after {
+  .navbar.scrolled {
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  .navbar .nav-logo {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .navbar .nav-brand {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: 0.5px;
+    padding: 0 4px;
+  }
+  .navbar .nav-brand .ai { color: var(--orange); }
+  .navbar .nav-brand .serif-i { font-family: 'Noto Serif TC', serif; }
+  .navbar .nav-links {
+    display: flex;
+    gap: 2px;
+  }
+  .navbar .nav-link {
+    padding: 6px 14px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .navbar .nav-link:hover {
+    color: var(--navy);
+    background: rgba(26,58,92,0.06);
+  }
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--navy);
+    border-radius: 20px;
+    padding: 2px;
+    cursor: pointer;
+    user-select: none;
+    margin-left: 4px;
+  }
+  .lang-toggle .lang-opt {
+    padding: 5px 12px;
+    border-radius: 18px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.25s ease;
+    color: rgba(255,255,255,0.45);
+  }
+  .lang-toggle .lang-opt.active {
+    background: var(--orange);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(192,106,26,0.35);
+  }
+
+  /* ===== HERO SECTION ===== */
+  .hero {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 24px 60px;
+    overflow: hidden;
+  }
+  .hero::before {
     content: '';
     position: absolute;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 120px; height: 3px;
-    background: linear-gradient(90deg, var(--navy), var(--orange));
-    border-radius: 2px;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(59,130,246,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 20%, rgba(192,106,26,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 70% at 50% 50%, rgba(26,58,92,0.03) 0%, transparent 70%);
+    z-index: 0;
   }
-  .header .corp-logo {
-    width: 64px; height: 64px;
-    border-radius: 14px;
+  /* Animated floating orbs */
+  .hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.4;
+    animation: float 12s ease-in-out infinite;
+    z-index: 0;
+  }
+  .hero-orb-1 {
+    width: 400px; height: 400px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.1));
+    top: 10%; left: -5%;
+    animation-delay: 0s;
+  }
+  .hero-orb-2 {
+    width: 350px; height: 350px;
+    background: linear-gradient(135deg, rgba(192,106,26,0.12), rgba(245,158,11,0.08));
+    bottom: 5%; right: -5%;
+    animation-delay: -4s;
+  }
+  .hero-orb-3 {
+    width: 250px; height: 250px;
+    background: linear-gradient(135deg, rgba(26,58,92,0.1), rgba(59,130,246,0.08));
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -8s;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    33% { transform: translateY(-20px) scale(1.03); }
+    66% { transform: translateY(12px) scale(0.97); }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+  }
+  .hero .corp-logo {
+    width: 80px; height: 80px;
+    border-radius: 20px;
     object-fit: cover;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-lg);
+    border: 3px solid rgba(255,255,255,0.8);
   }
-  .header h1 {
-    font-family: 'Inter', sans-serif;
-    font-size: 26px; font-weight: 800;
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 900;
     color: var(--navy);
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    line-height: 1.1;
+    margin-bottom: 8px;
   }
-  .header h1 .ai { color: var(--orange); }
-  .header h1 .serif-i { font-family: 'Noto Serif TC', serif; }
-  .header .subtitle {
-    font-size: 13px; color: var(--text-secondary);
-    letter-spacing: 2px; font-weight: 400; margin-top: 5px;
-  }
-  .header .subtitle-zh {
+  .hero h1 .ai { color: var(--orange); }
+  .hero h1 .serif-i { font-family: 'Noto Serif TC', serif; }
+  .hero .hero-company {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 12px; color: #999; margin-top: 3px; letter-spacing: 1px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+  }
+  .hero .hero-tagline {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 640px;
+    margin: 0 auto 36px;
+  }
+  .hero .hero-tagline strong {
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .hero-cta-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 28px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+  .hero-cta-primary {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(26,58,92,0.3);
+  }
+  .hero-cta-primary:hover {
+    box-shadow: 0 8px 28px rgba(26,58,92,0.4);
+    transform: translateY(-2px);
+  }
+  .hero-cta-secondary {
+    background: rgba(255,255,255,0.7);
+    color: var(--navy);
+    border: 1.5px solid var(--border);
+    backdrop-filter: blur(8px);
+  }
+  .hero-cta-secondary:hover {
+    background: #fff;
+    border-color: var(--navy);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Scroll indicator */
+  .hero-scroll {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    animation: bounce 2s ease-in-out infinite;
+    z-index: 1;
+  }
+  .hero-scroll span { font-size: 11px; font-weight: 500; letter-spacing: 1px; }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ===== SECTION CONTAINER ===== */
+  .section {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .section-gap { margin-top: 64px; }
+  .section-gap-sm { margin-top: 32px; }
+
+  /* ===== SECTION HEADER ===== */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-icon svg { width: 20px; height: 20px; }
+  .section-icon-navy {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    color: #fff;
+  }
+  .section-icon-orange {
+    background: linear-gradient(135deg, var(--orange), var(--orange-glow));
+    color: #fff;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.3px;
+  }
+
+  /* ===== ABOUT CARD ===== */
+  .about-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 36px;
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 0.3s ease;
+  }
+  .about-card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+  .about-desc {
+    font-size: 15px;
+    line-height: 1.9;
+    color: #475569;
+  }
+  .about-desc strong { color: var(--navy); font-weight: 600; }
+
+  /* ===== LOOP CARD ===== */
+  .loop-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+  }
+  .loop-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .loop-title-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--phase1), var(--phase3));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+  }
+  .loop-title-icon svg { width: 16px; height: 16px; }
+  .loop-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+  }
+  .loop-chip {
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: transform 0.2s ease;
+  }
+  .loop-chip:hover { transform: translateY(-2px); }
+  .loop-arrow { font-size: 18px; color: #cbd5e1; font-weight: 300; }
+  .loop-sub {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== DEMOS GRID ===== */
+  .demos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .demo-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .demo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--orange);
+  }
+  .demo-card .demo-video {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    background: #0f172a;
+  }
+  .demo-card .demo-video iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+  .demo-card .demo-info {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .demo-card .demo-logo {
+    width: 42px; height: 42px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .demo-card .demo-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 3px;
+  }
+  .demo-card .demo-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ===== EXTRA LINKS ===== */
+  .extra-links {
+    display: flex;
+    gap: 16px;
+  }
+  .extra-link-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .extra-link-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--orange);
+  }
+  .el-icon-box {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .el-icon-box svg { width: 22px; height: 22px; }
+  .el-icon-tutorials {
+    background: linear-gradient(135deg, var(--phase2), var(--phase3));
+    color: #fff;
+  }
+  .el-icon-card {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    color: #fff;
+  }
+  .el-text { flex: 1; }
+  .el-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .el-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .el-arrow {
+    color: #cbd5e1;
+    transition: all 0.3s ease;
+  }
+  .el-arrow svg { width: 20px; height: 20px; }
+  .extra-link-card:hover .el-arrow { color: var(--orange); transform: translateX(3px); }
+
+  /* ===== DIVIDER ===== */
+  .section-divider {
+    max-width: 1040px;
+    margin: 56px auto 0;
+    padding: 0 24px;
+  }
+  .section-divider hr {
+    border: none;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+
+  /* ===== ROADMAP HEADER ===== */
+  .roadmap-header {
+    text-align: center;
+    padding: 0 24px;
+    margin-bottom: 8px;
+  }
+  .roadmap-header .rh-overline {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 8px;
+  }
+  .roadmap-header .rh-title {
+    font-size: 14px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
   }
 
   /* ===== VISION BAR ===== */
   .vision-bar {
-    max-width: 960px;
-    margin: 24px auto 0;
-    padding: 12px 24px;
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    color: #fff; font-size: 12.5px; font-weight: 500; letter-spacing: 0.5px;
-    box-shadow: 0 4px 20px rgba(26,58,92,0.25);
+    max-width: 1040px;
+    margin: 20px auto 0;
+    padding: 16px 28px;
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 50%, var(--navy-light) 100%);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: rgba(255,255,255,0.9);
+    font-size: 13.5px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    line-height: 1.6;
+    box-shadow: 0 8px 32px rgba(26,58,92,0.25);
+    text-align: center;
   }
+  .vision-bar .vision-icon {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .vision-bar .vision-icon svg { width: 18px; height: 18px; color: var(--orange-glow); }
   .vision-bar span.hl { color: var(--orange-glow); font-weight: 700; }
 
-  /* ===== ROADMAP CONTAINER ===== */
+  /* ===== EDGE LINK ===== */
+  .edge-link {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 28px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .edge-link:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--orange);
+  }
+  .edge-link .edge-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--navy), var(--orange));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .edge-link .edge-icon svg { width: 24px; height: 24px; }
+  .edge-link .edge-text { flex: 1; }
+  .edge-link .edge-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .edge-link .edge-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .edge-link .edge-arrow {
+    color: #cbd5e1;
+    transition: all 0.3s ease;
+  }
+  .edge-link .edge-arrow svg { width: 24px; height: 24px; }
+  .edge-link:hover .edge-arrow { color: var(--orange); transform: translateX(3px); }
+
+  /* ===== ROADMAP ===== */
   .roadmap {
-    max-width: 960px;
+    max-width: 1040px;
     margin: 28px auto 0;
-    padding: 0 16px 48px;
+    padding: 0 24px 60px;
   }
 
   /* ===== PROGRESS RAIL ===== */
@@ -143,7 +670,6 @@
     position: relative;
     gap: 0;
   }
-  /* The horizontal colored line behind nodes */
   .rail::before {
     content: '';
     position: absolute;
@@ -166,8 +692,6 @@
     z-index: 1;
     cursor: pointer;
   }
-
-  /* Node circle */
   .node {
     width: 48px; height: 48px;
     border-radius: 50%;
@@ -186,7 +710,6 @@
   .n4 { background: var(--phase4); }
   .n5 { background: var(--phase5); }
 
-  /* Phase mini-info below each node */
   .phase-info {
     text-align: center;
     margin-top: 10px;
@@ -201,21 +724,21 @@
   }
   .phase-info .pi-title-en {
     font-size: 9.5px; font-weight: 600;
-    color: #999; letter-spacing: 0.3px;
+    color: #94a3b8; letter-spacing: 0.3px;
     line-height: 1.3; margin-bottom: 6px;
   }
   .phase-info .pi-year {
     font-size: 9px; font-weight: 700;
-    color: #bbb; letter-spacing: 0.5px;
+    color: #94a3b8; letter-spacing: 0.5px;
     margin-bottom: 6px;
   }
   .phase-info .pi-target {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 10px; color: #888;
+    font-size: 10px; color: var(--text-secondary);
     line-height: 1.4;
-    padding: 4px 6px;
-    background: rgba(0,0,0,0.025);
-    border-radius: 6px;
+    padding: 5px 8px;
+    background: rgba(26,58,92,0.03);
+    border-radius: 8px;
     margin-bottom: 6px;
   }
   .phase-info .pi-techs {
@@ -224,13 +747,12 @@
   }
   .phase-info .pi-tech {
     font-size: 9px; font-weight: 600;
-    padding: 1px 5px; border-radius: 3px;
-    background: #f0ebe3; color: var(--navy);
-    border: 1px solid #e0d8c8;
+    padding: 2px 6px; border-radius: 4px;
+    background: rgba(26,58,92,0.05); color: var(--navy);
+    border: 1px solid rgba(26,58,92,0.08);
     line-height: 1.5;
   }
 
-  /* Drop connector from node to detail panel */
   .phase-col .drop-line {
     width: 2px;
     height: 0;
@@ -239,13 +761,13 @@
   }
   .phase-col.active .drop-line { height: 12px; }
 
-  /* ===== DETAIL PANEL (below rail) ===== */
+  /* ===== DETAIL PANEL ===== */
   .detail-panel {
     margin-top: 8px;
-    border-radius: 14px;
-    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
     background: var(--card-bg);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     max-height: 0;
@@ -255,350 +777,237 @@
     max-height: 600px;
     opacity: 1;
   }
-
   .dp-inner {
-    padding: 22px 28px 20px;
+    padding: 24px 32px 22px;
     display: flex;
-    gap: 24px;
+    gap: 28px;
     align-items: flex-start;
   }
-
-  /* Left: description */
-  .dp-left {
-    flex: 1.1;
-    min-width: 0;
-  }
+  .dp-left { flex: 1.1; min-width: 0; }
   .dp-left .dp-badge {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 10px; border-radius: 20px;
+    padding: 4px 12px; border-radius: 20px;
     font-size: 10px; font-weight: 700;
     letter-spacing: 1px; text-transform: uppercase;
-    color: #fff; margin-bottom: 8px;
+    color: #fff; margin-bottom: 10px;
   }
   .dp-left .dp-title {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 18px; font-weight: 700;
+    font-size: 19px; font-weight: 700;
     color: var(--navy); line-height: 1.4;
     margin-bottom: 3px;
   }
   .dp-left .dp-title-en {
     font-size: 12px; font-weight: 600;
     color: var(--text-secondary); letter-spacing: 0.3px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .dp-left .dp-desc {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 13px; line-height: 1.85;
-    color: #555;
+    font-size: 13.5px; line-height: 1.9;
+    color: #475569;
   }
   .dp-left .dp-desc strong { color: var(--navy); }
 
-  /* Right: product outputs */
-  .dp-right {
-    flex: 0.9;
-    min-width: 0;
-  }
+  .dp-right { flex: 0.9; min-width: 0; }
   .dp-right .output-box {
     background: linear-gradient(135deg, #fefcf8, #f8f4ec);
     border: 1px solid #e8dfd0;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    margin-bottom: 12px;
   }
   .dp-right .ob-label {
     font-size: 10px; font-weight: 700;
     letter-spacing: 1.5px; text-transform: uppercase;
-    margin-bottom: 8px;
-    display: flex; align-items: center; gap: 5px;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
   }
-  .dp-right .output-box ul {
-    list-style: none; padding: 0;
-  }
+  .dp-right .ob-label svg { width: 14px; height: 14px; }
+  .dp-right .output-box ul { list-style: none; padding: 0; }
   .dp-right .output-box li {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 12px; color: #444;
-    padding: 3px 0 3px 16px;
-    position: relative; line-height: 1.55;
+    font-size: 12.5px; color: #475569;
+    padding: 4px 0 4px 18px;
+    position: relative; line-height: 1.6;
   }
   .dp-right .output-box li::before {
-    content: '▸'; position: absolute; left: 0; font-size: 10px;
+    content: '';
+    position: absolute;
+    left: 0; top: 10px;
+    width: 6px; height: 6px;
+    border-radius: 2px;
+    background: var(--orange);
+    opacity: 0.6;
   }
   .dp-right .output-box li strong { color: var(--navy); }
 
   .dp-right .target-box {
-    padding: 8px 14px;
-    border-radius: 8px;
-    background: rgba(26,58,92,0.04);
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(26,58,92,0.03);
     border-left: 3px solid;
   }
   .dp-right .tb-label {
     font-size: 9px; font-weight: 700;
-    letter-spacing: 1px; text-transform: uppercase; color: #999;
-    margin-bottom: 2px;
+    letter-spacing: 1px; text-transform: uppercase; color: #94a3b8;
+    margin-bottom: 3px;
   }
   .dp-right .tb-text {
     font-family: 'Noto Sans TC', sans-serif;
-    font-size: 11.5px; color: #555; line-height: 1.5;
+    font-size: 12px; color: #475569; line-height: 1.5;
   }
 
-  /* ===== COMPETITIVE EDGE LINK ===== */
-  .edge-section {
-    max-width: 960px;
-    margin: 0 auto 20px;
-    padding: 0 16px;
+  /* ===== FOOTER ===== */
+  .site-footer {
+    margin-top: 0;
+    padding: 40px 24px 32px;
+    background: var(--navy-dark);
+    color: rgba(255,255,255,0.7);
   }
-  .edge-link {
+  .footer-inner {
+    max-width: 1040px;
+    margin: 0 auto;
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 20px 24px;
-    background: var(--card-bg);
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-  }
-  .edge-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
-    border-color: var(--orange);
-  }
-  .edge-link .edge-icon {
-    width: 48px; height: 48px;
-    background: linear-gradient(135deg, var(--navy), var(--orange));
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .edge-link .edge-text { flex: 1; }
-  .edge-link .edge-title {
-    font-size: 16px; font-weight: 700; color: var(--navy);
-  }
-  .edge-link .edge-desc {
-    font-size: 12px; color: #888; margin-top: 3px; line-height: 1.4;
-  }
-  .edge-link .edge-arrow {
-    font-size: 22px; color: #ccc; transition: color 0.3s;
-  }
-  .edge-link:hover .edge-arrow { color: var(--orange); }
-
-  /* ===== LOOP FLOW ===== */
-  .loop-section {
-    max-width: 960px;
-    margin: 20px auto 0;
-    padding: 0 16px;
-  }
-  .loop-card {
-    background: var(--card-bg);
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    padding: 20px 24px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-  }
-  .loop-card .loop-title {
-    font-size: 14px; font-weight: 700;
-    color: var(--navy); margin-bottom: 12px;
-    text-align: center;
-  }
-  .loop-flow {
-    display: flex; align-items: center; justify-content: center;
-    gap: 6px; flex-wrap: wrap; padding: 4px 0;
-  }
-  .loop-chip {
-    color: #fff; padding: 6px 14px; border-radius: 6px;
-    font-size: 11px; font-weight: 600;
-  }
-  .loop-arrow { font-size: 16px; color: #ccc; }
-  .loop-sub {
-    text-align: center; margin-top: 6px;
-    font-size: 10px; color: #aaa;
-  }
-
-  .footer {
-    text-align: center; padding: 16px;
-    font-size: 10px; color: #bbb; letter-spacing: 1px;
-  }
-
-
-  /* ===== ABOUT SECTION ===== */
-  .about-section {
-    max-width: 960px;
-    margin: 28px auto 0;
-    padding: 0 16px;
-  }
-  .about-card {
-    background: var(--card-bg);
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    padding: 28px 32px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-  }
-  .about-card .about-title {
-    font-size: 15px; font-weight: 700;
-    color: var(--navy); margin-bottom: 14px;
-    display: flex; align-items: center; gap: 8px;
-    letter-spacing: 0.5px;
-  }
-  .about-card .about-desc {
-    font-size: 13.5px; line-height: 1.9;
-    color: #555;
-  }
-  .about-card .about-desc strong { color: var(--navy); }
-
-  /* ===== PRODUCTS / DEMOS ===== */
-  .demos-section {
-    max-width: 960px;
-    margin: 24px auto 0;
-    padding: 0 16px;
-  }
-  .demos-title {
-    font-size: 15px; font-weight: 700;
-    color: var(--navy); margin-bottom: 16px;
-    display: flex; align-items: center; gap: 8px;
-    letter-spacing: 0.5px;
-  }
-  .demos-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
   }
-  .demo-card {
-    background: var(--card-bg);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-    transition: all 0.3s ease;
-  }
-  .demo-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
-    border-color: var(--orange);
-  }
-  .demo-card .demo-video {
-    position: relative;
-    width: 100%;
-    padding-bottom: 56.25%;
-    background: #000;
-  }
-  .demo-card .demo-video iframe {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    border: none;
-  }
-  .demo-card .demo-info {
-    padding: 14px 16px;
-  }
-  .demo-card .demo-info {
+  .footer-brand {
     display: flex;
     align-items: center;
     gap: 10px;
   }
-  .demo-card .demo-logo {
-    width: 38px; height: 38px;
+  .footer-brand img {
+    width: 32px; height: 32px;
     border-radius: 8px;
     object-fit: cover;
-    flex-shrink: 0;
   }
-  .demo-card .demo-name {
-    font-size: 14px; font-weight: 700;
-    color: var(--navy); margin-bottom: 4px;
+  .footer-brand-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
   }
-  .demo-card .demo-desc {
-    font-size: 11.5px; color: #888; line-height: 1.5;
-  }
-
-  /* ===== TUTORIAL & VCARD LINKS ===== */
-  .extra-links {
-    max-width: 960px;
-    margin: 20px auto 0;
-    padding: 0 16px;
-    display: flex;
-    gap: 12px;
-  }
-  .extra-link-card {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 16px 20px;
-    background: var(--card-bg);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-  }
-  .extra-link-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.1);
-    border-color: var(--orange);
-  }
-  .extra-link-card .el-icon { font-size: 26px; flex-shrink: 0; }
-  .extra-link-card .el-text { flex: 1; }
-  .extra-link-card .el-title {
-    font-size: 13px; font-weight: 700; color: var(--navy);
-  }
-  .extra-link-card .el-desc {
-    font-size: 11px; color: #888; margin-top: 2px;
-  }
-  .extra-link-card .el-arrow {
-    font-size: 18px; color: #ccc; transition: color 0.3s;
-  }
-  .extra-link-card:hover .el-arrow { color: var(--orange); }
-
-  @media (max-width: 760px) {
-    .demos-grid { grid-template-columns: 1fr; }
-    .extra-links { flex-direction: column; }
+  .footer-brand-name .ai { color: var(--orange-glow); }
+  .footer-brand-name .serif-i { font-family: 'Noto Serif TC', serif; }
+  .footer-copy {
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-align: right;
   }
 
   /* ===== RESPONSIVE ===== */
   @media (max-width: 760px) {
+    .navbar .nav-links { display: none; }
+    .hero h1 { font-size: 36px; }
+    .hero .hero-tagline { font-size: 16px; }
+    .demos-grid { grid-template-columns: 1fr; }
+    .extra-links { flex-direction: column; }
     .rail { flex-direction: column; gap: 16px; align-items: stretch; }
     .rail::before { display: none; }
     .phase-col { flex-direction: row; gap: 12px; align-items: flex-start; }
     .phase-info { text-align: left; }
     .phase-info .pi-techs { justify-content: flex-start; }
     .dp-inner { flex-direction: column; }
-    .edge-link { padding: 16px; gap: 10px; }
-    .edge-link .edge-icon { width: 40px; height: 40px; font-size: 18px; }
-    .edge-link .edge-title { font-size: 14px; }
-    .loop-card { padding: 16px; }
-    .loop-chip { padding: 4px 9px; font-size: 10px; }
-    .loop-arrow { font-size: 12px; }
-    .lang-toggle { top: 10px; right: 10px; }
+    .edge-link { padding: 18px; gap: 12px; }
+    .edge-link .edge-icon { width: 44px; height: 44px; }
+    .edge-link .edge-title { font-size: 15px; }
+    .loop-card { padding: 20px; }
+    .loop-chip { padding: 6px 12px; font-size: 12px; }
+    .loop-arrow { font-size: 14px; }
+    .footer-inner { flex-direction: column; text-align: center; }
+    .footer-copy { text-align: center; }
+    .section-gap { margin-top: 40px; }
+    .about-card { padding: 24px 20px; }
+    .vision-bar { padding: 14px 20px; font-size: 12.5px; }
+  }
+
+  @media (max-width: 480px) {
+    .hero { min-height: 80vh; padding: 90px 16px 40px; }
+    .hero h1 { font-size: 28px; }
+    .hero .corp-logo { width: 60px; height: 60px; }
+    .hero-cta { padding: 11px 22px; font-size: 13px; }
+    .navbar { top: 10px; padding: 6px 10px; }
+    .section { padding: 0 16px; }
   }
 
   @media print {
     body { background: #fff; }
     .detail-panel { max-height: none !important; opacity: 1 !important; }
-    .lang-toggle { display: none; }
+    .navbar, .hero-scroll { display: none; }
+    .hero { min-height: auto; padding: 40px 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .hero-orb { animation: none; }
+    .hero-scroll { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }
 </style>
 </head>
 <body class="en">
 
-<!-- LANGUAGE TOGGLE -->
-<div class="lang-toggle" onclick="toggleLang()">
-  <span class="lang-opt" id="lang-zh-btn">中文</span>
-  <span class="lang-opt active" id="lang-en-btn">EN</span>
-</div>
+<!-- NAVBAR -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <img src="assets/corp-logo.png" alt="aIwalk" class="nav-logo">
+  <span class="nav-brand"><span class="ai">a<span class="serif-i">I</span></span>walk</span>
+  <div class="nav-links">
+    <a class="nav-link" href="#about"><span class="lang-zh">關於</span><span class="lang-en">About</span></a>
+    <a class="nav-link" href="#products"><span class="lang-zh">產品</span><span class="lang-en">Products</span></a>
+    <a class="nav-link" href="#roadmap"><span class="lang-zh">藍圖</span><span class="lang-en">Roadmap</span></a>
+  </div>
+  <div class="lang-toggle" onclick="toggleLang()" role="button" aria-label="Toggle language">
+    <span class="lang-opt" id="lang-zh-btn">中文</span>
+    <span class="lang-opt active" id="lang-en-btn">EN</span>
+  </div>
+</nav>
 
-<!-- HEADER -->
-<div class="header">
-  <img src="assets/corp-logo.png" alt="aIwalk" class="corp-logo">
-  <h1><span class="ai">a<span class="serif-i">I</span></span>walk</h1>
-  <div class="subtitle-zh"><span class="lang-zh">智意行科技股份有限公司</span><span class="lang-en">aIwalk Co., Ltd.</span></div>
-</div>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+  <div class="hero-content">
+    <img src="assets/corp-logo.png" alt="aIwalk" class="corp-logo">
+    <h1><span class="ai">a<span class="serif-i">I</span></span>walk</h1>
+    <div class="hero-company">
+      <span class="lang-zh">智意行科技股份有限公司</span>
+      <span class="lang-en">aIwalk Co., Ltd.</span>
+    </div>
+    <div class="hero-tagline">
+      <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系</span>
+      <span class="lang-en"><strong>AI-driven digital twin technology</strong> for personalized rehabilitation — from fall prevention to full mobility support</span>
+    </div>
+    <div class="hero-cta-row">
+      <a class="hero-cta hero-cta-primary" href="#products">
+        <i data-lucide="play-circle" style="width:18px;height:18px;"></i>
+        <span class="lang-zh">產品展示</span><span class="lang-en">Product Demos</span>
+      </a>
+      <a class="hero-cta hero-cta-secondary" href="#roadmap">
+        <i data-lucide="map" style="width:18px;height:18px;"></i>
+        <span class="lang-zh">技術藍圖</span><span class="lang-en">Technology Roadmap</span>
+      </a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <i data-lucide="chevrons-down" style="width:20px;height:20px;"></i>
+  </div>
+</section>
 
 <!-- ABOUT -->
-<div class="about-section">
+<div id="about" class="section section-gap reveal">
+  <div class="section-header">
+    <div class="section-icon section-icon-navy">
+      <i data-lucide="building-2"></i>
+    </div>
+    <h2 class="section-title">
+      <span class="lang-zh">關於智意行科技</span>
+      <span class="lang-en">About aIwalk Co., Ltd.</span>
+    </h2>
+  </div>
   <div class="about-card">
-    <div class="about-title"><span class="lang-zh">🏢 關於智意行科技</span><span class="lang-en">🏢 About aIwalk Co., Ltd.</span></div>
     <div class="about-desc">
       <span class="lang-zh">
         智意行科技透過三大核心產品開發 AI 驅動的復健科技：<strong>NTKCAP</strong>，一套可攜式無標記動作捕捉系統，提供個人化生物力學分析；<strong>ExoPulse Patient Cloud</strong>，臨床數據平台，讓治療師即時監控步態指標並調整治療策略；以及 <strong>ExoPulse Exoskeleton</strong>，一款以數位孿生驅動的穿戴式機器人，從跌倒預防到完整行動支援，提供意圖預測式的個人化步行輔助。
@@ -611,32 +1020,44 @@
 </div>
 
 <!-- CLOSED-LOOP LIFECYCLE -->
-<div class="loop-section">
+<div class="section section-gap-sm reveal">
   <div class="loop-card">
-    <div class="loop-title">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
+    <div class="loop-title">
+      <span class="loop-title-icon"><i data-lucide="refresh-cw"></i></span>
+      <span class="lang-zh">ExoPulse 閉迴路生態</span>
+      <span class="lang-en">ExoPulse Closed-Loop Lifecycle</span>
+    </div>
     <div class="loop-flow">
       <span class="loop-chip" style="background:var(--phase1);"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
-      <span class="loop-arrow">→</span>
+      <span class="loop-arrow">&rarr;</span>
       <span class="loop-chip" style="background:var(--phase2);"><span class="lang-zh">指標分析</span><span class="lang-en">Analysis</span></span>
-      <span class="loop-arrow">→</span>
+      <span class="loop-arrow">&rarr;</span>
       <span class="loop-chip" style="background:var(--phase3);"><span class="lang-zh">策略建議</span><span class="lang-en">Strategy</span></span>
-      <span class="loop-arrow">→</span>
+      <span class="loop-arrow">&rarr;</span>
       <span class="loop-chip" style="background:var(--phase4);"><span class="lang-zh">執行訓練</span><span class="lang-en">Training</span></span>
-      <span class="loop-arrow">→</span>
+      <span class="loop-arrow">&rarr;</span>
       <span class="loop-chip" style="background:var(--phase5);"><span class="lang-zh">再感測</span><span class="lang-en">Re-Sense</span></span>
-      <span class="loop-arrow">⟳</span>
+      <span class="loop-arrow">&#x27F3;</span>
     </div>
-    <div class="loop-sub">ExoPulse Patient Cloud × ExoPulse Studio</div>
+    <div class="loop-sub">ExoPulse Patient Cloud &times; ExoPulse Studio</div>
   </div>
 </div>
 
 <!-- PRODUCT DEMOS -->
-<div class="demos-section">
-  <div class="demos-title"><span class="lang-zh">🎬 產品展示</span><span class="lang-en">🎬 Product Demos</span></div>
+<div id="products" class="section section-gap reveal">
+  <div class="section-header">
+    <div class="section-icon section-icon-orange">
+      <i data-lucide="clapperboard"></i>
+    </div>
+    <h2 class="section-title">
+      <span class="lang-zh">產品展示</span>
+      <span class="lang-en">Product Demos</span>
+    </h2>
+  </div>
   <div class="demos-grid">
-    <div class="demo-card">
+    <div class="demo-card reveal reveal-delay-1">
       <div class="demo-video">
-        <iframe src="https://www.youtube.com/embed/SLfpquFBDcY" allowfullscreen loading="lazy"></iframe>
+        <iframe src="https://www.youtube.com/embed/SLfpquFBDcY" allowfullscreen loading="lazy" title="NTKCAP Demo"></iframe>
       </div>
       <div class="demo-info">
         <img src="assets/ntkcap-logo.jpg" alt="NTKCAP" class="demo-logo">
@@ -646,9 +1067,9 @@
         </div>
       </div>
     </div>
-    <div class="demo-card">
+    <div class="demo-card reveal reveal-delay-2">
       <div class="demo-video">
-        <iframe src="https://www.youtube.com/embed/AqCmBuTejRg" allowfullscreen loading="lazy"></iframe>
+        <iframe src="https://www.youtube.com/embed/AqCmBuTejRg" allowfullscreen loading="lazy" title="ExoPulse Patient Cloud Demo"></iframe>
       </div>
       <div class="demo-info">
         <img src="assets/patientcloud-logo.png" alt="Patient Cloud" class="demo-logo">
@@ -658,9 +1079,9 @@
         </div>
       </div>
     </div>
-    <div class="demo-card">
+    <div class="demo-card reveal reveal-delay-3">
       <div class="demo-video">
-        <iframe src="https://www.youtube.com/embed/mBgwVSGpGes" allowfullscreen loading="lazy"></iframe>
+        <iframe src="https://www.youtube.com/embed/mBgwVSGpGes" allowfullscreen loading="lazy" title="ExoPulse Local APP Demo"></iframe>
       </div>
       <div class="demo-info">
         <img src="assets/exopulse-logo.png" alt="ExoPulse" class="demo-logo">
@@ -674,68 +1095,76 @@
 </div>
 
 <!-- EXTRA LINKS -->
-<div class="extra-links">
-  <a class="extra-link-card" href="https://www.youtube.com/playlist?list=PLdnwWh-r3WYt02FhSLbTEzlGEcCGB9FfJ" target="_blank">
-    <span class="el-icon">📚</span>
-    <span class="el-text">
-      <div class="el-title"><span class="lang-zh">系統使用教學專區</span><span class="lang-en">System Tutorials</span></div>
-      <div class="el-desc"><span class="lang-zh">完整的系統操作教學影片播放清單</span><span class="lang-en">Complete system operation tutorial playlist</span></div>
-    </span>
-    <span class="el-arrow">→</span>
-  </a>
-  <a class="extra-link-card" href="card.html">
-    <span class="el-icon">📇</span>
-    <span class="el-text">
-      <div class="el-title"><span class="lang-zh">數位名片</span><span class="lang-en">Digital Business Card</span></div>
-      <div class="el-desc"><span class="lang-zh">聯絡資訊與社群連結</span><span class="lang-en">Contact info & social links</span></div>
-    </span>
-    <span class="el-arrow">→</span>
-  </a>
+<div class="section section-gap-sm reveal">
+  <div class="extra-links">
+    <a class="extra-link-card" href="https://www.youtube.com/playlist?list=PLdnwWh-r3WYt02FhSLbTEzlGEcCGB9FfJ" target="_blank" rel="noopener">
+      <div class="el-icon-box el-icon-tutorials"><i data-lucide="book-open"></i></div>
+      <span class="el-text">
+        <div class="el-title"><span class="lang-zh">系統使用教學專區</span><span class="lang-en">System Tutorials</span></div>
+        <div class="el-desc"><span class="lang-zh">完整的系統操作教學影片播放清單</span><span class="lang-en">Complete system operation tutorial playlist</span></div>
+      </span>
+      <span class="el-arrow"><i data-lucide="arrow-right"></i></span>
+    </a>
+    <a class="extra-link-card" href="card.html">
+      <div class="el-icon-box el-icon-card"><i data-lucide="contact"></i></div>
+      <span class="el-text">
+        <div class="el-title"><span class="lang-zh">數位名片</span><span class="lang-en">Digital Business Card</span></div>
+        <div class="el-desc"><span class="lang-zh">聯絡資訊與社群連結</span><span class="lang-en">Contact info & social links</span></div>
+      </span>
+      <span class="el-arrow"><i data-lucide="arrow-right"></i></span>
+    </a>
+  </div>
 </div>
 
 <!-- DIVIDER -->
-<div style="max-width:960px; margin:32px auto 0; padding:0 16px;">
-  <hr style="border:none; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--navy), var(--orange)); opacity:0.3;">
-</div>
+<div class="section-divider"><hr></div>
 
-<!-- ROADMAP HEADER -->
-<div class="header" style="padding-top:28px;">
-  <div class="subtitle">LIFELONG WEARABLE ROBOT PARTNER</div>
-  <div class="subtitle-zh"><span class="lang-zh">智意行科技 ─ 五階段技術藍圖與階段性產品產出</span><span class="lang-en">ExoPulse Corp ─ Five-Phase Technology Blueprint & Milestone Deliverables</span></div>
+<!-- ROADMAP SECTION -->
+<div id="roadmap" class="section section-gap reveal">
+  <div class="roadmap-header">
+    <div class="rh-overline">Lifelong Wearable Robot Partner</div>
+    <div class="rh-title">
+      <span class="lang-zh">智意行科技 ── 五階段技術藍圖與階段性產品產出</span>
+      <span class="lang-en">ExoPulse Corp ── Five-Phase Technology Blueprint &amp; Milestone Deliverables</span>
+    </div>
+  </div>
 </div>
 
 <!-- VISION BAR -->
-<div class="vision-bar">
-  <span class="lang-zh">🎯 核心願景：以 <span class="hl">數位孿生</span> 驅動的個人化外骨骼控制框架，從 IMU 感測到 <span class="hl">數位永生</span>，實現終身照護閉迴路</span><span class="lang-en">🎯 Core Vision: A personalized exoskeleton control framework driven by <span class="hl">Digital Twin</span> technology, from IMU sensing to <span class="hl">Digital Immortality</span>, achieving a lifelong care closed loop</span>
+<div class="section reveal">
+  <div class="vision-bar">
+    <span class="vision-icon"><i data-lucide="target"></i></span>
+    <span>
+      <span class="lang-zh">核心願景：以 <span class="hl">數位孿生</span> 驅動的個人化外骨骼控制框架，從 IMU 感測到 <span class="hl">數位永生</span>，實現終身照護閉迴路</span>
+      <span class="lang-en">Core Vision: A personalized exoskeleton control framework driven by <span class="hl">Digital Twin</span> technology, from IMU sensing to <span class="hl">Digital Immortality</span>, achieving a lifelong care closed loop</span>
+    </span>
+  </div>
 </div>
 
 <!-- COMPETITIVE EDGE -->
-<div class="edge-section">
+<div class="section section-gap-sm reveal">
   <a class="edge-link" href="Exo_Control_Strategy_Landscape.html">
-    <div class="edge-icon">📊</div>
+    <div class="edge-icon"><i data-lucide="bar-chart-3"></i></div>
     <div class="edge-text">
       <div class="edge-title"><span class="lang-zh">我們的競爭優勢</span><span class="lang-en">Our Competitive Edge</span></div>
       <div class="edge-desc"><span class="lang-zh">ExoPulse 在意圖預測與個體適應性雙維度上領先現有技術</span><span class="lang-en">See how ExoPulse leads in intent prediction and individual adaptability</span></div>
     </div>
-    <span class="edge-arrow">→</span>
+    <span class="edge-arrow"><i data-lucide="arrow-right"></i></span>
   </a>
 </div>
 
-<!-- ROADMAP -->
+<!-- ROADMAP PHASES -->
 <div class="roadmap">
-
-  <!-- ===== PROGRESS RAIL ===== -->
   <div class="rail">
-
     <!-- Phase 1 -->
     <div class="phase-col active" data-phase="1" onclick="selectPhase(1)">
       <div class="node n1">1</div>
       <div class="drop-line" style="background:var(--phase1);"></div>
       <div class="phase-info">
         <div class="pi-title-zh"><span class="lang-zh">IMU 感測<br>跌倒預防</span><span class="lang-en">IMU Sensing<br>Fall Prevention</span></div>
-        <div class="pi-title-en">Inertial Sensing<br>& Pre-Fail Detection</div>
+        <div class="pi-title-en">Inertial Sensing<br>&amp; Pre-Fail Detection</div>
         <div class="pi-year"><span class="lang-zh">YEAR 1 ─ 博一</span><span class="lang-en">YEAR 1 ─ PhD Year 1</span></div>
-        <div class="pi-target"><span class="lang-zh">🎯 衰弱前期個體<br>獨居長者</span><span class="lang-en">🎯 Pre-frail individuals<br>Elderly living alone</span></div>
+        <div class="pi-target"><span class="lang-zh">衰弱前期個體<br>獨居長者</span><span class="lang-en">Pre-frail individuals<br>Elderly living alone</span></div>
         <div class="pi-techs">
           <span class="pi-tech">IMU</span>
           <span class="pi-tech">Edge AI</span>
@@ -745,7 +1174,6 @@
         </div>
       </div>
     </div>
-
     <!-- Phase 2 -->
     <div class="phase-col" data-phase="2" onclick="selectPhase(2)">
       <div class="node n2">2</div>
@@ -754,7 +1182,7 @@
         <div class="pi-title-zh"><span class="lang-zh">EMG 驅動<br>偏癱復健</span><span class="lang-en">EMG-Driven<br>Hemiplegia Rehab</span></div>
         <div class="pi-title-en">EMG-Driven NMS<br>Stroke Rehabilitation</div>
         <div class="pi-year"><span class="lang-zh">YEAR 2 ─ 博二</span><span class="lang-en">YEAR 2 ─ PhD Year 2</span></div>
-        <div class="pi-target"><span class="lang-zh">🎯 中風後偏癱<br>多發性硬化症</span><span class="lang-en">🎯 Post-stroke hemiplegia<br>Multiple Sclerosis</span></div>
+        <div class="pi-target"><span class="lang-zh">中風後偏癱<br>多發性硬化症</span><span class="lang-en">Post-stroke hemiplegia<br>Multiple Sclerosis</span></div>
         <div class="pi-techs">
           <span class="pi-tech">sEMG</span>
           <span class="pi-tech">NMS</span>
@@ -764,16 +1192,15 @@
         </div>
       </div>
     </div>
-
     <!-- Phase 3 -->
     <div class="phase-col" data-phase="3" onclick="selectPhase(3)">
       <div class="node n3">3</div>
       <div class="drop-line" style="background:var(--phase3);"></div>
       <div class="phase-info">
         <div class="pi-title-zh"><span class="lang-zh">資料生成<br>族群擴展</span><span class="lang-en">Data Synthesis<br>Population Expansion</span></div>
-        <div class="pi-title-en">Data Synthesis<br>& Generalization</div>
+        <div class="pi-title-en">Data Synthesis<br>&amp; Generalization</div>
         <div class="pi-year"><span class="lang-zh">YEAR 3 ─ 博三</span><span class="lang-en">YEAR 3 ─ PhD Year 3</span></div>
-        <div class="pi-target"><span class="lang-zh">🎯 重度失能族群<br>凍結步態 · TBI</span><span class="lang-en">🎯 Severe disability<br>Freezing of Gait · TBI</span></div>
+        <div class="pi-target"><span class="lang-zh">重度失能族群<br>凍結步態 · TBI</span><span class="lang-en">Severe disability<br>Freezing of Gait · TBI</span></div>
         <div class="pi-techs">
           <span class="pi-tech"><span class="lang-zh">資料合成</span><span class="lang-en">Data Synth</span></span>
           <span class="pi-tech"><span class="lang-zh">NMS虛擬環境</span><span class="lang-en">NMS Virtual Env</span></span>
@@ -782,7 +1209,6 @@
         </div>
       </div>
     </div>
-
     <!-- Phase 4 -->
     <div class="phase-col" data-phase="4" onclick="selectPhase(4)">
       <div class="node n4">4</div>
@@ -791,7 +1217,7 @@
         <div class="pi-title-zh"><span class="lang-zh">腦機介面<br>全癱瘓控制</span><span class="lang-en">Brain-Computer<br>Interface Control</span></div>
         <div class="pi-title-en">BCI Integration<br>Full-Paralysis Control</div>
         <div class="pi-year"><span class="lang-zh">YEAR 4+ ─ 博四</span><span class="lang-en">YEAR 4+ ─ PhD Year 4</span></div>
-        <div class="pi-target"><span class="lang-zh">🎯 完全癱瘓族群<br>脊髓損傷</span><span class="lang-en">🎯 Full paralysis<br>Spinal cord injury</span></div>
+        <div class="pi-target"><span class="lang-zh">完全癱瘓族群<br>脊髓損傷</span><span class="lang-en">Full paralysis<br>Spinal cord injury</span></div>
         <div class="pi-techs">
           <span class="pi-tech">EEG</span>
           <span class="pi-tech">BCI</span>
@@ -800,7 +1226,6 @@
         </div>
       </div>
     </div>
-
     <!-- Phase 5 -->
     <div class="phase-col" data-phase="5" onclick="selectPhase(5)">
       <div class="node n5">5</div>
@@ -809,7 +1234,7 @@
         <div class="pi-title-zh"><span class="lang-zh">數位永生</span><span class="lang-en">Digital Immortality</span></div>
         <div class="pi-title-en">Digital Immortality<br>Consciousness Continuity</div>
         <div class="pi-year">LONG-TERM VISION</div>
-        <div class="pi-target"><span class="lang-zh">🎯 所有人<br>終身機器人夥伴</span><span class="lang-en">🎯 Everyone<br>Lifelong robot partner</span></div>
+        <div class="pi-target"><span class="lang-zh">所有人<br>終身機器人夥伴</span><span class="lang-en">Everyone<br>Lifelong robot partner</span></div>
         <div class="pi-techs">
           <span class="pi-tech"><span class="lang-zh">數位分身</span><span class="lang-en">Digital Twin</span></span>
           <span class="pi-tech"><span class="lang-zh">運動記憶</span><span class="lang-en">Motor Memory</span></span>
@@ -818,35 +1243,34 @@
         </div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /rail -->
-
-  <!-- ===== DETAIL PANELS ===== -->
-
+  <!-- DETAIL PANELS -->
   <!-- Phase 1 Detail -->
   <div class="detail-panel open" id="dp-1">
     <div class="dp-inner">
       <div class="dp-left">
         <div class="dp-badge" style="background:var(--phase1);">Phase 1</div>
-        <div class="dp-title"><span class="lang-zh">IMU 感測與跌倒預防</span><span class="lang-en">IMU Sensing & Fall Prevention</span></div>
-        <div class="dp-title-en">Inertial Sensing & Pre-Fail Detection</div>
+        <div class="dp-title"><span class="lang-zh">IMU 感測與跌倒預防</span><span class="lang-en">IMU Sensing &amp; Fall Prevention</span></div>
+        <div class="dp-title-en">Inertial Sensing &amp; Pre-Fail Detection</div>
         <div class="dp-desc">
-          <span class="lang-zh">聚焦於 ExoPulse 系統之<strong>基礎感測架構</strong>建立。完成 PCB 佈局與原型機製作，整合 IMU 慣性感測模組與 Edge AI 即時運算晶片，實現步態相位即時估計與<strong>跌倒風險預警功能</strong>。此階段建立 ExoPulse 硬體平台基線，取得醫院 IRB 倫理審查核准，啟動不穩定步態族群之臨床資料蒐集。產品定位面向衰弱前期個體與獨居長者的<strong>跌倒預防</strong>，研究產出將直接轉化為企業之復健訓練與跌倒預防軟體模組。</span><span class="lang-en">Focuses on establishing the <strong>foundational sensing architecture</strong> for the ExoPulse system. Complete PCB layout and prototype fabrication, integrating IMU inertial sensing modules with Edge AI real-time computing chips to achieve real-time gait phase estimation and <strong>fall risk early warning</strong>. This phase establishes the ExoPulse hardware platform baseline, obtains hospital IRB ethics approval, and initiates clinical data collection for unstable gait populations. Product positioning targets <strong>fall prevention</strong> for pre-frail individuals and elderly living alone, with research outputs directly converted into rehabilitation training and fall prevention software modules.</span>
+          <span class="lang-zh">聚焦於 ExoPulse 系統之<strong>基礎感測架構</strong>建立。完成 PCB 佈局與原型機製作，整合 IMU 慣性感測模組與 Edge AI 即時運算晶片，實現步態相位即時估計與<strong>跌倒風險預警功能</strong>。此階段建立 ExoPulse 硬體平台基線，取得醫院 IRB 倫理審查核准，啟動不穩定步態族群之臨床資料蒐集。產品定位面向衰弱前期個體與獨居長者的<strong>跌倒預防</strong>，研究產出將直接轉化為企業之復健訓練與跌倒預防軟體模組。</span>
+          <span class="lang-en">Focuses on establishing the <strong>foundational sensing architecture</strong> for the ExoPulse system. Complete PCB layout and prototype fabrication, integrating IMU inertial sensing modules with Edge AI real-time computing chips to achieve real-time gait phase estimation and <strong>fall risk early warning</strong>. This phase establishes the ExoPulse hardware platform baseline, obtains hospital IRB ethics approval, and initiates clinical data collection for unstable gait populations. Product positioning targets <strong>fall prevention</strong> for pre-frail individuals and elderly living alone, with research outputs directly converted into rehabilitation training and fall prevention software modules.</span>
         </div>
       </div>
       <div class="dp-right">
         <div class="output-box">
-          <div class="ob-label" style="color:var(--phase1);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <div class="ob-label" style="color:var(--phase1);"><i data-lucide="package"></i> <span class="lang-zh">階段產出</span><span class="lang-en">PHASE OUTPUT</span></div>
           <ul>
-            <li><span class="lang-zh"><strong>復健訓練與跌倒預防軟體模組</strong>（Rehab Training & Falling Prevention）</span><span class="lang-en"><strong>Rehab Training & Fall Prevention Software Module</strong></span></li>
+            <li><span class="lang-zh"><strong>復健訓練與跌倒預防軟體模組</strong>（Rehab Training &amp; Falling Prevention）</span><span class="lang-en"><strong>Rehab Training &amp; Fall Prevention Software Module</strong></span></li>
             <li><span class="lang-zh">ExoPulse 硬體平台原型機（U 型框架、三自由度髖關節、BLDC 馬達）</span><span class="lang-en">ExoPulse hardware platform prototype (U-frame, 3-DOF hip joint, BLDC motors)</span></li>
-            <li><span class="lang-zh">IMU 跌倒偵測與風險預警演算法</span><span class="lang-en">IMU fall detection & risk early warning algorithm</span></li>
-            <li><span class="lang-zh">臨床 IRB 核准與基線資料蒐集系統</span><span class="lang-en">Clinical IRB approval & baseline data collection system</span></li>
+            <li><span class="lang-zh">IMU 跌倒偵測與風險預警演算法</span><span class="lang-en">IMU fall detection &amp; risk early warning algorithm</span></li>
+            <li><span class="lang-zh">臨床 IRB 核准與基線資料蒐集系統</span><span class="lang-en">Clinical IRB approval &amp; baseline data collection system</span></li>
           </ul>
         </div>
         <div class="target-box" style="border-color:var(--phase1);">
           <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
-          <div class="tb-text"><span class="lang-zh">衰弱前期（Pre-frail）個體、獨居長者 ─ 跌倒預防與安全保障</span><span class="lang-en">Pre-frail individuals, elderly living alone ─ fall prevention & safety assurance</span></div>
+          <div class="tb-text"><span class="lang-zh">衰弱前期（Pre-frail）個體、獨居長者 ─ 跌倒預防與安全保障</span><span class="lang-en">Pre-frail individuals, elderly living alone ─ fall prevention &amp; safety assurance</span></div>
         </div>
       </div>
     </div>
@@ -858,16 +1282,17 @@
       <div class="dp-left">
         <div class="dp-badge" style="background:var(--phase2);">Phase 2</div>
         <div class="dp-title"><span class="lang-zh">EMG 驅動的神經肌肉骨骼建模</span><span class="lang-en">EMG-Driven Neuromusculoskeletal Modeling</span></div>
-        <div class="dp-title-en">EMG-Driven NMS Modeling & Stroke Rehabilitation</div>
+        <div class="dp-title-en">EMG-Driven NMS Modeling &amp; Stroke Rehabilitation</div>
         <div class="dp-desc">
-          <span class="lang-zh">導入 sEMG 肌電感測與<strong>神經肌肉骨骼（NMS）模型</strong>校準流程，透過雲端平台完成個人化數位孿生建模。針對中風後偏癱患者之不對稱步態特徵，開發 EMG 驅動的<strong>即時肌力估測與輔助力矩計算演算法</strong>，完成軌跡補償連續調節之可行性驗證。DRL 雙代理架構中，Human Agent（TunedMPO）作為意圖預測引擎，Exoskeleton Agent（D4PG-LSTM）學習最佳人機互動策略。此階段產品定位由預防轉向<strong>主動復健與行動輔助</strong>。</span><span class="lang-en">Introduces sEMG electromyographic sensing and <strong>Neuromusculoskeletal (NMS) model</strong> calibration workflow, completing personalized digital twin modeling via cloud platform. Targeting asymmetric gait characteristics of post-stroke hemiplegia patients, develops EMG-driven <strong>real-time muscle force estimation and assistive torque calculation algorithms</strong>, verifying feasibility of continuous trajectory compensation. In the DRL dual-agent architecture, the Human Agent (TunedMPO) serves as the intent prediction engine, while the Exoskeleton Agent (D4PG-LSTM) learns optimal human-robot interaction strategies. This phase shifts product positioning from prevention to <strong>active rehabilitation & mobility assistance</strong>.</span>
+          <span class="lang-zh">導入 sEMG 肌電感測與<strong>神經肌肉骨骼（NMS）模型</strong>校準流程，透過雲端平台完成個人化數位孿生建模。針對中風後偏癱患者之不對稱步態特徵，開發 EMG 驅動的<strong>即時肌力估測與輔助力矩計算演算法</strong>，完成軌跡補償連續調節之可行性驗證。DRL 雙代理架構中，Human Agent（TunedMPO）作為意圖預測引擎，Exoskeleton Agent（D4PG-LSTM）學習最佳人機互動策略。此階段產品定位由預防轉向<strong>主動復健與行動輔助</strong>。</span>
+          <span class="lang-en">Introduces sEMG electromyographic sensing and <strong>Neuromusculoskeletal (NMS) model</strong> calibration workflow, completing personalized digital twin modeling via cloud platform. Targeting asymmetric gait characteristics of post-stroke hemiplegia patients, develops EMG-driven <strong>real-time muscle force estimation and assistive torque calculation algorithms</strong>, verifying feasibility of continuous trajectory compensation. In the DRL dual-agent architecture, the Human Agent (TunedMPO) serves as the intent prediction engine, while the Exoskeleton Agent (D4PG-LSTM) learns optimal human-robot interaction strategies. This phase shifts product positioning from prevention to <strong>active rehabilitation &amp; mobility assistance</strong>.</span>
         </div>
       </div>
       <div class="dp-right">
         <div class="output-box">
-          <div class="ob-label" style="color:var(--phase2);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <div class="ob-label" style="color:var(--phase2);"><i data-lucide="package"></i> <span class="lang-zh">階段產出</span><span class="lang-en">PHASE OUTPUT</span></div>
           <ul>
-            <li><span class="lang-zh"><strong>監測與關節保護模組</strong>（Monitoring & Joint Protection）</span><span class="lang-en"><strong>Monitoring & Joint Protection Module</strong></span></li>
+            <li><span class="lang-zh"><strong>監測與關節保護模組</strong>（Monitoring &amp; Joint Protection）</span><span class="lang-en"><strong>Monitoring &amp; Joint Protection Module</strong></span></li>
             <li><span class="lang-zh"><strong>行動輔助軟體模組</strong>（Mobility Assistance）</span><span class="lang-en"><strong>Mobility Assistance Software Module</strong></span></li>
             <li><span class="lang-zh">EMG 驅動即時肌力估測系統</span><span class="lang-en">EMG-driven real-time muscle force estimation system</span></li>
             <li><span class="lang-zh">DRL Human Agent + Exoskeleton Agent 雙代理架構</span><span class="lang-en">DRL Human Agent + Exoskeleton Agent dual-agent architecture</span></li>
@@ -876,7 +1301,7 @@
         </div>
         <div class="target-box" style="border-color:var(--phase2);">
           <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
-          <div class="tb-text"><span class="lang-zh">中風後偏癱患者、多發性硬化症（MS）族群 ─ 步態復健與肌力輔助</span><span class="lang-en">Post-stroke hemiplegia patients, Multiple Sclerosis (MS) population ─ gait rehabilitation & muscle strength assistance</span></div>
+          <div class="tb-text"><span class="lang-zh">中風後偏癱患者、多發性硬化症（MS）族群 ─ 步態復健與肌力輔助</span><span class="lang-en">Post-stroke hemiplegia patients, Multiple Sclerosis (MS) population ─ gait rehabilitation &amp; muscle strength assistance</span></div>
         </div>
       </div>
     </div>
@@ -887,20 +1312,21 @@
     <div class="dp-inner">
       <div class="dp-left">
         <div class="dp-badge" style="background:var(--phase3);">Phase 3</div>
-        <div class="dp-title"><span class="lang-zh">資料生成技術與族群擴展</span><span class="lang-en">Data Synthesis & Population Expansion</span></div>
-        <div class="dp-title-en">Data Synthesis & Cross-Population Generalization</div>
+        <div class="dp-title"><span class="lang-zh">資料生成技術與族群擴展</span><span class="lang-en">Data Synthesis &amp; Population Expansion</span></div>
+        <div class="dp-title-en">Data Synthesis &amp; Cross-Population Generalization</div>
         <div class="dp-desc">
-          <span class="lang-zh">聚焦於數位孿生之<strong>前向資料合成技術</strong>（Forward Data Synthesis），利用已校準之 NMS 模型在虛擬環境中合成使用者未被實際記錄的運動場景數據（如不同地形、不同退化程度之步態模式），解決<strong>無法行動族群的臨床資料稀缺</strong>問題。使 ExoPulse 系統可服務於無法進行大量實體測試的重度失能族群——包含凍結步態（Freezing of Gait）患者及創傷性腦損傷（TBI）患者。驗證架構泛化與批量個人化能力，實現多地形、多疾病條件之 <strong>Sim-to-Real 轉移</strong>。</span><span class="lang-en">Focuses on <strong>Forward Data Synthesis</strong> technology for digital twins, using calibrated NMS models to synthesize movement scenario data in virtual environments that were never physically recorded (e.g., gait patterns across different terrains and degradation levels), solving the <strong>clinical data scarcity problem for immobile populations</strong>. This enables the ExoPulse system to serve severely disabled populations who cannot undergo extensive physical testing ─ including Freezing of Gait (FoG) and Traumatic Brain Injury (TBI) patients. Validates architecture generalization and batch personalization capabilities, achieving multi-terrain, multi-condition <strong>Sim-to-Real transfer</strong>.</span>
+          <span class="lang-zh">聚焦於數位孿生之<strong>前向資料合成技術</strong>（Forward Data Synthesis），利用已校準之 NMS 模型在虛擬環境中合成使用者未被實際記錄的運動場景數據（如不同地形、不同退化程度之步態模式），解決<strong>無法行動族群的臨床資料稀缺</strong>問題。使 ExoPulse 系統可服務於無法進行大量實體測試的重度失能族群——包含凍結步態（Freezing of Gait）患者及創傷性腦損傷（TBI）患者。驗證架構泛化與批量個人化能力，實現多地形、多疾病條件之 <strong>Sim-to-Real 轉移</strong>。</span>
+          <span class="lang-en">Focuses on <strong>Forward Data Synthesis</strong> technology for digital twins, using calibrated NMS models to synthesize movement scenario data in virtual environments that were never physically recorded (e.g., gait patterns across different terrains and degradation levels), solving the <strong>clinical data scarcity problem for immobile populations</strong>. This enables the ExoPulse system to serve severely disabled populations who cannot undergo extensive physical testing ── including Freezing of Gait (FoG) and Traumatic Brain Injury (TBI) patients. Validates architecture generalization and batch personalization capabilities, achieving multi-terrain, multi-condition <strong>Sim-to-Real transfer</strong>.</span>
         </div>
       </div>
       <div class="dp-right">
         <div class="output-box">
-          <div class="ob-label" style="color:var(--phase3);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <div class="ob-label" style="color:var(--phase3);"><i data-lucide="package"></i> <span class="lang-zh">階段產出</span><span class="lang-en">PHASE OUTPUT</span></div>
           <ul>
             <li><span class="lang-zh"><strong>資料合成引擎</strong> ─ 虛擬場景運動資料批量生成系統</span><span class="lang-en"><strong>Data Synthesis Engine</strong> ─ batch motion data generation in virtual scenarios</span></li>
             <li><span class="lang-zh"><strong>跨族群泛化模型</strong> ─ 一套框架批量應用於不同疾病族群</span><span class="lang-en"><strong>Cross-population generalization model</strong> ─ one framework for batch application across disease groups</span></li>
             <li><span class="lang-zh">凍結步態（Freezing of Gait）控制模組</span><span class="lang-en">Freezing of Gait (FoG) control module</span></li>
-            <li><span class="lang-zh">Sim-to-Real 驗證報告與臨床轉化數據</span><span class="lang-en">Sim-to-Real validation report & clinical translation data</span></li>
+            <li><span class="lang-zh">Sim-to-Real 驗證報告與臨床轉化數據</span><span class="lang-en">Sim-to-Real validation report &amp; clinical translation data</span></li>
           </ul>
         </div>
         <div class="target-box" style="border-color:var(--phase3);">
@@ -916,25 +1342,26 @@
     <div class="dp-inner">
       <div class="dp-left">
         <div class="dp-badge" style="background:var(--phase4);">Phase 4</div>
-        <div class="dp-title"><span class="lang-zh">腦機介面整合與全癱瘓族群控制</span><span class="lang-en">BCI Integration & Full-Paralysis Control</span></div>
-        <div class="dp-title-en">BCI Integration & Full-Paralysis Exoskeleton Control</div>
+        <div class="dp-title"><span class="lang-zh">腦機介面整合與全癱瘓族群控制</span><span class="lang-en">BCI Integration &amp; Full-Paralysis Control</span></div>
+        <div class="dp-title-en">BCI Integration &amp; Full-Paralysis Exoskeleton Control</div>
         <div class="dp-desc">
-          <span class="lang-zh">此階段為長期願景之<strong>探索性研究</strong>，探討結合腦電訊號作為運動意圖之最上游輸入源。使完全喪失自主運動能力之癱瘓患者可透過<strong>腦機介面（BCI）</strong>控制數位孿生虛擬人體，進而驅動外骨骼執行目標動作，形成 <strong>EEG → 虛擬人體意圖預測 → 外骨骼力矩輸出</strong>之完整控制鏈。同時探索癱瘓者透過意念控制虛擬人物（Avatar）的可能性，將 ExoPulse 服務對象進一步擴展至完全癱瘓族群，實現「<strong>Train. Assist. Live.</strong>」。</span><span class="lang-en">This phase represents <strong>exploratory research</strong> toward the long-term vision, investigating the integration of brain electrical signals as the most upstream source of motor intent. Enabling fully paralyzed patients who have lost all voluntary motor ability to control a digital twin virtual body through <strong>Brain-Computer Interface (BCI)</strong>, which then drives the exoskeleton to execute target movements, forming the complete control chain: <strong>EEG → Virtual body intent prediction → Exoskeleton torque output</strong>. Also explores the possibility of paralyzed individuals controlling virtual avatars through thought, further extending ExoPulse services to fully paralyzed populations, realizing "<strong>Train. Assist. Live.</strong>".</span>
+          <span class="lang-zh">此階段為長期願景之<strong>探索性研究</strong>，探討結合腦電訊號作為運動意圖之最上游輸入源。使完全喪失自主運動能力之癱瘓患者可透過<strong>腦機介面（BCI）</strong>控制數位孿生虛擬人體，進而驅動外骨骼執行目標動作，形成 <strong>EEG &rarr; 虛擬人體意圖預測 &rarr; 外骨骼力矩輸出</strong>之完整控制鏈。同時探索癱瘓者透過意念控制虛擬人物（Avatar）的可能性，將 ExoPulse 服務對象進一步擴展至完全癱瘓族群，實現「<strong>Train. Assist. Live.</strong>」。</span>
+          <span class="lang-en">This phase represents <strong>exploratory research</strong> toward the long-term vision, investigating the integration of brain electrical signals as the most upstream source of motor intent. Enabling fully paralyzed patients who have lost all voluntary motor ability to control a digital twin virtual body through <strong>Brain-Computer Interface (BCI)</strong>, which then drives the exoskeleton to execute target movements, forming the complete control chain: <strong>EEG &rarr; Virtual body intent prediction &rarr; Exoskeleton torque output</strong>. Also explores the possibility of paralyzed individuals controlling virtual avatars through thought, further extending ExoPulse services to fully paralyzed populations, realizing &ldquo;<strong>Train. Assist. Live.</strong>&rdquo;.</span>
         </div>
       </div>
       <div class="dp-right">
         <div class="output-box">
-          <div class="ob-label" style="color:var(--phase4);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <div class="ob-label" style="color:var(--phase4);"><i data-lucide="package"></i> <span class="lang-zh">階段產出</span><span class="lang-en">PHASE OUTPUT</span></div>
           <ul>
-            <li><span class="lang-zh"><strong>EEG → 外骨骼完整控制鏈</strong>原型系統</span><span class="lang-en"><strong>EEG → Exoskeleton complete control chain</strong> prototype system</span></li>
+            <li><span class="lang-zh"><strong>EEG &rarr; 外骨骼完整控制鏈</strong>原型系統</span><span class="lang-en"><strong>EEG &rarr; Exoskeleton complete control chain</strong> prototype system</span></li>
             <li><span class="lang-zh"><strong>虛擬人體（Avatar）意念控制</strong>模組</span><span class="lang-en"><strong>Virtual body (Avatar) mind control</strong> module</span></li>
-            <li><span class="lang-zh">下一世代產品線技術基礎 ─「Train. Assist. Live.」</span><span class="lang-en">Next-generation product line technology foundation ─ "Train. Assist. Live."</span></li>
+            <li><span class="lang-zh">下一世代產品線技術基礎 ─「Train. Assist. Live.」</span><span class="lang-en">Next-generation product line technology foundation ── &ldquo;Train. Assist. Live.&rdquo;</span></li>
             <li><span class="lang-zh">BCI 數位孿生整合驗證報告</span><span class="lang-en">BCI digital twin integration validation report</span></li>
           </ul>
         </div>
         <div class="target-box" style="border-color:var(--phase4);">
           <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
-          <div class="tb-text"><span class="lang-zh">完全癱瘓族群、脊髓損傷患者 ─ 透過意念重獲行動自由</span><span class="lang-en">Fully paralyzed populations, spinal cord injury patients ─ regaining mobility through thought</span></div>
+          <div class="tb-text"><span class="lang-zh">完全癱瘓族群、脊髓損傷患者 ─ 透過意念重獲行動自由</span><span class="lang-en">Fully paralyzed populations, spinal cord injury patients ── regaining mobility through thought</span></div>
         </div>
       </div>
     </div>
@@ -946,45 +1373,56 @@
       <div class="dp-left">
         <div class="dp-badge" style="background: linear-gradient(135deg, var(--phase5), #c026d3);">Phase 5</div>
         <div class="dp-title"><span class="lang-zh">數位永生</span><span class="lang-en">Digital Immortality</span></div>
-        <div class="dp-title-en">Digital Immortality — Consciousness Continuity</div>
+        <div class="dp-title-en">Digital Immortality &mdash; Consciousness Continuity</div>
         <div class="dp-desc">
-          <span class="lang-zh">ExoPulse 從 Phase 1 到 Phase 4 累積的<strong>個人化數位孿生</strong>——涵蓋神經肌肉骨骼模型、運動意圖模式、腦電訊號特徵、肌肉激活模式、步態習慣——構成了一個人最完整的<strong>身體運動數位分身</strong>。當這些數據與 AI 模型持續學習並演化，使用者的運動特徵、反應模式、甚至意圖預測都能在數位世界中<strong>被忠實重現與延續</strong>。這不僅是復健或輔助，而是邁向<strong>人類運動記憶的永久保存</strong>——一個真正的「Lifelong Wearable Robot Partner」的終極意義：<strong>Train. Assist. Live. Forever.</strong></span><span class="lang-en">The <strong>personalized digital twin</strong> accumulated by ExoPulse from Phase 1 to Phase 4 ─ encompassing neuromusculoskeletal models, motor intent patterns, EEG signal features, muscle activation patterns, and gait habits ─ constitutes a person's most complete <strong>physical movement digital avatar</strong>. As these data and AI models continuously learn and evolve, the user's movement characteristics, response patterns, and even intent predictions can be <strong>faithfully reproduced and continued</strong> in the digital world. This is not merely rehabilitation or assistance, but a step toward <strong>permanent preservation of human motor memory</strong> ─ the ultimate meaning of a true "Lifelong Wearable Robot Partner": <strong>Train. Assist. Live. Forever.</strong></span>
+          <span class="lang-zh">ExoPulse 從 Phase 1 到 Phase 4 累積的<strong>個人化數位孿生</strong>——涵蓋神經肌肉骨骼模型、運動意圖模式、腦電訊號特徵、肌肉激活模式、步態習慣——構成了一個人最完整的<strong>身體運動數位分身</strong>。當這些數據與 AI 模型持續學習並演化，使用者的運動特徵、反應模式、甚至意圖預測都能在數位世界中<strong>被忠實重現與延續</strong>。這不僅是復健或輔助，而是邁向<strong>人類運動記憶的永久保存</strong>——一個真正的「Lifelong Wearable Robot Partner」的終極意義：<strong>Train. Assist. Live. Forever.</strong></span>
+          <span class="lang-en">The <strong>personalized digital twin</strong> accumulated by ExoPulse from Phase 1 to Phase 4 ── encompassing neuromusculoskeletal models, motor intent patterns, EEG signal features, muscle activation patterns, and gait habits ── constitutes a person's most complete <strong>physical movement digital avatar</strong>. As these data and AI models continuously learn and evolve, the user's movement characteristics, response patterns, and even intent predictions can be <strong>faithfully reproduced and continued</strong> in the digital world. This is not merely rehabilitation or assistance, but a step toward <strong>permanent preservation of human motor memory</strong> ── the ultimate meaning of a true &ldquo;Lifelong Wearable Robot Partner&rdquo;: <strong>Train. Assist. Live. Forever.</strong></span>
         </div>
       </div>
       <div class="dp-right">
         <div class="output-box">
-          <div class="ob-label" style="color:var(--phase5);"><span class="lang-zh">📦 階段產出</span><span class="lang-en">📦 PHASE OUTPUT</span></div>
+          <div class="ob-label" style="color:var(--phase5);"><i data-lucide="package"></i> <span class="lang-zh">階段產出</span><span class="lang-en">PHASE OUTPUT</span></div>
           <ul>
-            <li><span class="lang-zh"><strong>個人運動數位分身</strong> ─ 持續演化的終身 NMS + 腦電模型</span><span class="lang-en"><strong>Personal movement digital avatar</strong> ─ continuously evolving lifelong NMS + EEG model</span></li>
-            <li><span class="lang-zh"><strong>ExoPulse Lifelong Archive</strong> ─ 運動記憶雲端永久保存系統</span><span class="lang-en"><strong>ExoPulse Lifelong Archive</strong> ─ cloud-based permanent motor memory preservation system</span></li>
+            <li><span class="lang-zh"><strong>個人運動數位分身</strong> ─ 持續演化的終身 NMS + 腦電模型</span><span class="lang-en"><strong>Personal movement digital avatar</strong> ── continuously evolving lifelong NMS + EEG model</span></li>
+            <li><span class="lang-zh"><strong>ExoPulse Lifelong Archive</strong> ─ 運動記憶雲端永久保存系統</span><span class="lang-en"><strong>ExoPulse Lifelong Archive</strong> ── cloud-based permanent motor memory preservation system</span></li>
             <li><span class="lang-zh">數位分身跨載體遷移技術（機器人、虛擬世界、下一代外骨骼）</span><span class="lang-en">Digital avatar cross-platform migration technology (robots, virtual worlds, next-gen exoskeletons)</span></li>
             <li><span class="lang-zh">SaaS 終身照護訂閱服務</span><span class="lang-en">SaaS lifelong care subscription service</span></li>
           </ul>
         </div>
         <div class="target-box" style="border-color:var(--phase5);">
           <div class="tb-label"><span class="lang-zh">目標族群</span><span class="lang-en">TARGET POPULATION</span></div>
-          <div class="tb-text"><span class="lang-zh">所有人 ─ 從亞健康到完全癱瘓，每個人都值得擁有一個理解自己的終身機器人夥伴</span><span class="lang-en">Everyone ─ from sub-health to full paralysis, every person deserves a lifelong robot partner that understands them</span></div>
+          <div class="tb-text"><span class="lang-zh">所有人 ─ 從亞健康到完全癱瘓，每個人都值得擁有一個理解自己的終身機器人夥伴</span><span class="lang-en">Everyone ── from sub-health to full paralysis, every person deserves a lifelong robot partner that understands them</span></div>
         </div>
       </div>
     </div>
   </div>
-
-</div><!-- /roadmap -->
-
-<div class="footer">
-  <span class="lang-zh">智意行科技股份有限公司 aIwalk Co., Ltd. — ExoPulse Technology Roadmap — 2026</span><span class="lang-en">ExoPulse Corp (aIwalk Co., Ltd.) — ExoPulse Technology Roadmap — 2026</span>
 </div>
 
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="assets/corp-logo.png" alt="aIwalk">
+      <span class="footer-brand-name"><span class="ai">a<span class="serif-i">I</span></span>walk</span>
+    </div>
+    <div class="footer-copy">
+      <span class="lang-zh">智意行科技股份有限公司 aIwalk Co., Ltd. &mdash; ExoPulse Technology Roadmap &mdash; 2026</span>
+      <span class="lang-en">ExoPulse Corp (aIwalk Co., Ltd.) &mdash; ExoPulse Technology Roadmap &mdash; 2026</span>
+    </div>
+  </div>
+</footer>
+
 <script>
+  // Initialize Lucide icons
+  lucide.createIcons();
+
   let currentPhase = 1;
   let currentLang = 'en';
 
   function selectPhase(n) {
     if (currentPhase === n) return;
-    // Deactivate old
     document.querySelector('.phase-col.active')?.classList.remove('active');
     document.querySelector('.detail-panel.open')?.classList.remove('open');
-    // Activate new
     document.querySelector(`.phase-col[data-phase="${n}"]`).classList.add('active');
     document.getElementById('dp-' + n).classList.add('open');
     currentPhase = n;
@@ -1003,6 +1441,30 @@
       document.getElementById('lang-zh-btn').classList.add('active');
     }
   }
+
+  // Scroll reveal
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  // Navbar scroll effect
+  const navbar = document.querySelector('.navbar');
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY;
+    if (scrollY > 60) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+    lastScroll = scrollY;
+  }, { passive: true });
 </script>
 
 </body>

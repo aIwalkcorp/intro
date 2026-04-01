@@ -5,27 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exoskeleton Control Strategy Landscape</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
-    background: #faf8f2;
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    background: #f8f6f1;
     display: flex; flex-direction: column; align-items: center;
     min-height: 100vh; padding: 24px;
+    -webkit-font-smoothing: antialiased;
   }
+  .back-link {
+    position: fixed; top: 18px; left: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    color: #1a3a5c; text-decoration: none; letter-spacing: 0.3px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    transition: all 0.25s ease;
+  }
+  .back-link:hover { background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
   h1 {
-    font-size: 22px; font-weight: 700; color: #2c2c2c;
+    font-size: 24px; font-weight: 800; color: #1a3a5c;
     margin-bottom: 4px; letter-spacing: 0.5px;
+    margin-top: 8px;
   }
-  .subtitle { font-size: 13px; color: #888; margin-bottom: 18px; }
+  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 18px; letter-spacing: 0.3px; }
 
   .chart-wrapper {
     position: relative;
     width: 920px; height: 640px;
-    background: linear-gradient(135deg, #fefefe 0%, #f5f0e6 100%);
-    border: 1.5px solid #d4cfc4;
-    border-radius: 10px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f4ec 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
     overflow: visible;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03);
   }
 
   /* Tier zones */
@@ -122,9 +136,9 @@
   /* Tooltip */
   .tooltip {
     display: none; position: fixed;
-    background: #fff; border: 1px solid #d4cfc4;
-    border-radius: 8px; padding: 14px 16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 12px; padding: 16px 18px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04);
     max-width: 340px; z-index: 999; font-size: 13px;
     line-height: 1.6; pointer-events: none;
   }
@@ -161,17 +175,17 @@
   /* Language toggle button */
   .lang-toggle {
     position: fixed; top: 18px; right: 24px; z-index: 1000;
-    background: linear-gradient(135deg, #5a534a 0%, #3c3c3c 100%);
-    color: #faf8f2; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #1a3a5c 0%, #2a5580 100%);
+    color: #fff; border: none; border-radius: 10px;
     padding: 8px 18px; font-size: 13px; font-weight: 600;
     cursor: pointer; letter-spacing: 0.5px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 10px rgba(26,58,92,0.25);
     transition: all 0.25s ease;
-    font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
   }
   .lang-toggle:hover {
-    background: linear-gradient(135deg, #7c7368 0%, #5a534a 100%);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    background: linear-gradient(135deg, #2a5580 0%, #3b6a9a 100%);
+    box-shadow: 0 4px 16px rgba(26,58,92,0.35);
     transform: translateY(-1px);
   }
   .lang-zh { display: none; }
@@ -186,14 +200,16 @@
   .ref-card {
     flex: 1; min-width: 280px;
     background: #fff;
-    border: 1px solid #e0dbd2;
-    border-radius: 12px;
-    padding: 18px 20px;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03);
+    transition: box-shadow 0.3s ease;
   }
+  .ref-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.08); }
   .ref-title {
-    font-size: 13px; font-weight: 700;
-    color: #2c2c2c; margin-bottom: 12px;
+    font-size: 14px; font-weight: 700;
+    color: #1a3a5c; margin-bottom: 12px;
     letter-spacing: 0.3px;
   }
   .tier-row {
@@ -239,6 +255,7 @@
 </head>
 <body>
 
+<a class="back-link" href="index.html">&larr; <span class="lang-zh">返回首頁</span><span class="lang-en">Back to Home</span></a>
 <button class="lang-toggle" onclick="toggleLang()">中文</button>
 
 <h1><span class="lang-zh">外骨骼控制策略技術版圖</span><span class="lang-en">Exoskeleton Control Strategy Landscape</span></h1>
@@ -308,7 +325,7 @@
   </div>
 
   <div class="ref-card">
-    <div class="ref-title">🔄 <span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
+    <div class="ref-title"><span class="lang-zh">ExoPulse 閉迴路生態</span><span class="lang-en">ExoPulse Closed-Loop Lifecycle</span></div>
     <div class="loop-flow">
       <span class="loop-chip" style="background:#3b82f6;"><span class="lang-zh">步態感測</span><span class="lang-en">Sensing</span></span>
       <span class="loop-arrow">→</span>
