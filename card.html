@@ -256,6 +256,7 @@ const LOGO_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADNCAYAAAAC
 
 const PEOPLE = [
   {
+    id: 'arthur',
     name: '黃志仁', sub: '董事長 / Chairman, Ph.D.',
     front: `<div class="card style-b">
       <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
@@ -269,6 +270,7 @@ const PEOPLE = [
     </div>`
   },
   {
+    id: 'eddie',
     name: '賴宏達', sub: '技術長 / CTO & Co-Founder',
     front: `<div class="card style-b">
       <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
@@ -314,6 +316,8 @@ function renderPerson(idx) {
   dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
   btnPrev.classList.toggle('disabled', idx === 0);
   btnNext.classList.toggle('disabled', idx === PEOPLE.length - 1);
+  // Update URL hash without jumping
+  history.replaceState(null, null, '#' + p.id);
 }
 
 const flipBtn = document.getElementById('flipBtn');
@@ -395,8 +399,13 @@ function hideHint() {
 stageEl.addEventListener('touchstart', hideHint, { once: true });
 document.addEventListener('keydown', hideHint, { once: true });
 
-// Init
-renderPerson(0);
+// Init with Hash support
+const hash = window.location.hash.substring(1).toLowerCase();
+const personIndex = PEOPLE.findIndex(p => p.id === hash);
+if (personIndex !== -1) {
+  current = personIndex;
+}
+renderPerson(current);
 </script>
 </body>
 </html>
