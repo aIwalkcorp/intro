@@ -1090,11 +1090,27 @@
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     max-height: 0;
     opacity: 0;
+    transform: translateY(10px) scale(0.98);
   }
   .detail-panel.open {
-    max-height: 600px;
+    max-height: 800px;
     opacity: 1;
+    transform: translateY(0) scale(1);
+    animation: cardSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateX(30px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  @keyframes cardSlideInRight {
+    from { opacity: 0; transform: translateX(40px) rotateY(10deg) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) rotateY(0) scale(1); }
+  }
+  @keyframes cardSlideInLeft {
+    from { opacity: 0; transform: translateX(-40px) rotateY(-10deg) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) rotateY(0) scale(1); }
+  }
+
   .dp-inner {
     padding: 24px 32px 22px;
     display: flex;
@@ -1456,10 +1472,10 @@
   <div class="about-card">
     <div class="about-desc">
       <span class="lang-zh">
-        智意行科技透過三大核心產品開發 AI 驅動的復健科技：<strong>NTKCAP</strong>，一套可攜式無標記動作捕捉系統，提供個人化生物力學分析；<strong>ExoPulse Patient Cloud</strong>，臨床數據平台，讓治療師即時監控步態指標並調整治療策略；以及 <strong>ExoPulse Exoskeleton</strong>，一款以數位孿生驅動的穿戴式機器人，從跌倒預防到完整行動支援，提供意圖預測式的個人化步行輔助。
+        智意行科技透過三大核心產品開發 AI 驅動的復健科技：<strong>NTKCAP</strong>，一套可攜式無標記動作捕捉系統；<strong>ExoPulse Patient Cloud</strong>，臨床數據平台；以及 <strong>ExoPulse Exoskeleton</strong>，數位孿生驅動的穿戴式機器人。<strong>「透過生理數據，我們將克隆一個真正的你，並放到穿戴式機器人中，從而達到 Lifelong Wearable Robot Partner」。</strong>
       </span>
       <span class="lang-en">
-        aIwalk Co., Ltd. develops AI-driven rehabilitation technology through three core products: <strong>NTKCAP</strong>, a portable markerless motion capture system for personalized biomechanical analysis; <strong>ExoPulse Patient Cloud</strong>, a clinical data platform enabling therapists to monitor gait metrics and adjust treatment strategies in real time; and <strong>ExoPulse Exoskeleton</strong>, a digital-twin-powered wearable robot that delivers intent-predictive, individualized walking assistance from fall prevention to full mobility support.
+        aIwalk Co., Ltd. develops AI-driven rehabilitation technology through three core products: <strong>NTKCAP</strong>, <strong>ExoPulse Patient Cloud</strong>, and <strong>ExoPulse Exoskeleton</strong>. <strong>"Through physiological data, we will clone a real you and put it into a wearable robot, achieving the Lifelong Wearable Robot Partner."</strong>
       </span>
     </div>
     <a class="about-card-link" href="card.html">
@@ -1889,11 +1905,46 @@
 
   function selectPhase(n) {
     if (currentPhase === n) return;
+    const currentPanel = document.getElementById('dp-' + currentPhase);
+    const nextPanel = document.getElementById('dp-' + n);
+    
+    // Direction for animation
+    const isNext = n > currentPhase;
+    nextPanel.style.animation = isNext 
+      ? 'cardSlideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1)' 
+      : 'cardSlideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
+
     document.querySelector('.phase-col.active')?.classList.remove('active');
     document.querySelector('.detail-panel.open')?.classList.remove('open');
     document.querySelector(`.phase-col[data-phase="${n}"]`).classList.add('active');
-    document.getElementById('dp-' + n).classList.add('open');
+    nextPanel.classList.add('open');
     currentPhase = n;
+  }
+
+  // Swipe logic for roadmap (Mobile)
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const roadmapEl = document.getElementById('roadmapArea');
+
+  roadmapEl.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  roadmapEl.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    if (touchEndX < touchStartX - swipeThreshold) {
+      // Swipe Left -> Next Phase
+      if (currentPhase < 5) selectPhase(currentPhase + 1);
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+      // Swipe Right -> Prev Phase
+      if (currentPhase > 1) selectPhase(currentPhase - 1);
+    }
   }
 
   function toggleLang() {
