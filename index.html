@@ -465,6 +465,16 @@
     margin: 0 auto;
     display: block;
   }
+  /* Mobile: allow horizontal scroll for detailed diagram */
+  .loop-overview-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+  .loop-overview-scroll .loop-overview-img {
+    min-width: 580px;
+  }
 
   /* ===== DEMOS GRID ===== */
   .demos-grid {
@@ -931,11 +941,19 @@
     text-align: right;
   }
 
-  /* ===== RESPONSIVE ===== */
+  /* ===== RESPONSIVE — Tablet (<=760px) ===== */
   @media (max-width: 760px) {
     .navbar .nav-links { display: none; }
-    .hero h1 { font-size: 36px; }
-    .hero .hero-tagline { font-size: 16px; }
+    .hero { min-height: 85vh; padding: 90px 20px 60px; }
+    .hero h1 { font-size: 38px; letter-spacing: 1px; }
+    .hero .hero-company { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
+    .hero .hero-tagline { font-size: 16px; line-height: 1.7; max-width: 480px; }
+    .hero-cta-row { gap: 10px; }
+    .hero-cta { padding: 12px 24px; font-size: 13px; }
+    .hero-stats { gap: 16px; flex-wrap: wrap; justify-content: center; padding: 12px 16px; }
+    .hero-stats .hero-stat-value { font-size: 12px; }
+    .hero-stats .hero-stat-label { font-size: 8px; letter-spacing: 0.5px; }
+    .hero-scroll { bottom: 56px; }
     .demos-grid { grid-template-columns: 1fr; }
     .extra-links { flex-direction: column; }
     .rail { flex-direction: column; gap: 16px; align-items: stretch; }
@@ -943,27 +961,104 @@
     .phase-col { flex-direction: row; gap: 12px; align-items: flex-start; }
     .phase-info { text-align: left; }
     .phase-info .pi-techs { justify-content: flex-start; }
-    .dp-inner { flex-direction: column; }
-    .edge-link { padding: 18px; gap: 12px; }
-    .edge-link .edge-icon { width: 44px; height: 44px; }
-    .edge-link .edge-title { font-size: 15px; }
+    .dp-inner { flex-direction: column; padding: 18px 20px; }
+    .dp-left .dp-title { font-size: 17px; }
+    .dp-left .dp-desc { font-size: 13px; }
+    .dp-right .output-box { padding: 14px; }
+    .dp-right .output-box li { font-size: 12px; }
+    .edge-link { padding: 16px; gap: 12px; }
+    .edge-link .edge-icon { width: 42px; height: 42px; border-radius: 10px; }
+    .edge-link .edge-icon svg { width: 20px; height: 20px; }
+    .edge-link .edge-title { font-size: 14px; }
+    .edge-link .edge-desc { font-size: 12px; }
     .loop-card { padding: 16px; }
-    .hero-stats { gap: 20px; flex-wrap: wrap; justify-content: center; }
-    .hero-stats .hero-stat-label { font-size: 9px; }
-    .footer-inner { flex-direction: column; text-align: center; }
-    .footer-copy { text-align: center; }
+    .loop-overview-img { border-radius: 8px; }
+    .section-header { gap: 10px; }
+    .section-icon { width: 34px; height: 34px; border-radius: 10px; }
+    .section-icon svg { width: 17px; height: 17px; }
+    .section-title { font-size: 18px; }
+    .about-card { padding: 22px 18px; }
+    .about-desc { font-size: 14px; line-height: 1.8; }
+    .about-card-link { font-size: 13px; padding: 9px 16px; }
+    .vision-bar { padding: 14px 18px; font-size: 12px; line-height: 1.65; flex-direction: column; gap: 8px; }
+    .vision-bar .vision-icon { width: 28px; height: 28px; }
+    .roadmap { padding: 0 16px 40px; }
+    .roadmap-header .rh-title { font-size: 13px; }
+    .footer-inner { flex-direction: column; text-align: center; gap: 8px; }
+    .footer-copy { text-align: center; font-size: 11px; }
     .section-gap { margin-top: 40px; }
-    .about-card { padding: 24px 20px; }
-    .vision-bar { padding: 14px 20px; font-size: 12.5px; }
+    .section-gap-sm { margin-top: 24px; }
+    .section-divider { margin-top: 40px; }
+    .node { width: 40px; height: 40px; font-size: 14px; }
   }
 
+  /* ===== RESPONSIVE — Small phone (<=480px, e.g. iPhone SE) ===== */
   @media (max-width: 480px) {
-    .hero { min-height: 80vh; padding: 90px 16px 70px; }
-    .hero-stats { gap: 14px; padding: 10px 16px; }
-    .hero h1 { font-size: 28px; }
-    .hero-cta { padding: 11px 22px; font-size: 13px; }
-    .navbar { top: 10px; padding: 6px 10px; }
-    .section { padding: 0 16px; }
+    .hero { min-height: 80vh; padding: 80px 16px 64px; }
+    .hero h1 { font-size: 30px; }
+    .hero .hero-tagline { font-size: 15px; max-width: 100%; }
+    .hero-cta-row { flex-direction: column; align-items: center; gap: 8px; }
+    .hero-cta { width: 100%; max-width: 260px; justify-content: center; padding: 12px 20px; font-size: 13px; }
+    .hero-stats { gap: 6px 16px; padding: 10px 12px; }
+    .hero-stat { gap: 5px; }
+    .hero-stats .hero-stat-value { font-size: 11px; }
+    .hero-stats .hero-stat-label { font-size: 7.5px; }
+    .navbar { top: 8px; padding: 5px 10px; gap: 6px; }
+    .navbar .nav-logo { width: 26px; height: 26px; border-radius: 6px; }
+    .navbar .nav-brand { font-size: 13px; }
+    .lang-toggle .lang-opt { padding: 4px 10px; font-size: 10px; }
+    .section { padding: 0 14px; }
+    .about-card { padding: 18px 14px; }
+    .about-desc { font-size: 13.5px; }
+    .about-card-link { font-size: 12px; gap: 6px; }
+    .about-card-link svg { width: 16px; height: 16px; }
+    .loop-card { padding: 12px; }
+    .loop-title { font-size: 14px; gap: 8px; }
+    .demo-card .demo-info { padding: 12px 14px; gap: 10px; }
+    .demo-card .demo-logo { width: 36px; height: 36px; }
+    .demo-card .demo-name { font-size: 14px; }
+    .demo-card .demo-desc { font-size: 11px; }
+    .extra-link-card { padding: 14px 16px; gap: 10px; }
+    .el-icon-box { width: 38px; height: 38px; border-radius: 10px; }
+    .el-icon-box svg { width: 18px; height: 18px; }
+    .el-title { font-size: 13px; }
+    .el-desc { font-size: 11px; }
+    .vision-bar { padding: 12px 14px; font-size: 11.5px; }
+    .vision-bar .vision-icon { display: none; }
+    .edge-link { padding: 14px; gap: 10px; }
+    .edge-link .edge-icon { width: 38px; height: 38px; border-radius: 8px; }
+    .edge-link .edge-icon svg { width: 18px; height: 18px; }
+    .edge-link .edge-title { font-size: 13px; }
+    .edge-link .edge-desc { font-size: 11px; }
+    .roadmap { padding: 0 14px 32px; }
+    .phase-info .pi-title-zh { font-size: 12px; }
+    .phase-info .pi-title-en { font-size: 8.5px; }
+    .phase-info .pi-target { font-size: 9px; }
+    .phase-info .pi-tech { font-size: 8px; padding: 1px 4px; }
+    .dp-inner { padding: 14px 16px; gap: 16px; }
+    .dp-left .dp-title { font-size: 15px; }
+    .dp-left .dp-title-en { font-size: 11px; }
+    .dp-left .dp-desc { font-size: 12.5px; line-height: 1.8; }
+    .dp-right .ob-label { font-size: 9px; }
+    .dp-right .output-box li { font-size: 11.5px; padding-left: 14px; }
+    .dp-right .target-box { padding: 8px 12px; }
+    .dp-right .tb-text { font-size: 11px; }
+    .site-footer { padding: 28px 16px 20px; }
+    .footer-brand-name { font-size: 13px; }
+    .footer-copy { font-size: 10px; }
+  }
+
+  /* ===== RESPONSIVE — Ultra-small (<=360px, e.g. Galaxy Fold) ===== */
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 26px; }
+    .hero .hero-tagline { font-size: 14px; }
+    .hero-stats { display: none; }
+    .section { padding: 0 12px; }
+    .about-card { padding: 16px 12px; }
+    .about-desc { font-size: 13px; }
+    .navbar .nav-brand { font-size: 12px; }
+    .loop-title { font-size: 13px; }
+    .section-title { font-size: 16px; }
   }
 
   @media print {
@@ -1084,7 +1179,9 @@
       <span class="lang-zh">ExoPulse 系統全貌</span>
       <span class="lang-en">ExoPulse System Overview</span>
     </div>
-    <img src="assets/new-overview.png" alt="ExoPulse System Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
+    <div class="loop-overview-scroll">
+      <img src="assets/new-overview.png" alt="ExoPulse System Overview — Personalized data collection, Digital twin data synthesis, Deployment" class="loop-overview-img" loading="lazy">
+    </div>
   </div>
 </div>
 

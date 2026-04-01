@@ -179,8 +179,38 @@
 
   @media (max-width: 760px) {
     .pair-row { flex-direction: column; gap: 12px; align-items: center; }
-    body { padding: 72px 16px 40px; }
+    body { padding: 72px 16px 40px; gap: 20px; }
     .page-navbar { top: 10px; padding: 6px 12px; }
+    .page-navbar .nav-title { font-size: 12px; }
+    .page-navbar .nav-back { font-size: 12px; padding: 4px 10px; }
+    h2 { font-size: 11px; letter-spacing: 1.5px; }
+    .site-footer { padding: 24px 16px 18px; font-size: 11px; }
+  }
+
+  /* Scale cards to fit mobile screens */
+  @media (max-width: 420px) {
+    .card {
+      width: 80vw;
+      height: calc(80vw * 0.6);
+      padding: 3.5vw 4vw;
+    }
+    .co-zh { font-size: 2.8vw; }
+    .co-en-sub { font-size: 3.5vw; }
+    .name-zh { font-size: 4.2vw; }
+    .name-en { font-size: 3.8vw; }
+    .phd { font-size: 2.5vw; }
+    .phd-en { font-size: 2vw; }
+    .title { font-size: 1.8vw; }
+    .ci-zh, .ci-en { font-size: 1.5vw; }
+    .ct { font-size: 1.6vw; }
+    .logo { width: 12vw; height: 12vw; }
+    .sep { margin-bottom: 1.5vw; }
+    .crow { gap: 1.2vw; }
+    .bot { gap: 0.8vw; }
+    .pair-label { font-size: 8px; }
+    body { padding: 64px 10px 32px; gap: 16px; }
+    .page-navbar { top: 8px; padding: 5px 10px; }
+    .page-navbar .nav-title { display: none; }
   }
 
   @media print { body { background: white; padding-top: 20px; } .card { box-shadow: none; } .page-navbar, .site-footer { display: none; } }
