@@ -337,6 +337,8 @@ function setFlip(flip) {
   } else {
     icon.innerHTML = '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>';
   }
+  // Sync language with index.html (back = EN, front = ZH)
+  localStorage.setItem('aiwalk-lang', flip ? 'en' : 'zh');
 }
 
 flipBtn.addEventListener('click', () => setFlip(!isFlipped));
@@ -413,6 +415,12 @@ if (personIndex !== -1) {
   current = personIndex;
 }
 renderPerson(current);
+
+// Load language preference and set card side accordingly
+const savedLang = localStorage.getItem('aiwalk-lang');
+if (savedLang === 'en') {
+  setFlip(true);  // Show back (English) side
+}
 </script>
 </body>
 </html>
