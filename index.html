@@ -1227,7 +1227,31 @@
   }
 
   /* ===== RESPONSIVE — Tablet (<=760px) ===== */
+  .swipe-guide {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 4px;
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+  .swipe-guide i {
+    animation: swipeHand 2s infinite;
+  }
+  @keyframes swipeHand {
+    0% { transform: translateX(15px); opacity: 0; }
+    30% { transform: translateX(15px); opacity: 1; }
+    70% { transform: translateX(-15px); opacity: 1; }
+    100% { transform: translateX(-15px); opacity: 0; }
+  }
+
   @media (max-width: 760px) {
+    .swipe-guide { display: flex; }
     .navbar .nav-links { display: none; }
     .hero { min-height: 85vh; padding: 90px 20px 60px; }
     .hero h1 { font-size: 38px; letter-spacing: 1px; }
@@ -1727,6 +1751,12 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="swipe-guide">
+    <i data-lucide="hand-metal" style="width:14px;height:14px;transform:rotate(90deg)"></i>
+    <span class="lang-zh">左右滑動翻閱卡片</span>
+    <span class="lang-en">Swipe to flip cards</span>
   </div>
 
   <!-- DETAIL PANELS -->
