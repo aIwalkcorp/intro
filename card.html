@@ -156,40 +156,40 @@
     text-align: center;
   }
 
-  /* ===== CARD STYLES (preserved) ===== */
+  /* ===== CARD STYLES ===== */
   .card {
-    width: 90mm; height: 54mm;
-    border-radius: 3mm;
+    width: 108mm; height: 64.8mm;
+    border-radius: 3.5mm;
     position: relative; overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
     display: flex; flex-direction: column;
     justify-content: space-between;
-    padding: 4.5mm 5mm;
+    padding: 5.5mm 6mm;
     transition: box-shadow 0.3s ease;
   }
   .card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1); }
 
   .top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
-  .logo { width: 14mm; height: 14mm; border-radius: 2.5mm; overflow: hidden; flex-shrink: 0; }
+  .logo { width: 16mm; height: 16mm; border-radius: 3mm; overflow: hidden; flex-shrink: 0; }
   .logo img { width: 100%; height: 100%; object-fit: cover; }
   .co { display: flex; flex-direction: column; gap: 0.3mm; flex: 1; }
   .co-names { display: flex; align-items: baseline; gap: 2mm; }
-  .co-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 3.2mm; font-weight: 700; letter-spacing: 1.2px; }
-  .co-en-sub { font-size: 4.2mm; font-weight: 700; letter-spacing: 0.5px; }
+  .co-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 3.8mm; font-weight: 700; letter-spacing: 1.2px; }
+  .co-en-sub { font-size: 5mm; font-weight: 700; letter-spacing: 0.5px; }
   .serif-i { font-family: 'Noto Serif TC', 'Times New Roman', serif; }
   .mid { position: relative; z-index: 1; }
   .sep { height: 0.4mm; margin-bottom: 2mm; }
   .name-row { display: flex; align-items: baseline; gap: 2mm; }
-  .name-zh { font-family: 'Noto Serif TC', 'Noto Sans TC', serif; font-size: 5mm; font-weight: 900; letter-spacing: 2px; }
-  .name-en { font-family: 'Inter', sans-serif; font-size: 4.5mm; font-weight: 700; letter-spacing: 0.8px; }
-  .phd { font-size: 2.8mm; font-weight: 700; letter-spacing: 0.5px; }
-  .phd-en { font-size: 2.2mm; font-weight: 500; letter-spacing: 0.3px; }
-  .title { font-family: 'Noto Sans TC', sans-serif; font-size: 2.1mm; letter-spacing: 0.8px; margin-top: 0.8mm; }
+  .name-zh { font-family: 'Noto Serif TC', 'Noto Sans TC', serif; font-size: 6mm; font-weight: 900; letter-spacing: 2px; }
+  .name-en { font-family: 'Inter', sans-serif; font-size: 5.4mm; font-weight: 700; letter-spacing: 0.8px; }
+  .phd { font-size: 3.4mm; font-weight: 700; letter-spacing: 0.5px; }
+  .phd-en { font-size: 2.6mm; font-weight: 500; letter-spacing: 0.3px; }
+  .title { font-family: 'Noto Sans TC', sans-serif; font-size: 2.5mm; letter-spacing: 0.8px; margin-top: 1mm; }
   .bot { display: flex; flex-direction: column; gap: 1.1mm; position: relative; z-index: 1; align-self: flex-end; align-items: flex-start; }
   .crow { display: flex; align-items: center; gap: 1.8mm; }
-  .ci-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 1.6mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.5px; }
-  .ci-en { font-family: 'Inter', sans-serif; font-size: 1.5mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; width: 7mm; }
-  .ct { font-family: 'Inter', 'Noto Sans TC', sans-serif; font-size: 1.8mm; letter-spacing: 0.2px; }
+  .ci-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 2mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.5px; }
+  .ci-en { font-family: 'Inter', sans-serif; font-size: 1.8mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; width: 8mm; }
+  .ct { font-family: 'Inter', 'Noto Sans TC', sans-serif; font-size: 2.2mm; letter-spacing: 0.2px; }
   .addr-wrap { line-height: 1.6; }
 
   /* Style B */
@@ -220,31 +220,37 @@
     .nav-prev { left: 4px; }
     .nav-next { right: 4px; }
     .kb-hint { display: none; }
+    /* Single horizontal card filling width */
+    .card {
+      width: 90vw; height: calc(90vw * 0.6);
+      padding: 4vw 4.5vw;
+    }
+    .co-zh { font-size: 3.2vw; }
+    .co-en-sub { font-size: 4vw; }
+    .name-zh { font-size: 5vw; }
+    .name-en { font-size: 4.5vw; }
+    .phd { font-size: 2.8vw; }
+    .phd-en { font-size: 2.2vw; }
+    .title { font-size: 2vw; }
+    .ci-zh, .ci-en { font-size: 1.7vw; }
+    .ct { font-size: 1.9vw; }
+    .logo { width: 13vw; height: 13vw; }
+    .sep { margin-bottom: 1.8vw; }
+    .crow { gap: 1.5vw; }
+    .bot { gap: 1vw; }
+    .pair-label { font-size: 9px; }
   }
 
-  @media (max-width: 420px) {
-    .card {
-      width: 82vw; height: calc(82vw * 0.6);
-      padding: 3.5vw 4vw;
-    }
-    .co-zh { font-size: 2.8vw; }
-    .co-en-sub { font-size: 3.5vw; }
-    .name-zh { font-size: 4.2vw; }
-    .name-en { font-size: 3.8vw; }
-    .phd { font-size: 2.5vw; }
-    .phd-en { font-size: 2vw; }
-    .title { font-size: 1.8vw; }
-    .ci-zh, .ci-en { font-size: 1.5vw; }
-    .ct { font-size: 1.6vw; }
-    .logo { width: 12vw; height: 12vw; }
-    .sep { margin-bottom: 1.5vw; }
-    .crow { gap: 1.2vw; }
-    .bot { gap: 0.8vw; }
+  @media (max-width: 480px) {
     .carousel { padding: 64px 8px 12px; }
     .page-navbar { top: 8px; padding: 5px 10px; }
     .page-navbar .nav-title { display: none; }
     .slide-label { font-size: 12px; }
-    .dots { gap: 8px; margin-top: 14px; }
+    .dots { gap: 8px; margin-top: 12px; }
+    .card {
+      width: 92vw; height: calc(92vw * 0.6);
+      padding: 3.8vw 4.2vw;
+    }
   }
 
   @media print {
