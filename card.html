@@ -9,17 +9,30 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: #d8d8d8;
+    background: #e8e6e2;
     display: flex;
     flex-direction: column;
     align-items: center;
     font-family: 'Inter', 'Noto Sans TC', sans-serif;
     padding: 36px 20px 60px;
     gap: 28px;
+    -webkit-font-smoothing: antialiased;
   }
 
-  h1 { font-size: 14px; color: #666; letter-spacing: 3px; text-transform: uppercase; font-weight: 500; }
-  h2 { font-size: 12px; color: #888; letter-spacing: 2px; margin-top: 16px; font-weight: 500; }
+  .back-link {
+    position: fixed; top: 18px; left: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    color: #1a3a5c; text-decoration: none; letter-spacing: 0.3px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    transition: all 0.25s ease;
+  }
+  .back-link:hover { background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
+
+  h1 { font-size: 14px; color: #1a3a5c; letter-spacing: 3px; text-transform: uppercase; font-weight: 700; }
+  h2 { font-size: 12px; color: #64748b; letter-spacing: 2px; margin-top: 16px; font-weight: 600; }
 
   .pair-row {
     display: flex;
@@ -122,6 +135,7 @@
 </head>
 <body>
 
+<a class="back-link" href="index.html">&larr; 返回首頁</a>
 
 <h2 style="margin-top:28px;">▎ 黃志仁 — 董事長 / Chairman, PhD</h2>
 
