@@ -521,7 +521,7 @@
   /* ===== INTERACTIVE OVERVIEW (3-column grid) ===== */
   .ov-grid {
     display: grid;
-    grid-template-columns: 1.1fr 1.6fr 0.6fr;
+    grid-template-columns: 2.1fr 3fr 1fr;
     gap: 8px;
     align-items: stretch;
   }
@@ -534,11 +534,12 @@
     display: flex;
     background: #fff;
     overflow: hidden;
+    aspect-ratio: auto;
   }
   .ov-panel img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
     border-radius: 10px;
     transition: filter 0.3s ease;
@@ -557,7 +558,7 @@
   /* ===== OVERVIEW TITLE TABS ===== */
   .ov-titles {
     display: grid;
-    grid-template-columns: 1.1fr 1.6fr 0.6fr;
+    grid-template-columns: 2.1fr 3fr 1fr;
     gap: 8px;
     margin-bottom: -2px;
     position: relative;
