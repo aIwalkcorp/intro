@@ -518,48 +518,38 @@
     padding: 0 4px;
   }
 
-  /* ===== INTERACTIVE OVERVIEW ===== */
-  .overview-interactive {
+  /* ===== INTERACTIVE OVERVIEW (3-column grid) ===== */
+  .ov-grid {
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .ov-panel {
     position: relative;
-    display: inline-block;
-    cursor: crosshair;
-  }
-  .overview-interactive .loop-overview-img {
-    transition: filter 0.3s ease;
-  }
-  .overview-interactive.has-active .loop-overview-img {
-    filter: brightness(0.6);
-  }
-  /* Hotspot zones */
-  .ov-hotspot {
-    position: absolute;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    z-index: 2;
     border: 2px solid transparent;
   }
-  .ov-hotspot::before {
-    content: '';
-    position: absolute;
-    inset: 0;
+  .ov-panel img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
     border-radius: 10px;
-    background: rgba(255,255,255,0);
-    transition: background 0.3s ease;
+    transition: filter 0.3s ease;
   }
-  .ov-hotspot:hover::before,
-  .ov-hotspot.active::before {
-    background: rgba(255,255,255,0.12);
-  }
-  .ov-hotspot:hover,
-  .ov-hotspot.active {
+  .ov-panel:hover {
     border-color: var(--orange-glow);
-    box-shadow: 0 0 20px rgba(192,106,26,0.2);
+    box-shadow: 0 0 20px rgba(192,106,26,0.15);
   }
-  /* When a hotspot is active, brighten only that zone */
-  .overview-interactive.has-active .ov-hotspot.active {
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: brightness(1.8);
+  .ov-panel.active {
+    border-color: var(--orange-glow);
+    box-shadow: 0 0 24px rgba(192,106,26,0.25);
+  }
+  .ov-grid.has-active .ov-panel:not(.active) img {
+    filter: brightness(0.6);
   }
   /* ===== OVERVIEW TITLE TABS ===== */
   .ov-titles {
@@ -1290,6 +1280,8 @@
     .navbar { top: 8px; padding: 5px 10px; gap: 6px; }
     .navbar .nav-logo { width: 26px; height: 26px; border-radius: 6px; }
     .navbar .nav-brand { font-size: 13px; }
+    .navbar .nav-links { display: none; }
+    .navbar--sidebar .nav-links { display: flex; }
     .lang-toggle .lang-opt { padding: 4px 10px; font-size: 10px; }
     .section { padding: 0 14px; }
     .about-card { padding: 18px 14px; }
@@ -1478,43 +1470,42 @@
           <span class="lang-zh">部署與執行</span><span class="lang-en">Deployment</span>
         </div>
       </div>
-      <div class="overview-interactive" id="overviewInteractive" style="overflow:hidden;">
-        <img src="assets/new-overview.png" alt="Ecosystem Overview" class="loop-overview-img" loading="lazy" style="margin-top:-3.8%;">
-
-        <!-- Hotspot: (a) Personalized data collection — left ~0-34% -->
-        <div class="ov-hotspot" data-zone="collect" style="left:0%; top:0%; width:34%; height:100%;"></div>
-        <!-- Hotspot: (b) Digital twin data synthesis — center ~34-75% -->
-        <div class="ov-hotspot" data-zone="twin" style="left:34%; top:0%; width:41%; height:100%;"></div>
-        <!-- Hotspot: (c) Deployment — right ~75-100% -->
-        <div class="ov-hotspot" data-zone="deploy" style="left:75%; top:0%; width:25%; height:100%;"></div>
-
-        <!-- Tooltips (positioned by JS) -->
-        <div class="ov-tooltip" id="tip-collect">
-          <div class="ov-tooltip-title"><span class="lang-zh">個人化資料蒐集</span><span class="lang-en">Personalized Data Collection</span></div>
-          <div class="ov-tooltip-desc"><span class="lang-zh">透過動作捕捉系統與 EMG 感測器，蒐集個人關節運動學與肌電數據，建立個人化基線。</span><span class="lang-en">Collecting personalized joint kinematics and EMG data through motion capture and sensors to establish individual baselines.</span></div>
-          <div class="ov-tooltip-techs">
-            <span class="ov-tooltip-tech">Motion Capture</span>
-            <span class="ov-tooltip-tech">sEMG</span>
-            <span class="ov-tooltip-tech">Joint Kinematics</span>
+      <div class="overview-interactive ov-grid" id="overviewInteractive">
+        <div class="ov-panel" data-zone="collect">
+          <img src="assets/overview_1.png" alt="Personalized Data Collection" loading="lazy">
+          <div class="ov-tooltip" id="tip-collect">
+            <div class="ov-tooltip-title"><span class="lang-zh">個人化資料蒐集</span><span class="lang-en">Personalized Data Collection</span></div>
+            <div class="ov-tooltip-desc"><span class="lang-zh">透過動作捕捉系統與 EMG 感測器，蒐集個人關節運動學與肌電數據，建立個人化基線。</span><span class="lang-en">Collecting personalized joint kinematics and EMG data through motion capture and sensors to establish individual baselines.</span></div>
+            <div class="ov-tooltip-techs">
+              <span class="ov-tooltip-tech">Motion Capture</span>
+              <span class="ov-tooltip-tech">sEMG</span>
+              <span class="ov-tooltip-tech">Joint Kinematics</span>
+            </div>
           </div>
         </div>
-        <div class="ov-tooltip" id="tip-twin">
-          <div class="ov-tooltip-title"><span class="lang-zh">數位孿生資料合成</span><span class="lang-en">Digital Twin Data Synthesis</span></div>
-          <div class="ov-tooltip-desc"><span class="lang-zh">以神經肌肉骨骼模型校準數位孿生，透過 DRL 雙代理架構訓練外骨骼在虛擬場景中的最佳控制策略。</span><span class="lang-en">Calibrating digital twins via NMS models and training optimal exoskeleton control strategies through DRL dual-agent architecture in virtual scenarios.</span></div>
-          <div class="ov-tooltip-techs">
-            <span class="ov-tooltip-tech">NMS Model</span>
-            <span class="ov-tooltip-tech">Hill-type Muscle</span>
-            <span class="ov-tooltip-tech">DRL Dual-Agent</span>
+        <div class="ov-panel" data-zone="twin">
+          <img src="assets/overview_2.png" alt="Digital Twin Data Synthesis" loading="lazy">
+          <div class="ov-tooltip" id="tip-twin">
+            <div class="ov-tooltip-title"><span class="lang-zh">數位孿生資料合成</span><span class="lang-en">Digital Twin Data Synthesis</span></div>
+            <div class="ov-tooltip-desc"><span class="lang-zh">以神經肌肉骨骼模型校準數位孿生，透過 DRL 雙代理架構訓練外骨骼在虛擬場景中的最佳控制策略。</span><span class="lang-en">Calibrating digital twins via NMS models and training optimal exoskeleton control strategies through DRL dual-agent architecture in virtual scenarios.</span></div>
+            <div class="ov-tooltip-techs">
+              <span class="ov-tooltip-tech">NMS Model</span>
+              <span class="ov-tooltip-tech">Hill-type Muscle</span>
+              <span class="ov-tooltip-tech">DRL Dual-Agent</span>
+            </div>
           </div>
         </div>
-        <div class="ov-tooltip" id="tip-deploy">
-          <div class="ov-tooltip-title"><span class="lang-zh">部署與執行</span><span class="lang-en">Deployment</span></div>
-          <div class="ov-tooltip-desc"><span class="lang-zh">將訓練完成的控制策略部署至 FPGA 邊緣運算晶片，驅動 BLDC 馬達實現即時外骨骼輔助。</span><span class="lang-en">Deploying trained control policies to FPGA edge computing chips, driving BLDC motors for real-time exoskeleton assistance.</span></div>
-          <div class="ov-tooltip-techs">
-            <span class="ov-tooltip-tech">FPGA</span>
-            <span class="ov-tooltip-tech">BLDC Motor</span>
-            <span class="ov-tooltip-tech">Exoskeleton</span>
-            <span class="ov-tooltip-tech">EMG Sensors</span>
+        <div class="ov-panel" data-zone="deploy">
+          <img src="assets/overview_3.png" alt="Deployment" loading="lazy">
+          <div class="ov-tooltip" id="tip-deploy">
+            <div class="ov-tooltip-title"><span class="lang-zh">部署與執行</span><span class="lang-en">Deployment</span></div>
+            <div class="ov-tooltip-desc"><span class="lang-zh">將訓練完成的控制策略部署至 FPGA 邊緣運算晶片，驅動 BLDC 馬達實現即時外骨骼輔助。</span><span class="lang-en">Deploying trained control policies to FPGA edge computing chips, driving BLDC motors for real-time exoskeleton assistance.</span></div>
+            <div class="ov-tooltip-techs">
+              <span class="ov-tooltip-tech">FPGA</span>
+              <span class="ov-tooltip-tech">BLDC Motor</span>
+              <span class="ov-tooltip-tech">Exoskeleton</span>
+              <span class="ov-tooltip-tech">EMG Sensors</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2000,44 +1991,38 @@
     });
   }
 
-  // Overview interactive hotspots + title tabs + close-loop arrow
+  // Overview interactive panels + title tabs + close-loop arrow
   const ovContainer = document.getElementById('overviewInteractive');
   const ovTitles = document.getElementById('ovTitles');
   const ovLoopArrow = document.getElementById('ovLoopArrow');
   if (ovContainer) {
-    const hotspots = ovContainer.querySelectorAll('.ov-hotspot');
+    const panels = ovContainer.querySelectorAll('.ov-panel');
     const titleTabs = ovTitles ? ovTitles.querySelectorAll('.ov-title-tab') : [];
     let activeZone = null;
 
     function activateZone(zone) {
-      const hs = ovContainer.querySelector(`.ov-hotspot[data-zone="${zone}"]`);
+      const panel = ovContainer.querySelector(`.ov-panel[data-zone="${zone}"]`);
       const tip = document.getElementById('tip-' + zone);
-      if (!hs || !tip) return;
+      if (!panel || !tip) return;
 
       if (activeZone === zone) {
-        // Deactivate
-        hs.classList.remove('active');
+        panel.classList.remove('active');
         tip.classList.remove('show');
         ovContainer.classList.remove('has-active');
         titleTabs.forEach(t => t.classList.remove('active'));
         if (ovLoopArrow) ovLoopArrow.classList.remove('show');
         activeZone = null;
       } else {
-        // Deactivate previous
-        hotspots.forEach(h => h.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
         ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
         titleTabs.forEach(t => t.classList.remove('active'));
         if (ovLoopArrow) ovLoopArrow.classList.remove('show');
-        // Activate this
-        hs.classList.add('active');
+        panel.classList.add('active');
         tip.classList.add('show');
         ovContainer.classList.add('has-active');
-        // Highlight matching title tab
         const matchTab = ovTitles && ovTitles.querySelector(`.ov-title-tab[data-zone="${zone}"]`);
         if (matchTab) matchTab.classList.add('active');
-        // Show close-loop arrow when (c) Deployment is active
         if (zone === 'deploy' && ovLoopArrow) {
-          // Re-trigger animation by removing and re-adding
           ovLoopArrow.classList.remove('show');
           void ovLoopArrow.offsetWidth;
           ovLoopArrow.classList.add('show');
@@ -2046,14 +2031,13 @@
       }
     }
 
-    hotspots.forEach(hs => {
-      hs.addEventListener('click', (e) => {
+    panels.forEach(p => {
+      p.addEventListener('click', (e) => {
         e.stopPropagation();
-        activateZone(hs.dataset.zone);
+        activateZone(p.dataset.zone);
       });
     });
 
-    // Title tabs click
     titleTabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2064,7 +2048,7 @@
     // Click outside to dismiss
     document.addEventListener('click', (e) => {
       if (activeZone && !ovContainer.contains(e.target) && !(ovTitles && ovTitles.contains(e.target))) {
-        hotspots.forEach(h => h.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
         ovContainer.querySelectorAll('.ov-tooltip').forEach(t => t.classList.remove('show'));
         ovContainer.classList.remove('has-active');
         titleTabs.forEach(t => t.classList.remove('active'));
