@@ -1315,18 +1315,41 @@
     .edge-link .edge-title { font-size: 14px; }
     .edge-link .edge-desc { font-size: 12px; }
     .loop-card { padding: 16px; padding-bottom: 40px; }
-    .loop-overview-scroll { 
-      overflow-x: auto !important; 
-      -webkit-overflow-scrolling: touch;
+    .loop-overview-scroll {
+      overflow: visible !important;
       padding-bottom: 10px;
     }
-    .ov-grid, .ov-titles { 
-      min-width: 650px; 
+    .ov-grid {
+      display: block;
+      min-width: 0;
     }
-    .ov-panel { height: 320px; }
+    .ov-grid .ov-panel {
+      display: none;
+      height: auto;
+      max-height: 60vh;
+    }
+    .ov-grid .ov-panel.active,
+    .ov-grid .ov-panel.ov-mobile-show {
+      display: flex;
+    }
+    .ov-grid .ov-panel img {
+      object-fit: contain;
+      max-height: 60vh;
+    }
+    .ov-titles {
+      display: flex;
+      min-width: 0;
+      gap: 0;
+    }
+    .ov-title-tab {
+      flex: 1;
+      font-size: 11px;
+      padding: 8px 4px;
+    }
+    .ov-title-tab:first-child { border-radius: 10px 0 0 0; }
+    .ov-title-tab:last-child { border-radius: 0 10px 0 0; }
     .loop-overview-img { border-radius: 8px; }
-    .ov-title-tab { font-size: 11px; padding: 8px 4px; }
-    .ov-loop-arrow { height: 32px; }
+    .ov-loop-arrow { display: none; }
     .section-header { gap: 10px; }
     .section-icon { width: 34px; height: 34px; border-radius: 10px; }
     .section-icon svg { width: 17px; height: 17px; }
@@ -2101,7 +2124,8 @@
       const panel = ovContainer.querySelector(`.ov-panel[data-zone="${zone}"]`);
       if (!panel) return;
 
-      if (activeZone === zone) {
+      if (activeZone === zone && window.innerWidth > 760) {
+        // Desktop: toggle off; Mobile: keep active
         panel.classList.remove('active');
         ovContainer.classList.remove('has-active');
         titleTabs.forEach(t => t.classList.remove('active'));
@@ -2138,8 +2162,9 @@
       });
     });
 
-    // Click outside to dismiss
+    // Click outside to dismiss (desktop only)
     document.addEventListener('click', (e) => {
+      if (window.innerWidth > 760) return; // mobile uses tab switching, not dismiss
       if (activeZone && !ovContainer.contains(e.target) && !(ovTitles && ovTitles.contains(e.target))) {
         panels.forEach(p => p.classList.remove('active'));
         ovContainer.classList.remove('has-active');
@@ -2148,6 +2173,11 @@
         activeZone = null;
       }
     });
+
+    // Mobile: show first panel by default
+    if (window.innerWidth <= 760) {
+      activateZone('collect');
+    }
   }
 </script>
 
