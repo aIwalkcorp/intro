@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';">
 <title>aIwalk — ExoPulse | AI-Driven Rehabilitation Technology</title>
 <meta name="description" content="aIwalk Co., Ltd. develops AI-driven rehabilitation technology through three core products: NTKCAP markerless motion capture, ExoPulse Patient Cloud clinical platform, and ExoPulse Exoskeleton digital-twin-powered wearable robot.">
 <meta property="og:title" content="aIwalk — ExoPulse | AI-Driven Rehabilitation Technology">
@@ -11,7 +12,7 @@
 <meta property="og:url" content="https://aiwalkcorp.github.io/intro/">
 <meta property="og:image" content="https://aiwalkcorp.github.io/intro/assets/corp-logo.png">
 <!-- Lucide Icons -->
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/lucide@1.7.0/dist/umd/lucide.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
 
@@ -1253,28 +1254,6 @@
   @media (max-width: 760px) {
     .swipe-guide { display: flex; }
     .navbar .nav-links { display: none; }
-    /* Convert sidebar to bottom bar on tablets & in-app browsers */
-    .navbar--sidebar {
-      top: auto;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      flex-direction: row;
-      border-radius: 50px;
-      width: auto;
-      max-width: 92vw;
-      padding: 8px 16px;
-      gap: 12px;
-    }
-    .navbar--sidebar .nav-links {
-      display: flex;
-      flex-direction: row;
-      gap: 4px;
-    }
-    .navbar--sidebar .nav-brand { display: none; }
-    .navbar--sidebar .nav-logo { width: 24px; height: 24px; }
-    .navbar--sidebar .nav-link { font-size: 11px; padding: 4px 8px; }
-    .navbar--sidebar .lang-toggle { margin-left: 0; transform: scale(0.8); }
     .hero { min-height: 85vh; padding: 90px 20px 60px; }
     .hero h1 { font-size: 38px; letter-spacing: 1px; }
     .hero .hero-company { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
@@ -2032,19 +2011,18 @@
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
     const pastHero = scrollY > heroBottom - 100;
 
-    // Navbar: horizontal on hero, vertical sidebar after
-    if (pastHero && !navSidebarActive) {
+    // Navbar: vertical sidebar only on wide screens (>760px)
+    const isWide = window.innerWidth > 760;
+    if (pastHero && !navSidebarActive && isWide) {
       navbar.classList.add('scrolled');
       navbar.classList.add('navbar--sidebar');
       navSidebarActive = true;
-    } else if (!pastHero && navSidebarActive) {
+    } else if ((!pastHero || !isWide) && navSidebarActive) {
       navbar.classList.remove('navbar--sidebar');
       navSidebarActive = false;
     }
-    if (!pastHero) {
-      if (scrollY > 60) navbar.classList.add('scrolled');
-      else navbar.classList.remove('scrolled');
-    }
+    if (pastHero || scrollY > 60) navbar.classList.add('scrolled');
+    else navbar.classList.remove('scrolled');
 
     // Stats bar: visible on hero, hidden after
     if (heroStats) {
