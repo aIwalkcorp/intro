@@ -120,7 +120,42 @@
     background: rgba(255,255,255,0.92);
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
   }
-  /* Bottom bar mode after hero (all screen sizes) */
+  /* Desktop sidebar after hero (>1200px only) */
+  .navbar--sidebar {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    flex-direction: column;
+    border-radius: 0 16px 16px 0;
+    padding: 14px 10px;
+    gap: 6px;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  .navbar.navbar--sidebar .nav-links {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+  }
+  .navbar--sidebar .nav-link {
+    font-size: 12px;
+    padding: 5px 10px;
+    text-align: center;
+    white-space: nowrap;
+    writing-mode: horizontal-tb;
+  }
+  .navbar--sidebar .nav-brand {
+    font-size: 13px;
+    padding: 0;
+  }
+  .navbar--sidebar .nav-logo {
+    width: 28px; height: 28px;
+  }
+  .navbar--sidebar .lang-toggle {
+    transform: scale(0.85);
+  }
+
+  /* Bottom bar after hero (<=1200px) */
   .navbar--bottombar {
     top: auto;
     bottom: 16px;
@@ -135,8 +170,8 @@
     background: rgba(255,255,255,0.92);
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
   }
-  .navbar--bottombar .nav-links {
-    display: flex;
+  .navbar.navbar--bottombar .nav-links {
+    display: flex !important;
     flex-direction: row;
     gap: 4px;
   }
@@ -2004,12 +2039,18 @@
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
     const pastHero = scrollY > heroBottom - 100;
 
-    // Navbar: bottom bar after hero on all screens
+    // Navbar: sidebar on desktop (>1200px), bottom bar otherwise
+    const isWide = window.innerWidth > 1200;
     if (pastHero && !navSidebarActive) {
       navbar.classList.add('scrolled');
-      navbar.classList.add('navbar--bottombar');
+      if (isWide) {
+        navbar.classList.add('navbar--sidebar');
+      } else {
+        navbar.classList.add('navbar--bottombar');
+      }
       navSidebarActive = true;
     } else if (!pastHero && navSidebarActive) {
+      navbar.classList.remove('navbar--sidebar');
       navbar.classList.remove('navbar--bottombar');
       navSidebarActive = false;
     }
