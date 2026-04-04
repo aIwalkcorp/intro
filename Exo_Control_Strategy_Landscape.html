@@ -252,8 +252,6 @@
       width: 920px;
       height: 640px;
       transform-origin: top left;
-      transform: scale(calc((100vw - 16px) / 920));
-      margin-bottom: calc(640px * ((100vw - 16px) / 920) - 640px);
     }
     .back-link { top: 10px; left: 10px; font-size: 12px; padding: 6px 12px; }
     .lang-toggle { top: 10px; right: 10px; font-size: 12px; padding: 6px 12px; }
@@ -628,6 +626,21 @@ function toggleLang() {
     label.innerHTML = name + ' <span class="ref-tag">' + ref + '</span>';
   });
 }
+
+// Scale chart to fit viewport on small screens
+function scaleChart() {
+  const chart = document.getElementById('chart');
+  if (!chart || window.innerWidth > 960) {
+    chart && (chart.style.transform = '');
+    chart && (chart.style.marginBottom = '');
+    return;
+  }
+  const s = (window.innerWidth - 16) / 920;
+  chart.style.transform = 'scale(' + s + ')';
+  chart.style.marginBottom = (640 * s - 640) + 'px';
+}
+scaleChart();
+window.addEventListener('resize', scaleChart);
 </script>
 </body>
 </html>
