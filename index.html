@@ -1251,10 +1251,8 @@
     100% { transform: translateX(-15px); opacity: 0; }
   }
 
-  @media (max-width: 760px) {
-    .swipe-guide { display: flex; }
-    .navbar .nav-links { display: none; }
-    /* Mobile bottom bar when scrolled past hero */
+  /* Bottom bar for screens <=1024px (tablets, in-app browsers, phones) */
+  @media (max-width: 1024px) {
     .navbar--bottombar {
       top: auto;
       bottom: 16px;
@@ -1276,6 +1274,11 @@
     .navbar--bottombar .nav-logo { width: 24px; height: 24px; }
     .navbar--bottombar .nav-link { font-size: 11px; padding: 4px 8px; }
     .navbar--bottombar .lang-toggle { margin-left: 0; transform: scale(0.8); }
+  }
+
+  @media (max-width: 760px) {
+    .swipe-guide { display: flex; }
+    .navbar .nav-links { display: none; }
     .hero { min-height: 85vh; padding: 90px 20px 60px; }
     .hero h1 { font-size: 38px; letter-spacing: 1px; }
     .hero .hero-company { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
@@ -2033,8 +2036,8 @@
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
     const pastHero = scrollY > heroBottom - 100;
 
-    // Navbar: sidebar on wide, bottom bar on narrow
-    const isWide = window.innerWidth > 760;
+    // Navbar: sidebar only on true desktop (>1024px)
+    const isWide = window.innerWidth > 1024;
     if (pastHero && !navSidebarActive) {
       navbar.classList.add('scrolled');
       if (isWide) {
