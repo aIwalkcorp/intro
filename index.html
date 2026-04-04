@@ -1326,7 +1326,7 @@
       gap: 6px;
     }
     .ov-grid .ov-panel {
-      height: 240px;
+      height: 200px;
       opacity: 0.4;
       filter: brightness(0.6);
       transition: opacity 0.4s ease, filter 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
@@ -1339,9 +1339,31 @@
       box-shadow: 0 0 20px rgba(192,106,26,0.2);
     }
     .ov-grid .ov-panel img {
-      object-fit: cover;
+      object-fit: contain;
       width: 100%;
       height: 100%;
+      background: #fff;
+    }
+    /* Enlarged overlay when tapped on mobile */
+    .ov-panel-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0,0,0,0.75);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .ov-panel-overlay.show {
+      display: flex;
+    }
+    .ov-panel-overlay img {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #fff;
     }
     .ov-titles {
       display: flex;
@@ -1597,6 +1619,11 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Mobile panel overlay -->
+<div class="ov-panel-overlay" id="ovPanelOverlay">
+  <img id="ovOverlayImg" src="" alt="Overview detail">
 </div>
 
 <!-- PRODUCT DEMOS -->
@@ -2156,12 +2183,31 @@
       }
     }
 
+    const ovOverlay = document.getElementById('ovPanelOverlay');
+    const ovOverlayImg = document.getElementById('ovOverlayImg');
+
     panels.forEach(p => {
       p.addEventListener('click', (e) => {
         e.stopPropagation();
         activateZone(p.dataset.zone);
+        // Mobile: show enlarged overlay on tap
+        if (window.innerWidth <= 760 && ovOverlay) {
+          const img = p.querySelector('img');
+          if (img) {
+            ovOverlayImg.src = img.src;
+            ovOverlayImg.alt = img.alt;
+            ovOverlay.classList.add('show');
+          }
+        }
       });
     });
+
+    // Close overlay on tap
+    if (ovOverlay) {
+      ovOverlay.addEventListener('click', () => {
+        ovOverlay.classList.remove('show');
+      });
+    }
 
     titleTabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
