@@ -120,43 +120,8 @@
     background: rgba(255,255,255,0.92);
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
   }
-  /* Desktop sidebar after hero (>1200px only) */
-  .navbar--sidebar {
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    flex-direction: column;
-    border-radius: 0 16px 16px 0;
-    padding: 14px 10px;
-    gap: 6px;
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-  }
-  .navbar.navbar--sidebar .nav-links {
-    display: flex !important;
-    flex-direction: column;
-    gap: 0;
-  }
-  .navbar--sidebar .nav-link {
-    font-size: 12px;
-    padding: 5px 10px;
-    text-align: center;
-    white-space: nowrap;
-    writing-mode: horizontal-tb;
-  }
-  .navbar--sidebar .nav-brand {
-    font-size: 13px;
-    padding: 0;
-  }
-  .navbar--sidebar .nav-logo {
-    width: 28px; height: 28px;
-  }
-  .navbar--sidebar .lang-toggle {
-    transform: scale(0.85);
-  }
-
-  /* Bottom bar after hero (<=1200px) */
-  .navbar--bottombar {
+  /* After hero: default = bottom bar (mobile/tablet/webview) */
+  .navbar--past-hero {
     top: auto;
     bottom: 16px;
     left: 50%;
@@ -170,15 +135,46 @@
     background: rgba(255,255,255,0.92);
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
   }
-  .navbar.navbar--bottombar .nav-links {
+  .navbar.navbar--past-hero .nav-links {
     display: flex !important;
     flex-direction: row;
     gap: 4px;
   }
-  .navbar--bottombar .nav-brand { display: none; }
-  .navbar--bottombar .nav-logo { width: 24px; height: 24px; }
-  .navbar--bottombar .nav-link { font-size: 11px; padding: 4px 8px; }
-  .navbar--bottombar .lang-toggle { margin-left: 0; transform: scale(0.8); }
+  .navbar--past-hero .nav-brand { display: none; }
+  .navbar--past-hero .nav-logo { width: 24px; height: 24px; }
+  .navbar--past-hero .nav-link { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+  .navbar--past-hero .lang-toggle { margin-left: 0; transform: scale(0.8); }
+
+  /* After hero on true desktop: left sidebar instead */
+  @media (min-width: 1201px) {
+    .navbar--past-hero {
+      top: 50%;
+      bottom: auto;
+      left: 0;
+      transform: translateY(-50%);
+      flex-direction: column;
+      border-radius: 0 16px 16px 0;
+      max-width: none;
+      padding: 14px 10px;
+      gap: 6px;
+    }
+    .navbar.navbar--past-hero .nav-links {
+      flex-direction: column;
+      gap: 0;
+    }
+    .navbar--past-hero .nav-link {
+      font-size: 12px;
+      padding: 5px 10px;
+      text-align: center;
+    }
+    .navbar--past-hero .nav-brand {
+      display: block;
+      font-size: 13px;
+      padding: 0;
+    }
+    .navbar--past-hero .nav-logo { width: 28px; height: 28px; }
+    .navbar--past-hero .lang-toggle { transform: scale(0.85); margin-left: 0; }
+  }
   .navbar .nav-logo {
     width: 32px; height: 32px;
     border-radius: 8px;
@@ -2039,19 +2035,13 @@
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
     const pastHero = scrollY > heroBottom - 100;
 
-    // Navbar: sidebar on desktop (>1200px), bottom bar otherwise
-    const isWide = window.innerWidth > 1200;
+    // Navbar: JS adds one class, CSS decides sidebar vs bottom bar
     if (pastHero && !navSidebarActive) {
       navbar.classList.add('scrolled');
-      if (isWide) {
-        navbar.classList.add('navbar--sidebar');
-      } else {
-        navbar.classList.add('navbar--bottombar');
-      }
+      navbar.classList.add('navbar--past-hero');
       navSidebarActive = true;
     } else if (!pastHero && navSidebarActive) {
-      navbar.classList.remove('navbar--sidebar');
-      navbar.classList.remove('navbar--bottombar');
+      navbar.classList.remove('navbar--past-hero');
       navSidebarActive = false;
     }
     if (pastHero || scrollY > 60) navbar.classList.add('scrolled');
