@@ -1253,6 +1253,28 @@
   @media (max-width: 760px) {
     .swipe-guide { display: flex; }
     .navbar .nav-links { display: none; }
+    /* Convert sidebar to bottom bar on tablets & in-app browsers */
+    .navbar--sidebar {
+      top: auto;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: row;
+      border-radius: 50px;
+      width: auto;
+      max-width: 92vw;
+      padding: 8px 16px;
+      gap: 12px;
+    }
+    .navbar--sidebar .nav-links {
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+    }
+    .navbar--sidebar .nav-brand { display: none; }
+    .navbar--sidebar .nav-logo { width: 24px; height: 24px; }
+    .navbar--sidebar .nav-link { font-size: 11px; padding: 4px 8px; }
+    .navbar--sidebar .lang-toggle { margin-left: 0; transform: scale(0.8); }
     .hero { min-height: 85vh; padding: 90px 20px 60px; }
     .hero h1 { font-size: 38px; letter-spacing: 1px; }
     .hero .hero-company { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
@@ -1334,27 +1356,6 @@
     .navbar .nav-logo { width: 26px; height: 26px; border-radius: 6px; }
     .navbar .nav-brand { font-size: 13px; }
     .navbar .nav-links { display: none; }
-    .navbar--sidebar {
-      top: auto;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      flex-direction: row;
-      border-radius: 50px;
-      width: auto;
-      max-width: 92vw;
-      padding: 8px 16px;
-      gap: 12px;
-    }
-    .navbar--sidebar .nav-links {
-      display: flex;
-      flex-direction: row;
-      gap: 4px;
-    }
-    .navbar--sidebar .nav-brand { display: none; }
-    .navbar--sidebar .nav-logo { width: 24px; height: 24px; }
-    .navbar--sidebar .nav-link { font-size: 11px; padding: 4px 8px; }
-    .navbar--sidebar .lang-toggle { margin-left: 0; transform: scale(0.8); }
     .lang-toggle .lang-opt { padding: 4px 10px; font-size: 10px; }
     .section { padding: 0 14px; }
     .about-card { padding: 18px 14px; }
