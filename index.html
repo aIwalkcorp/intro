@@ -1254,6 +1254,28 @@
   @media (max-width: 760px) {
     .swipe-guide { display: flex; }
     .navbar .nav-links { display: none; }
+    /* Mobile bottom bar when scrolled past hero */
+    .navbar--bottombar {
+      top: auto;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: row;
+      border-radius: 50px;
+      width: auto;
+      max-width: 92vw;
+      padding: 8px 16px;
+      gap: 12px;
+    }
+    .navbar--bottombar .nav-links {
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+    }
+    .navbar--bottombar .nav-brand { display: none; }
+    .navbar--bottombar .nav-logo { width: 24px; height: 24px; }
+    .navbar--bottombar .nav-link { font-size: 11px; padding: 4px 8px; }
+    .navbar--bottombar .lang-toggle { margin-left: 0; transform: scale(0.8); }
     .hero { min-height: 85vh; padding: 90px 20px 60px; }
     .hero h1 { font-size: 38px; letter-spacing: 1px; }
     .hero .hero-company { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
@@ -2011,14 +2033,19 @@
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
     const pastHero = scrollY > heroBottom - 100;
 
-    // Navbar: vertical sidebar only on wide screens (>760px)
+    // Navbar: sidebar on wide, bottom bar on narrow
     const isWide = window.innerWidth > 760;
-    if (pastHero && !navSidebarActive && isWide) {
+    if (pastHero && !navSidebarActive) {
       navbar.classList.add('scrolled');
-      navbar.classList.add('navbar--sidebar');
+      if (isWide) {
+        navbar.classList.add('navbar--sidebar');
+      } else {
+        navbar.classList.add('navbar--bottombar');
+      }
       navSidebarActive = true;
-    } else if ((!pastHero || !isWide) && navSidebarActive) {
+    } else if (!pastHero && navSidebarActive) {
       navbar.classList.remove('navbar--sidebar');
+      navbar.classList.remove('navbar--bottombar');
       navSidebarActive = false;
     }
     if (pastHero || scrollY > 60) navbar.classList.add('scrolled');
