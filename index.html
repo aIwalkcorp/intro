@@ -1251,9 +1251,9 @@
     100% { transform: translateX(-15px); opacity: 0; }
   }
 
-  /* Bottom bar for screens <=1024px (tablets, in-app browsers, phones) */
+  /* Always bottom bar on screens <=1024px */
   @media (max-width: 1024px) {
-    .navbar--bottombar {
+    .navbar {
       top: auto;
       bottom: 16px;
       left: 50%;
@@ -1265,20 +1265,14 @@
       padding: 8px 16px;
       gap: 12px;
     }
-    .navbar--bottombar .nav-links {
-      display: flex;
-      flex-direction: row;
-      gap: 4px;
-    }
-    .navbar--bottombar .nav-brand { display: none; }
-    .navbar--bottombar .nav-logo { width: 24px; height: 24px; }
-    .navbar--bottombar .nav-link { font-size: 11px; padding: 4px 8px; }
-    .navbar--bottombar .lang-toggle { margin-left: 0; transform: scale(0.8); }
+    .navbar .nav-brand { display: none; }
+    .navbar .nav-logo { width: 24px; height: 24px; }
+    .navbar .nav-link { font-size: 11px; padding: 4px 8px; }
+    .navbar .lang-toggle { margin-left: 0; transform: scale(0.8); }
   }
 
   @media (max-width: 760px) {
     .swipe-guide { display: flex; }
-    .navbar .nav-links { display: none; }
     .hero { min-height: 85vh; padding: 90px 20px 60px; }
     .hero h1 { font-size: 38px; letter-spacing: 1px; }
     .hero .hero-company { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
@@ -1356,10 +1350,7 @@
     .hero-stats { gap: 10px; padding: 10px 8px; }
     .hero-stats .hero-stat-value { font-size: 10px; }
     .hero-stats .hero-stat-label { font-size: 6.5px; max-width: 38px; }
-    .navbar { top: 8px; padding: 5px 10px; gap: 6px; }
     .navbar .nav-logo { width: 26px; height: 26px; border-radius: 6px; }
-    .navbar .nav-brand { font-size: 13px; }
-    .navbar .nav-links { display: none; }
     .lang-toggle .lang-opt { padding: 4px 10px; font-size: 10px; }
     .section { padding: 0 14px; }
     .about-card { padding: 18px 14px; }
@@ -2036,19 +2027,14 @@
     const heroBottom = heroSection ? heroSection.offsetHeight : 600;
     const pastHero = scrollY > heroBottom - 100;
 
-    // Navbar: sidebar only on true desktop (>1024px)
+    // Navbar: vertical sidebar only on desktop (>1024px)
     const isWide = window.innerWidth > 1024;
-    if (pastHero && !navSidebarActive) {
+    if (pastHero && !navSidebarActive && isWide) {
       navbar.classList.add('scrolled');
-      if (isWide) {
-        navbar.classList.add('navbar--sidebar');
-      } else {
-        navbar.classList.add('navbar--bottombar');
-      }
+      navbar.classList.add('navbar--sidebar');
       navSidebarActive = true;
-    } else if (!pastHero && navSidebarActive) {
+    } else if ((!pastHero || !isWide) && navSidebarActive) {
       navbar.classList.remove('navbar--sidebar');
-      navbar.classList.remove('navbar--bottombar');
       navSidebarActive = false;
     }
     if (pastHero || scrollY > 60) navbar.classList.add('scrolled');
