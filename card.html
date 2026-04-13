@@ -300,8 +300,36 @@ const PEOPLE = [
       <div class="mid"><div class="sep"></div><div class="title">CTO &amp; Co-Founder</div><div class="name-row"><span class="name-en">Eddie Lai</span></div></div>
       <div class="bot"><div class="crow"><span class="ci-en">Tel</span><span class="ct">${_d(_C.t2)}</span></div><div class="crow"><span class="ci-en">Email</span><span class="ct">${_d(_C.e2)}</span></div><div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Web</span><span class="ct"><a href="https://eddlai.github.io/open_resume/eddie.html" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">eddlai.github.io/open_resume/eddie.html</a></span></div></div>
     </div>`
-  }
+  },
+  ...buildTeam([
+    { id: 'lin',       zh: '林淑卿',          en: 'Lin Shu-Ching',         titleZh: '監察人',            titleEn: 'Supervisor' },
+    { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research' },
+    { id: 'curtis',    zh: 'Curtis Le',       en: 'Curtis (Le Chi Thien)', titleZh: '研究科學家 — 動作與控制',          titleEn: 'Research Scientist – Motion & Control' },
+    { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '硬體工程師 — 動作捕捉',            titleEn: 'Hardware Engineer – Motion Capture' },
+    { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師 — 外骨骼與肌電',        titleEn: 'Hardware Engineer – Exoskeleton & EMG' },
+    { id: 'stephen',   zh: '王星皓',          en: 'Stephen Wang',          titleZh: '臨床演算法研究員',                 titleEn: 'Clinical Algorithm Researcher' },
+    { id: 'jennifer',  zh: '吳沛蓁',          en: 'Jennifer Wu',           titleZh: '部署工程師',                       titleEn: 'Deployment Engineer' },
+    { id: 'gokul',     zh: 'Gokul Suresh',    en: 'Gokul Adithya Suresh',  titleZh: '系統 / GPU 工程師',                titleEn: 'Systems / GPU Engineer' },
+    { id: 'lewis',     zh: '陳正綸',          en: 'Lewis Chen',            titleZh: '即時 SDK 工程師',                  titleEn: 'Realtime SDK Engineer' },
+  ])
 ];
+
+function buildTeam(list) {
+  return list.map(p => ({
+    id: p.id,
+    name: p.zh, sub: `${p.titleZh} / ${p.titleEn}`,
+    front: `<div class="card style-b">
+      <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+      <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.zh}</span></div></div>
+      <div class="bot"><div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
+    </div>`,
+    back: `<div class="card style-b">
+      <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+      <div class="mid"><div class="sep"></div><div class="title">${p.titleEn}</div><div class="name-row"><span class="name-en">${p.en}</span></div></div>
+      <div class="bot"><div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Tax ID</span><span class="ct">60331893</span></div></div>
+    </div>`
+  }));
+}
 
 let current = 0;
 let isFlipped = false;
