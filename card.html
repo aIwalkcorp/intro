@@ -39,6 +39,127 @@
   .nav-back:hover { background: rgba(26,58,92,0.06); }
   .nav-back svg { width: 16px; height: 16px; }
   .nav-title { font-size: 14px; font-weight: 700; color: #1a3a5c; letter-spacing: 0.3px; }
+  .nav-overview {
+    display: flex; align-items: center; gap: 6px; padding: 5px 14px;
+    border-radius: 24px; font-size: 13px; font-weight: 600;
+    color: #c06a1a; background: rgba(192,106,26,0.08);
+    border: none; cursor: pointer; transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .nav-overview:hover { background: rgba(192,106,26,0.16); }
+  .nav-overview svg { width: 15px; height: 15px; }
+
+  /* ===== OVERVIEW OVERLAY ===== */
+  .overview {
+    position: fixed; inset: 0; z-index: 10000;
+    background: #f8f6f1;
+    overflow-y: auto;
+    opacity: 0; pointer-events: none;
+    transform: translateY(20px);
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .overview.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .overview-header {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 28px 48px 20px; gap: 24px;
+    background: linear-gradient(180deg, #f8f6f1 72%, rgba(248,246,241,0));
+  }
+  .overview-title {
+    font-family: 'Noto Serif TC', serif; font-size: 28px; font-weight: 900;
+    color: #1a2d42; letter-spacing: 2px;
+  }
+  .overview-title::after {
+    content: ''; display: inline-block; width: 28px; height: 3px;
+    background: #c06a1a; margin-left: 14px; vertical-align: middle;
+  }
+  .overview-subtitle {
+    font-size: 12px; color: #6b7d8e; letter-spacing: 1.5px;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .overview-close {
+    background: transparent; border: 1px solid rgba(26,58,92,0.2);
+    border-radius: 999px; padding: 8px 16px; font-size: 12px;
+    color: #1a3a5c; cursor: pointer; font-weight: 600; letter-spacing: 0.5px;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .overview-close:hover { background: #1a3a5c; color: #f8f6f1; border-color: #1a3a5c; }
+  .overview-body { padding: 0 48px 64px; }
+  .overview-group { margin-bottom: 48px; }
+  .overview-group-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 18px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(26,58,92,0.12);
+  }
+  .overview-group-num {
+    font-family: 'Inter', monospace; font-size: 11px; font-weight: 700;
+    color: #c06a1a; letter-spacing: 2px;
+  }
+  .overview-group-zh {
+    font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 700;
+    color: #1a2d42; letter-spacing: 1.5px;
+  }
+  .overview-group-en {
+    font-size: 11px; color: #6b7d8e; letter-spacing: 1px;
+    text-transform: uppercase; font-weight: 600; margin-left: auto;
+  }
+  .overview-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .ov-card {
+    position: relative; padding: 20px 22px 18px;
+    background: #ffffff; border-radius: 8px;
+    border: 1px solid rgba(26,58,92,0.08);
+    cursor: pointer; text-align: left;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden; font-family: inherit;
+  }
+  .ov-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: linear-gradient(180deg, #1a3a5c, #c06a1a);
+    transform: scaleY(0); transform-origin: top;
+    transition: transform 0.3s ease;
+  }
+  .ov-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(192,106,26,0.3);
+    box-shadow: 0 10px 30px rgba(26,58,92,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .ov-card:hover::before { transform: scaleY(1); }
+  .ov-initial {
+    font-family: 'Noto Serif TC', serif; font-size: 32px; font-weight: 900;
+    color: #1a2d42; line-height: 1; letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .ov-name-en {
+    font-size: 11px; color: #6b7d8e; letter-spacing: 1px;
+    font-weight: 500; margin-bottom: 10px;
+  }
+  .ov-role {
+    font-size: 12px; color: #1a3a5c; font-weight: 600;
+    line-height: 1.5; letter-spacing: 0.3px;
+  }
+  .ov-role-en {
+    display: block; font-size: 10px; color: #94a3b8;
+    font-weight: 500; letter-spacing: 0.5px; margin-top: 2px;
+    text-transform: uppercase;
+  }
+  .ov-arrow {
+    position: absolute; right: 16px; top: 20px;
+    color: #c06a1a; opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    transform: translateX(-4px);
+  }
+  .ov-card:hover .ov-arrow { opacity: 1; transform: translateX(0); }
+  @media (max-width: 640px) {
+    .overview-header { padding: 20px 20px 14px; }
+    .overview-body { padding: 0 20px 40px; }
+    .overview-title { font-size: 22px; }
+    .overview-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .ov-card { padding: 14px 16px; }
+    .ov-initial { font-size: 26px; }
+  }
 
   /* ===== STAGE ===== */
   .stage {
@@ -228,7 +349,25 @@
     返回首頁
   </a>
   <span class="nav-title">Digital Business Card</span>
+  <button class="nav-overview" id="btnOverview" aria-label="Overview">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span class="lbl-zh">總覽</span><span class="lbl-en" style="display:none">Overview</span>
+  </button>
 </nav>
+
+<!-- Overview overlay -->
+<div class="overview" id="overview" role="dialog" aria-modal="true" aria-label="Team overview">
+  <div class="overview-header">
+    <div>
+      <div class="overview-title"><span class="ov-h-zh">團隊總覽</span><span class="ov-h-en" style="display:none">Team Overview</span></div>
+      <div class="overview-subtitle">aIwalk Co., Ltd.</div>
+    </div>
+    <button class="overview-close" id="btnCloseOverview">
+      <span class="ov-h-zh">關閉 ✕</span><span class="ov-h-en" style="display:none">Close ✕</span>
+    </button>
+  </div>
+  <div class="overview-body" id="overviewBody"></div>
+</div>
 
 <div class="stage" id="stage">
   <!-- Left / Right arrows -->
@@ -330,6 +469,14 @@ function buildTeam(list) {
     </div>`
   }));
 }
+
+const GROUPS = [
+  { num: '01', zh: '治理',     en: 'Governance',              ids: ['arthur', 'lin'] },
+  { num: '02', zh: '執行層',   en: 'Leadership',              ids: ['eddie', 'sean'] },
+  { num: '03', zh: 'NTKCAP 動作捕捉', en: 'NTKCAP · Motion Capture', ids: ['tom', 'lewis', 'gokul'] },
+  { num: '04', zh: 'ExoPulse 外骨骼', en: 'ExoPulse · Exoskeleton',  ids: ['timmy', 'jennifer', 'curtis'] },
+  { num: '05', zh: 'Patient Cloud · 臨床', en: 'Patient Cloud · Clinical', ids: ['stephen'] },
+];
 
 let current = 0;
 let isFlipped = false;
@@ -488,6 +635,66 @@ if (personIndex !== -1) {
   current = personIndex;
 }
 renderPerson(current);
+
+// ===== OVERVIEW MODE =====
+const overview = document.getElementById('overview');
+const overviewBody = document.getElementById('overviewBody');
+const btnOverview = document.getElementById('btnOverview');
+const btnCloseOverview = document.getElementById('btnCloseOverview');
+
+function renderOverview() {
+  overviewBody.innerHTML = GROUPS.map(g => {
+    const members = g.ids.map(id => {
+      const p = PEOPLE.find(x => x.id === id);
+      if (!p) return '';
+      const enMatch = p.back.match(/class="name-en">([^<]+)</);
+      const enName = enMatch ? enMatch[1].trim() : '';
+      const roleZh = p.sub.split('/')[0].trim();
+      const roleEn = p.sub.includes('/') ? p.sub.split('/').slice(1).join('/').trim() : '';
+      return `<button class="ov-card" data-id="${p.id}">
+        <div class="ov-initial">${p.name}</div>
+        ${enName ? `<div class="ov-name-en">${enName}</div>` : ''}
+        <div class="ov-role">${roleZh}${roleEn ? `<span class="ov-role-en">${roleEn}</span>` : ''}</div>
+        <svg class="ov-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </button>`;
+    }).join('');
+    return `<div class="overview-group">
+      <div class="overview-group-head">
+        <span class="overview-group-num">${g.num}</span>
+        <span class="overview-group-zh">${g.zh}</span>
+        <span class="overview-group-en">${g.en}</span>
+      </div>
+      <div class="overview-grid">${members}</div>
+    </div>`;
+  }).join('');
+  // Wire click handlers
+  overviewBody.querySelectorAll('.ov-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const idx = PEOPLE.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        current = idx;
+        renderPerson(idx);
+        closeOverview();
+      }
+    });
+  });
+}
+
+function openOverview() {
+  renderOverview();
+  overview.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeOverview() {
+  overview.classList.remove('show');
+  document.body.style.overflow = '';
+}
+btnOverview.addEventListener('click', openOverview);
+btnCloseOverview.addEventListener('click', closeOverview);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && overview.classList.contains('show')) closeOverview();
+});
 
 // Load language preference and set card side accordingly
 const savedLang = localStorage.getItem('aiwalk-lang');
