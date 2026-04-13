@@ -14,7 +14,7 @@
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@1.7.0/dist/umd/lucide.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -453,10 +453,16 @@
     color: #fff;
   }
   .section-title {
-    font-size: 22px;
-    font-weight: 700;
+    font-family: 'Fraunces', 'Noto Serif TC', serif;
+    font-size: 26px;
+    font-weight: 600;
+    font-variation-settings: 'opsz' 96;
     color: var(--navy);
-    letter-spacing: 0.3px;
+    letter-spacing: -0.2px;
+  }
+  .section-title .lang-zh {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 700;
   }
 
   /* ===== ABOUT CARD ===== */
@@ -1542,12 +1548,12 @@
       <span class="hero-stat-label"><span class="lang-zh">技術階段</span><span class="lang-en">Tech Phases</span></span>
     </div>
     <div class="hero-stat">
-      <span class="hero-stat-value">DRL</span>
-      <span class="hero-stat-label"><span class="lang-zh">雙代理架構</span><span class="lang-en">Dual-Agent</span></span>
+      <span class="hero-stat-value">11</span>
+      <span class="hero-stat-label"><span class="lang-zh">團隊成員</span><span class="lang-en">Team Members</span></span>
     </div>
     <div class="hero-stat">
-      <span class="hero-stat-value">NMS</span>
-      <span class="hero-stat-label"><span class="lang-zh">數位孿生</span><span class="lang-en">Digital Twin</span></span>
+      <span class="hero-stat-value">2026</span>
+      <span class="hero-stat-label"><span class="lang-zh">成立於</span><span class="lang-en">Founded</span></span>
     </div>
   </div>
 </section>

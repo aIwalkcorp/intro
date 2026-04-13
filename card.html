@@ -48,6 +48,9 @@
   }
   .nav-overview:hover { background: rgba(192,106,26,0.16); }
   .nav-overview svg { width: 15px; height: 15px; }
+  /* Nav label language switch: body[data-lang] drives visibility */
+  body[data-lang="en"] .lbl-zh { display: none !important; }
+  body[data-lang="zh"] .lbl-en { display: none !important; }
 
   /* ===== OVERVIEW OVERLAY ===== */
   .overview {
@@ -346,12 +349,14 @@
 <nav class="page-navbar">
   <a class="nav-back" href="index.html">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-    返回首頁
+    <span class="lbl-zh">返回首頁</span><span class="lbl-en">Back to Home</span>
   </a>
-  <span class="nav-title">Digital Business Card</span>
+  <span class="nav-title">
+    <span class="lbl-zh">數位名片</span><span class="lbl-en">Digital Business Card</span>
+  </span>
   <button class="nav-overview" id="btnOverview" aria-label="Overview">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    <span class="lbl-zh">總覽</span><span class="lbl-en" style="display:none">Overview</span>
+    <span class="lbl-zh">總覽</span><span class="lbl-en">Overview</span>
   </button>
 </nav>
 
@@ -359,11 +364,11 @@
 <div class="overview" id="overview" role="dialog" aria-modal="true" aria-label="Team overview">
   <div class="overview-header">
     <div>
-      <div class="overview-title"><span class="ov-h-zh">團隊總覽</span><span class="ov-h-en" style="display:none">Team Overview</span></div>
+      <div class="overview-title"><span class="lbl-zh">團隊總覽</span><span class="lbl-en">Team Overview</span></div>
       <div class="overview-subtitle">aIwalk Co., Ltd.</div>
     </div>
     <button class="overview-close" id="btnCloseOverview">
-      <span class="ov-h-zh">關閉 ✕</span><span class="ov-h-en" style="display:none">Close ✕</span>
+      <span class="lbl-zh">關閉 ✕</span><span class="lbl-en">Close ✕</span>
     </button>
   </div>
   <div class="overview-body" id="overviewBody"></div>
@@ -444,7 +449,7 @@ const PEOPLE = [
     { id: 'lin',       zh: '林淑卿',          en: 'Lin Shu-Ching',         titleZh: '監察人',            titleEn: 'Supervisor' },
     { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research' },
     { id: 'curtis',    zh: '黎志添',          en: 'Curtis (Le Chi Thien)', titleZh: '研究科學家 — 動作與控制',          titleEn: 'Research Scientist – Motion & Control' },
-    { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '硬體工程師 — 動作捕捉',            titleEn: 'Hardware Engineer – Motion Capture' },
+    { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '演算法工程師 — 動作捕捉',          titleEn: 'Algorithm Engineer – Motion Capture' },
     { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師 — 外骨骼與肌電',        titleEn: 'Hardware Engineer – Exoskeleton & EMG' },
     { id: 'stephen',   zh: '王星皓',          en: 'Stephen Wang',          titleZh: '臨床演算法研究員',                 titleEn: 'Clinical Algorithm Researcher' },
     { id: 'jennifer',  zh: '吳沛蓁',          en: 'Jennifer Wu',           titleZh: '部署工程師',                       titleEn: 'Deployment Engineer' },
@@ -540,6 +545,7 @@ function updateUIText() {
   hint.textContent = t.hint;
   sideLabel.textContent = isFlipped ? t.back : t.front;
   flipBtnText.textContent = isFlipped ? t.swipeUp : t.swipeDown;
+  document.body.setAttribute('data-lang', currentLang);
 }
 
 function setFlip(flip) {
