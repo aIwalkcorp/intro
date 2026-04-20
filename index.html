@@ -914,6 +914,87 @@
     height: 100%;
     border: 0;
   }
+  .ov-media-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .ov-media-frame::after {
+    /* subtle darkening for poster state */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15,26,43,0.15) 0%, rgba(15,26,43,0.45) 100%);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+  .ov-media-frame.playing::after { opacity: 0; }
+  .ov-media-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 74px;
+    height: 52px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    z-index: 3;
+    transition: transform 0.25s ease, opacity 0.3s ease;
+  }
+  .ov-media-play svg { width: 100%; height: 100%; display: block; }
+  .ov-media-play .ov-play-bg {
+    fill: #c01212;
+    opacity: 0.92;
+    transition: opacity 0.25s ease, fill 0.25s ease;
+  }
+  .ov-media-play:hover { transform: translate(-50%, -50%) scale(1.06); }
+  .ov-media-play:hover .ov-play-bg { fill: #e60000; opacity: 1; }
+  .ov-media-frame.playing .ov-media-play,
+  .ov-media-frame.playing .ov-media-poster { opacity: 0; pointer-events: none; }
+
+  .ov-media-ribbon {
+    position: absolute;
+    top: 18px;
+    right: -52px;
+    transform: rotate(38deg);
+    z-index: 4;
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.36em;
+    color: #fff;
+    padding: 6px 60px;
+    background: linear-gradient(135deg, var(--orange) 0%, #d4862f 100%);
+    border-top: 1px solid rgba(255,255,255,0.35);
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    box-shadow: 0 4px 14px rgba(192,106,26,0.35), inset 0 0 0 1px rgba(255,255,255,0.12);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+  }
+  .ov-media-ribbon::before,
+  .ov-media-ribbon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 50%;
+    transform: translateY(-50%);
+  }
+  .ov-media-ribbon::before { left: 10px; }
+  .ov-media-ribbon::after  { right: 10px; }
+  .ov-media-frame.playing .ov-media-ribbon {
+    opacity: 0;
+    transform: rotate(38deg) translateY(-14px);
+  }
   .ov-media-side { display: flex; flex-direction: column; }
   .ov-media-eyebrow {
     font-family: 'Inter', sans-serif;
@@ -1781,14 +1862,18 @@
 
       <div class="ov-media-grid">
         <div class="ov-media-video">
-          <div class="ov-media-frame">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/za70fA9GLbw?rel=0&modestbranding=1"
-              title="ExoPulse media coverage"
-              frameborder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              loading="lazy"></iframe>
+          <div class="ov-media-frame" id="ovMediaFrame" data-video-id="za70fA9GLbw">
+            <img class="ov-media-poster"
+                 src="https://i.ytimg.com/vi/za70fA9GLbw/hqdefault.jpg"
+                 alt="ExoPulse media coverage preview"
+                 loading="lazy">
+            <button type="button" class="ov-media-play" id="ovMediaPlayBtn" aria-label="Play video">
+              <svg viewBox="0 0 68 48" aria-hidden="true">
+                <path class="ov-play-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/>
+                <path d="M 45,24 27,14 27,34" fill="#fff"/>
+              </svg>
+            </button>
+            <div class="ov-media-ribbon">VERIFIED</div>
           </div>
         </div>
 
@@ -1798,8 +1883,8 @@
             <span class="lang-en">System Credibility</span>
           </div>
           <h4 class="ov-media-headline">
-            <span class="lang-zh">不只自己說，有人實際報導。</span>
-            <span class="lang-en">Not just our word — covered by others.</span>
+            <span class="lang-zh">不只自己說，台灣官媒實際報導。</span>
+            <span class="lang-en">Not just our word — covered by Taiwan's official media.</span>
           </h4>
 
           <button type="button" class="ov-media-toggle" aria-expanded="false" aria-controls="ovMediaDetail" id="ovMediaToggleBtn">
@@ -2226,6 +2311,25 @@
       } else {
         panel.removeAttribute('hidden');
       }
+    });
+  })();
+
+  // Ecosystem media: click-to-play, swaps poster + VERIFIED ribbon for YouTube iframe
+  (function(){
+    const frame = document.getElementById('ovMediaFrame');
+    const playBtn = document.getElementById('ovMediaPlayBtn');
+    if (!frame || !playBtn) return;
+    playBtn.addEventListener('click', () => {
+      if (frame.classList.contains('playing')) return;
+      const vid = frame.getAttribute('data-video-id');
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&rel=0&modestbranding=1';
+      iframe.title = 'ExoPulse media coverage';
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+      iframe.setAttribute('allowfullscreen', '');
+      frame.appendChild(iframe);
+      frame.classList.add('playing');
     });
   })();
 
