@@ -1506,6 +1506,10 @@
     100% { transform: translateX(-15px); opacity: 0; }
   }
 
+  /* Overlay hidden by default on all viewports; .show toggles it on */
+  .ov-panel-overlay { display: none; }
+  .ov-panel-overlay.show { display: flex; }
+
   @media (max-width: 760px) {
     .swipe-guide { display: flex; }
     .navbar .nav-links { display: none; }
