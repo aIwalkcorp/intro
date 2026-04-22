@@ -798,6 +798,27 @@
     color: var(--text-secondary);
     line-height: 1.5;
   }
+  .demo-card .demo-info-main { flex: 1; min-width: 0; }
+  .demo-card .demo-live-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--orange);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s ease, transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .demo-card .demo-live-link:hover {
+    background: var(--orange-dark, #a0541a);
+    transform: translateY(-1px);
+  }
+  .demo-card .demo-live-link svg { width: 14px; height: 14px; }
 
   /* ===== EXTRA LINKS ===== */
   .extra-links {
@@ -1948,14 +1969,18 @@
     </div>
     <div class="demo-card reveal reveal-delay-2">
       <div class="demo-video">
-        <iframe src="https://patient-cloud.aiwalkcorp.com/" loading="lazy" title="ExoPulse Patient Cloud (Live)" referrerpolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        <iframe src="https://www.youtube.com/embed/AqCmBuTejRg" allowfullscreen loading="lazy" title="ExoPulse Patient Cloud Demo"></iframe>
       </div>
       <div class="demo-info">
         <img src="assets/patientcloud-logo.png" alt="Patient Cloud" class="demo-logo">
-        <div>
-          <div class="demo-name">ExoPulse Patient Cloud <span class="lang-zh">（即時網站）</span><span class="lang-en">(Live Site)</span></div>
+        <div class="demo-info-main">
+          <div class="demo-name">ExoPulse Patient Cloud</div>
           <div class="demo-desc"><span class="lang-zh">臨床數據平台</span><span class="lang-en">Clinical Data Platform</span></div>
         </div>
+        <a class="demo-live-link" href="https://patient-cloud.aiwalkcorp.com/" target="_blank" rel="noopener" title="Open live site">
+          <i data-lucide="external-link"></i>
+          <span class="lang-zh">即時</span><span class="lang-en">Live</span>
+        </a>
       </div>
     </div>
     <div class="demo-card reveal reveal-delay-3">
