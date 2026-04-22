@@ -447,6 +447,22 @@ const PEOPLE = [
       <a href="https://eddlai.github.io/open_resume/eddie.html" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/eddie-website-qr.png" alt="Eddie personal site" style="width:100%;height:100%;display:block;"></a>
     </div>`
   },
+  {
+    id: 'chen-youyin',
+    name: '陳右穎', sub: '顧問 / Advisor, Ph.D.',
+    front: `<div class="card style-b">
+      <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+      <div class="mid"><div class="sep"></div><div class="title">顧問</div><div class="name-row"><span class="name-zh">陳右穎</span><span class="phd">教授</span></div></div>
+      <div class="bot" style="padding-right:20mm;"><div class="crow"><span class="ci-zh">單位</span><span class="ct">國立陽明交通大學 生物醫學工程學系 神經工程實驗室</span></div><div class="crow"><span class="ci-zh">電話</span><span class="ct">02-2826-7022</span></div><div class="crow"><span class="ci-zh">信箱</span><span class="ct">youyin.chen@nycu.edu.tw</span></div></div>
+      <a href="https://neurotech.lab.nycu.edu.tw/" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab" style="width:100%;height:100%;display:block;"></a>
+    </div>`,
+    back: `<div class="card style-b">
+      <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+      <div class="mid"><div class="sep"></div><div class="title">Advisor</div><div class="name-row"><span class="name-en">You-Yin Chen</span><span class="phd-en">, Ph.D.</span></div></div>
+      <div class="bot" style="padding-right:20mm;"><div class="crow"><span class="ci-en">Lab</span><span class="ct addr-wrap">NeuroTech Lab, Dept. of Biomedical Engineering,<br>National Yang Ming Chiao Tung University</span></div><div class="crow"><span class="ci-en">Tel</span><span class="ct">+886 2-2826-7022</span></div><div class="crow"><span class="ci-en">Email</span><span class="ct">youyin.chen@nycu.edu.tw</span></div></div>
+      <a href="https://neurotech.lab.nycu.edu.tw/" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab" style="width:100%;height:100%;display:block;"></a>
+    </div>`
+  },
   ...buildTeam([
     { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research' },
     { id: 'curtis',    zh: '黎志添',          en: 'Curtis (Le Chi Thien)', titleZh: '研究科學家 — 動作與控制',          titleEn: 'Research Scientist – Motion & Control' },
@@ -482,6 +498,7 @@ const GROUPS = [
   { num: '03', zh: 'NTKCAP 動作捕捉', en: 'NTKCAP · Motion Capture', ids: ['tom', 'lewis', 'gokul'] },
   { num: '04', zh: 'ExoPulse 外骨骼', en: 'ExoPulse · Exoskeleton',  ids: ['timmy', 'jennifer', 'curtis'] },
   { num: '05', zh: 'Patient Cloud · 臨床', en: 'Patient Cloud · Clinical', ids: ['stephen'] },
+  { num: '06', zh: '顧問',     en: 'Advisors',                ids: ['chen-youyin'] },
 ];
 
 let current = 0;
