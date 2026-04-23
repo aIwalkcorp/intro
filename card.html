@@ -342,6 +342,150 @@
     .card-flipper { transform: none !important; }
     .card-face-back { display: none; }
   }
+
+  /* ===== ADMIN (hidden trigger + password + panel) ===== */
+  .admin-trigger {
+    position: fixed; right: 10px; bottom: 8px; z-index: 9998;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: transparent; border: 0; cursor: default;
+    opacity: 0.18; transition: opacity 0.3s ease;
+    padding: 0;
+  }
+  .admin-trigger::after {
+    content: ''; display: block; width: 4px; height: 4px; border-radius: 50%;
+    background: #6b7d8e; margin: 5px auto;
+  }
+  .admin-trigger:hover { opacity: 0.5; cursor: pointer; }
+  .admin-trigger:focus { outline: none; opacity: 0.5; }
+
+  .admin-backdrop {
+    position: fixed; inset: 0; z-index: 10001;
+    background: rgba(20, 30, 45, 0.55);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .admin-backdrop.show { opacity: 1; pointer-events: auto; }
+
+  .admin-dialog {
+    background: #f8f6f1; border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: min(92vw, 360px); padding: 28px 28px 22px;
+    transform: translateY(10px) scale(0.98); opacity: 0;
+    transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), opacity 0.25s;
+  }
+  .admin-backdrop.show .admin-dialog { transform: translateY(0) scale(1); opacity: 1; }
+  .admin-dialog h3 {
+    font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 700;
+    color: #1a2d42; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .admin-dialog p { font-size: 12px; color: #6b7d8e; margin-bottom: 16px; }
+  .admin-dialog input[type="password"] {
+    width: 100%; padding: 10px 14px; font-size: 14px;
+    border: 1px solid rgba(26,58,92,0.2); border-radius: 8px;
+    background: #fff; color: #1a2d42; font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .admin-dialog input[type="password"]:focus {
+    outline: none; border-color: #c06a1a;
+  }
+  .admin-dialog .admin-err {
+    font-size: 11px; color: #c0392b; margin-top: 8px; min-height: 14px;
+  }
+  .admin-actions {
+    display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;
+  }
+  .admin-btn {
+    padding: 8px 18px; font-size: 12px; font-weight: 600;
+    border-radius: 22px; border: 1px solid rgba(26,58,92,0.2);
+    background: transparent; color: #1a3a5c; cursor: pointer;
+    font-family: inherit; letter-spacing: 0.5px; transition: all 0.2s;
+  }
+  .admin-btn:hover { background: rgba(26,58,92,0.06); }
+  .admin-btn.primary {
+    background: #1a3a5c; color: #f8f6f1; border-color: #1a3a5c;
+  }
+  .admin-btn.primary:hover { background: #0f2840; }
+
+  /* Admin panel (list with checkboxes) */
+  .admin-panel {
+    position: fixed; inset: 0; z-index: 10002;
+    background: #f8f6f1; overflow-y: auto;
+    opacity: 0; pointer-events: none; transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+  }
+  .admin-panel.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .admin-panel-header {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 28px 48px 20px; gap: 24px;
+    background: linear-gradient(180deg, #f8f6f1 72%, rgba(248,246,241,0));
+  }
+  .admin-panel-title {
+    font-family: 'Noto Serif TC', serif; font-size: 24px; font-weight: 900;
+    color: #1a2d42; letter-spacing: 2px;
+  }
+  .admin-panel-title::after {
+    content: ''; display: inline-block; width: 28px; height: 3px;
+    background: #c06a1a; margin-left: 14px; vertical-align: middle;
+  }
+  .admin-panel-sub {
+    font-size: 11px; color: #6b7d8e; letter-spacing: 1.5px;
+    text-transform: uppercase; font-weight: 600; margin-top: 4px;
+  }
+  .admin-panel-body { padding: 0 48px 64px; }
+  .admin-group { margin-bottom: 36px; }
+  .admin-group-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(26,58,92,0.12);
+  }
+  .admin-group-num {
+    font-family: 'Inter', monospace; font-size: 10px; font-weight: 700;
+    color: #c06a1a; letter-spacing: 2px;
+  }
+  .admin-group-zh {
+    font-family: 'Noto Serif TC', serif; font-size: 15px; font-weight: 700;
+    color: #1a2d42; letter-spacing: 1.5px;
+  }
+  .admin-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px; border-radius: 8px;
+    background: #fff; border: 1px solid rgba(26,58,92,0.08);
+    margin-bottom: 8px; transition: all 0.2s;
+  }
+  .admin-row:hover { border-color: rgba(26,58,92,0.2); }
+  .admin-row.is-hidden { opacity: 0.55; background: #f0ebe1; }
+  .admin-row input[type="checkbox"] {
+    width: 18px; height: 18px; cursor: pointer; accent-color: #c06a1a;
+  }
+  .admin-row-main { flex: 1; min-width: 0; }
+  .admin-row-name {
+    font-family: 'Noto Serif TC', serif; font-size: 15px; font-weight: 700;
+    color: #1a2d42; letter-spacing: 0.5px;
+  }
+  .admin-row-sub {
+    font-size: 11px; color: #6b7d8e; letter-spacing: 0.5px; margin-top: 2px;
+  }
+  .admin-row-status {
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    font-weight: 700; padding: 3px 8px; border-radius: 10px;
+  }
+  .admin-row-status.visible { background: rgba(30,120,70,0.1); color: #1e7846; }
+  .admin-row-status.hidden { background: rgba(192,106,26,0.12); color: #c06a1a; }
+  .admin-footer-actions {
+    position: sticky; bottom: 0;
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 18px 48px;
+    background: linear-gradient(0deg, #f8f6f1 80%, rgba(248,246,241,0));
+    border-top: 1px solid rgba(26,58,92,0.08);
+  }
+  @media (max-width: 640px) {
+    .admin-panel-header { padding: 20px 20px 14px; }
+    .admin-panel-body { padding: 0 20px 80px; }
+    .admin-footer-actions { padding: 14px 20px; }
+    .admin-panel-title { font-size: 20px; }
+  }
 </style>
 </head>
 <body>
@@ -372,6 +516,37 @@
     </button>
   </div>
   <div class="overview-body" id="overviewBody"></div>
+</div>
+
+<!-- Admin: hidden trigger (right bottom), password modal, management panel -->
+<button class="admin-trigger" id="adminTrigger" aria-label="Admin" title=""></button>
+
+<div class="admin-backdrop" id="adminBackdrop" role="dialog" aria-modal="true" aria-label="Admin login">
+  <div class="admin-dialog">
+    <h3>管理員模式</h3>
+    <p>輸入密碼以管理名片顯示狀態。</p>
+    <input type="password" id="adminPwd" placeholder="Password" autocomplete="off" />
+    <div class="admin-err" id="adminErr"></div>
+    <div class="admin-actions">
+      <button class="admin-btn" id="adminCancel">取消</button>
+      <button class="admin-btn primary" id="adminSubmit">進入</button>
+    </div>
+  </div>
+</div>
+
+<div class="admin-panel" id="adminPanel" role="dialog" aria-modal="true" aria-label="Admin panel">
+  <div class="admin-panel-header">
+    <div>
+      <div class="admin-panel-title">名片顯示管理</div>
+      <div class="admin-panel-sub">Card Visibility Management</div>
+    </div>
+    <button class="admin-btn" id="adminClose">關閉 ✕</button>
+  </div>
+  <div class="admin-panel-body" id="adminPanelBody"></div>
+  <div class="admin-footer-actions">
+    <button class="admin-btn" id="adminReset">回預設</button>
+    <button class="admin-btn primary" id="adminSaveClose">儲存並關閉</button>
+  </div>
 </div>
 
 <div class="stage" id="stage">
@@ -447,6 +622,8 @@ const PEOPLE = [
       <a href="https://eddlai.github.io/open_resume/eddie.html" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/eddie-website-qr.png" alt="Eddie personal site" style="width:100%;height:100%;display:block;"></a>
     </div>`
   },
+  // 顧問 陳右穎：預設由 runtime hiddenSet 隱藏（localStorage: aiwalk-hidden-ids）
+  // 管理員模式可透過右下角隱形按鈕 + 密碼解鎖後切換顯示
   {
     id: 'chen-youyin',
     name: '陳右穎', sub: '顧問 / Advisor, Ph.D.',
@@ -498,8 +675,26 @@ const GROUPS = [
   { num: '03', zh: 'NTKCAP 動作捕捉', en: 'NTKCAP · Motion Capture', ids: ['tom', 'lewis', 'gokul'] },
   { num: '04', zh: 'ExoPulse 外骨骼', en: 'ExoPulse · Exoskeleton',  ids: ['timmy', 'jennifer', 'curtis'] },
   { num: '05', zh: 'Patient Cloud · 臨床', en: 'Patient Cloud · Clinical', ids: ['stephen'] },
-  // { num: '06', zh: '顧問',     en: 'Advisors',                ids: ['chen-youyin'] }, // TEMP HIDDEN — re-enable when ready to publish advisor
+  { num: '06', zh: '顧問',     en: 'Advisors',                ids: ['chen-youyin'] },
 ];
+
+// ===== Visibility state (driven by admin panel, persisted in localStorage) =====
+const DEFAULT_HIDDEN = ['chen-youyin'];
+const HIDDEN_KEY = 'aiwalk-hidden-ids';
+function loadHiddenSet() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_KEY);
+    if (raw === null) return new Set(DEFAULT_HIDDEN);
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : DEFAULT_HIDDEN);
+  } catch (e) { return new Set(DEFAULT_HIDDEN); }
+}
+function saveHiddenSet(set) {
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify([...set]));
+}
+let hiddenSet = loadHiddenSet();
+let VP = PEOPLE.filter(p => !hiddenSet.has(p.id));
+function recomputeVP() { VP = PEOPLE.filter(p => !hiddenSet.has(p.id)); }
 
 let current = 0;
 let isFlipped = false;
@@ -516,23 +711,29 @@ const dotsEl = document.getElementById('dots');
 const btnPrev = document.getElementById('btnPrev');
 const btnNext = document.getElementById('btnNext');
 
-// Create dots
-PEOPLE.forEach((_, i) => {
-  const d = document.createElement('div');
-  d.className = 'dot' + (i === 0 ? ' active' : '');
-  d.addEventListener('click', () => goToPerson(i));
-  dotsEl.appendChild(d);
-});
+// Create dots (driven by VP = visible people; rebuilt when admin toggles)
+function rebuildDots() {
+  dotsEl.innerHTML = '';
+  VP.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === current ? ' active' : '');
+    d.addEventListener('click', () => goToPerson(i));
+    dotsEl.appendChild(d);
+  });
+}
+rebuildDots();
 
 function renderPerson(idx) {
-  const p = PEOPLE[idx];
+  if (!VP.length) return; // nothing visible
+  if (idx < 0 || idx >= VP.length) idx = 0;
+  const p = VP[idx];
   label.textContent = p.name;
   sublabel.textContent = p.sub;
   frontEl.innerHTML = p.front;
   backEl.innerHTML = p.back;
   dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
   btnPrev.classList.toggle('disabled', idx === 0);
-  btnNext.classList.toggle('disabled', idx === PEOPLE.length - 1);
+  btnNext.classList.toggle('disabled', idx === VP.length - 1);
   // Update URL hash without jumping
   history.replaceState(null, null, '#' + p.id);
 }
@@ -587,7 +788,7 @@ function setFlip(flip) {
 flipBtn.addEventListener('click', () => setFlip(!isFlipped));
 
 function goToPerson(idx, direction) {
-  if (idx < 0 || idx >= PEOPLE.length || idx === current) return;
+  if (idx < 0 || idx >= VP.length || idx === current) return;
   const dir = direction || (idx > current ? 'left' : 'right');
   const keepFlipped = isFlipped;  // Remember current flip state
   // Exit animation
@@ -652,9 +853,9 @@ function hideHint() {
 stageEl.addEventListener('touchstart', hideHint, { once: true });
 document.addEventListener('keydown', hideHint, { once: true });
 
-// Init with Hash support
+// Init with Hash support (only match visible people; hidden hashes fall back to index 0)
 const hash = window.location.hash.substring(1).toLowerCase();
-const personIndex = PEOPLE.findIndex(p => p.id === hash);
+const personIndex = VP.findIndex(p => p.id === hash);
 if (personIndex !== -1) {
   current = personIndex;
 }
@@ -668,7 +869,9 @@ const btnCloseOverview = document.getElementById('btnCloseOverview');
 
 function renderOverview() {
   overviewBody.innerHTML = GROUPS.map(g => {
-    const members = g.ids.map(id => {
+    const visibleIds = g.ids.filter(id => !hiddenSet.has(id));
+    if (!visibleIds.length) return ''; // hide empty groups
+    const members = visibleIds.map(id => {
       const p = PEOPLE.find(x => x.id === id);
       if (!p) return '';
       const enMatch = p.back.match(/class="name-en">([^<]+)</);
@@ -691,11 +894,11 @@ function renderOverview() {
       <div class="overview-grid">${members}</div>
     </div>`;
   }).join('');
-  // Wire click handlers
+  // Wire click handlers (use VP index — hidden people won't be in list anyway)
   overviewBody.querySelectorAll('.ov-card').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
-      const idx = PEOPLE.findIndex(p => p.id === id);
+      const idx = VP.findIndex(p => p.id === id);
       if (idx !== -1) {
         current = idx;
         renderPerson(idx);
@@ -727,6 +930,169 @@ if (savedLang === 'en') {
 } else {
   updateUIText();  // Initialize UI text for default (zh) state
 }
+
+// ===== ADMIN MODE =====
+// Password is btoa-obfuscated (not real security — client-side only).
+// To change: run btoa('your-new-password') in console and paste the result below.
+const ADMIN_PWD_B64 = 'ZXhvcHVsc2UyMDI2'; // btoa('exopulse2026')
+const ADMIN_SESSION_KEY = 'aiwalk-admin-session';
+
+const adminTrigger   = document.getElementById('adminTrigger');
+const adminBackdrop  = document.getElementById('adminBackdrop');
+const adminPwdEl     = document.getElementById('adminPwd');
+const adminErr       = document.getElementById('adminErr');
+const adminCancel    = document.getElementById('adminCancel');
+const adminSubmit    = document.getElementById('adminSubmit');
+const adminPanel     = document.getElementById('adminPanel');
+const adminPanelBody = document.getElementById('adminPanelBody');
+const adminClose     = document.getElementById('adminClose');
+const adminReset     = document.getElementById('adminReset');
+const adminSaveClose = document.getElementById('adminSaveClose');
+
+// Pending-hidden set (edits held in-memory until user hits 儲存並關閉)
+let pendingHidden = new Set(hiddenSet);
+
+function openAdminLogin() {
+  // If already authenticated this session, skip password
+  if (sessionStorage.getItem(ADMIN_SESSION_KEY) === '1') {
+    openAdminPanel();
+    return;
+  }
+  adminPwdEl.value = '';
+  adminErr.textContent = '';
+  adminBackdrop.classList.add('show');
+  setTimeout(() => adminPwdEl.focus(), 50);
+}
+function closeAdminLogin() {
+  adminBackdrop.classList.remove('show');
+}
+function verifyAdmin() {
+  const input = adminPwdEl.value;
+  if (!input) { adminErr.textContent = '請輸入密碼'; return; }
+  if (btoa(input) === ADMIN_PWD_B64) {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+    closeAdminLogin();
+    openAdminPanel();
+  } else {
+    adminErr.textContent = '密碼錯誤';
+    adminPwdEl.select();
+  }
+}
+
+function openAdminPanel() {
+  pendingHidden = new Set(hiddenSet);
+  renderAdminPanel();
+  adminPanel.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeAdminPanel() {
+  adminPanel.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function renderAdminPanel() {
+  // Collect IDs that appear in GROUPS (ordered), plus orphans at the end
+  const grouped = new Set(GROUPS.flatMap(g => g.ids));
+  const orphans = PEOPLE.filter(p => !grouped.has(p.id));
+  const sections = GROUPS.map(g => ({
+    num: g.num, zh: g.zh, en: g.en,
+    people: g.ids.map(id => PEOPLE.find(p => p.id === id)).filter(Boolean)
+  }));
+  if (orphans.length) {
+    sections.push({ num: '99', zh: '其他', en: 'Others', people: orphans });
+  }
+  adminPanelBody.innerHTML = sections.map(s => `
+    <div class="admin-group">
+      <div class="admin-group-head">
+        <span class="admin-group-num">${s.num}</span>
+        <span class="admin-group-zh">${s.zh}</span>
+      </div>
+      ${s.people.map(p => {
+        const hidden = pendingHidden.has(p.id);
+        const enMatch = p.back.match(/class="name-en">([^<]+)</);
+        const enName = enMatch ? enMatch[1].trim() : '';
+        return `<label class="admin-row ${hidden ? 'is-hidden' : ''}" data-id="${p.id}">
+          <input type="checkbox" data-id="${p.id}" ${hidden ? 'checked' : ''} />
+          <div class="admin-row-main">
+            <div class="admin-row-name">${p.name}${enName ? ` <span style="font-weight:400;color:#6b7d8e;font-size:12px;">· ${enName}</span>` : ''}</div>
+            <div class="admin-row-sub">${p.sub}</div>
+          </div>
+          <span class="admin-row-status ${hidden ? 'hidden' : 'visible'}">${hidden ? '隱藏' : '顯示'}</span>
+        </label>`;
+      }).join('')}
+    </div>
+  `).join('');
+
+  // Wire checkbox changes (prompt: checked = hidden)
+  adminPanelBody.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.id;
+      if (cb.checked) pendingHidden.add(id); else pendingHidden.delete(id);
+      // Re-render just the changed row's classes/status
+      const row = cb.closest('.admin-row');
+      const hidden = cb.checked;
+      row.classList.toggle('is-hidden', hidden);
+      const status = row.querySelector('.admin-row-status');
+      status.textContent = hidden ? '隱藏' : '顯示';
+      status.className = 'admin-row-status ' + (hidden ? 'hidden' : 'visible');
+    });
+  });
+}
+
+function applyVisibilityAndRefresh() {
+  // Persist
+  hiddenSet = new Set(pendingHidden);
+  saveHiddenSet(hiddenSet);
+  // Recompute visible list, reset index if current person was hidden
+  const prevId = VP[current] ? VP[current].id : null;
+  recomputeVP();
+  if (!VP.length) {
+    // Everyone hidden — fall back by forcing current 0 and just clear card
+    current = 0;
+    label.textContent = '';
+    sublabel.textContent = '';
+    frontEl.innerHTML = '';
+    backEl.innerHTML = '';
+    dotsEl.innerHTML = '';
+    btnPrev.classList.add('disabled');
+    btnNext.classList.add('disabled');
+    return;
+  }
+  const stillIdx = prevId ? VP.findIndex(p => p.id === prevId) : -1;
+  current = stillIdx !== -1 ? stillIdx : 0;
+  rebuildDots();
+  renderPerson(current);
+}
+
+// Wire admin UI
+adminTrigger.addEventListener('click', openAdminLogin);
+adminCancel.addEventListener('click', closeAdminLogin);
+adminSubmit.addEventListener('click', verifyAdmin);
+adminPwdEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); verifyAdmin(); }
+  if (e.key === 'Escape') closeAdminLogin();
+});
+adminBackdrop.addEventListener('click', (e) => {
+  if (e.target === adminBackdrop) closeAdminLogin();
+});
+adminClose.addEventListener('click', () => {
+  // Discard pending edits
+  closeAdminPanel();
+});
+adminSaveClose.addEventListener('click', () => {
+  applyVisibilityAndRefresh();
+  closeAdminPanel();
+});
+adminReset.addEventListener('click', () => {
+  pendingHidden = new Set(DEFAULT_HIDDEN);
+  renderAdminPanel();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (adminPanel.classList.contains('show')) closeAdminPanel();
+    else if (adminBackdrop.classList.contains('show')) closeAdminLogin();
+  }
+});
 </script>
 </body>
 </html>
