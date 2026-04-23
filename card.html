@@ -192,6 +192,12 @@
   .card-scene {
     perspective: 1200px;
     width: 108mm; height: 64.8mm;
+    transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Ack cards are a distinct, larger format — like a printed attestation */
+  .card-scene.is-ack {
+    width: 132mm; height: 88mm;
   }
   .card-flipper {
     position: relative; width: 100%; height: 100%;
@@ -473,6 +479,7 @@
   /* ===== RESPONSIVE ===== */
   @media (max-width: 760px) {
     .card-scene { width: 90vw; height: calc(90vw * 0.6); }
+    .card-scene.is-ack { width: 94vw; height: calc(94vw * 0.72); }
     .stage { padding: 64px 12px 16px; }
     .nav-arrow { width: 36px; height: 36px; }
     .nav-arrow svg { width: 16px; height: 16px; }
@@ -484,6 +491,7 @@
   }
   @media (max-width: 480px) {
     .card-scene { width: 94vw; height: calc(94vw * 0.6); }
+    .card-scene.is-ack { width: 96vw; height: calc(96vw * 0.75); }
     .stage { padding: 58px 6px 12px; }
     .page-navbar { top: 8px; padding: 5px 10px; }
     .nav-title { display: none; }
@@ -978,6 +986,7 @@ function rebuildDots() {
 }
 rebuildDots();
 
+const ACK_IDS = new Set(['chen-youyin', 'eric']);
 function renderPerson(idx) {
   if (!VP.length) return; // nothing visible
   if (idx < 0 || idx >= VP.length) idx = 0;
@@ -986,6 +995,8 @@ function renderPerson(idx) {
   sublabel.textContent = p.sub;
   frontEl.innerHTML = p.front;
   backEl.innerHTML = p.back;
+  // Acknowledgment cards use a larger, distinct format
+  scene.classList.toggle('is-ack', ACK_IDS.has(p.id));
   dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
   btnPrev.classList.toggle('disabled', idx === 0);
   btnNext.classList.toggle('disabled', idx === VP.length - 1);
