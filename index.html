@@ -832,23 +832,45 @@
   .demo-card .demo-live-link {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--orange);
+    gap: 8px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, var(--orange) 0%, var(--orange-glow) 100%);
     color: #fff;
     border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
     text-decoration: none;
     white-space: nowrap;
-    transition: background 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 4px 14px rgba(192, 106, 26, 0.35), 0 0 0 0 rgba(232, 168, 92, 0.6);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
     flex-shrink: 0;
+    animation: liveLinkPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes liveLinkPulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(192, 106, 26, 0.35), 0 0 0 0 rgba(232, 168, 92, 0.55); }
+    50%      { box-shadow: 0 4px 14px rgba(192, 106, 26, 0.45), 0 0 0 10px rgba(232, 168, 92, 0); }
   }
   .demo-card .demo-live-link:hover {
-    background: var(--orange-dark, #a0541a);
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.03);
+    filter: brightness(1.08);
+    box-shadow: 0 8px 22px rgba(192, 106, 26, 0.5);
   }
-  .demo-card .demo-live-link svg { width: 14px; height: 14px; }
+  .demo-card .demo-live-link:active { transform: translateY(0) scale(1); }
+  .demo-card .demo-live-link svg { width: 16px; height: 16px; }
+  .demo-card .demo-live-link .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #fff; box-shadow: 0 0 6px #fff;
+    animation: liveDotBlink 1.2s ease-in-out infinite;
+  }
+  @keyframes liveDotBlink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .demo-card .demo-live-link,
+    .demo-card .demo-live-link .live-dot { animation: none; }
+  }
 
   /* ===== EXTRA LINKS ===== */
   .extra-links {
@@ -2008,8 +2030,9 @@
           <div class="demo-desc"><span class="lang-zh">臨床數據平台</span><span class="lang-en">Clinical Data Platform</span></div>
         </div>
         <a class="demo-live-link" href="https://patient-cloud.aiwalkcorp.com/" target="_blank" rel="noopener" title="Open live site">
-          <i data-lucide="external-link"></i>
-          <span class="lang-zh">即時</span><span class="lang-en">Live</span>
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="lang-zh">立即體驗 Live</span><span class="lang-en">Try Live Demo</span>
+          <i data-lucide="arrow-up-right"></i>
         </a>
       </div>
     </div>
