@@ -16,8 +16,12 @@
 
   body {
     background: #f8f6f1;
-    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    /* Noto Sans TC first so CJK uses heavier-by-default rendering on high-DPI */
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    font-weight: 500;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     height: 100vh; overflow: hidden;
     display: flex; flex-direction: column;
   }
@@ -179,7 +183,7 @@
     letter-spacing: 1px; text-align: center; margin-bottom: 4px;
   }
   .person-sublabel {
-    font-size: 11px; color: #64748b; letter-spacing: 0.5px;
+    font-size: 11px; color: #64748b; font-weight: 600; letter-spacing: 0.5px;
     text-align: center; margin-bottom: 16px;
   }
 
@@ -232,12 +236,12 @@
   .name-en { font-family: 'Inter', sans-serif; font-size: 5.4mm; font-weight: 700; letter-spacing: 0.8px; }
   .phd { font-size: 3.4mm; font-weight: 700; letter-spacing: 0.5px; }
   .phd-en { font-size: 2.6mm; font-weight: 500; letter-spacing: 0.3px; }
-  .title { font-family: 'Noto Sans TC', sans-serif; font-size: 2.5mm; letter-spacing: 0.8px; margin-top: 1mm; }
+  .title { font-family: 'Noto Sans TC', sans-serif; font-size: 2.5mm; font-weight: 500; letter-spacing: 0.8px; margin-top: 1mm; }
   .bot { display: flex; flex-direction: column; gap: 1.3mm; position: relative; z-index: 1; align-self: flex-end; align-items: flex-start; }
   .crow { display: flex; align-items: center; gap: 2mm; }
   .ci-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 2mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.5px; }
   .ci-en { font-family: 'Inter', sans-serif; font-size: 1.8mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; width: 8mm; }
-  .ct { font-family: 'Inter', 'Noto Sans TC', sans-serif; font-size: 2.2mm; letter-spacing: 0.2px; }
+  .ct { font-family: 'Noto Sans TC', 'Inter', sans-serif; font-size: 2.2mm; font-weight: 500; letter-spacing: 0.2px; }
   .addr-wrap { line-height: 1.6; }
 
   /* Style B */
@@ -343,20 +347,33 @@
     .card-face-back { display: none; }
   }
 
-  /* ===== ADMIN (hidden trigger + password + panel) ===== */
+  /* ===== ADMIN (low-key trigger bottom-right + password + panel) ===== */
   .admin-trigger {
-    position: fixed; right: 10px; bottom: 8px; z-index: 9998;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: transparent; border: 0; cursor: default;
-    opacity: 0.18; transition: opacity 0.3s ease;
-    padding: 0;
+    position: fixed; right: 16px; bottom: 16px; z-index: 9998;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(26,58,92,0.12);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.5; cursor: pointer; padding: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease,
+                background 0.25s ease, box-shadow 0.25s ease;
+    color: #6b7d8e;
   }
-  .admin-trigger::after {
-    content: ''; display: block; width: 4px; height: 4px; border-radius: 50%;
-    background: #6b7d8e; margin: 5px auto;
+  .admin-trigger:hover {
+    opacity: 1; color: #1a3a5c; transform: scale(1.05);
+    background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.1);
   }
-  .admin-trigger:hover { opacity: 0.5; cursor: pointer; }
-  .admin-trigger:focus { outline: none; opacity: 0.5; }
+  .admin-trigger:focus-visible {
+    outline: 2px solid #c06a1a; outline-offset: 2px; opacity: 1;
+  }
+  .admin-trigger svg { width: 16px; height: 16px; }
+  @media (max-width: 480px) {
+    .admin-trigger { right: 10px; bottom: 10px; width: 32px; height: 32px; }
+    .admin-trigger svg { width: 14px; height: 14px; }
+  }
+  @media print { .admin-trigger { display: none; } }
 
   .admin-backdrop {
     position: fixed; inset: 0; z-index: 10001;
@@ -379,7 +396,7 @@
     font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 700;
     color: #1a2d42; letter-spacing: 1px; margin-bottom: 6px;
   }
-  .admin-dialog p { font-size: 12px; color: #6b7d8e; margin-bottom: 16px; }
+  .admin-dialog p { font-size: 12px; color: #6b7d8e; font-weight: 500; margin-bottom: 16px; }
   .admin-dialog input[type="password"] {
     width: 100%; padding: 10px 14px; font-size: 14px;
     border: 1px solid rgba(26,58,92,0.2); border-radius: 8px;
@@ -465,7 +482,7 @@
     color: #1a2d42; letter-spacing: 0.5px;
   }
   .admin-row-sub {
-    font-size: 11px; color: #6b7d8e; letter-spacing: 0.5px; margin-top: 2px;
+    font-size: 11px; color: #6b7d8e; font-weight: 500; letter-spacing: 0.5px; margin-top: 2px;
   }
   .admin-row-status {
     font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
@@ -518,8 +535,10 @@
   <div class="overview-body" id="overviewBody"></div>
 </div>
 
-<!-- Admin: hidden trigger (right bottom), password modal, management panel -->
-<button class="admin-trigger" id="adminTrigger" aria-label="Admin" title=""></button>
+<!-- Admin: low-key trigger (right bottom), password modal, management panel -->
+<button class="admin-trigger" id="adminTrigger" aria-label="管理員模式" title="管理員">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</button>
 
 <div class="admin-backdrop" id="adminBackdrop" role="dialog" aria-modal="true" aria-label="Admin login">
   <div class="admin-dialog">
