@@ -415,6 +415,32 @@
   .card-face:hover .ack-seal { transform: rotate(-4deg) scale(1.04); }
   /* Hide company logo/name bar on ack cards (they are NOT employees) */
   .style-ack .top, .style-ack .bot, .style-ack .mid { display: none; }
+  /* QR — honoree's own site/lab, mirrored opposite the aIwalk wax seal */
+  .ack-qr {
+    position: absolute;
+    left: 5.5mm; bottom: 5mm;
+    width: 14mm; height: 14mm;
+    background: #fdf6e4;
+    padding: 0.8mm;
+    border-radius: 1mm;
+    box-shadow: 0 0.8mm 1.8mm rgba(94,58,28,0.22),
+                inset 0 0 0 0.15mm rgba(154,122,62,0.55);
+    display: block; z-index: 3;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .ack-qr img { width: 100%; height: 100%; display: block; }
+  .ack-qr-caption {
+    position: absolute;
+    left: 5.5mm; bottom: 20.2mm;
+    width: 14mm;
+    font-family: 'Fraunces', 'Noto Serif TC', serif;
+    font-size: 1.5mm; font-weight: 600; letter-spacing: 0.5px;
+    color: #7c2d2d; text-align: center; line-height: 1.2;
+    font-style: italic; z-index: 3;
+  }
+  .card-face:hover .ack-qr { transform: translateY(-0.3mm) scale(1.05); }
+  /* Tighten ack-body when QR is present so text doesn't collide */
+  .style-ack .ack-contrib { max-width: 78mm; }
 
   /* Slide transition for person switching */
   .stage-slide {
@@ -827,6 +853,8 @@ const PEOPLE = [
         <div class="ack-contrib">於本公司成立籌備階段<br>提供神經工程領域之學術指導</div>
         <div class="ack-signature">—— 智意行科技　敬誌 ——</div>
       </div>
+      <div class="ack-qr-caption">NeuroTech Lab</div>
+      <a class="ack-qr" href="https://neurotech.lab.nycu.edu.tw/" target="_blank" rel="noopener" aria-label="NeuroTech Lab"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab QR"></a>
       <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">敬誌 2026</span></div></div>
     </div>`,
     back: `<div class="card style-ack">
@@ -850,6 +878,8 @@ const PEOPLE = [
         <div class="ack-contrib">For academic guidance in neural engineering<br>during the formation of aIwalk Co., Ltd.</div>
         <div class="ack-signature">—— with gratitude from aIwalk ——</div>
       </div>
+      <div class="ack-qr-caption">NeuroTech Lab</div>
+      <a class="ack-qr" href="https://neurotech.lab.nycu.edu.tw/" target="_blank" rel="noopener" aria-label="NeuroTech Lab"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab QR"></a>
       <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">MMXXVI</span></div></div>
     </div>`
   },
