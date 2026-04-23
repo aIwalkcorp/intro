@@ -674,10 +674,10 @@ const PEOPLE = [
 function buildTeam(list) {
   return list.map(p => ({
     id: p.id,
-    name: p.zh, sub: `${p.titleZh} / ${p.titleEn}`,
+    name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
     front: `<div class="card style-b">
       <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
-      <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.zh}</span></div></div>
+      <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
       <div class="bot"><div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
     </div>`,
     back: `<div class="card style-b">
@@ -698,8 +698,8 @@ const GROUPS = [
 ];
 
 // ===== Visibility state (driven by admin panel, persisted in localStorage) =====
-const DEFAULT_HIDDEN = ['chen-youyin'];
-const HIDDEN_KEY = 'aiwalk-hidden-ids';
+const DEFAULT_HIDDEN = ['chen-youyin', 'eddie'];
+const HIDDEN_KEY = 'aiwalk-hidden-ids-v2';
 function loadHiddenSet() {
   try {
     const raw = localStorage.getItem(HIDDEN_KEY);
