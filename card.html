@@ -260,6 +260,156 @@
   .style-b .ci-zh, .style-b .ci-en { color: #c06a1a; }
   .style-b .ct { color: #7a8a9a; }
 
+  /* ===== Style Ack — Acknowledgment / attestation card =====
+     Deliberately DIFFERENT from business card style-b so viewers
+     immediately understand these people are NOT employees. */
+  .style-ack {
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(154, 122, 62, 0.10), transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(124, 45, 45, 0.08), transparent 55%),
+      linear-gradient(135deg, #f5ead4 0%, #efe0c3 50%, #ead5ac 100%);
+    border: 0.25mm solid #b89157;
+    padding: 4.5mm 6mm 5mm;
+    justify-content: flex-start;
+  }
+  /* Paper grain */
+  .style-ack::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(124,78,33,0.025) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(-45deg, rgba(124,78,33,0.02) 0 1px, transparent 1px 4px);
+    mix-blend-mode: multiply;
+  }
+  /* Inner double-line frame */
+  .style-ack::after {
+    content: ''; position: absolute;
+    inset: 2.2mm;
+    border: 0.15mm solid rgba(154, 122, 62, 0.55);
+    outline: 0.1mm solid rgba(154, 122, 62, 0.25);
+    outline-offset: 0.6mm;
+    pointer-events: none;
+    border-radius: 1.5mm;
+  }
+  .ack-top {
+    display: flex; align-items: center; justify-content: center; gap: 4mm;
+    position: relative; z-index: 2;
+    margin-top: 1.5mm;
+  }
+  .ack-fleuron {
+    font-family: 'Fraunces', 'Noto Serif TC', serif;
+    font-size: 5mm; color: #9a7a3e; line-height: 1;
+    transform: translateY(-0.3mm);
+  }
+  .ack-eyebrow {
+    font-family: 'Fraunces', 'Noto Serif TC', serif;
+    font-size: 4.2mm; letter-spacing: 6px; font-weight: 600;
+    color: #5e3a1c; text-align: center;
+  }
+  .ack-eyebrow-sub {
+    font-family: 'Fraunces', serif;
+    font-size: 1.8mm; letter-spacing: 3.5px; font-weight: 500;
+    color: #9a7a3e; text-align: center;
+    margin-top: 0.4mm; font-style: italic;
+  }
+  .ack-rule {
+    height: 0.15mm;
+    background: linear-gradient(90deg, transparent, rgba(154,122,62,0.55) 20%, rgba(154,122,62,0.55) 80%, transparent);
+    margin: 2mm 0;
+    position: relative; z-index: 2;
+  }
+  .ack-rule.thin { opacity: 0.45; margin: 1.5mm 0; }
+  .ack-body {
+    position: relative; z-index: 2;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 1mm;
+    padding: 1mm 0;
+  }
+  .ack-role {
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    font-size: 2.3mm; letter-spacing: 2.5px; font-weight: 500;
+    color: #8a6a38; text-transform: uppercase;
+  }
+  .ack-role-zh {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 2.4mm; letter-spacing: 3px; font-weight: 500;
+    color: #8a6a38;
+  }
+  .ack-name-zh {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 7.2mm; font-weight: 900; letter-spacing: 5px;
+    color: #3e2410; margin-top: 0.5mm;
+  }
+  .ack-name-en {
+    font-family: 'Fraunces', serif;
+    font-size: 6.2mm; font-weight: 700; letter-spacing: 1px;
+    color: #3e2410; margin-top: 0.5mm; font-style: italic;
+  }
+  .ack-name-sub {
+    font-family: 'Noto Serif TC', 'Fraunces', serif;
+    font-size: 2.8mm; font-weight: 600; letter-spacing: 1px;
+    color: #7c2d2d;
+  }
+  .ack-affil {
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    font-size: 2.3mm; line-height: 1.55; letter-spacing: 0.3px;
+    color: #5e4a2e; margin-top: 1mm;
+    font-weight: 500;
+  }
+  .ack-bot {
+    position: relative; z-index: 2;
+    text-align: center;
+    margin-top: auto;
+    padding-bottom: 1mm;
+  }
+  .ack-contrib {
+    font-family: 'Noto Serif TC', 'Fraunces', serif;
+    font-size: 2.4mm; line-height: 1.65; letter-spacing: 0.4px;
+    color: #4a3820; font-style: italic;
+    max-width: 62mm; margin: 0 auto;
+  }
+  .ack-signature {
+    font-family: 'Fraunces', 'Noto Serif TC', serif;
+    font-size: 2.1mm; letter-spacing: 2px; font-weight: 500;
+    color: #7c2d2d; margin-top: 2mm;
+    font-style: italic;
+  }
+  /* Wax-seal style stamp */
+  .ack-seal {
+    position: absolute;
+    right: 5.5mm; bottom: 5mm;
+    width: 14mm; height: 14mm;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #a53a3a, #7c2d2d 55%, #5a1e1e);
+    box-shadow:
+      0 1.2mm 2.5mm rgba(124,45,45,0.35),
+      inset 0 0.3mm 0.6mm rgba(255,255,255,0.15),
+      inset 0 -0.5mm 1mm rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 3;
+    transform: rotate(-8deg);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .ack-seal::before {
+    content: ''; position: absolute; inset: 0.8mm;
+    border: 0.15mm dashed rgba(255,230,200,0.45);
+    border-radius: 50%;
+  }
+  .ack-seal-text {
+    font-family: 'Fraunces', 'Noto Serif TC', serif;
+    font-size: 1.7mm; font-weight: 700; letter-spacing: 0.5px;
+    color: #ffe6c8; text-align: center; line-height: 1.15;
+    position: relative; z-index: 1;
+    text-shadow: 0 0.2mm 0.4mm rgba(0,0,0,0.4);
+  }
+  .ack-seal-yr {
+    font-size: 1.4mm; letter-spacing: 1px; opacity: 0.8;
+    display: block; margin-top: 0.3mm;
+  }
+  .card-face:hover .ack-seal { transform: rotate(-4deg) scale(1.04); }
+  /* Hide company logo/name bar on ack cards (they are NOT employees) */
+  .style-ack .top, .style-ack .bot, .style-ack .mid { display: none; }
+
   /* Slide transition for person switching */
   .stage-slide {
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
@@ -642,22 +792,107 @@ const PEOPLE = [
       <a href="https://eddlai.github.io/open_resume/eddie.html" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/eddie-website-qr.png" alt="Eddie personal site" style="width:100%;height:100%;display:block;"></a>
     </div>`
   },
-  // 顧問 陳右穎：預設由 runtime hiddenSet 隱藏（localStorage: aiwalk-hidden-ids）
-  // 管理員模式可透過右下角隱形按鈕 + 密碼解鎖後切換顯示
+  // ===== 致謝卡 Acknowledgments =====
+  // 這些人不是員工：使用 style-ack 證書樣式，無公司 logo / 統編 / 地址。
+  // 陳教授預設隱藏（見 DEFAULT_HIDDEN），admin 可切換顯示。
   {
     id: 'chen-youyin',
-    name: '陳右穎', sub: '顧問 / Advisor, Ph.D.',
-    front: `<div class="card style-b">
-      <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
-      <div class="mid"><div class="sep"></div><div class="title">顧問</div><div class="name-row"><span class="name-zh">陳右穎</span><span class="phd">教授</span></div></div>
-      <div class="bot" style="padding-right:20mm;"><div class="crow"><span class="ci-zh">單位</span><span class="ct">國立陽明交通大學 生物醫學工程學系 神經工程實驗室</span></div><div class="crow"><span class="ci-zh">電話</span><span class="ct">02-2826-7022</span></div><div class="crow"><span class="ci-zh">信箱</span><span class="ct">youyin.chen@nycu.edu.tw</span></div></div>
-      <a href="https://neurotech.lab.nycu.edu.tw/" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab" style="width:100%;height:100%;display:block;"></a>
+    name: 'Prof. You-Yin Chen', sub: '致謝 · 學術指導 / Acknowledgment · Academic Advisor',
+    front: `<div class="card style-ack">
+      <div class="ack-top">
+        <div class="ack-fleuron">❦</div>
+        <div>
+          <div class="ack-eyebrow">致　謝</div>
+          <div class="ack-eyebrow-sub">ACKNOWLEDGMENTS</div>
+        </div>
+        <div class="ack-fleuron">❦</div>
+      </div>
+      <div class="ack-rule"></div>
+      <div class="ack-body">
+        <div class="ack-role-zh">學術指導</div>
+        <div class="ack-name-zh">陳 右 穎</div>
+        <div class="ack-name-sub">教授　Ph.D.</div>
+        <div class="ack-affil">國立陽明交通大學<br>生物醫學工程學系 · 神經工程實驗室</div>
+      </div>
+      <div class="ack-rule thin"></div>
+      <div class="ack-bot">
+        <div class="ack-contrib">於本公司成立籌備階段<br>提供神經工程領域之學術指導</div>
+        <div class="ack-signature">—— 智意行科技　敬誌 ——</div>
+      </div>
+      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">敬誌 2026</span></div></div>
     </div>`,
-    back: `<div class="card style-b">
-      <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
-      <div class="mid"><div class="sep"></div><div class="title">Advisor</div><div class="name-row"><span class="name-en">You-Yin Chen</span><span class="phd-en">, Ph.D.</span></div></div>
-      <div class="bot" style="padding-right:20mm;"><div class="crow"><span class="ci-en">Lab</span><span class="ct addr-wrap">NeuroTech Lab, Dept. of Biomedical Engineering,<br>National Yang Ming Chiao Tung University</span></div><div class="crow"><span class="ci-en">Tel</span><span class="ct">+886 2-2826-7022</span></div><div class="crow"><span class="ci-en">Email</span><span class="ct">youyin.chen@nycu.edu.tw</span></div></div>
-      <a href="https://neurotech.lab.nycu.edu.tw/" target="_blank" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab" style="width:100%;height:100%;display:block;"></a>
+    back: `<div class="card style-ack">
+      <div class="ack-top">
+        <div class="ack-fleuron">❦</div>
+        <div>
+          <div class="ack-eyebrow">ACKNOWLEDGMENT</div>
+          <div class="ack-eyebrow-sub">With Gratitude</div>
+        </div>
+        <div class="ack-fleuron">❦</div>
+      </div>
+      <div class="ack-rule"></div>
+      <div class="ack-body">
+        <div class="ack-role">Academic Advisor</div>
+        <div class="ack-name-en">You-Yin Chen</div>
+        <div class="ack-name-sub">Professor, Ph.D.</div>
+        <div class="ack-affil">National Yang Ming Chiao Tung University<br>Dept. of Biomedical Engineering · NeuroTech Lab</div>
+      </div>
+      <div class="ack-rule thin"></div>
+      <div class="ack-bot">
+        <div class="ack-contrib">For academic guidance in neural engineering<br>during the formation of aIwalk Co., Ltd.</div>
+        <div class="ack-signature">—— with gratitude from aIwalk ——</div>
+      </div>
+      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">MMXXVI</span></div></div>
+    </div>`
+  },
+  {
+    id: 'eric',
+    name: 'Eric', sub: '致謝 · 網頁架構協力 / Acknowledgment · Web Engineering',
+    front: `<div class="card style-ack">
+      <div class="ack-top">
+        <div class="ack-fleuron">❦</div>
+        <div>
+          <div class="ack-eyebrow">致　謝</div>
+          <div class="ack-eyebrow-sub">ACKNOWLEDGMENTS</div>
+        </div>
+        <div class="ack-fleuron">❦</div>
+      </div>
+      <div class="ack-rule"></div>
+      <div class="ack-body">
+        <div class="ack-role-zh">網頁架構協力</div>
+        <div class="ack-name-zh">Eric</div>
+        <div class="ack-name-sub">獨立貢獻者</div>
+        <div class="ack-affil">協助本公司官網<br>底層架構與部署流程建置</div>
+      </div>
+      <div class="ack-rule thin"></div>
+      <div class="ack-bot">
+        <div class="ack-contrib">於網站初始建置階段<br>提供前端工程與部署實務協力</div>
+        <div class="ack-signature">—— 智意行科技　敬誌 ——</div>
+      </div>
+      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">敬誌 2026</span></div></div>
+    </div>`,
+    back: `<div class="card style-ack">
+      <div class="ack-top">
+        <div class="ack-fleuron">❦</div>
+        <div>
+          <div class="ack-eyebrow">ACKNOWLEDGMENT</div>
+          <div class="ack-eyebrow-sub">With Gratitude</div>
+        </div>
+        <div class="ack-fleuron">❦</div>
+      </div>
+      <div class="ack-rule"></div>
+      <div class="ack-body">
+        <div class="ack-role">Web Engineering Collaborator</div>
+        <div class="ack-name-en">Eric</div>
+        <div class="ack-name-sub">Independent Contributor</div>
+        <div class="ack-affil">For helping establish the<br>foundation and deployment of this website</div>
+      </div>
+      <div class="ack-rule thin"></div>
+      <div class="ack-bot">
+        <div class="ack-contrib">For frontend engineering and<br>deployment support during site bootstrap</div>
+        <div class="ack-signature">—— with gratitude from aIwalk ——</div>
+      </div>
+      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">MMXXVI</span></div></div>
     </div>`
   },
   ...buildTeam([
@@ -695,7 +930,7 @@ const GROUPS = [
   { num: '03', zh: 'NTKCAP 動作捕捉', en: 'NTKCAP · Motion Capture', ids: ['tom', 'lewis', 'gokul'] },
   { num: '04', zh: 'ExoPulse 外骨骼', en: 'ExoPulse · Exoskeleton',  ids: ['timmy', 'jennifer', 'curtis'] },
   { num: '05', zh: 'Patient Cloud · 臨床', en: 'Patient Cloud · Clinical', ids: ['stephen'] },
-  { num: '06', zh: '顧問',     en: 'Advisors',                ids: ['chen-youyin'] },
+  { num: '06', zh: '致謝',     en: 'Acknowledgments',         ids: ['chen-youyin', 'eric'] },
 ];
 
 // ===== Visibility state (driven by admin panel, persisted in localStorage) =====
