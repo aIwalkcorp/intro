@@ -986,6 +986,26 @@ function saveHiddenSet(set) {
   localStorage.setItem(HIDDEN_KEY, JSON.stringify([...set]));
 }
 let hiddenSet = loadHiddenSet();
+
+// ===== Page section visibility (cross-page; index.html reads same key) =====
+const SECTION_DEFS = [
+  { id: 'official-media', zh: '官方媒體報導', en: 'Official Media Coverage', sub: 'index.html · 第三方公開報導區塊 / Third-party media block' },
+];
+const DEFAULT_HIDDEN_SECTIONS = ['official-media'];
+const HIDDEN_SECTIONS_KEY = 'aiwalk-hidden-sections-v1';
+function loadHiddenSections() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_SECTIONS_KEY);
+    if (raw === null) return new Set(DEFAULT_HIDDEN_SECTIONS);
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : DEFAULT_HIDDEN_SECTIONS);
+  } catch (e) { return new Set(DEFAULT_HIDDEN_SECTIONS); }
+}
+function saveHiddenSections(set) {
+  localStorage.setItem(HIDDEN_SECTIONS_KEY, JSON.stringify([...set]));
+}
+let hiddenSections = loadHiddenSections();
+let pendingHiddenSections = new Set(hiddenSections);
 let VP = PEOPLE.filter(p => !hiddenSet.has(p.id));
 function recomputeVP() { VP = PEOPLE.filter(p => !hiddenSet.has(p.id)); }
 
@@ -1277,6 +1297,7 @@ function verifyAdmin() {
 
 function openAdminPanel() {
   pendingHidden = new Set(hiddenSet);
+  pendingHiddenSections = new Set(hiddenSections);
   renderAdminPanel();
   adminPanel.classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -1297,7 +1318,7 @@ function renderAdminPanel() {
   if (orphans.length) {
     sections.push({ num: '99', zh: '其他', en: 'Others', people: orphans });
   }
-  adminPanelBody.innerHTML = sections.map(s => `
+  const peopleHtml = sections.map(s => `
     <div class="admin-group">
       <div class="admin-group-head">
         <span class="admin-group-num">${s.num}</span>
@@ -1308,7 +1329,7 @@ function renderAdminPanel() {
         const enMatch = p.back.match(/class="name-en">([^<]+)</);
         const enName = enMatch ? enMatch[1].trim() : '';
         return `<label class="admin-row ${hidden ? 'is-hidden' : ''}" data-id="${p.id}">
-          <input type="checkbox" data-id="${p.id}" ${hidden ? 'checked' : ''} />
+          <input type="checkbox" data-kind="person" data-id="${p.id}" ${hidden ? 'checked' : ''} />
           <div class="admin-row-main">
             <div class="admin-row-name">${p.name}${enName ? ` <span style="font-weight:400;color:#6b7d8e;font-size:12px;">· ${enName}</span>` : ''}</div>
             <div class="admin-row-sub">${p.sub}</div>
@@ -1319,12 +1340,35 @@ function renderAdminPanel() {
     </div>
   `).join('');
 
+  const sectionHtml = `
+    <div class="admin-group">
+      <div class="admin-group-head">
+        <span class="admin-group-num">SE</span>
+        <span class="admin-group-zh">頁面區段 / Page Sections</span>
+      </div>
+      ${SECTION_DEFS.map(s => {
+        const hidden = pendingHiddenSections.has(s.id);
+        return `<label class="admin-row ${hidden ? 'is-hidden' : ''}" data-id="${s.id}">
+          <input type="checkbox" data-kind="section" data-id="${s.id}" ${hidden ? 'checked' : ''} />
+          <div class="admin-row-main">
+            <div class="admin-row-name">${s.zh} <span style="font-weight:400;color:#6b7d8e;font-size:12px;">· ${s.en}</span></div>
+            <div class="admin-row-sub">${s.sub}</div>
+          </div>
+          <span class="admin-row-status ${hidden ? 'hidden' : 'visible'}">${hidden ? '隱藏' : '顯示'}</span>
+        </label>`;
+      }).join('')}
+    </div>
+  `;
+
+  adminPanelBody.innerHTML = sectionHtml + peopleHtml;
+
   // Wire checkbox changes (prompt: checked = hidden)
   adminPanelBody.querySelectorAll('input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', () => {
       const id = cb.dataset.id;
-      if (cb.checked) pendingHidden.add(id); else pendingHidden.delete(id);
-      // Re-render just the changed row's classes/status
+      const kind = cb.dataset.kind;
+      const target = kind === 'section' ? pendingHiddenSections : pendingHidden;
+      if (cb.checked) target.add(id); else target.delete(id);
       const row = cb.closest('.admin-row');
       const hidden = cb.checked;
       row.classList.toggle('is-hidden', hidden);
@@ -1339,6 +1383,8 @@ function applyVisibilityAndRefresh() {
   // Persist
   hiddenSet = new Set(pendingHidden);
   saveHiddenSet(hiddenSet);
+  hiddenSections = new Set(pendingHiddenSections);
+  saveHiddenSections(hiddenSections);
   // Recompute visible list, reset index if current person was hidden
   const prevId = VP[current] ? VP[current].id : null;
   recomputeVP();
@@ -1381,6 +1427,7 @@ adminSaveClose.addEventListener('click', () => {
 });
 adminReset.addEventListener('click', () => {
   pendingHidden = new Set(DEFAULT_HIDDEN);
+  pendingHiddenSections = new Set(DEFAULT_HIDDEN_SECTIONS);
   renderAdminPanel();
 });
 document.addEventListener('keydown', (e) => {
