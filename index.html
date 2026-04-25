@@ -883,6 +883,53 @@
     .demo-card .demo-live-link .live-dot { animation: none; }
   }
 
+  /* ===== COMPANION (leisure / non-core) ===== */
+  .companion-row {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed rgba(0,0,0,0.08);
+  }
+  .companion-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8a96a4;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .companion-eyebrow i { width: 12px; height: 12px; }
+  .companion-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(245,247,250,0.7), rgba(255,255,255,0.7));
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    max-width: 520px;
+    opacity: 0.85;
+  }
+  .companion-card:hover { border-color: rgba(0,0,0,0.18); transform: translateY(-1px); opacity: 1; }
+  .companion-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: rgba(120, 145, 170, 0.12);
+    color: #5b6b7d;
+    flex-shrink: 0;
+  }
+  .companion-icon i { width: 18px; height: 18px; }
+  .companion-text { flex: 1; min-width: 0; }
+  .companion-name { font-size: 13px; font-weight: 600; color: #2c3e50; }
+  .companion-desc { font-size: 11px; color: #7a8896; margin-top: 2px; }
+  .companion-arrow { color: #97a3b1; flex-shrink: 0; }
+  .companion-arrow i { width: 14px; height: 14px; }
+
   /* ===== EXTRA LINKS ===== */
   .extra-links {
     display: flex;
@@ -2062,6 +2109,26 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- COMPANION / LEISURE -->
+  <div class="companion-row reveal">
+    <div class="companion-eyebrow">
+      <i data-lucide="mountain"></i>
+      <span class="lang-zh">附屬娛樂功能 · 登山行程數位輔助</span>
+      <span class="lang-en">Companion · Hiking Itinerary Tool</span>
+    </div>
+    <a class="companion-card" href="#" target="_blank" rel="noopener" title="Jade Mountain Itinerary PWA">
+      <span class="companion-icon"><i data-lucide="tent"></i></span>
+      <span class="companion-text">
+        <span class="companion-name">玉山行程 PWA <span style="font-weight:400;color:#97a3b1;font-size:11px;">· Jade Mountain Itinerary</span></span>
+        <span class="companion-desc">
+          <span class="lang-zh">員工登山運動之數位行程表，與核心醫療產品線無關</span>
+          <span class="lang-en">Digital itinerary for staff hiking trips — unrelated to core medical products</span>
+        </span>
+      </span>
+      <span class="companion-arrow"><i data-lucide="arrow-up-right"></i></span>
+    </a>
   </div>
 </div>
 
