@@ -1,0 +1,19 @@
+{
+  "_comment": "User: 把整個行程往後挪一週，從 4/24 出發",
+  "request": "把整個行程往後挪一週，從 4/24 出發",
+  "expected_output": {
+    "edits": [
+      { "op": "replace", "anchor": "<span class=\"dlbl\">4/17 FRI</span><span class=\"dname\">Day 0・出發</span>", "with": "<span class=\"dlbl\">4/24 FRI</span><span class=\"dname\">Day 0・出發</span>" },
+      { "op": "replace", "anchor": "<span class=\"dlbl\">4/18 SAT</span><span class=\"dname\">Day 1・上山</span>", "with": "<span class=\"dlbl\">4/25 SAT</span><span class=\"dname\">Day 1・上山</span>" },
+      { "op": "replace", "anchor": "<span class=\"dlbl\">4/19 SUN</span><span class=\"dname\">Day 2・攻頂</span>", "with": "<span class=\"dlbl\">4/26 SUN</span><span class=\"dname\">Day 2・攻頂</span>" },
+      { "op": "replace", "anchor": "Day 0 — 4/17（五）出發", "with": "Day 0 — 4/24（五）出發" },
+      { "op": "replace", "anchor": "Day 1 — 4/18（六）塔塔加 → 排雲山莊", "with": "Day 1 — 4/25（六）塔塔加 → 排雲山莊" },
+      { "op": "replace", "anchor": "Day 2 — 4/19（日）排雲 → 玉山主峰", "with": "Day 2 — 4/26（日）排雲 → 玉山主峰" },
+      { "op": "replace", "anchor": "2026/04/18–19 ｜ 2天1夜 ｜ 3人", "with": "2026/04/25–26 ｜ 2天1夜 ｜ 3人" },
+      { "op": "replace", "anchor": "訂房：2026/4/17（五）", "with": "訂房：2026/4/24（五）" }
+    ],
+    "summary_zh": "整個行程從 4/17–19 推遲一週至 4/24–26；星期不變（仍為週五出發、週六上山、週日攻頂），訂房日期同步更新。",
+    "summary_en": "Trip shifted one week to 4/24–26; weekdays unchanged (Fri depart, Sat ascend, Sun summit). Lodging date updated accordingly.",
+    "warnings": ["請與民宿確認新日期是否仍有空房；原訂金 $1,000 視民宿政策可能不適用新日期。"]
+  }
+}
