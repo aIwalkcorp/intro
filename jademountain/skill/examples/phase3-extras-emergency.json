@@ -1,0 +1,20 @@
+{
+  "_comment": "Phase 3 - User opts to add a separate emergency override for Day 2 (e.g. on-mountain hut warden).",
+  "input": {
+    "plan_state": { "_": "phase 2 done, 3 days present" },
+    "phase": "phase3_extras",
+    "day_index": null,
+    "user_message": "我想 Day 2 攻頂日多加一個排雲山莊管理員的電話"
+  },
+  "expected_output": {
+    "patch": [],
+    "assistant_message": "好。Day 2 緊急卡會多一個聯絡項。請給我：(1) 名稱 / 角色 (例如「排雲山莊管理員」) (2) 電話 (例如 049-2701-002)。一筆一行就好，沒有的欄位留空。",
+    "quick_replies": [
+      { "label": "排雲山莊 049-XXXXXXX", "value": "排雲山莊管理員 049-2701002" },
+      { "label": "讓我自己打", "value": "" }
+    ],
+    "next_phase": "phase3_extras",
+    "next_day_index": 2,
+    "warnings": []
+  }
+}

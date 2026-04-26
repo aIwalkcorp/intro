@@ -1,0 +1,40 @@
+{
+  "_comment": "Phase 1 — opening turn. Plan_state is the empty seed. AI greets and asks the composite meta question.",
+  "input": {
+    "plan_state": {
+      "version": 1,
+      "meta": { "title": null, "start_date": null, "end_date": null, "party_size": null, "lang": "zh-TW", "activity_type": null },
+      "emergency_default": {},
+      "days": []
+    },
+    "phase": "phase1_meta",
+    "day_index": null,
+    "user_message": "我想規劃一個玉山三日行程，4/17(五)出發、4/19(日)下山，3 個人"
+  },
+  "expected_output": {
+    "patch": [
+      { "op": "replace", "path": "/meta/title", "value": "玉山三日行程" },
+      { "op": "replace", "path": "/meta/depart_date", "value": "2026-04-17" },
+      { "op": "replace", "path": "/meta/start_date", "value": "2026-04-18" },
+      { "op": "replace", "path": "/meta/end_date", "value": "2026-04-19" },
+      { "op": "replace", "path": "/meta/party_size", "value": 3 },
+      { "op": "replace", "path": "/meta/party_label", "value": "3人" },
+      { "op": "replace", "path": "/meta/activity_type", "value": "hiking" },
+      { "op": "replace", "path": "/meta/theme_color", "value": "#1e3a1a" },
+      { "op": "replace", "path": "/meta/page_title", "value": "玉山三日行程登山計劃書" },
+      { "op": "replace", "path": "/meta/short_name", "value": "玉山計劃" },
+      { "op": "replace", "path": "/emergency_default/include_112", "value": true },
+      { "op": "replace", "path": "/emergency_default/include_119", "value": true },
+      { "op": "replace", "path": "/emergency_default/local_emergency_label", "value": "消防" }
+    ],
+    "assistant_message": "了解！活動主標已設為「玉山三日行程」，週五前一晚出發、週六上山、週日下山，3 人成行。預設語言中文、活動類型登山，主視覺色用墨綠 #1e3a1a。緊急號碼預設帶 112 / 119。\n\n要不要先給我一位「平地留守聯絡人」的姓名 + 手機？這位人會出現在每一天的緊急卡上，山上出事第一個 call 給他/她。沒給的話我會留空、之後可以補。",
+    "quick_replies": [
+      { "label": "我給你聯絡人", "value": "聯絡人是" },
+      { "label": "先跳過", "value": "先跳過聯絡人，繼續下一步" },
+      { "label": "讓我自己打", "value": "" }
+    ],
+    "next_phase": "phase1_meta",
+    "next_day_index": null,
+    "warnings": []
+  }
+}
