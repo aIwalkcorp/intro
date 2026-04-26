@@ -15,7 +15,21 @@
 })();
 </script>
 <style>html.hide-official-media [data-section="official-media"]{display:none!important}</style>
-<title>智意行科技 aIwalk (智意行) — ExoPulse | AI 驅動復健科技 / aIwalk Co., Ltd. AI-Driven Rehabilitation Technology</title>
+<title>aIwalk Co., Ltd. (智意行科技) — ExoPulse | AI-Driven Rehabilitation Technology</title>
+<script>
+  // Title swaps with the language toggle (default 'en' on first load)
+  (function(){
+    window.__TITLES__ = {
+      en: 'aIwalk Co., Ltd. (智意行科技) — ExoPulse | AI-Driven Rehabilitation Technology',
+      zh: '智意行科技 aIwalk — ExoPulse | AI 驅動復健科技'
+    };
+    try {
+      var saved = localStorage.getItem('aiwalk-lang') || 'en';
+      document.title = window.__TITLES__[saved] || window.__TITLES__.en;
+      document.documentElement.lang = (saved === 'zh') ? 'zh-Hant' : 'en';
+    } catch(e) {}
+  })();
+</script>
 <meta name="keywords" content="智意行科技, 智意行, aIwalk, aIwalk Co., Ltd., AIwalk, 智意行科技股份有限公司, ExoPulse, NTKCAP, AI 復健, 外骨骼, 動作捕捉, rehabilitation, exoskeleton, motion capture">
 <meta name="description" content="智意行科技股份有限公司 (aIwalk Co., Ltd.) 透過三大核心產品開發 AI 驅動的復健科技：NTKCAP 無標記動作捕捉、ExoPulse Patient Cloud 臨床平台、ExoPulse 數位孿生外骨骼。aIwalk develops AI-driven rehabilitation technology with NTKCAP motion capture, ExoPulse Patient Cloud, and ExoPulse Exoskeleton.">
 <meta name="keywords" content="智意行科技, 智意行, aIwalk, aiwalk, ExoPulse, NTKCAP, 外骨骼, 復健科技, rehabilitation, exoskeleton, motion capture, digital twin, Taiwan">
@@ -2646,6 +2660,10 @@
       document.getElementById('lang-zh-btn').classList.add('active');
     }
     localStorage.setItem('aiwalk-lang', currentLang);
+    if (window.__TITLES__) {
+      document.title = window.__TITLES__[currentLang] || document.title;
+      document.documentElement.lang = (currentLang === 'zh') ? 'zh-Hant' : 'en';
+    }
   }
 
   // Scroll reveal
