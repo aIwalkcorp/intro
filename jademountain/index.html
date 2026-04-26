@@ -743,26 +743,36 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 .pwa-install-btn:active { transform: translateY(1px); }
 .pwa-install-btn svg { width: 16px; height: 16px; }
 .aiwalk-back {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 10px);
+  z-index: 1300;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 12px 6px 9px;
   font-family: -apple-system, "Noto Sans TC", sans-serif;
   font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: var(--txtL, #6b7280);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #1f2a24;
   text-decoration: none;
-  padding: 4px 10px 4px 8px;
-  border: 1px solid var(--bdr-2, rgba(0,0,0,0.08));
+  background: rgba(245, 236, 214, 0.82);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 999px;
-  background: rgba(255,255,255,0.4);
-  margin-bottom: 10px;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 2px 10px rgba(60, 50, 30, 0.10);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
-.aiwalk-back:hover { background: rgba(255,255,255,0.85); color: #1f2a24; border-color: rgba(0,0,0,0.18); }
-.aiwalk-back svg { width: 12px; height: 12px; opacity: 0.7; }
+.aiwalk-back:hover { background: rgba(255, 255, 255, 0.95); transform: translateX(-2px); box-shadow: 0 3px 14px rgba(60, 50, 30, 0.18); }
+.aiwalk-back:active { transform: translateX(-3px) scale(0.96); }
+.aiwalk-back svg { width: 12px; height: 12px; opacity: 0.85; }
 .aiwalk-back .aw-mark { font-weight: 700; letter-spacing: 0; }
 .aiwalk-back .aw-mark .aw-i { font-family: "Times New Roman", Georgia, serif; font-style: italic; }
+@media (max-width: 380px) {
+  .aiwalk-back .aw-back-text { display: none; }
+}
 .pwa-install-btn .pwa-dot {
   width: 7px; height: 7px; border-radius: 50%; background: #ffd58a;
   box-shadow: 0 0 0 0 rgba(255,213,138,0.6);
@@ -887,12 +897,13 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
   <span class="nb-delay idle" id="nb-delay">未開始</span>
 </div>
 
+<a class="aiwalk-back" href="https://aiwalkcorp.com/" rel="noopener" aria-label="回到 aIwalk 首頁">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+  <span class="aw-back-text">回到</span>
+  <span class="aw-mark">a<span class="aw-i">I</span>walk</span>
+</a>
+
 <div class="hdr">
-  <a class="aiwalk-back" href="https://aiwalkcorp.com/" rel="noopener" aria-label="回到 aIwalk 首頁">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-    <span>回到</span>
-    <span class="aw-mark">a<span class="aw-i">I</span>walk</span>
-  </a>
   <h1>玉山主峰・北峰</h1>
   <div class="sub">2026/04/18–19 ｜ 2天1夜 ｜ 3人</div>
 </div>
