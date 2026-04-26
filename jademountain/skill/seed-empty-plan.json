@@ -1,0 +1,26 @@
+{
+  "_comment": "The frontend uses this as plan_state when the user starts a brand-new trip from scratch (vs. customising the existing 玉山 demo).",
+  "version": 1,
+  "meta": {
+    "title": null,
+    "subtitle": null,
+    "start_date": null,
+    "end_date": null,
+    "depart_date": null,
+    "party_size": null,
+    "party_label": null,
+    "lang": "zh-TW",
+    "theme_color": null,
+    "activity_type": null,
+    "page_title": null,
+    "short_name": null
+  },
+  "emergency_default": {
+    "standby": { "name": null, "phone": null, "phone_tel": null },
+    "messenger_url": null,
+    "include_112": true,
+    "include_119": true,
+    "local_emergency_label": "消防"
+  },
+  "days": []
+}

@@ -1,0 +1,29 @@
+{
+  "_comment": "User names a contact without giving a phone. AI must NOT invent — store name with phone:null and ask in next turn.",
+  "input": {
+    "plan_state": {
+      "version": 1,
+      "meta": { "title": "玉山三日行程", "_": "phase1 fields filled" },
+      "emergency_default": { "include_112": true, "include_119": true },
+      "days": []
+    },
+    "phase": "phase1_meta",
+    "day_index": null,
+    "user_message": "留守聯絡人是賴文正"
+  },
+  "expected_output": {
+    "patch": [
+      { "op": "replace", "path": "/emergency_default/standby/name", "value": "賴文正" },
+      { "op": "replace", "path": "/emergency_default/standby/phone", "value": null },
+      { "op": "replace", "path": "/emergency_default/standby/phone_tel", "value": null }
+    ],
+    "assistant_message": "賴文正記下了，但我沒看到手機號碼。可以給我嗎？格式像 0911-210-072 都行。",
+    "quick_replies": [
+      { "label": "之後再補", "value": "電話之後再補，先繼續" },
+      { "label": "讓我自己打", "value": "" }
+    ],
+    "next_phase": "phase1_meta",
+    "next_day_index": null,
+    "warnings": ["Standby contact name stored without phone; ensure user provides one before publishing the plan."]
+  }
+}

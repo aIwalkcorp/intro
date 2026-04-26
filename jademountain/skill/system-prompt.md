@@ -1,86 +1,101 @@
-# Trailforge Customizer — System Prompt (assembled)
+# Trailforge Customizer — System Prompt (assembly + cost)
 
-This is the prompt your backend sends to the Anthropic API. Concatenate
-`SKILL.md` + `operations.md` + each `examples/*.json`. Cache the whole bundle
-with `cache_control: { type: "ephemeral" }` (5-min TTL) — the source HTML and
-user request go in the user turn, NOT the cache.
+## Building the prompt
+
+Concatenate (in order):
+1. `SKILL.md`
+2. `operations.md`
+3. `state-machine.md`
+4. All `examples/*.json` (joined with newlines)
+
+Cache the bundle with `cache_control: { type: "ephemeral" }` (5-min TTL). The
+plan_state and user message go in the user turn — NOT cached, since they
+change every turn.
 
 ## Recommended request shape (Haiku 4.5)
 
 ```javascript
 const resp = await anthropic.messages.create({
   model: "claude-haiku-4-5-20251001",
-  max_tokens: 2048,
+  max_tokens: 1024,
   system: [
-    { type: "text", text: SKILL_MD,        cache_control: { type: "ephemeral" } },
-    { type: "text", text: OPERATIONS_MD,   cache_control: { type: "ephemeral" } },
-    { type: "text", text: EXAMPLES_BUNDLE, cache_control: { type: "ephemeral" } }
+    { type: "text", text: SKILL_BUNDLE, cache_control: { type: "ephemeral" } }
   ],
-  messages: [{
-    role: "user",
-    content: [
-      { type: "text", text: `<source>\n${currentHtml}\n</source>\n\n<request>\n${userRequest}\n</request>` }
-    ]
-  }]
+  messages: [
+    {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            plan_state,
+            phase,
+            day_index,
+            user_message
+          })
+        }
+      ]
+    }
+  ]
 });
 ```
 
-The HTML is in the user turn (not cached) because each plan is unique. The
-skill bundle (SKILL.md + operations.md + examples) IS cached — that's where
-your savings come from.
+## Cost per turn
 
-## Cost per request (after first)
+Bundle ~10K input tokens (cached after first call), plan_state ~1K tokens,
+user_message ~50 tokens, output ~500 tokens.
 
-With 50K html-input + 5K skill-system (cached) + 3K output:
-
-| Model | First call | Cached call |
+| Model | First turn | Cached subsequent turns |
 |---|---|---|
-| Haiku 4.5 | ~$0.07 | ~$0.06 |
-| Sonnet 4.6 | ~$0.21 | ~$0.18 |
+| Haiku 4.5 | ~$0.014 | ~$0.005 |
+| Sonnet 4.6 | ~$0.040 | ~$0.022 |
 
-(System bundle is small; the HTML dominates. Cache savings are modest because
-the HTML is the bulk and isn't cached. If you cache the HTML for a single
-session of multiple turns, savings climb to ~50%.)
+A typical full interview (10 turns) on Haiku 4.5: **~$0.06 ≈ NT$1.9**.
 
-## Validation pipeline (frontend)
+A user that revises 3 sections after `done`: another 6 turns ≈ NT$1.
+
+→ Easily fits the NT$30-60 / customisation session budget with margin for
+many edits.
+
+## Rate-limit and validation (proxy)
 
 ```js
-// 1. Parse Claude response
+// Reject malformed input early
+if (!body.plan_state || typeof body.plan_state !== 'object') return 400;
+if (!['phase1_meta','phase2_day','phase3_extras','done'].includes(body.phase)) return 400;
+if ((body.user_message || '').length > 2000) return 413;
+
+// After Claude responds, validate JSON shape
 const out = JSON.parse(claudeText);
+if (!Array.isArray(out.patch)) throw new Error('bad output');
+if (typeof out.assistant_message !== 'string') throw new Error('bad output');
+if (!['phase1_meta','phase2_day','phase3_extras','done'].includes(out.next_phase)) throw new Error('bad output');
 
-// 2. Verify each anchor
-for (const e of out.edits) {
-  if (e.op === "replace" || e.op === "insert_after" || e.op === "insert_before") {
-    if (sourceHtml.split(e.anchor).length !== 2) {
-      throw new Error(`anchor not unique: ${e.anchor.slice(0, 60)}`);
-    }
-  }
-  if (e.op === "delete_block") {
-    if (sourceHtml.split(e.start_anchor).length !== 2) throw ...;
-    if (sourceHtml.split(e.end_anchor).length !== 2) throw ...;
-    if (sourceHtml.indexOf(e.end_anchor) <= sourceHtml.indexOf(e.start_anchor)) throw ...;
-  }
+// Apply patches with try/catch in the browser
+import { applyPatch } from 'fast-json-patch';
+let nextState;
+try {
+  nextState = applyPatch(structuredClone(plan_state), out.patch, true).newDocument;
+} catch (e) {
+  // Surface to user: "Could not apply update; please rephrase."
+  return showError(e);
 }
 
-// 3. Apply in order
-let working = sourceHtml;
-for (const e of out.edits) {
-  if (e.op === "replace") working = working.replace(e.anchor, e.with);
-  else if (e.op === "insert_after") working = working.replace(e.anchor, e.anchor + e.content);
-  else if (e.op === "insert_before") working = working.replace(e.anchor, e.content + e.anchor);
-  else if (e.op === "delete_block") {
-    const a = working.indexOf(e.start_anchor);
-    const b = working.indexOf(e.end_anchor) + e.end_anchor.length;
-    working = working.slice(0, a) + working.slice(b);
-  }
-}
-
-// 4. Show diff to user; on accept, save to localStorage as override
+// Persist + re-render
+localStorage.setItem('jm_customizer_session_v1', JSON.stringify({
+  plan_state: nextState, phase: out.next_phase, day_index: out.next_day_index
+}));
+TF.render(nextState);
 ```
 
-## Rate-limit / abuse hints (for the proxy worker)
+## Why this design
 
-- Cap source size: reject if `currentHtml.length > 200_000`.
-- Cap user prompt: reject if `userRequest.length > 2000`.
-- Per-IP daily cap: 50 requests is generous; tune from logs.
-- Reject if request matches `/(jailbreak|ignore previous|system prompt)/i`.
+- **JSON Patch over anchor edits**: paths are unique by RFC; no string-collision
+  problem; trivially diffable for an "undo last turn" feature.
+- **One question per turn (mostly)**: keeps each output small (<1K tokens) →
+  saves on output cost, which is 5× input cost on Haiku.
+- **plan_state in user turn, not cached**: each turn has a different state,
+  so caching it is useless. The big stable artifact (the skill bundle) IS
+  cached, which is where the savings actually come from.
+- **Quick replies**: reduce free-text answers, faster UX, tighter inputs.
+- **next_phase explicit**: skill is stateless; frontend owns session.

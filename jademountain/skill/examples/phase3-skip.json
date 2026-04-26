@@ -1,0 +1,22 @@
+{
+  "_comment": "Phase 3 entry. After all days entered, AI offers extras menu. User skips.",
+  "input": {
+    "plan_state": { "_": "all phase1 + phase2 fields filled, 3 days present" },
+    "phase": "phase3_extras",
+    "day_index": null,
+    "user_message": "都不用，這樣就好"
+  },
+  "expected_output": {
+    "patch": [],
+    "assistant_message": "好，行程骨架完成 ✅\n\n摘要：\n- 標題：玉山三日行程\n- 日期：2026/4/17–19（含 Day 0 出發前夜）\n- 3 人，登山類型，墨綠主視覺\n- 緊急卡每日帶留守 賴文正 (0911-210-072) + 112 / 119\n- Day 0 出發 → Day 1 上山 → Day 2 攻頂下山\n\n隨時可以再叫我修改任一段。要重新編輯哪一段直接說，例如「改 Day 1 的 09:00 那筆」。",
+    "quick_replies": [
+      { "label": "完成，存檔", "value": "完成" },
+      { "label": "改 Day 0", "value": "我想改 Day 0" },
+      { "label": "改 Day 1", "value": "我想改 Day 1" },
+      { "label": "改 Day 2", "value": "我想改 Day 2" }
+    ],
+    "next_phase": "done",
+    "next_day_index": null,
+    "warnings": []
+  }
+}

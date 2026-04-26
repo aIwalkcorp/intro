@@ -1,0 +1,68 @@
+{
+  "_comment": "Phase 2 - Day 0 (出發日). User has just confirmed standby contact and AI moves into per-day. Day 0 is auto-derived because depart_date != start_date.",
+  "input": {
+    "plan_state": {
+      "version": 1,
+      "meta": {
+        "title": "玉山三日行程",
+        "depart_date": "2026-04-17",
+        "start_date": "2026-04-18",
+        "end_date": "2026-04-19",
+        "party_size": 3,
+        "party_label": "3人",
+        "lang": "zh-TW",
+        "activity_type": "hiking",
+        "theme_color": "#1e3a1a"
+      },
+      "emergency_default": {
+        "standby": { "name": "賴文正", "phone": "0911-210-072", "phone_tel": "0911210072" },
+        "include_112": true, "include_119": true
+      },
+      "days": []
+    },
+    "phase": "phase2_day",
+    "day_index": 0,
+    "user_message": "Day 0：4/17 週五，18:00 在跟森的接駁地點集合出發，預計 22:30 入住 Go比爾民宿，明早 6:30 叫車上塔塔加"
+  },
+  "expected_output": {
+    "patch": [
+      {
+        "op": "add",
+        "path": "/days/-",
+        "value": {
+          "id": "d0",
+          "date": "2026-04-17",
+          "date_label": "4/17 FRI",
+          "label": "Day 0・出發",
+          "tag": null,
+          "tag_text": "出發日",
+          "tag_color_override": "linear-gradient(135deg,#4b5563,#6b7280)",
+          "section_title": "Day 0 — 4/17（五）出發",
+          "emergency_card_title": "🚨 Day 0・出發關鍵時間",
+          "key_times": [
+            { "label": "集合 / 出發", "value": "18:00", "note": "跟森的接駁地點" },
+            { "label": "預計入住", "value": "22:30", "note": "Go比爾民宿" },
+            { "label": "明晨叫車", "value": "06:30", "note": "上塔塔加" }
+          ],
+          "quick_links": [],
+          "schedule": [
+            { "time": "18:00", "title": "集合・出發", "note": "於「跟森的接駁地點」集合 → 前往 Go比爾民宿", "highlight": true },
+            { "time": "22:30", "title": "Go比爾民宿 check-in", "note": "預計到達時間，建議事先電話告知民宿", "highlight": true },
+            { "time": "06:30", "title": "明晨叫車", "note": "上塔塔加" }
+          ],
+          "details": [],
+          "retreat": null
+        }
+      }
+    ],
+    "assistant_message": "Day 0 收到。我把它放進「出發日」標籤，自動把 18:00 集合 / 22:30 入住兩個時點標成 highlight，緊急卡用「集合 / 預計入住 / 明晨叫車」三個關鍵時點。\n\nDay 0 通常不需要撤退方案，我跳過了。要補住宿地址 / 訂房資訊嗎？等等到 Phase 3 可以補。\n\n下一步：Day 1（4/18 週六）。給我那天從幾點到幾點的關鍵時間點，例如：\n```\n08:30 塔塔加接駁站 上山\n09:00 登山口 起登 2610m\n15:00 排雲山莊 抵達 +923m\n```",
+    "quick_replies": [
+      { "label": "進到 Day 1", "value": "好，繼續 Day 1" },
+      { "label": "Day 0 改一下", "value": "Day 0 我想改" },
+      { "label": "讓我自己打", "value": "" }
+    ],
+    "next_phase": "phase2_day",
+    "next_day_index": 1,
+    "warnings": ["民宿名「Go比爾民宿」已記錄在 schedule note，但住宿地址 / 電話 / 訂金尚未填入；可在 Phase 3 extras 補。"]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "_comment": "Phase 2 - Day 1 (上山日). User pastes a free-text timeline; AI parses, derives elevation gain, infers highlights.",
+  "input": {
+    "plan_state": {
+      "version": 1,
+      "meta": { "title": "玉山三日行程", "start_date": "2026-04-18", "end_date": "2026-04-19", "party_size": 3, "lang": "zh-TW" },
+      "emergency_default": { "standby": { "name": "賴文正", "phone": "0911-210-072" }, "include_112": true, "include_119": true },
+      "days": [{ "id": "d0", "date": "2026-04-17", "label": "Day 0・出發", "_truncated": true }]
+    },
+    "phase": "phase2_day",
+    "day_index": 1,
+    "user_message": "Day 1：上山日。\n08:30 塔塔加接駁站\n09:00 登山口出發 2610m\n10:30 孟祿亭 小休\n12:00 白木林觀景台 午餐\n13:30 大峭壁 拍照\n15:00 排雲山莊 抵達 3402m +923m\n17:00 晚餐就寢"
+  },
+  "expected_output": {
+    "patch": [
+      {
+        "op": "add",
+        "path": "/days/-",
+        "value": {
+          "id": "d1",
+          "date": "2026-04-18",
+          "date_label": "4/18 SAT",
+          "label": "Day 1・上山",
+          "tag": "d1",
+          "tag_text": "8.5 KM ｜ +923 M",
+          "section_title": "Day 1 — 4/18（六）塔塔加 → 排雲山莊",
+          "emergency_card_title": "🚨 Day 1・上山關鍵時間",
+          "key_times": [
+            { "label": "登山口出發", "value": "09:00", "note": "2,610m 起登" },
+            { "label": "抵達排雲（目標）", "value": "15:00", "note": "3,402m +923m" },
+            { "label": "晚餐・就寢", "value": "17:00", "note": "高山症監測" }
+          ],
+          "quick_links": [],
+          "schedule": [
+            { "time": "08:30", "title": "塔塔加接駁站" },
+            { "time": "09:00", "title": "登山口出發", "elevation": "2,610m", "highlight": true },
+            { "time": "10:30", "title": "孟祿亭", "note": "小休" },
+            { "time": "12:00", "title": "白木林觀景台", "note": "午餐" },
+            { "time": "13:30", "title": "大峭壁", "note": "拍照" },
+            { "time": "15:00", "title": "排雲山莊", "elevation": "3,402m ｜ +923m", "highlight": true },
+            { "time": "17:00", "title": "晚餐・就寢" }
+          ],
+          "details": [],
+          "retreat": null
+        }
+      }
+    ],
+    "assistant_message": "Day 1 解析完成。我把：\n- 09:00 登山口出發、15:00 排雲山莊 — 兩個關鍵時點高亮\n- +923m 累計爬升從你的最後一行抓出來，做成 day-tag\n- 緊急卡 3 個關鍵時點（出發、抵達、就寢）\n\n撤退方案要設嗎？例如「途中身體不適原路折返塔塔加」？沒有的話我留空。",
+    "quick_replies": [
+      { "label": "原路折返塔塔加", "value": "撤退：身體不適或天候惡劣，原路折返塔塔加" },
+      { "label": "不設撤退", "value": "Day 1 不設撤退" },
+      { "label": "讓我自己打", "value": "" }
+    ],
+    "next_phase": "phase2_day",
+    "next_day_index": 1,
+    "warnings": []
+  }
+}

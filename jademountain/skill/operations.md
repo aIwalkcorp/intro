@@ -1,109 +1,122 @@
-# Edit Operation Reference
+# JSON Patch Operations Reference
 
-Source format: a single HTML document. Anchors are **plain substrings** of that
-source (not regex, not CSS selectors). Frontend matches first occurrence and
-asserts uniqueness.
+This skill emits **RFC 6902** JSON Patch arrays. The frontend applies them with
+[`fast-json-patch`](https://github.com/Starcounter-Jack/JSON-Patch) (~5KB) then
+calls `TF.render(plan)` to repaint.
 
-## op: replace
+## Allowed ops
 
-Replace `anchor` with `with` exactly once. Anchor MUST be unique.
+| op | path examples | use |
+|---|---|---|
+| `replace` | `/meta/title`, `/days/0/schedule/2/note` | scalar field updates |
+| `add` (append) | `/days/-`, `/days/0/schedule/-`, `/days/0/key_times/-` | append to arrays via `-` token |
+| `add` (insert) | `/days/0/schedule/2` | insert at index |
+| `remove` | `/days/0/schedule/3` | drop array item or scalar field |
+| `move` | `from: /days/0/schedule/3, path: /days/0/schedule/0` | reorder |
+| `test` | `/meta/lang` value `"zh-TW"` | (rare) precondition guard |
+
+`copy` is supported by RFC 6902 but **avoid** — it makes patches harder to audit.
+
+## Plan-shape paths (target schema)
+
+```
+/meta/title              string
+/meta/start_date         "YYYY-MM-DD"
+/meta/end_date           "YYYY-MM-DD"
+/meta/depart_date        "YYYY-MM-DD" | null
+/meta/party_size         integer
+/meta/party_label        string
+/meta/lang               "zh-TW" | "en" | "bilingual"
+/meta/theme_color        "#RRGGBB"
+/meta/activity_type      "hiking" | "cycling" | "running" | "custom"
+/meta/page_title         string
+/meta/short_name         string
+
+/emergency_default/standby/name        string
+/emergency_default/standby/phone       "0911-210-072"
+/emergency_default/standby/phone_tel   "0911210072"
+/emergency_default/messenger_url       string | null
+/emergency_default/include_112         boolean
+/emergency_default/include_119         boolean
+/emergency_default/local_emergency_label  string
+
+/days/N/id                       "d0" | "d1" | ...
+/days/N/date                     "YYYY-MM-DD"
+/days/N/date_label               "4/18 SAT"
+/days/N/label                    "Day 1・上山"
+/days/N/tag                      "d1" | "d2" | "d2a" | "d2b" | null
+/days/N/tag_text                 "8.5 KM ｜ +923 M" | null
+/days/N/tag_color_override       css-gradient string | null
+/days/N/section_title            "Day 1 — 4/18（六）..."
+/days/N/emergency_card_title     "🚨 Day 1・上山關鍵時間"
+/days/N/key_times/M/label        string
+/days/N/key_times/M/value        "HH:MM" or "HH–HH"
+/days/N/key_times/M/note         string | null
+/days/N/quick_links/M/icon       emoji
+/days/N/quick_links/M/text       string
+/days/N/quick_links/M/href       url
+/days/N/quick_links/M/external   boolean
+/days/N/schedule/M/time          "HH:MM"
+/days/N/schedule/M/title         string
+/days/N/schedule/M/note          string | null
+/days/N/schedule/M/note_html     html string | null  (only if note has links)
+/days/N/schedule/M/elevation     "2,610m" | null
+/days/N/schedule/M/highlight     boolean
+/days/N/schedule/M/decision      boolean
+/days/N/schedule/M/decision_buttons  array (rare; alternate routes)
+/days/N/routes/M/...             multi-route variants (Day 2A/2B style)
+/days/N/details/M/icon           emoji
+/days/N/details/M/title          string
+/days/N/details/M/rows_html      array of html strings
+/days/N/retreat                  object | null
+/days/N/retreat/title            string
+/days/N/retreat/title_color      "#hex"
+/days/N/retreat/title_border     "#hex"
+/days/N/retreat/items_html       array of html strings
+/days/N/retreat/raw_html         boolean
+```
+
+## Anti-patterns
+
+- ❌ `replace` on a path that doesn't exist yet → use `add`.
+- ❌ Patching `/days/-/schedule/-` (double `-`). Append day, then in a later
+     turn append schedule entries — keep ops one-level-at-a-time.
+- ❌ Setting a phone number you didn't get from the user. Use `null` and ask.
+- ❌ Building a fully-formed `routes` array unless the user explicitly says
+     they want alternate routes (advanced feature, defer to phase3 extras).
+
+## Small-patch idiom
+
+Prefer many small ops over one giant `replace`. Examples:
+
+Good:
+```json
+[
+  { "op": "replace", "path": "/meta/title", "value": "玉山主峰" },
+  { "op": "replace", "path": "/meta/start_date", "value": "2026-04-18" },
+  { "op": "replace", "path": "/meta/end_date", "value": "2026-04-19" },
+  { "op": "replace", "path": "/meta/party_size", "value": 3 }
+]
+```
+
+Bad:
+```json
+[
+  { "op": "replace", "path": "/meta", "value": { "title": "...", "start_date": "...", ... } }
+]
+```
+(Replaces the whole meta object — collapses any pre-existing fields.)
+
+## Pre-condition with `test`
+
+If you must guard against stale state (e.g. user came back to revise day 0
+after day 2 was added), prepend a `test` op:
 
 ```json
-{ "op": "replace", "anchor": "Day 2・攻頂", "with": "Day 2・玉山西峰" }
+[
+  { "op": "test", "path": "/days/0/id", "value": "d0" },
+  { "op": "replace", "path": "/days/0/label", "value": "Day 0・出發" }
+]
 ```
 
-Frontend pseudocode:
-```js
-if (source.split(edit.anchor).length !== 2) reject(edit, "non-unique anchor");
-source = source.replace(edit.anchor, edit.with);
-```
-
-## op: insert_after / insert_before
-
-Insert `content` immediately after/before `anchor`. Anchor MUST be unique.
-
-```json
-{
-  "op": "insert_after",
-  "anchor": "<button class=\"day-btn\" data-day=\"d2\"",
-  "content": "<button class=\"day-btn\" data-day=\"d3\" onclick=\"switchDayTab('d3')\"><span class=\"dlbl\">4/20 MON</span><span class=\"dname\">Day 3・下山</span></button>"
-}
-```
-
-Use for: adding rows to schedules, adding day tabs, adding qlinks.
-
-## op: delete_block
-
-Delete everything from `start_anchor` (inclusive) to `end_anchor` (inclusive).
-Both must be unique. `end_anchor` must appear AFTER `start_anchor` in source.
-
-```json
-{
-  "op": "delete_block",
-  "start_anchor": "<!-- ================= Day 0 ================= -->",
-  "end_anchor": "<!-- ================= Day 1 ================= -->"
-}
-```
-
-Use sparingly. Prefer `replace` with surgical anchors when possible.
-
-## Anchor disambiguation patterns
-
-When the obvious anchor is not unique, expand outward until it is:
-
-| Risky anchor | Expanded anchor |
-|---|---|
-| `15:00` | `<div class="tl-t">15:00</div><div class="tl-p">排雲山莊` |
-| `3 人` | `總額 $1,500・定金 $1,000（已付）` containing line; or `通舖 × 3 人` |
-| `4/18` | `<span class="dlbl">4/18 SAT</span>` |
-| `Day 1` | `Day 1 — 4/18（六）塔塔加 → 排雲山莊` |
-
-Rule: include enough surrounding HTML (tag + attribute) to guarantee one match.
-If you can't find a unique anchor in <300 chars, return `edits: []` and put the
-problem in `warnings`.
-
-## Date propagation rules
-
-When the trip's start date changes:
-
-1. Find all date occurrences. Common formats in this template:
-   - `4/17`, `4/18`, `4/19` (slash, no year)
-   - `2026/04/17` (full)
-   - `4/17（五）` (with weekday in parentheses)
-   - `<span class="dlbl">4/17 FRI</span>` (weekday English)
-   - `<title>玉山主峰北峰登山計劃書 2026/04/17–19</title>` (range in title)
-
-2. For each, recompute weekday using the user-provided new start date.
-   Weekdays in zh: 一二三四五六日 (Mon–Sun); en: MON TUE WED THU FRI SAT SUN.
-
-3. Emit one `replace` per occurrence. Group adjacent dates if anchors overlap.
-
-4. Verify the new date arithmetic by listing all replacements in `summary_zh`.
-
-## Party-size propagation
-
-`3 人` appears in:
-- `房型：通舖 × 3 人`
-- `通舖・3 人・總額`
-- `<div class="sub">2026/04/18–19 ｜ 2天1夜 ｜ 3人</div>`
-
-When changing, also recompute total accommodation cost if present (price × headcount logic) — but only if you can verify the per-head price. Otherwise emit a warning: `"請手動確認新的住宿總額"`.
-
-## Phone number policy
-
-If user says "改聯絡人為 0912-345-678":
-→ replace ALL `0911-210-072` and `tel:0911210072` occurrences with the new number, both formatted and tel: forms.
-
-If user says "改聯絡人":
-→ no edits. `summary_zh: "新聯絡人手機號碼是？"`.
-
-Never alter `tel:112` or `tel:119` (international/local emergency).
-
-## Anti-patterns (do NOT do)
-
-- ❌ Anchor that is just punctuation or whitespace.
-- ❌ `op: replace` where `with` is the entire HTML.
-- ❌ Emitting more than 30 edits per response (split into a follow-up).
-- ❌ Touching `<script>` blocks containing `function`, `const`, `let`, `var`
-     declarations except for top-level data literals you can prove safe.
-- ❌ Modifying CSS variables (`--bdr-2`, `--txtL`, etc.) without explicit ask.
+Frontend treats a failed `test` as the whole patch rejected.
