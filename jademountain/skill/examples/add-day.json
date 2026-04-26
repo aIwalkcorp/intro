@@ -1,0 +1,26 @@
+{
+  "_comment": "User: 加一天 Day 3，4/20（一）下山日，從排雲走回塔塔加",
+  "request": "加一天 Day 3，4/20（一）下山日，從排雲走回塔塔加",
+  "expected_output": {
+    "edits": [
+      {
+        "op": "insert_after",
+        "anchor": "<button class=\"day-btn\" data-day=\"d2\" onclick=\"switchDayTab('d2')\"><span class=\"dlbl\">4/19 SUN</span><span class=\"dname\">Day 2・攻頂</span></button>",
+        "content": "\n    <button class=\"day-btn\" data-day=\"d3\" onclick=\"switchDayTab('d3')\"><span class=\"dlbl\">4/20 MON</span><span class=\"dname\">Day 3・下山</span></button>"
+      },
+      {
+        "op": "insert_before",
+        "anchor": "<!-- ==================== TAB: 行程 ==================== -->",
+        "content": "<!-- placeholder; real anchor is end of tab-itin -->",
+        "note": "REJECT this edit — see warnings; this slot needs the closing anchor of tab-itin which the assistant could not uniquely identify in v0.1."
+      },
+      { "op": "replace", "anchor": "<title>玉山主峰北峰登山計劃書", "with": "<title>玉山主峰北峰登山計劃書 (3 天行程)" }
+    ],
+    "summary_zh": "已新增 Day 3 標籤頁的按鈕，但 Day 3 完整內容區塊（行程列、撤退方案、緊急聯絡卡）需要先確認您要包含哪些段落，才能避免誤刪 Day 2 的結尾。請告訴我：(1) Day 3 行程時間表（幾點到幾點）(2) 是否複製 Day 1 的緊急聯絡卡格式 (3) 預計住宿地點（塔塔加？或當天直接返家）。",
+    "summary_en": "Added the Day 3 tab button. The full Day 3 panel (timeline, retreat plan, contacts) needs more details first to avoid breaking the Day 2 closing. Please confirm: (1) hourly schedule, (2) reuse Day 1 emergency-card format yes/no, (3) accommodation that night.",
+    "warnings": [
+      "目前僅插入 Day 3 tab 按鈕；完整 Day 3 panel 需要使用者補充細節後再 emit 一次。",
+      "標題加註 (3 天行程) 是視覺提示；若您不希望改動標題，請告知撤回。"
+    ]
+  }
+}

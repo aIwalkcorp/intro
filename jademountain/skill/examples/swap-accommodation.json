@@ -1,0 +1,23 @@
+{
+  "_comment": "User: 民宿改成東埔山莊，電話 049-2702213，每人 600 元",
+  "request": "民宿改成東埔山莊，電話 049-2702213，每人 600 元",
+  "expected_output": {
+    "edits": [
+      { "op": "replace", "anchor": "Go比爾民宿", "with": "東埔山莊", "note": "民宿名替換（在標題、內文、Google Maps 連結三處出現，但因內含 query 參數，需逐一處理）" },
+      { "op": "replace", "anchor": "🏠 Go比爾民宿 住宿資訊", "with": "🏠 東埔山莊 住宿資訊" },
+      { "op": "replace", "anchor": "<a href=\"tel:0978414696\">0978-414-696</a>", "with": "<a href=\"tel:0492702213\">049-270-2213</a>" },
+      { "op": "replace", "anchor": "📞 Go比爾 0978-414-696", "with": "📞 東埔山莊 049-270-2213" },
+      { "op": "replace", "anchor": "Go比爾民宿+南投縣信義鄉望和巷39號", "with": "東埔山莊+南投縣信義鄉" },
+      { "op": "replace", "anchor": "搜尋「GO比爾民宿」", "with": "搜尋「東埔山莊」" },
+      { "op": "replace", "anchor": "通舖 × 3 人　<b>總房價：</b>$1,500（已付訂金 $1,000）", "with": "通舖 × 3 人　<b>總房價：</b>$1,800（每人 $600）" },
+      { "op": "replace", "anchor": "通舖・3 人・總額 $1,500・定金 $1,000（已付）", "with": "通舖・3 人・總額 $1,800・定金待匯" }
+    ],
+    "summary_zh": "已將 Go比爾民宿替換為東埔山莊（電話 049-270-2213），總房價依每人 600 元、3 人計算為 $1,800。地址欄位僅保留鄉名，請手動補完整地址。",
+    "summary_en": "Replaced Go比爾民宿 with 東埔山莊 (049-270-2213); total NT$1,800 for 3 persons. Address line kept partial — please complete manually.",
+    "warnings": [
+      "新民宿地址欄位（「卡里布安村」）已不適用，請手動修改。",
+      "原已付訂金 $1,000 視為損失或請與原民宿協調退款，新民宿訂金未匯。",
+      "Google Maps 搜尋字串已改，建議您點開連結確認導航結果正確。"
+    ]
+  }
+}
