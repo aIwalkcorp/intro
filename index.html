@@ -845,6 +845,86 @@
     line-height: 1.5;
   }
   .demo-card .demo-info-main { flex: 1; min-width: 0; }
+
+  /* === Live-link card variant (wraps demo-info in an anchor) === */
+  a.demo-info {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    position: relative;
+  }
+  a.demo-info::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    transition: background 0.2s ease;
+  }
+  .demo-card:has(a.demo-info) {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .demo-card:has(a.demo-info:hover) {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px rgba(192, 106, 26, 0.18), 0 0 0 1px rgba(192, 106, 26, 0.18);
+  }
+  a.demo-info:hover::after { background: rgba(255, 246, 235, 0.35); }
+  a.demo-info:hover .demo-name { color: var(--orange, #c06a1a); }
+  a.demo-info .demo-live-cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange, #c06a1a);
+    transition: transform 0.18s ease;
+  }
+  a.demo-info:hover .demo-live-cue { transform: translateX(2px); }
+  a.demo-info .demo-live-cue .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--orange, #c06a1a);
+    box-shadow: 0 0 0 0 rgba(232, 168, 92, 0.7);
+    animation: liveCueDot 1.8s ease-out infinite;
+  }
+  @keyframes liveCueDot {
+    0%   { box-shadow: 0 0 0 0 rgba(232, 168, 92, 0.7); }
+    70%  { box-shadow: 0 0 0 7px rgba(232, 168, 92, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(232, 168, 92, 0); }
+  }
+  a.demo-info .demo-live-cue svg { width: 12px; height: 12px; }
+
+  /* LIVE ribbon on the video thumbnail */
+  .demo-card .demo-video { position: relative; }
+  .demo-video .live-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    z-index: 2;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px 4px 8px;
+    background: rgba(192, 106, 26, 0.95);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(192, 106, 26, 0.45);
+    pointer-events: none;
+  }
+  .demo-video .live-badge::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 4px #fff;
+    animation: liveCueDot 1.4s ease-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    a.demo-info .demo-live-cue .live-dot,
+    .demo-video .live-badge::before { animation: none; }
+  }
   .demo-card .demo-live-link {
     display: inline-flex;
     align-items: center;
@@ -2087,20 +2167,21 @@
     </div>
     <div class="demo-card reveal reveal-delay-2">
       <div class="demo-video">
+        <span class="live-badge" aria-hidden="true">LIVE</span>
         <iframe src="https://www.youtube.com/embed/AqCmBuTejRg" allowfullscreen loading="lazy" title="ExoPulse Patient Cloud Demo"></iframe>
       </div>
-      <div class="demo-info">
+      <a class="demo-info" href="https://patient-cloud.aiwalkcorp.com/" target="_blank" rel="noopener" title="Open Patient Cloud live site">
         <img src="assets/patientcloud-logo.png" alt="Patient Cloud" class="demo-logo">
         <div class="demo-info-main">
           <div class="demo-name">ExoPulse Patient Cloud</div>
           <div class="demo-desc"><span class="lang-zh">臨床數據平台</span><span class="lang-en">Clinical Data Platform</span></div>
+          <div class="demo-live-cue">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span class="lang-zh">立即體驗</span><span class="lang-en">Try Live Demo</span>
+            <i data-lucide="arrow-up-right"></i>
+          </div>
         </div>
-        <a class="demo-live-link" href="https://patient-cloud.aiwalkcorp.com/" target="_blank" rel="noopener" title="Open live site">
-          <span class="live-dot" aria-hidden="true"></span>
-          <span class="lang-zh">立即體驗 Live</span><span class="lang-en">Try Live Demo</span>
-          <i data-lucide="arrow-up-right"></i>
-        </a>
-      </div>
+      </a>
     </div>
     <div class="demo-card reveal reveal-delay-3">
       <div class="demo-video">
