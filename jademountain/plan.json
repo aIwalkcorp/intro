@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "meta": {
+    "title": "玉山主峰・北峰",
+    "subtitle": "登山計劃書",
+    "start_date": "2026-04-18",
+    "end_date": "2026-04-19",
+    "depart_date": "2026-04-17",
+    "party_size": 3,
+    "party_label": "3人",
+    "lang": "zh-TW",
+    "theme_color": "#1e3a1a",
+    "activity_type": "hiking",
+    "page_title": "玉山主峰北峰登山計劃書",
+    "short_name": "玉山計劃"
+  },
+  "emergency_default": {
+    "standby": { "name": "賴文正", "phone": "0911-210-072", "phone_tel": "0911210072" },
+    "messenger_url": "https://m.me/",
+    "include_112": true,
+    "include_119": true,
+    "local_emergency_label": "南投消防"
+  },
+  "days": [
+    {
+      "id": "d0",
+      "date": "2026-04-17",
+      "date_label": "4/17 FRI",
+      "label": "Day 0・出發",
+      "tag": null,
+      "tag_text": "出發日",
+      "tag_color_override": "linear-gradient(135deg,#4b5563,#6b7280)",
+      "summary": null,
+      "stats": null,
+      "section_title": "Day 0 — 4/17（五）出發",
+      "emergency_card_title": "🚨 Day 0・出發關鍵時間",
+      "key_times": [
+        { "label": "集合 / 出發", "value": "18:00", "note": "跟森的接駁地點" },
+        { "label": "預計入住", "value": "22:30", "note": "Go比爾民宿・已事先告知逾 18:00" },
+        { "label": "明晨叫車", "value": "06:30", "note": "上塔塔加" }
+      ],
+      "quick_links": [
+        { "icon": "📍", "text": "跟森的接駁地點", "href": "https://maps.app.goo.gl/kmTci2kQMecRgM4h6", "external": true },
+        { "icon": "🌦", "text": "氣象", "href": "https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080", "external": true },
+        { "icon": "🏠", "text": "Go比爾民宿", "href": "https://maps.google.com/?q=Go比爾民宿+南投縣信義鄉望和巷39號", "external": true },
+        { "icon": "📞", "text": "Go比爾 0978-414-696", "href": "tel:0978414696", "external": false },
+        { "icon": "📹", "text": "草坪頭即時影像", "href": "https://share.google/k4yvOaDUDmZJGFNlK", "external": true },
+        { "icon": "🚧", "text": "台21線施工資訊", "href": "https://share.google/DvveUzXhSXF3jlzIm", "external": true }
+      ],
+      "schedule": [
+        { "time": "18:00", "title": "週五 18:00 出發", "note": "於「跟森的接駁地點」集合 → 前往 Go比爾民宿（南投縣信義鄉）", "highlight": true },
+        { "time": "22:30", "title": "Go比爾民宿 check-in", "note_html": "預計到達 <b>22:30</b>（已逾 18:00 最晚入住，<b>務必事先電話告知</b>，以免被視為取消） 📞 <a href=\"tel:0978414696\">0978-414-696</a>", "highlight": true }
+      ],
+      "details": [
+        {
+          "icon": "🏠",
+          "title": "Go比爾民宿 住宿資訊",
+          "rows_html": [
+            "<b>地址：</b>556 南投縣信義鄉望和巷39號 卡里布安村",
+            "<b>電話：</b><a href=\"tel:0978414696\">0978-414-696</a>　<small style=\"color:var(--txtL);\">(非緊急勿 24:00 後撥打)</small>",
+            "<b>Google Maps：</b><a href=\"https://maps.google.com/?q=Go比爾民宿+南投縣信義鄉望和巷39號\" target=\"_blank\">搜尋「GO比爾民宿」</a>　<small style=\"color:var(--txtL);\">進入部落範圍後請看民宿指示牌，不要太信導航</small>",
+            "<div style=\"margin-top:6px;\"><b>Check-in：</b>14:00–18:00　<b>房型：</b>通舖 × 3 人　<b>總房價：</b>$1,500（已付訂金 $1,000）</div>",
+            "<b>入住須知：</b>不提供一次性盥洗用品、通舖請自備毛巾、垃圾分類、吸菸限吸菸區、寵物僅限套房"
+          ]
+        },
+        {
+          "icon": "💳",
+          "title": "訂房 / 匯款 / 退費資訊",
+          "rows_html": [
+            "<b>訂房：</b>2026/4/17（五）・通舖・3 人・總額 $1,500・定金 $1,000（已付）",
+            "<div style=\"margin-top:6px;\"><b>匯款戶資（如需）：</b>國泰世華（013）營業部（218）・帳號 699512976721・戶名 松子祥</div>",
+            "<div style=\"margin-top:6px;\"><b>取消退費：</b>14 日前 100%・10–13 日 70%・7–9 日 50%・4–6 日 40%・2–3 日 30%・1 日前 10%・當日或未入住 0%</div>",
+            "<b>不可抗力（颱風/地震，依政府公告）：</b>全額退款或協助延期 3 個月內",
+            "<div style=\"margin-top:6px;\"><b>匯款回報需附：</b>匯款日期、訂房姓名、入住日期、房型</div>"
+          ]
+        }
+      ],
+      "retreat": null
+    },
+    {
+      "id": "d1",
+      "date": "2026-04-18",
+      "date_label": "4/18 SAT",
+      "label": "Day 1・上山",
+      "tag_text": "8.5 KM ｜ +923 M",
+      "tag": "d1",
+      "section_title": "Day 1 — 4/18（六）塔塔加 → 排雲山莊",
+      "emergency_card_title": "🚨 Day 1・上山關鍵時間",
+      "key_times": [
+        { "label": "登山口出發", "value": "09:00", "note": "2,610m 起登" },
+        { "label": "抵達排雲（目標）", "value": "15:00", "note": "3,402m +923m" },
+        { "label": "排雲供水", "value": "16–17", "note": "錯過即無水" },
+        { "label": "晚餐・就寢", "value": "18:00", "note": "19:00 前睡" }
+      ],
+      "quick_links": [
+        { "icon": "🌦", "text": "氣象", "href": "https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080", "external": true },
+        { "icon": "📹", "text": "草坪頭即時影像", "href": "https://share.google/k4yvOaDUDmZJGFNlK", "external": true }
+      ],
+      "schedule": [
+        { "time": "08:30", "title": "塔塔加接駁站", "note": "搭接駁車至登山口 $100/趟 或步行 2.8km 約 40 分鐘" },
+        { "time": "09:00", "title": "玉山登山口出發（0K）", "elevation": "2,610m" },
+        { "time": "10:30", "title": "孟祿亭（1.7K）", "note": "小休 10 分鐘" },
+        { "time": "12:00", "title": "白木林觀景台（5.0K）", "note": "午餐行動糧 30 分鐘" },
+        { "time": "13:30", "title": "大峭壁（6.7K）", "note": "拍照留念" },
+        { "time": "15:00", "title": "排雲山莊（8.5K）", "elevation": "3,402m ｜ +923m", "highlight": true },
+        { "time": "17:00", "title": "晚餐・整理攻頂包・入睡", "note": "供水 16–17:00，晚餐 18:00" }
+      ],
+      "details": [],
+      "retreat": {
+        "title": "⚠️ Day 1 撤退",
+        "title_color": "#b45309",
+        "title_border": "#fcd34d",
+        "items_html": [
+          "<b>Day 1：</b>身體不適或天候惡劣，原路折返塔塔加。"
+        ]
+      }
+    },
+    {
+      "id": "d2",
+      "date": "2026-04-19",
+      "date_label": "4/19 SUN",
+      "label": "Day 2・攻頂",
+      "tag_text": null,
+      "tag": null,
+      "section_title": "Day 2 — 4/19（日）攻頂・下山",
+      "emergency_card_title": "🚨 Day 2・攻頂關鍵時間",
+      "key_times": [
+        { "label": "攻頂折返時限", "value": "09:30", "note": "過此未登頂即撤退" },
+        { "label": "回排雲最晚", "value": "12:00", "note": "逾時恐摸黑下山" },
+        { "label": "下山通知", "value": "17:30", "note": "報留守平安" },
+        { "label": "山難管制", "value": "19:00", "note": "未回即通報" }
+      ],
+      "quick_links": [
+        { "icon": "🌦", "text": "氣象", "href": "https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080", "external": true },
+        { "icon": "📹", "text": "草坪頭即時影像", "href": "https://share.google/k4yvOaDUDmZJGFNlK", "external": true }
+      ],
+      "routes": [
+        {
+          "id": "d2a",
+          "tab_label": "Day 2A 北峰＋主峰",
+          "tag_class": "d2b",
+          "tag_text": "Day 2A — 北峰 + 主峰",
+          "active": true,
+          "schedule": [
+            { "time": "02:00", "title": "起床、吃早早餐" },
+            { "time": "03:00", "title": "排雲山莊出發（輕裝・頭燈）", "elevation": "3,402m" },
+            { "time": "04:30", "title": "主北岔路口（風口）— 決策點", "note": "風大注意保暖。此處決定走北峰或直上主峰：", "decision": true,
+              "decision_buttons": [
+                { "text": "繼續北峰 Day2A", "switch_to": "d2a", "border": "#ef4444", "bg": "#fef2f2", "color": "#dc2626" },
+                { "text": "切到主峰 Day2B", "switch_to": "d2b", "border_var": "--d1", "bg": "#eff6ff", "color": "#1d4ed8" }
+              ]
+            },
+            { "time": "06:00", "title": "玉山北峰 / 氣象站", "elevation": "3,858m ｜ 金色主峰日出", "note": "千元大鈔背面經典角度", "highlight": true },
+            { "time": "07:30", "title": "離開北峰，碎石坡陡上", "note": "最大挑戰，抓好鐵鍊" },
+            { "time": "09:00", "title": "回主北岔路口，轉主峰" },
+            { "time": "09:30", "title": "登頂玉山主峰", "elevation": "3,952m ｜ 台灣最高峰！", "highlight": true },
+            { "time": "10:30", "title": "下山回排雲山莊" },
+            { "time": "12:00", "title": "排雲山莊（吃麵・整裝）" },
+            { "time": "13:00", "title": "從排雲下山" },
+            { "time": "16:30", "title": "塔塔加登山口", "elevation": "2,610m ｜ 搭接駁車", "highlight": true }
+          ]
+        },
+        {
+          "id": "d2b",
+          "tab_label": "Day 2B 僅主峰",
+          "tag_class": "d2a",
+          "tag_text": "Day 2B — 僅主峰",
+          "active": false,
+          "schedule": [
+            { "time": "03:00", "title": "起床、吃早餐" },
+            { "time": "04:00", "title": "排雲山莊出發", "elevation": "3,402m" },
+            { "time": "05:30", "title": "主北岔路口（風口）— 決策點", "note": "體力充足可改衝北峰：", "decision": true,
+              "decision_buttons": [
+                { "text": "切到 Day2A 北峰＋主峰", "switch_to": "d2a", "border": "#ef4444", "bg": "#fef2f2", "color": "#dc2626" }
+              ]
+            },
+            { "time": "06:20", "title": "登頂玉山主峰（日出）", "elevation": "3,952m", "highlight": true },
+            { "time": "07:30", "title": "拍完照離開主峰" },
+            { "time": "09:00", "title": "回排雲山莊（補眠）" },
+            { "time": "10:30", "title": "排雲下山" },
+            { "time": "14:30", "title": "塔塔加登山口", "elevation": "2,610m", "highlight": true }
+          ]
+        }
+      ],
+      "details": [],
+      "retreat": {
+        "title": "🛑 Day 2 撤退方案（關鍵）",
+        "title_color": "#dc2626",
+        "title_border": "#dc2626",
+        "items_html": [
+          "<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 06:00 未到北峰</b> → 放棄北峰，直攻主峰</div>",
+          "<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 09:30 未登頂主峰</b> → 立即折返排雲</div>",
+          "<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 12:00 未回到排雲</b> → 取消當日下山計畫</div>",
+          "<div class=\"ret-i\"><b>Day 2 主峰：</b>天候驟變或體力不支，立即折返排雲。</div>",
+          "<div class=\"ret-i\"><b>Day 2 北峰：</b>體力不足或時間不夠，放棄北峰直接回排雲下山。</div>"
+        ],
+        "raw_html": true
+      }
+    }
+  ],
+  "_static_kept": {
+    "_comment": "These are NOT data-driven in PR-1; they remain inline in index.html.",
+    "items": ["上河驗算 details.exp", "注意事項 details.exp", "聯絡 tab", "地圖 tab", "Pack split tab", "Elevation chart canvas"]
+  }
+}
