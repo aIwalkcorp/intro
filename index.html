@@ -983,6 +983,103 @@
     .demo-card .demo-live-link .live-dot { animation: none; }
   }
 
+  /* ===== TRAILFORGE — distinct gold/forest accent on demo-card frame ===== */
+  .demo-card-trailforge {
+    max-width: 720px;
+    margin: 16px auto 0;
+    border-color: rgba(31, 42, 36, 0.16);
+  }
+  .demo-card-trailforge:hover {
+    border-color: #c9a14a;
+    box-shadow: 0 16px 40px rgba(31,42,36,0.12), 0 4px 14px rgba(201,161,74,0.18);
+  }
+  .demo-card-trailforge .demo-video {
+    background: #1f2a24;  /* dark green base behind preview while loading */
+  }
+  .preview-iframe-wrap {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    background: #1f2a24;
+  }
+  .preview-iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 250%;
+    height: 250%;
+    transform: scale(0.4);
+    transform-origin: 0 0;
+    border: 0;
+    pointer-events: none;
+    background: #1f2a24;
+  }
+  .preview-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(180deg, rgba(31,42,36,0) 60%, rgba(31,42,36,0.45) 100%),
+      radial-gradient(ellipse at 30% 30%, rgba(255,213,138,0.04), transparent 60%);
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+  .demo-card-trailforge:hover .preview-veil { opacity: 0.55; }
+  .preview-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    z-index: 2;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 9px;
+    background: rgba(31,42,36,0.85);
+    color: #ffd58a;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    border-radius: 999px;
+    border: 1px solid rgba(255,213,138,0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    pointer-events: none;
+  }
+  .preview-badge::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #ffd58a;
+    box-shadow: 0 0 6px #ffd58a;
+  }
+  .demo-card-trailforge .demo-info-main .demo-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .companion-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(45, 69, 54, 0.1);
+    color: #2d4536;
+    border: 1px solid rgba(45, 69, 54, 0.2);
+    line-height: 1.3;
+  }
+  .demo-card-trailforge a.demo-info:hover .demo-name { color: #2d4536; }
+  .demo-card-trailforge a.demo-info:hover::after { background: rgba(255, 246, 224, 0.3); }
+  .demo-card-trailforge .demo-live-cue {
+    color: #6b5524 !important;
+  }
+  .demo-card-trailforge .demo-live-cue .live-dot {
+    background: #c9a14a !important;
+    box-shadow: 0 0 0 0 rgba(255, 213, 138, 0.7) !important;
+  }
+  @keyframes trailDotPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 213, 138, 0.7); }
+    70%  { box-shadow: 0 0 0 7px rgba(255, 213, 138, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 213, 138, 0); }
+  }
+  .demo-card-trailforge .demo-live-cue .live-dot { animation: trailDotPulse 1.8s ease-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .demo-card-trailforge .demo-live-cue .live-dot { animation: none; }
+  }
+
   /* ===== COMPANION (leisure / non-core) ===== */
   .companion-row {
     margin-top: 18px;
@@ -2218,17 +2315,34 @@
       <span class="lang-zh">附屬娛樂功能 · 生成登山數位行程表</span>
       <span class="lang-en">Companion · AI-Generated Hiking Itinerary</span>
     </div>
-    <a class="companion-card" href="jademountain/" target="_blank" rel="noopener" title="Trailforge — AI-generated hiking itineraries">
-      <span class="companion-icon"><img src="assets/trailforge-logo.png" alt="Trailforge"></span>
-      <span class="companion-text">
-        <span class="companion-name">Trailforge</span>
-        <span class="companion-desc">
-          <span class="lang-zh">AI 一鍵生成個人化登山數位行程，現以玉山三日縱走為示範；與核心醫療產品線無關</span>
-          <span class="lang-en">An AI-generated personal hiking itinerary, demoed via a 3-day Jade Mountain traverse — unrelated to core medical products</span>
-        </span>
-      </span>
-      <span class="companion-arrow"><i data-lucide="arrow-up-right"></i></span>
-    </a>
+    <div class="demo-card demo-card-trailforge">
+      <div class="demo-video">
+        <span class="preview-badge" aria-hidden="true">PREVIEW</span>
+        <div class="preview-iframe-wrap">
+          <iframe class="preview-iframe" src="jademountain/" loading="lazy" title="Trailforge — Jade Mountain demo preview" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="preview-veil" aria-hidden="true"></div>
+      </div>
+      <a class="demo-info" href="jademountain/" target="_blank" rel="noopener" title="開啟 Trailforge — 玉山三日縱走範本">
+        <img src="assets/trailforge-logo.png" alt="Trailforge" class="demo-logo">
+        <div class="demo-info-main">
+          <div class="demo-name">
+            <span>Trailforge</span>
+            <span class="companion-tag lang-zh">附屬</span>
+            <span class="companion-tag lang-en">Companion</span>
+          </div>
+          <div class="demo-desc">
+            <span class="lang-zh">AI 一鍵生成個人化登山數位行程，現以玉山三日縱走為範本</span>
+            <span class="lang-en">AI-generated personalized hiking itinerary — demoed via a 3-day Jade Mountain traverse</span>
+          </div>
+          <div class="demo-live-cue">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span class="lang-zh">開啟玉山範本</span><span class="lang-en">Open Jade Mountain Demo</span>
+            <i data-lucide="arrow-up-right"></i>
+          </div>
+        </div>
+      </a>
+    </div>
   </div>
 </div>
 
