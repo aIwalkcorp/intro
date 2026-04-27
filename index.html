@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://unpkg.com;">
 <script>
 (function(){
   try {
@@ -984,9 +984,13 @@
   }
 
   /* ===== TRAILFORGE — distinct gold/forest accent on demo-card frame ===== */
+  .companion-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 14px;
+  }
   .demo-card-trailforge {
-    max-width: 720px;
-    margin: 16px auto 0;
     border-color: rgba(31, 42, 36, 0.16);
   }
   .demo-card-trailforge:hover {
@@ -1851,6 +1855,7 @@
     .hero-stats .hero-stat-label { font-size: 7px; max-width: 44px; }
     .hero-scroll { bottom: 56px; }
     .demos-grid { grid-template-columns: 1fr; }
+    .companion-grid { grid-template-columns: 1fr; }
     .extra-links { flex-direction: column; }
     .rail { flex-direction: column; gap: 10px; align-items: stretch; }
     .rail::before { display: none; }
@@ -2315,6 +2320,7 @@
       <span class="lang-zh">附屬娛樂功能 · 生成登山數位行程表</span>
       <span class="lang-en">Companion · AI-Generated Hiking Itinerary</span>
     </div>
+    <div class="companion-grid">
     <div class="demo-card demo-card-trailforge">
       <div class="demo-video">
         <span class="preview-badge" aria-hidden="true">PREVIEW</span>
@@ -2342,6 +2348,7 @@
           </div>
         </div>
       </a>
+    </div>
     </div>
   </div>
 </div>
