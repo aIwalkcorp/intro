@@ -2209,8 +2209,8 @@
         <span class="lang-en">aIwalk Co., Ltd. · 智意行科技股份有限公司</span>
       </div>
       <div class="hero-tagline">
-        <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系。<br><strong>「透過生理數據，我們將克隆一個真正的你，並放到穿戴式機器人中，從而達到 Lifelong Wearable Robot Partner」。</strong></span>
-        <span class="lang-en"><strong>AI-driven digital twin technology</strong> for personalized rehabilitation — from fall prevention to full mobility support.<br><strong>"Through physiological data, we will clone a real you and put it into a wearable robot, achieving the Lifelong Wearable Robot Partner."</strong></span>
+        <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系。<br><strong>「透過生理數據，我們將克隆一個真正的你，並<span class="put-anchor">放到</span>穿戴式機器人中，從而達到 Lifelong Wearable Robot Partner」。</strong></span>
+        <span class="lang-en"><strong>AI-driven digital twin technology</strong> for personalized rehabilitation — from fall prevention to full mobility support.<br><strong>"Through physiological data, we will clone a real you and <span class="put-anchor">put</span> it into a wearable robot, achieving the Lifelong Wearable Robot Partner."</strong></span>
       </div>
     </div>
     <div class="hero-cta-row">
@@ -2798,27 +2798,32 @@
   // Initialize Lucide icons
   lucide.createIcons();
 
-  // Hero chip proximity reveal — cursor must approach the fixed "put" point
-  // (chip image center) for the chip to fade in; otherwise hero stays dark.
+  // Hero chip proximity reveal — anchored on the literal word "put" / "放到"
+  // inside the tagline. Cursor distance to that span's bounding rect drives
+  // the fade. Hero stays dark by default.
   (function(){
     const hero = document.querySelector('.hero');
     if (!hero) return;
     if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
-    // Anchor point inside hero (matches CSS mask center 50% 56%)
-    const PUT_X = 0.50;        // fraction of hero width
-    const PUT_Y = 0.56;        // fraction of hero height
-    const FADE_IN  = 80;       // px: within this radius -> full reveal
-    const FADE_OUT = 360;      // px: beyond this -> hidden
+    const FADE_IN  = 60;   // px: within this distance from the word -> full reveal
+    const FADE_OUT = 320;  // px: beyond this -> hidden
     let raf = 0, lastEvt = null;
+    function visibleAnchor() {
+      const els = document.querySelectorAll('.put-anchor');
+      for (const el of els) if (el.offsetParent !== null) return el;
+      return null;
+    }
+    function distToRect(x, y, r) {
+      const dx = Math.max(r.left - x, 0, x - r.right);
+      const dy = Math.max(r.top  - y, 0, y - r.bottom);
+      return Math.sqrt(dx * dx + dy * dy);
+    }
     const tick = () => {
       raf = 0;
       if (!lastEvt) return;
-      const r = hero.getBoundingClientRect();
-      const px = r.left + r.width  * PUT_X;
-      const py = r.top  + r.height * PUT_Y;
-      const dx = lastEvt.clientX - px;
-      const dy = lastEvt.clientY - py;
-      const d  = Math.sqrt(dx * dx + dy * dy);
+      const anchor = visibleAnchor();
+      if (!anchor) return;
+      const d = distToRect(lastEvt.clientX, lastEvt.clientY, anchor.getBoundingClientRect());
       let prox = (FADE_OUT - d) / (FADE_OUT - FADE_IN);
       if (prox < 0) prox = 0;
       if (prox > 1) prox = 1;
@@ -2828,12 +2833,11 @@
       lastEvt = e;
       if (!raf) raf = requestAnimationFrame(tick);
     };
-    // Listen on window so we react even when the cursor is below the hero
-    // (still gives a smooth fade as the user comes back up)
     window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('pointerleave', () => {
-      hero.style.setProperty('--prox', '0');
-    });
+    window.addEventListener('pointerleave', () => hero.style.setProperty('--prox', '0'));
+    window.addEventListener('resize', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); });
+    window.addEventListener('scroll', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); }, { passive: true });
+    document.addEventListener('aiwalk:lang-changed', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); });
   })();
 
   // Ecosystem media detail toggle
@@ -2942,6 +2946,7 @@
       document.getElementById('lang-zh-btn').classList.add('active');
     }
     localStorage.setItem('aiwalk-lang', currentLang);
+    document.dispatchEvent(new CustomEvent('aiwalk:lang-changed', { detail: { lang: currentLang } }));
     if (window.__TITLES__) {
       document.title = window.__TITLES__[currentLang] || document.title;
       document.documentElement.lang = (currentLang === 'zh') ? 'zh-Hant' : 'en';
