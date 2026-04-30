@@ -513,6 +513,14 @@
   @media (prefers-reduced-motion: reduce) {
     .hero-chip { transition: none; }
   }
+  /* Disable the chip-reveal effect on touch devices — masks are GPU-expensive on mobile */
+  @media (hover: none) and (pointer: coarse) {
+    .hero-chip { display: none; }
+    .hero.is-revealing .hero-text-cluster {
+      -webkit-mask-image: none;
+              mask-image: none;
+    }
+  }
 
   /* ===== SECTION CONTAINER ===== */
   .section {
@@ -2723,6 +2731,8 @@
     if (!hero) return;
     const chip = hero.querySelector('.hero-chip');
     if (!chip) return;
+    // Skip the entire reveal effect on touch devices — too GPU-heavy on mobile
+    if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
     let hideTimer = 0;
     const content = hero.querySelector('.hero-text-cluster');
     // Park the spotlight off-screen until the first real pointer position arrives
