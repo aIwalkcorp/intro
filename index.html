@@ -317,23 +317,13 @@
     filter: saturate(0.7);
     transition: opacity 1.2s ease;
   }
-  /* Dark gradient overlay */
+  /* Uniform dark wash — no center radial, no vignette, so brightness is even */
   .hero::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 1;
-    background:
-      linear-gradient(180deg, rgba(10,18,32,0.85) 0%, rgba(15,38,64,0.6) 40%, rgba(10,18,32,0.9) 100%),
-      radial-gradient(ellipse 60% 50% at 50% 45%, rgba(192,106,26,0.08) 0%, transparent 70%);
-  }
-  /* Subtle vignette */
-  .hero::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(6,10,18,0.5) 100%);
+    background: linear-gradient(180deg, rgba(10,18,32,0.85) 0%, rgba(15,38,64,0.6) 40%, rgba(10,18,32,0.9) 100%);
     pointer-events: none;
   }
 
@@ -341,6 +331,23 @@
     position: relative;
     z-index: 2;
     max-width: 800px;
+  }
+  /* Only the text cluster fades around the cursor; CTA buttons stay fully visible */
+  .hero-text-cluster {
+    position: relative;
+    transition: -webkit-mask-image 200ms ease, mask-image 200ms ease;
+  }
+  .hero.is-revealing .hero-text-cluster {
+    -webkit-mask-image: radial-gradient(circle 220px at var(--cmx, -9999px) var(--cmy, -9999px),
+                          transparent 0%,
+                          rgba(0,0,0,0.15) 45%,
+                          rgba(0,0,0,0.7) 75%,
+                          rgba(0,0,0,1) 100%);
+            mask-image: radial-gradient(circle 220px at var(--cmx, -9999px) var(--cmy, -9999px),
+                          transparent 0%,
+                          rgba(0,0,0,0.15) 45%,
+                          rgba(0,0,0,0.7) 75%,
+                          rgba(0,0,0,1) 100%);
   }
   .hero h1 {
     font-size: 56px;
@@ -478,6 +485,33 @@
   @keyframes bounce {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* Hidden chip — fog-clearing reveal on pointer/touch.
+     Treated as a co-layer of hero-bg so it blends with the same tone/saturation. */
+  .hero-chip {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: url('assets/B2BChip.png') center center / cover no-repeat;
+    opacity: 0;
+    filter: brightness(1.25) contrast(1.05);
+    -webkit-mask-image: radial-gradient(circle 260px at var(--mx, -9999px) var(--my, -9999px),
+                          rgba(0,0,0,1) 0%,
+                          rgba(0,0,0,0.85) 40%,
+                          rgba(0,0,0,0.35) 75%,
+                          rgba(0,0,0,0) 100%);
+            mask-image: radial-gradient(circle 260px at var(--mx, -9999px) var(--my, -9999px),
+                          rgba(0,0,0,1) 0%,
+                          rgba(0,0,0,0.85) 40%,
+                          rgba(0,0,0,0.35) 75%,
+                          rgba(0,0,0,0) 100%);
+    transition: opacity 800ms ease;
+  }
+  .hero.is-revealing .hero-chip { opacity: 0.95; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-chip { transition: none; }
   }
 
   /* ===== SECTION CONTAINER ===== */
@@ -847,6 +881,17 @@
     object-fit: cover;
     flex-shrink: 0;
     box-shadow: var(--shadow-sm);
+  }
+  .demo-card .demo-logo.trailforge-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a1a 0%, #2d4f2d 100%);
+    color: #f2ece0;
+  }
+  .demo-card .demo-logo.trailforge-glyph svg {
+    width: 22px; height: 22px;
+    stroke-width: 2;
   }
   .demo-card .demo-name {
     font-size: 15px;
@@ -2071,18 +2116,21 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-chip" aria-hidden="true"></div>
   <div class="hero-content">
-    <h1>
-      <span class="lang-en"><span class="ai">a<span class="serif-i">I</span></span>walk</span>
-      <span class="lang-zh">智意行科技</span>
-    </h1>
-    <div class="hero-company">
-      <span class="lang-zh">智意行科技股份有限公司 · aIwalk Co., Ltd.</span>
-      <span class="lang-en">aIwalk Co., Ltd. · 智意行科技股份有限公司</span>
-    </div>
-    <div class="hero-tagline">
-      <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系。<br><strong>「透過生理數據，我們將克隆一個真正的你，並放到穿戴式機器人中，從而達到 Lifelong Wearable Robot Partner」。</strong></span>
-      <span class="lang-en"><strong>AI-driven digital twin technology</strong> for personalized rehabilitation — from fall prevention to full mobility support.<br><strong>"Through physiological data, we will clone a real you and put it into a wearable robot, achieving the Lifelong Wearable Robot Partner."</strong></span>
+    <div class="hero-text-cluster">
+      <h1>
+        <span class="lang-en"><span class="ai">a<span class="serif-i">I</span></span>walk</span>
+        <span class="lang-zh">智意行科技</span>
+      </h1>
+      <div class="hero-company">
+        <span class="lang-zh">智意行科技股份有限公司 · aIwalk Co., Ltd.</span>
+        <span class="lang-en">aIwalk Co., Ltd. · 智意行科技股份有限公司</span>
+      </div>
+      <div class="hero-tagline">
+        <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系。<br><strong>「透過生理數據，我們將克隆一個真正的你，並放到穿戴式機器人中，從而達到 Lifelong Wearable Robot Partner」。</strong></span>
+        <span class="lang-en"><strong>AI-driven digital twin technology</strong> for personalized rehabilitation — from fall prevention to full mobility support.<br><strong>"Through physiological data, we will clone a real you and put it into a wearable robot, achieving the Lifelong Wearable Robot Partner."</strong></span>
+      </div>
     </div>
     <div class="hero-cta-row">
       <a class="hero-cta hero-cta-primary" href="#products">
@@ -2325,7 +2373,7 @@
         <div class="preview-veil" aria-hidden="true"></div>
       </div>
       <a class="demo-info" href="jademountain/" target="_blank" rel="noopener" title="開啟 Trailforge — 玉山三日縱走範本">
-        <img src="assets/trailforge-logo.png" alt="Trailforge" class="demo-logo">
+        <span class="demo-logo trailforge-glyph" aria-hidden="true"><i data-lucide="mountain-snow"></i></span>
         <div class="demo-info-main">
           <div class="demo-name">
             <span>Trailforge</span>
@@ -2668,6 +2716,76 @@
 <script>
   // Initialize Lucide icons
   lucide.createIcons();
+
+  // Hero chip "fog reveal" — pointer/touch unveils the hidden B2BChip
+  (function(){
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+    const chip = hero.querySelector('.hero-chip');
+    if (!chip) return;
+    let hideTimer = 0;
+    const content = hero.querySelector('.hero-text-cluster');
+    // Park the spotlight off-screen until the first real pointer position arrives
+    hero.style.setProperty('--mx', '-9999px');
+    hero.style.setProperty('--my', '-9999px');
+    if (content) {
+      content.style.setProperty('--cmx', '-9999px');
+      content.style.setProperty('--cmy', '-9999px');
+    }
+    const setPos = (clientX, clientY) => {
+      const r = hero.getBoundingClientRect();
+      hero.style.setProperty('--mx', (clientX - r.left) + 'px');
+      hero.style.setProperty('--my', (clientY - r.top)  + 'px');
+      if (content) {
+        const cr = content.getBoundingClientRect();
+        content.style.setProperty('--cmx', (clientX - cr.left) + 'px');
+        content.style.setProperty('--cmy', (clientY - cr.top)  + 'px');
+      }
+    };
+    const reveal = (x, y) => {
+      setPos(x, y);                // synchronous — no flash at default position
+      hero.classList.add('is-revealing');
+    };
+    hero.addEventListener('pointermove', (e) => reveal(e.clientX, e.clientY), { passive: true });
+    hero.addEventListener('pointerenter', (e) => reveal(e.clientX, e.clientY));
+    hero.addEventListener('pointerleave', () => {
+      hero.classList.remove('is-revealing');
+      hero.style.setProperty('--mx', '-9999px');
+      hero.style.setProperty('--my', '-9999px');
+      if (content) {
+        content.style.setProperty('--cmx', '-9999px');
+        content.style.setProperty('--cmy', '-9999px');
+      }
+    });
+    hero.addEventListener('touchstart', (e) => {
+      const t = e.touches[0]; if (!t) return;
+      reveal(t.clientX, t.clientY);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        hero.classList.remove('is-revealing');
+        hero.style.setProperty('--mx', '-9999px');
+        hero.style.setProperty('--my', '-9999px');
+        if (content) {
+          content.style.setProperty('--cmx', '-9999px');
+          content.style.setProperty('--cmy', '-9999px');
+        }
+      }, 2200);
+    }, { passive: true });
+    hero.addEventListener('touchmove', (e) => {
+      const t = e.touches[0]; if (!t) return;
+      reveal(t.clientX, t.clientY);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        hero.classList.remove('is-revealing');
+        hero.style.setProperty('--mx', '-9999px');
+        hero.style.setProperty('--my', '-9999px');
+        if (content) {
+          content.style.setProperty('--cmx', '-9999px');
+          content.style.setProperty('--cmy', '-9999px');
+        }
+      }, 2200);
+    }, { passive: true });
+  })();
 
   // Ecosystem media detail toggle
   (function(){
