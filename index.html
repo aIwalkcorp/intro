@@ -388,6 +388,7 @@
     flex-wrap: wrap;
   }
   .hero-cta {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -396,28 +397,118 @@
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
-    transition: all 0.25s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
     cursor: pointer;
+    overflow: hidden;            /* clip the diagonal sheen sweep */
+    isolation: isolate;          /* keep ::after blend-modes scoped */
+    --beat: 3.6s;                /* outer-glow breathing period */
+    --sweep: 5.2s;               /* sheen-sweep period */
+    --i: 0;                      /* index 0/1/2 set per-button below */
   }
+  /* Diagonal specular sheen — sweeps across every --sweep, staggered by --i */
+  .hero-cta::after {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -60%;
+    width: 50%;
+    height: 120%;
+    background: linear-gradient(115deg,
+      transparent 0%,
+      rgba(255,255,255,0.0) 35%,
+      rgba(255,255,255,0.55) 50%,
+      rgba(255,255,255,0.0) 65%,
+      transparent 100%);
+    transform: translateX(0) skewX(-18deg);
+    pointer-events: none;
+    animation: heroCtaSheen var(--sweep) cubic-bezier(0.55, 0.05, 0.45, 0.95) infinite;
+    animation-delay: calc(var(--i) * 0.5s);
+    mix-blend-mode: screen;
+    z-index: 1;
+  }
+  .hero-cta > * { position: relative; z-index: 2; } /* keep label/icon above sheen */
+  @keyframes heroCtaSheen {
+    0%   { transform: translateX(0) skewX(-18deg); }
+    /* hold the dark side most of the cycle, then fire one quick sweep */
+    55%  { transform: translateX(0) skewX(-18deg); }
+    85%  { transform: translateX(420%) skewX(-18deg); }
+    100% { transform: translateX(420%) skewX(-18deg); }
+  }
+
   .hero-cta-primary {
     background: linear-gradient(135deg, var(--orange), #d4893a);
     color: #fff;
-    box-shadow: 0 4px 20px rgba(192,106,26,0.35);
+    box-shadow:
+      0 4px 20px rgba(192,106,26,0.35),
+      0 0 0 0 rgba(255,180,90,0.5);
+    animation: heroCtaPulsePrimary var(--beat) ease-in-out infinite;
+  }
+  /* Outer "halo breath" — radius scales out then fades, syncing with sheen rhythm */
+  @keyframes heroCtaPulsePrimary {
+    0%, 100% {
+      box-shadow:
+        0 4px 20px rgba(192,106,26,0.35),
+        0 0 0 0 rgba(255,180,90,0.55);
+    }
+    50% {
+      box-shadow:
+        0 8px 30px rgba(192,106,26,0.55),
+        0 0 0 14px rgba(255,180,90,0.0);
+    }
   }
   .hero-cta-primary:hover {
-    box-shadow: 0 8px 32px rgba(192,106,26,0.5);
+    box-shadow: 0 10px 36px rgba(192,106,26,0.6), 0 0 0 0 rgba(255,180,90,0);
     transform: translateY(-2px);
+    animation-play-state: paused; /* let hover own the visual */
   }
+
   .hero-cta-secondary {
     background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.85);
-    border: 1.5px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.92);
+    border: 1.5px solid rgba(255,255,255,0.28);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 0 0 rgba(255,255,255,0.0);
+    animation: heroCtaPulseSecondary var(--beat) ease-in-out infinite;
+  }
+  @keyframes heroCtaPulseSecondary {
+    0%, 100% {
+      border-color: rgba(255,255,255,0.28);
+      box-shadow: 0 0 0 0 rgba(255,255,255,0.30);
+    }
+    50% {
+      border-color: rgba(255,255,255,0.55);
+      box-shadow: 0 0 0 8px rgba(255,255,255,0.0);
+    }
   }
   .hero-cta-secondary:hover {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.55);
     transform: translateY(-2px);
+    animation-play-state: paused;
+  }
+
+  /* Subtle attention dot beside primary CTA's icon — matches the signal-sweep theme */
+  .hero-cta-primary > i[data-lucide]::before { /* unused, lucide replaces with svg */ }
+  .hero-cta-primary {
+    /* layered radial highlight inside the gradient to imply depth */
+    background-image:
+      radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255,255,255,0.22) 0%, transparent 60%),
+      linear-gradient(135deg, var(--orange), #d4893a);
+  }
+
+  /* Disable shimmer on touch / reduced-motion to match chip-reveal opt-out */
+  @media (hover: none) and (pointer: coarse) {
+    .hero-cta::after,
+    .hero-cta-primary,
+    .hero-cta-secondary { animation: none; }
+    .hero-cta::after { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-cta::after,
+    .hero-cta-primary,
+    .hero-cta-secondary { animation: none; }
+    .hero-cta::after { display: none; }
   }
 
   /* Stats sidebar (vertical, fixed — right on hero, left elsewhere) */
@@ -2141,15 +2232,15 @@
       </div>
     </div>
     <div class="hero-cta-row">
-      <a class="hero-cta hero-cta-primary" href="#products">
+      <a class="hero-cta hero-cta-primary" style="--i:0" href="#products">
         <i data-lucide="play-circle" style="width:18px;height:18px;"></i>
         <span class="lang-zh">產品展示</span><span class="lang-en">Product Demos</span>
       </a>
-      <a class="hero-cta hero-cta-secondary" href="#roadmap">
+      <a class="hero-cta hero-cta-secondary" style="--i:1" href="#roadmap">
         <i data-lucide="map" style="width:18px;height:18px;"></i>
         <span class="lang-zh">技術藍圖</span><span class="lang-en">Technology Roadmap</span>
       </a>
-      <a class="hero-cta hero-cta-secondary" href="card.html">
+      <a class="hero-cta hero-cta-secondary" style="--i:2" href="card.html">
         <i data-lucide="contact" style="width:18px;height:18px;"></i>
         <span class="lang-zh">數位名片</span><span class="lang-en">Business Card</span>
       </a>
