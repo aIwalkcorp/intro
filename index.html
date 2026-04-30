@@ -2831,8 +2831,12 @@
     if (!hero) return;
     if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
     const cluster = hero.querySelector('.hero-text-cluster');
-    const PIVOT_X = 0.50;  // hero-relative fallback when no anchor is visible
-    const PIVOT_Y = 0.50;
+    // B2BChip.jpg natural dimensions and the chip's image-relative centre.
+    // Image is rendered as background: center / cover, so we replay the
+    // cover-fit math each tick to get the chip's real on-screen position.
+    const IMG_W = 1920, IMG_H = 779;
+    const IMG_PIVOT_X = 0.615;
+    const IMG_PIVOT_Y = 0.460;
     const FADE_IN  = 90;
     const FADE_OUT = 340;
     let raf = 0, lastEvt = null;
@@ -2849,9 +2853,17 @@
         const ar = a.getBoundingClientRect();
         return { x: ar.left + ar.width / 2, y: ar.top + ar.height / 2 };
       }
+      // EN fallback: pivot at the chip's location inside B2BChip.jpg, mapped
+      // through the cover-fit transform onto the hero box.
+      const W = heroRect.width, H = heroRect.height;
+      const scale = Math.max(W / IMG_W, H / IMG_H);
+      const dispW = IMG_W * scale;
+      const dispH = IMG_H * scale;
+      const offX = (W - dispW) / 2;  // negative if image overflows horizontally
+      const offY = (H - dispH) / 2;
       return {
-        x: heroRect.left + heroRect.width  * PIVOT_X,
-        y: heroRect.top  + heroRect.height * PIVOT_Y,
+        x: heroRect.left + offX + IMG_PIVOT_X * dispW,
+        y: heroRect.top  + offY + IMG_PIVOT_Y * dispH,
       };
     }
 
