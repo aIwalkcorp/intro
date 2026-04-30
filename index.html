@@ -332,7 +332,29 @@
     z-index: 2;
     max-width: 800px;
   }
-  .hero-text-cluster { position: relative; }
+  .hero-text-cluster {
+    position: relative;
+    /* Text fades out around the same pivot as the chip reveal — alpha at the
+       pivot is (1 - --prox) so at full reveal the centre is transparent and
+       the chip below shows through cleanly. --cax / --cay are pivot coords
+       expressed relative to the cluster's own bounding box. */
+    -webkit-mask-image: radial-gradient(circle 260px at var(--cax, 50%) var(--cay, 50%),
+                          rgba(0,0,0, calc(1 - var(--prox, 0))) 0%,
+                          rgba(0,0,0, calc(1 - var(--prox, 0) * 0.6)) 35%,
+                          rgba(0,0,0,1) 80%,
+                          rgba(0,0,0,1) 100%);
+            mask-image: radial-gradient(circle 260px at var(--cax, 50%) var(--cay, 50%),
+                          rgba(0,0,0, calc(1 - var(--prox, 0))) 0%,
+                          rgba(0,0,0, calc(1 - var(--prox, 0) * 0.6)) 35%,
+                          rgba(0,0,0,1) 80%,
+                          rgba(0,0,0,1) 100%);
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .hero-text-cluster {
+      -webkit-mask-image: none;
+              mask-image: none;
+    }
+  }
   .hero h1 {
     font-size: 56px;
     font-weight: 900;
@@ -2209,7 +2231,7 @@
         <span class="lang-en">aIwalk Co., Ltd. · 智意行科技股份有限公司</span>
       </div>
       <div class="hero-tagline">
-        <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系。<br><strong>「透過生理數據，我們將克隆一個真正的你，並放到穿戴式機器人中，從而達到 Lifelong Wearable Robot Partner」。</strong></span>
+        <span class="lang-zh">以 <strong>AI 驅動的數位孿生技術</strong>，打造從跌倒預防到完整行動支援的個人化復健生態系。<br><strong>「透過生理數據，我們將克隆一個真正的你，並放到穿戴式機器人中，<span class="put-anchor">從</span>而達到 Lifelong Wearable Robot Partner」。</strong></span>
         <span class="lang-en"><strong>AI-driven digital twin technology</strong> for personalized rehabilitation — from fall prevention to full mobility support.<br><strong>"Through physiological data, we will clone a real you and put it into a wearable robot, achieving the Lifelong Wearable Robot Partner."</strong></span>
       </div>
     </div>
@@ -2798,32 +2820,57 @@
   // Initialize Lucide icons
   lucide.createIcons();
 
-  // Hero chip proximity reveal — pivot is the chip's visual center inside
-  // B2BChip.jpg (which is rendered with background-size: cover, so its
-  // image-relative center maps to the same hero-relative point).
-  // CSS uses these same fractions for the mask reveal center.
+  // Hero chip proximity reveal.
+  // EN: pivot = chip's image-relative centre (PIVOT_X / PIVOT_Y of hero).
+  // ZH: pivot = the visible .put-anchor span (the 「從」 character) inside
+  //     the tagline, since the Chinese metaphor lands on a different word.
+  // The text cluster's mask uses cluster-local pivot coords (--cax / --cay)
+  // so text fades around the same point and the chip shows through cleanly.
   (function(){
     const hero = document.querySelector('.hero');
     if (!hero) return;
     if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
-    // Pivot, expressed as a fraction of the hero box. Tune to match where the
-    // chip sits inside B2BChip.jpg (image is 1920×779; chip centre ~50%/50%).
-    const PIVOT_X = 0.50;
+    const cluster = hero.querySelector('.hero-text-cluster');
+    const PIVOT_X = 0.50;  // hero-relative fallback when no anchor is visible
     const PIVOT_Y = 0.50;
-    const FADE_IN  = 90;   // px: within this radius -> full reveal
-    const FADE_OUT = 340;  // px: beyond this -> hidden
+    const FADE_IN  = 90;
+    const FADE_OUT = 340;
     let raf = 0, lastEvt = null;
+
+    function visibleAnchor() {
+      const els = document.querySelectorAll('.put-anchor');
+      for (const el of els) if (el.offsetParent !== null) return el;
+      return null;
+    }
+    // Returns viewport-pixel pivot {x, y}
+    function pivotPoint(heroRect) {
+      const a = visibleAnchor();
+      if (a) {
+        const ar = a.getBoundingClientRect();
+        return { x: ar.left + ar.width / 2, y: ar.top + ar.height / 2 };
+      }
+      return {
+        x: heroRect.left + heroRect.width  * PIVOT_X,
+        y: heroRect.top  + heroRect.height * PIVOT_Y,
+      };
+    }
+
     const tick = () => {
       raf = 0;
       if (!lastEvt) return;
-      const r = hero.getBoundingClientRect();
-      const px = r.left + r.width  * PIVOT_X;
-      const py = r.top  + r.height * PIVOT_Y;
-      // Push pivot in hero-local px so CSS mask centre tracks it
-      hero.style.setProperty('--ax', (r.width  * PIVOT_X).toFixed(0) + 'px');
-      hero.style.setProperty('--ay', (r.height * PIVOT_Y).toFixed(0) + 'px');
-      const dx = lastEvt.clientX - px;
-      const dy = lastEvt.clientY - py;
+      const hr = hero.getBoundingClientRect();
+      const p = pivotPoint(hr);
+      // Hero-local px for the chip mask centre
+      hero.style.setProperty('--ax', (p.x - hr.left).toFixed(0) + 'px');
+      hero.style.setProperty('--ay', (p.y - hr.top).toFixed(0) + 'px');
+      // Cluster-local px for the text mask centre
+      if (cluster) {
+        const cr = cluster.getBoundingClientRect();
+        cluster.style.setProperty('--cax', (p.x - cr.left).toFixed(0) + 'px');
+        cluster.style.setProperty('--cay', (p.y - cr.top).toFixed(0) + 'px');
+      }
+      const dx = lastEvt.clientX - p.x;
+      const dy = lastEvt.clientY - p.y;
       const d  = Math.sqrt(dx * dx + dy * dy);
       let prox = (FADE_OUT - d) / (FADE_OUT - FADE_IN);
       if (prox < 0) prox = 0;
@@ -2834,9 +2881,14 @@
       lastEvt = e;
       if (!raf) raf = requestAnimationFrame(tick);
     };
+    const reset = () => {
+      hero.style.setProperty('--prox', '0');
+    };
     window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('pointerleave', () => hero.style.setProperty('--prox', '0'));
+    window.addEventListener('pointerleave', reset);
     window.addEventListener('resize', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); });
+    window.addEventListener('scroll', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); }, { passive: true });
+    document.addEventListener('aiwalk:lang-changed', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); });
   })();
 
   // Ecosystem media detail toggle
@@ -2945,6 +2997,7 @@
       document.getElementById('lang-zh-btn').classList.add('active');
     }
     localStorage.setItem('aiwalk-lang', currentLang);
+    document.dispatchEvent(new CustomEvent('aiwalk:lang-changed', { detail: { lang: currentLang } }));
     if (window.__TITLES__) {
       document.title = window.__TITLES__[currentLang] || document.title;
       document.documentElement.lang = (currentLang === 'zh') ? 'zh-Hant' : 'en';
