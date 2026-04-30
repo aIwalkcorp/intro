@@ -688,6 +688,278 @@
     .admin-footer-actions { padding: 14px 20px; }
     .admin-panel-title { font-size: 20px; }
   }
+
+  /* ============================================================
+     OVERVIEW CARD — RICH VARIANT (with portrait slot + highlights)
+     ============================================================ */
+  .ov-card.has-profile {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+  }
+  .ov-portrait {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(135deg, #1a3a5c 0%, #2c5478 50%, #c06a1a 140%);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ov-portrait img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block;
+  }
+  .ov-portrait-monogram {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 90px; font-weight: 900; line-height: 1;
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 4px 24px rgba(0,0,0,0.25);
+    letter-spacing: 0;
+  }
+  .ov-portrait::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 30% 30%, rgba(255,255,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 90% 60% at 70% 90%, rgba(0,0,0,0.20) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .ov-portrait-tag {
+    position: absolute; top: 12px; left: 12px;
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.95);
+    color: #1a3a5c;
+    font-size: 9.5px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 100px;
+    z-index: 2;
+  }
+  .ov-meta { padding: 18px 20px 18px; flex: 1; display: flex; flex-direction: column; }
+  .ov-card.has-profile .ov-initial { font-size: 22px; margin-bottom: 4px; }
+  .ov-card.has-profile .ov-name-en { margin-bottom: 12px; }
+  .ov-card.has-profile .ov-role { margin-bottom: 12px; }
+  .ov-highlights {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-top: auto;
+  }
+  .ov-chip {
+    font-size: 10px; font-weight: 600;
+    padding: 3px 8px;
+    background: rgba(26,58,92,0.06);
+    color: #1a3a5c;
+    border-radius: 100px;
+    letter-spacing: 0.2px;
+    line-height: 1.4;
+  }
+  .ov-chip.lbl-en { background: rgba(192,106,26,0.08); color: #8a4d12; }
+
+  /* ============================================================
+     PROFILE PANEL — full team-page detail view
+     ============================================================ */
+  .profile-panel {
+    position: fixed; inset: 0; z-index: 9000;
+    background: #f6f1e8;
+    overflow-y: auto; overflow-x: hidden;
+    opacity: 0; pointer-events: none;
+    transform: translateY(16px);
+    transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .profile-panel.show { opacity: 1; pointer-events: auto; transform: none; }
+
+  .profile-topbar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px;
+    background: rgba(246,241,232,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(26,58,92,0.08);
+  }
+  .profile-eyebrow {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: #c06a1a;
+  }
+  .profile-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border: 1px solid rgba(26,58,92,0.25);
+    background: transparent; color: #1a3a5c;
+    border-radius: 100px; cursor: pointer;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+  }
+  .profile-back:hover { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
+
+  .profile-hero {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) 1.2fr;
+    gap: 56px;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 56px 40px 28px;
+    align-items: end;
+  }
+  .profile-portrait {
+    aspect-ratio: 4 / 5;
+    background: linear-gradient(135deg, #1a3a5c 0%, #2c5478 50%, #c06a1a 140%);
+    border-radius: 4px;
+    box-shadow: 0 24px 60px rgba(26,58,92,0.18), 0 4px 12px rgba(0,0,0,0.06);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .profile-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .profile-portrait-monogram {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 180px; font-weight: 900; line-height: 1;
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 8px 40px rgba(0,0,0,0.30);
+  }
+  .profile-portrait::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 40% at 30% 20%, rgba(255,255,255,0.14) 0%, transparent 60%),
+      radial-gradient(ellipse 90% 50% at 70% 100%, rgba(0,0,0,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .profile-headlines { padding-bottom: 8px; }
+  .profile-role-tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: #c06a1a;
+    margin-bottom: 14px;
+  }
+  .profile-name-zh {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 64px; font-weight: 900;
+    color: #0f1d2d; line-height: 1; letter-spacing: 4px;
+    margin-bottom: 6px;
+  }
+  .profile-name-en {
+    font-family: 'Noto Serif JP', 'Noto Serif TC', serif;
+    font-style: italic;
+    font-size: 22px; font-weight: 400;
+    color: #6b7d8e; letter-spacing: 0.3px;
+    margin-bottom: 24px;
+  }
+  .profile-highlights {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .profile-chip {
+    font-size: 12px; font-weight: 600;
+    padding: 6px 14px;
+    background: #ffffff;
+    color: #1a3a5c;
+    border: 1px solid rgba(26,58,92,0.12);
+    border-radius: 100px;
+    letter-spacing: 0.3px;
+  }
+
+  .profile-body {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 40px 80px;
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) 1.6fr;
+    gap: 56px;
+  }
+  .profile-body-left, .profile-body-right { min-width: 0; }
+  .profile-section { margin-bottom: 40px; }
+  .profile-section-head {
+    display: flex; align-items: baseline; gap: 12px;
+    padding-bottom: 10px; margin-bottom: 18px;
+    border-bottom: 1px solid rgba(26,58,92,0.18);
+  }
+  .profile-section-num {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 13px; font-weight: 700; color: #c06a1a;
+    letter-spacing: 1px;
+  }
+  .profile-section-title-zh {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 22px; font-weight: 800; color: #1a2d42;
+    letter-spacing: 2px;
+  }
+  .profile-section-title-en {
+    font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 2.5px;
+    margin-left: auto;
+  }
+
+  .profile-bio {
+    font-family: 'Noto Serif TC', 'Inter', serif;
+    font-size: 16px; line-height: 1.95;
+    color: #2c3e50; letter-spacing: 0.2px;
+    text-align: justify;
+  }
+  body.en .profile-bio { font-family: 'Inter', 'Noto Sans TC', sans-serif; line-height: 1.85; }
+
+  .profile-list { list-style: none; padding: 0; margin: 0; }
+  .profile-list-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(26,58,92,0.06);
+  }
+  .profile-list-item:last-child { border-bottom: none; }
+  .profile-list-marker {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 12px; font-weight: 700;
+    color: #c06a1a; letter-spacing: 1px;
+    padding-top: 3px;
+    min-width: 32px;
+  }
+  .profile-list-content { min-width: 0; }
+  .profile-item-primary {
+    font-size: 15px; font-weight: 700; color: #0f1d2d;
+    line-height: 1.4; margin-bottom: 3px;
+  }
+  .profile-item-secondary {
+    font-size: 13px; color: #1a3a5c;
+    line-height: 1.4; font-weight: 500;
+  }
+  .profile-item-note {
+    font-size: 11.5px; color: #6b7d8e;
+    margin-top: 4px; letter-spacing: 0.3px;
+  }
+
+  .profile-cta {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-top: 24px;
+  }
+  .profile-cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px;
+    background: #1a3a5c; color: #f6f1e8;
+    border: none; border-radius: 100px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .profile-cta-btn:hover { background: #c06a1a; transform: translateY(-2px); }
+  .profile-cta-btn.secondary {
+    background: transparent; color: #1a3a5c;
+    border: 1px solid rgba(26,58,92,0.3);
+  }
+  .profile-cta-btn.secondary:hover { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
+
+  /* Language gating: relies on existing global body[data-lang="en"|"zh"] rules
+     for .lbl-zh / .lbl-en spans (no extra rules needed here) */
+
+  @media (max-width: 860px) {
+    .profile-hero { grid-template-columns: 1fr; gap: 28px; padding: 32px 24px 16px; }
+    .profile-portrait { max-width: 280px; }
+    .profile-name-zh { font-size: 44px; letter-spacing: 2px; }
+    .profile-name-en { font-size: 18px; margin-bottom: 16px; }
+    .profile-body { grid-template-columns: 1fr; gap: 28px; padding: 24px 24px 64px; }
+    .profile-topbar { padding: 14px 20px; }
+    .profile-portrait-monogram { font-size: 120px; }
+  }
 </style>
 </head>
 <body>
@@ -718,6 +990,18 @@
     </button>
   </div>
   <div class="overview-body" id="overviewBody"></div>
+</div>
+
+<!-- Profile detail panel (rich team-page view per person) -->
+<div class="profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Team member profile">
+  <div class="profile-topbar">
+    <span class="profile-eyebrow"><span class="lbl-zh">團隊介紹</span><span class="lbl-en">Team / Profile</span></span>
+    <button class="profile-back" id="btnProfileBack">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      <span class="lbl-zh">回團隊總覽</span><span class="lbl-en">Back to Team</span>
+    </button>
+  </div>
+  <div id="profileBody"></div>
 </div>
 
 <!-- Admin: low-key trigger (right bottom), password modal, management panel -->
@@ -799,6 +1083,29 @@ const PEOPLE = [
   {
     id: 'arthur',
     name: '黃志仁', sub: '董事長 / Chairman, Ph.D.',
+    profile: {
+      headshot: null, // drop a square portrait at assets/headshot-arthur.jpg and set this to that path
+      monogram: '黃',
+      nameZh: '黃志仁', nameEn: 'Arthur Huang, Ph.D.',
+      titleZh: '董事長', titleEn: 'Chairman',
+      highlights: [
+        { zh: '近 30 年半導體經驗',         en: '~30 yrs Semiconductors' },
+        { zh: '成大電機 學士・碩士・博士', en: 'NCKU EE B.S./M.S./Ph.D.' },
+        { zh: 'Flash 記憶體資深專家',      en: 'NOR/NAND Flash Veteran' },
+      ],
+      bioZh: '深耕新竹科學園區近三十年，橫跨 IC 設計、記憶體 (NOR/NAND Flash) 製程與系統整合，於旺宏電子、聯華電子、鴻海科技集團累積完整的半導體研發與營運歷練。從學界到業界、從元件到系統，黃博士將矽智財與供應鏈的洞見帶入 aIwalk，協助公司在 AI × 穿戴式機器人交會點上，打造能規模化量產的核心硬體底層。',
+      bioEn: 'Nearly three decades inside Hsinchu Science Park, spanning IC design, NOR/NAND flash process and system integration. Through senior engineering and management roles at Macronix, UMC and Foxconn, Dr. Huang built deep operational fluency across the semiconductor value chain — he brings that silicon-IP and supply-chain perspective to aIwalk, anchoring the hardware foundation that lets AI-driven wearable robotics scale beyond the lab.',
+      education: [
+        { degZh: '電機工程 博士',  degEn: 'Ph.D., Electrical Engineering', orgZh: '國立成功大學', orgEn: 'National Cheng Kung University' },
+        { degZh: '電機工程 碩士',  degEn: 'M.S., Electrical Engineering',  orgZh: '國立成功大學', orgEn: 'National Cheng Kung University' },
+        { degZh: '電機工程 學士',  degEn: 'B.S., Electrical Engineering',  orgZh: '國立成功大學', orgEn: 'National Cheng Kung University' },
+      ],
+      experience: [
+        { roleZh: '資深主管', roleEn: 'Senior Executive', orgZh: '鴻海科技集團', orgEn: 'Foxconn Technology Group',      noteZh: '系統整合 / 供應鏈',     noteEn: 'System integration & supply chain' },
+        { roleZh: '資深主管', roleEn: 'Senior Manager',   orgZh: '聯華電子',       orgEn: 'United Microelectronics (UMC)', noteZh: '晶圓製程 / 量產',       noteEn: 'Wafer process & mass production' },
+        { roleZh: '資深主管', roleEn: 'Senior Manager',   orgZh: '旺宏電子',       orgEn: 'Macronix International (MXIC)', noteZh: 'NOR / NAND Flash 研發', noteEn: 'NOR / NAND flash R&D' },
+      ],
+    },
     front: `<div class="card style-b">
       <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
       <div class="mid"><div class="sep"></div><div class="title">董事長</div><div class="name-row"><span class="name-zh">黃志仁</span><span class="phd">博士</span></div></div>
@@ -1183,6 +1490,8 @@ const overviewBody = document.getElementById('overviewBody');
 const btnOverview = document.getElementById('btnOverview');
 const btnCloseOverview = document.getElementById('btnCloseOverview');
 
+function escHTML(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function renderOverview() {
   overviewBody.innerHTML = GROUPS.map(g => {
     const visibleIds = g.ids.filter(id => !hiddenSet.has(id));
@@ -1194,10 +1503,32 @@ function renderOverview() {
       const enName = enMatch ? enMatch[1].trim() : '';
       const roleZh = p.sub.split('/')[0].trim();
       const roleEn = p.sub.includes('/') ? p.sub.split('/').slice(1).join('/').trim() : '';
+      const pf = p.profile;
+      if (pf) {
+        const portraitInner = pf.headshot
+          ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(pf.nameZh || p.name)}">`
+          : `<span class="ov-portrait-monogram">${escHTML(pf.monogram || (p.name && p.name[0]) || '·')}</span>`;
+        const chips = (pf.highlights || []).slice(0, 2).map(h =>
+          `<span class="ov-chip lbl-zh">${escHTML(h.zh)}</span><span class="ov-chip lbl-en">${escHTML(h.en)}</span>`
+        ).join('');
+        return `<button class="ov-card has-profile" data-id="${p.id}" data-has-profile="1">
+          <div class="ov-portrait">
+            ${portraitInner}
+            <span class="ov-portrait-tag"><span class="lbl-zh">介紹</span><span class="lbl-en">Profile</span></span>
+          </div>
+          <div class="ov-meta">
+            <div class="ov-initial">${escHTML(p.name)}</div>
+            ${enName ? `<div class="ov-name-en">${escHTML(enName)}</div>` : ''}
+            <div class="ov-role">${escHTML(roleZh)}${roleEn ? `<span class="ov-role-en">${escHTML(roleEn)}</span>` : ''}</div>
+            ${chips ? `<div class="ov-highlights">${chips}</div>` : ''}
+          </div>
+          <svg class="ov-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>`;
+      }
       return `<button class="ov-card" data-id="${p.id}">
-        <div class="ov-initial">${p.name}</div>
-        ${enName ? `<div class="ov-name-en">${enName}</div>` : ''}
-        <div class="ov-role">${roleZh}${roleEn ? `<span class="ov-role-en">${roleEn}</span>` : ''}</div>
+        <div class="ov-initial">${escHTML(p.name)}</div>
+        ${enName ? `<div class="ov-name-en">${escHTML(enName)}</div>` : ''}
+        <div class="ov-role">${escHTML(roleZh)}${roleEn ? `<span class="ov-role-en">${escHTML(roleEn)}</span>` : ''}</div>
         <svg class="ov-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </button>`;
     }).join('');
@@ -1210,10 +1541,14 @@ function renderOverview() {
       <div class="overview-grid">${members}</div>
     </div>`;
   }).join('');
-  // Wire click handlers (use VP index — hidden people won't be in list anyway)
   overviewBody.querySelectorAll('.ov-card').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
+      // If this person has a profile → open the rich detail page; else go straight to business card
+      if (btn.dataset.hasProfile === '1') {
+        openProfile(id);
+        return;
+      }
       const idx = VP.findIndex(p => p.id === id);
       if (idx !== -1) {
         current = idx;
@@ -1223,6 +1558,128 @@ function renderOverview() {
     });
   });
 }
+
+// ===== PROFILE DETAIL =====
+const profilePanel = document.getElementById('profilePanel');
+const profileBody = document.getElementById('profileBody');
+const btnProfileBack = document.getElementById('btnProfileBack');
+
+function renderProfile(id) {
+  const p = PEOPLE.find(x => x.id === id);
+  if (!p || !p.profile) { profileBody.innerHTML = ''; return; }
+  const pf = p.profile;
+  const portraitInner = pf.headshot
+    ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(pf.nameZh)}">`
+    : `<span class="profile-portrait-monogram">${escHTML(pf.monogram || (p.name && p.name[0]) || '·')}</span>`;
+  const chipsHTML = (pf.highlights || []).map(h =>
+    `<span class="profile-chip lbl-zh">${escHTML(h.zh)}</span><span class="profile-chip lbl-en">${escHTML(h.en)}</span>`
+  ).join('');
+  const eduHTML = (pf.education || []).map((e, i) => `
+    <li class="profile-list-item">
+      <span class="profile-list-marker">0${i + 1}</span>
+      <div class="profile-list-content">
+        <div class="profile-item-primary"><span class="lbl-zh">${escHTML(e.degZh)}</span><span class="lbl-en">${escHTML(e.degEn)}</span></div>
+        <div class="profile-item-secondary"><span class="lbl-zh">${escHTML(e.orgZh)}</span><span class="lbl-en">${escHTML(e.orgEn)}</span></div>
+      </div>
+    </li>`).join('');
+  const expHTML = (pf.experience || []).map((e, i) => `
+    <li class="profile-list-item">
+      <span class="profile-list-marker">0${i + 1}</span>
+      <div class="profile-list-content">
+        <div class="profile-item-primary"><span class="lbl-zh">${escHTML(e.orgZh)}</span><span class="lbl-en">${escHTML(e.orgEn)}</span></div>
+        <div class="profile-item-secondary"><span class="lbl-zh">${escHTML(e.roleZh)}</span><span class="lbl-en">${escHTML(e.roleEn)}</span></div>
+        ${(e.noteZh || e.noteEn) ? `<div class="profile-item-note"><span class="lbl-zh">${escHTML(e.noteZh || '')}</span><span class="lbl-en">${escHTML(e.noteEn || '')}</span></div>` : ''}
+      </div>
+    </li>`).join('');
+
+  profileBody.innerHTML = `
+    <section class="profile-hero">
+      <div class="profile-portrait">${portraitInner}</div>
+      <div class="profile-headlines">
+        <div class="profile-role-tag"><span class="lbl-zh">${escHTML(pf.titleZh)}</span><span class="lbl-en">${escHTML(pf.titleEn)}</span></div>
+        <div class="profile-name-zh"><span class="lbl-zh">${escHTML(pf.nameZh)}</span><span class="lbl-en">${escHTML(pf.nameEn)}</span></div>
+        <div class="profile-name-en"><span class="lbl-zh">${escHTML(pf.nameEn)}</span><span class="lbl-en">${escHTML(pf.nameZh)}</span></div>
+        ${chipsHTML ? `<div class="profile-highlights">${chipsHTML}</div>` : ''}
+      </div>
+    </section>
+    <div class="profile-body">
+      <div class="profile-body-left">
+        ${eduHTML ? `
+        <section class="profile-section">
+          <div class="profile-section-head">
+            <span class="profile-section-num">01</span>
+            <span class="profile-section-title-zh"><span class="lbl-zh">學歷</span><span class="lbl-en">Education</span></span>
+            <span class="profile-section-title-en">Education</span>
+          </div>
+          <ul class="profile-list">${eduHTML}</ul>
+        </section>` : ''}
+        ${expHTML ? `
+        <section class="profile-section">
+          <div class="profile-section-head">
+            <span class="profile-section-num">02</span>
+            <span class="profile-section-title-zh"><span class="lbl-zh">經歷</span><span class="lbl-en">Experience</span></span>
+            <span class="profile-section-title-en">Experience</span>
+          </div>
+          <ul class="profile-list">${expHTML}</ul>
+        </section>` : ''}
+      </div>
+      <div class="profile-body-right">
+        <section class="profile-section">
+          <div class="profile-section-head">
+            <span class="profile-section-num">03</span>
+            <span class="profile-section-title-zh"><span class="lbl-zh">簡介</span><span class="lbl-en">Biography</span></span>
+            <span class="profile-section-title-en">Biography</span>
+          </div>
+          <div class="profile-bio"><span class="lbl-zh">${escHTML(pf.bioZh)}</span><span class="lbl-en">${escHTML(pf.bioEn)}</span></div>
+          <div class="profile-cta">
+            <button class="profile-cta-btn" data-action="view-card" data-id="${p.id}">
+              <span class="lbl-zh">查看名片</span><span class="lbl-en">View Business Card</span>
+            </button>
+            <button class="profile-cta-btn secondary" data-action="back">
+              <span class="lbl-zh">回團隊總覽</span><span class="lbl-en">Back to Team</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+  // Wire CTA buttons
+  profileBody.querySelectorAll('.profile-cta-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'view-card') {
+        const cardId = btn.dataset.id;
+        const idx = VP.findIndex(x => x.id === cardId);
+        if (idx !== -1) {
+          current = idx;
+          renderPerson(idx);
+          closeProfile();
+          closeOverview();
+        }
+      } else if (action === 'back') {
+        closeProfile();
+      }
+    });
+  });
+}
+
+function openProfile(id) {
+  renderProfile(id);
+  profilePanel.classList.add('show');
+  profilePanel.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+function closeProfile() {
+  profilePanel.classList.remove('show');
+  // Only restore body scroll if overview isn't still open
+  if (!overview.classList.contains('show')) {
+    document.body.style.overflow = '';
+  }
+}
+btnProfileBack.addEventListener('click', closeProfile);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && profilePanel.classList.contains('show')) closeProfile();
+});
 
 function openOverview() {
   renderOverview();
