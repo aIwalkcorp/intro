@@ -1,68 +1,75 @@
 # Trailforge API
 
-Stateless proxy: browser → here → Anthropic Haiku 4.5. Holds the skill bundle, the
-API key, validates input/output. The PWA never sees the key.
+Bun + Hono + Postgres backend for the Trailforge PWA. Owns:
+- AI proxy (`POST /customize` → Anthropic Haiku 4.5, with prompt cache + skill bundle)
+- User accounts (register, login, JWT access + refresh, session management)
+- Per-module settings storage (jsonb keyed by `(user_id, module, key)`)
+- AI token usage + cost ledger (`ai_usage`)
+- Audit log for compliance (`audit_log`)
+
+The PWA never sees the Anthropic API key. JWT-stateless access tokens; rotating
+refresh tokens stored hashed in Postgres so a DB leak doesn't yield usable tokens.
 
 ## Endpoints
 
-- `GET  /healthz` — bundle size, key presence, model name
-- `POST /customize` — `{ plan_state, phase, day_index, user_message }` →
-  `{ patch, assistant_message, quick_replies, next_phase, next_day_index, warnings, usage }`
+### Public
+- `GET  /healthz` — DB ping + bundle size + model
+- `POST /auth/register` — `{email, username, password}` (rate-limited per IP)
+- `POST /auth/login` — `{identifier, password}` → access + refresh token (rate-limited)
+- `POST /auth/refresh` — `{refresh_token}` → new access + refresh (rotates the old)
 
-Spec: see `../skill/system-prompt.md` and `../skill/state-machine.md`.
+### Authenticated (`Authorization: Bearer <access_token>`)
+- `POST /auth/logout` — revokes ALL active sessions for the user
+- `GET  /auth/me` — current user
+- `GET  /api/settings/:module` — all settings for a module
+- `PUT  /api/settings/:module/:key` — `{value: ...}` (jsonb, ≤16KB)
+- `DELETE /api/settings/:module/:key`
+- `GET  /api/usage` — month-to-date token + cost summary, plus 20 most recent calls
+- `POST /customize` — `{plan_state, phase, day_index, user_message}` → plan patch (logs usage)
 
 ## Local dev
 
 ```bash
-cp .env.example .env       # fill in ANTHROPIC_API_KEY
+cp .env.example .env
+# 1. Get Neon connection strings (https://console.neon.tech)
+# 2. Generate JWT_SECRET (see INFRA.md §2)
+# 3. Add ANTHROPIC_API_KEY
+
 bun install
-bun run dev
+bun run db:generate    # generate SQL from schema.ts
+bun run db:migrate     # apply to Neon
+
+bun run dev            # http://localhost:4100
 curl localhost:4100/healthz
 ```
 
-## Deploy (target: Oracle Cloud Free Tier ARM, alongside Patient Cloud)
+## Build + run via Docker
 
-The container is built with the skill bundle baked in (`COPY skill ./skill` in the
-Dockerfile), so the build context is the whole `jademountain/` directory:
+The build context is `intro/jademountain/` (so the container can `COPY skill/`):
 
 ```bash
-# from intro/jademountain/
+cd intro/jademountain
 docker build -t trailforge-api -f api/Dockerfile .
 docker run --rm -p 4100:4100 --env-file api/.env trailforge-api
 ```
 
-For the OCI compose, this becomes a service in
-`ExoPulse-deploy-oci/web_UI/docker/docker-compose.yml`. Sketch:
+## Deploy
 
-```yaml
-trailforge-api:
-  build:
-    context: ../../../intro/jademountain     # adjust to actual relative path
-    dockerfile: api/Dockerfile
-  environment:
-    - ANTHROPIC_API_KEY
-    - ALLOWED_ORIGINS=https://aiwalkcorp.com,https://trailforge.aiwalkcorp.com
-  restart: unless-stopped
-```
-
-And an nginx route in `nginx.cloud.conf`:
-
-```nginx
-location /api/customize {
-    proxy_pass http://trailforge-api:4100/customize;
-    proxy_set_header Host $host;
-}
-```
+See [INFRA.md](./INFRA.md) for the full Fly.io + Neon walk-through.
 
 ## Security notes
 
-- `ANTHROPIC_API_KEY` lives only in container env / OCI secrets manager
-- CORS is `ALLOWED_ORIGINS` allow-list, default rejects `null` origin (file://)
-- Input caps: `user_message` ≤ 2KB, `plan_state` ≤ 64KB
-- Output is shape-validated before returning to the browser
-- Skill bundle is loaded once at process start; re-deploy to refresh prompts
+- Secrets (`ANTHROPIC_API_KEY`, `JWT_SECRET`, `DATABASE_URL`) live in Fly secrets, never in `fly.toml` or git
+- Passwords hashed with argon2id (`Bun.password`, OWASP-recommended)
+- Refresh tokens: opaque random 96-hex-char strings, stored as SHA-256 hash, rotated on every refresh
+- CORS: `ALLOWED_ORIGINS` allow-list (no wildcard)
+- Input caps: `user_message` ≤ 2KB, `plan_state` ≤ 64KB, settings `value` ≤ 16KB
+- Audit log entries on register / login / login.failed / logout / refresh
 
 ## Cost
 
-Haiku 4.5 + 5-min prompt cache: ~NT$0.16 per turn after the first cached turn.
-A full 10-turn customization session: ~NT$1.9. See `../skill/system-prompt.md` for math.
+- **Compute** (Fly.io shared-cpu-1x 512MB, scale-to-zero): ~$0–5/mo at low traffic
+- **DB** (Neon free tier): $0 up to 0.5GB / 100h compute-hours per month
+- **Anthropic**: ~NT$0.16 per `/customize` turn after the first cached turn (~NT$1.9 / 10-turn session)
+
+Token usage is logged per user — see `GET /api/usage` for live numbers.

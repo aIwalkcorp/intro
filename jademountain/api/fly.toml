@@ -1,0 +1,44 @@
+# Fly.io config for Trailforge API.
+# Create the app once:
+#   cd intro/jademountain
+#   fly launch --no-deploy --copy-config --name trailforge-api --region nrt
+# Set secrets (DATABASE_URL, JWT_SECRET, ANTHROPIC_API_KEY) before first deploy:
+#   fly secrets set DATABASE_URL=... JWT_SECRET=... ANTHROPIC_API_KEY=...
+# Deploy from the jademountain/ directory (the Dockerfile context is jademountain/, not api/):
+#   fly deploy --dockerfile api/Dockerfile
+
+app = "trailforge-api"
+primary_region = "nrt"   # Tokyo — lowest latency for TW users; switch to "hkg" if preferred
+
+[build]
+  dockerfile = "api/Dockerfile"
+
+[env]
+  PORT = "4100"
+  NODE_ENV = "production"
+  TRAILFORGE_MODEL = "claude-haiku-4-5-20251001"
+  ALLOWED_ORIGINS = "https://aiwalkcorp.com,https://trailforge.aiwalkcorp.com"
+
+[http_service]
+  internal_port = 4100
+  force_https = true
+  auto_stop_machines = "suspend"   # scale to zero when idle (Fly Machines V2)
+  auto_start_machines = true
+  min_machines_running = 0          # raise to 2 once you want HA always-on
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpus = 1
