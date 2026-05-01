@@ -18,7 +18,7 @@ const app = new Hono();
 
 app.use("*", cors({
   origin: (origin) => (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : ALLOWED_ORIGINS[0]!,
-  allowMethods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
+  allowMethods: ["POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowHeaders: ["content-type", "authorization"],
   maxAge: 86400,
   credentials: false,

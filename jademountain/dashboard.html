@@ -166,7 +166,14 @@ body{
   border-top:1px dashed rgba(42,36,24,0.25);
 }
 .card .meta-row .when b{color:var(--pri); font-weight:600}
-.card .actions{display:flex; gap:8px; align-items:center}
+.card .when{font-family:var(--mono); font-size:.62rem; letter-spacing:.18em}
+.card .when b{color:var(--pri); font-weight:600}
+.card .when .dates-zh{
+  display:block; margin-top:3px;
+  font-family:var(--serif); font-size:.78rem; letter-spacing:.04em;
+  color:var(--pri-deep); text-transform:none;
+}
+.card .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
 .card .act-btn{
   appearance:none; background:transparent; border:none; cursor:pointer;
   font-family:var(--mono); font-size:.6rem; letter-spacing:.28em;
@@ -176,6 +183,85 @@ body{
 }
 .card .act-btn:hover{color:var(--pri)}
 .card .act-btn.danger:hover{color:var(--crimson)}
+.card .act-btn.primary{color:var(--gold-deep); font-weight:700}
+.card .act-btn.primary:hover{color:var(--pri-deep)}
+
+/* ===== Inline mini calendar (popover anchored to card) ===== */
+.cal-pop{
+  position:fixed;          /* JS positions to viewport coords near the trigger */
+  z-index:1100;
+  width:280px;
+  padding:14px 14px 12px;
+  background:linear-gradient(178deg, #fbf6e8, #ebe1c9);
+  border:1px solid rgba(42,36,24,0.4);
+  box-shadow: 0 14px 40px rgba(10,26,6,0.45), inset 0 1px 0 rgba(255,255,255,0.7);
+  display:none; opacity:0; transform:translateY(-4px);
+  transition: opacity .18s ease, transform .18s ease;
+  font-family:var(--sans);
+}
+.cal-pop::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:3px;
+  background:repeating-linear-gradient(90deg, var(--pri) 0 10px, transparent 10px 14px, var(--gold) 14px 17px, transparent 17px 26px);
+}
+.cal-pop.open{display:block; opacity:1; transform:translateY(0)}
+
+.cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px}
+.cal-nav{
+  appearance:none; background:transparent; border:1px solid rgba(42,36,24,0.3);
+  width:30px; height:30px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--pri); transition: background .15s, border-color .15s;
+}
+.cal-nav:hover{background:rgba(168,128,44,0.18); border-color:var(--gold-deep)}
+.cal-nav svg{width:14px; height:14px; stroke:currentColor; stroke-width:2.4; fill:none}
+.cal-title{
+  font-family:var(--display); font-weight:700; font-size:1.05rem; color:var(--pri-deep);
+  letter-spacing:.02em; flex:1; text-align:center;
+}
+.cal-title small{
+  font-family:var(--mono); font-weight:600; font-size:.6rem; letter-spacing:.28em;
+  display:block; color:var(--ink-soft); margin-top:2px; text-transform:uppercase;
+}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+.cal-wd{
+  font-family:var(--mono); font-size:.56rem; letter-spacing:.18em;
+  color:var(--ink-soft); text-align:center; padding:6px 0 4px; font-weight:600; text-transform:uppercase;
+}
+.cal-day{
+  appearance:none; cursor:pointer;
+  background:transparent; border:1px solid transparent;
+  font-family:var(--serif); font-size:.92rem; font-weight:500; color:var(--ink);
+  height:32px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.cal-day:hover{background:rgba(168,128,44,0.18); border-color:var(--gold)}
+.cal-day.other{color:#bcb39a; opacity:.45}
+.cal-day.today{font-weight:700; color:var(--pri)}
+.cal-day.today::after{
+  content:""; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+  width:4px; height:4px; border-radius:50%; background:var(--gold);
+}
+.cal-day.selected{
+  background:radial-gradient(circle at 35% 30%, var(--gold-l), var(--gold) 70%);
+  color:var(--pri-deep); font-weight:700;
+  border-color:var(--gold-deep);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+.cal-day.selected.today::after{background:var(--pri-deep)}
+.cal-foot{
+  margin-top:10px; padding-top:9px; border-top:1px dashed rgba(42,36,24,0.25);
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.16em; color:var(--ink-soft);
+}
+.cal-foot button{
+  appearance:none; background:transparent; border:none; cursor:pointer;
+  font-family:var(--serif); font-size:.78rem; letter-spacing:.1em; font-weight:500;
+  color:var(--pri); padding:4px 8px;
+}
+.cal-foot button:hover{color:var(--gold-deep)}
+.cal-foot .saving{color:var(--gold-deep); font-weight:600}
 
 /* Empty state */
 .empty{
@@ -335,6 +421,177 @@ body{
     return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`;
   }
 
+  function fmtRange(startIso, endIso) {
+    if (!startIso) return '';
+    const s = startIso.replace(/-/g, '/');
+    if (!endIso || endIso === startIso) return s;
+    const sameMonth = startIso.slice(0, 7) === endIso.slice(0, 7);
+    return sameMonth ? `${s}–${endIso.slice(8, 10)}` : `${s} – ${endIso.replace(/-/g, '/')}`;
+  }
+
+  // ---------- Calendar popover ----------
+  const calPop = document.createElement('div');
+  calPop.className = 'cal-pop';
+  calPop.setAttribute('role', 'dialog');
+  calPop.setAttribute('aria-label', '選擇出發日期');
+  document.body.appendChild(calPop);
+
+  let calState = { planId: null, viewYear: 0, viewMonth: 0, selectedIso: null, originalIso: null, saving: false };
+
+  function isoFromYMD(y, m, d) {
+    return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  function todayIso() {
+    const d = new Date();
+    return isoFromYMD(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function renderCal() {
+    const { viewYear: y, viewMonth: m, selectedIso, saving } = calState;
+    const first = new Date(y, m, 1);
+    const startDow = first.getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevMonthDays = new Date(y, m, 0).getDate();
+    const today = todayIso();
+
+    const cells = [];
+    // leading days from previous month
+    for (let i = startDow - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      const prevY = m === 0 ? y - 1 : y;
+      const prevM = m === 0 ? 11 : m - 1;
+      const iso = isoFromYMD(prevY, prevM, day);
+      cells.push({ day, iso, other: true });
+    }
+    // current month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iso = isoFromYMD(y, m, day);
+      cells.push({ day, iso, other: false });
+    }
+    // trailing
+    while (cells.length % 7 !== 0) {
+      const day = cells.length - (startDow + daysInMonth) + 1;
+      const nextY = m === 11 ? y + 1 : y;
+      const nextM = m === 11 ? 0 : m + 1;
+      const iso = isoFromYMD(nextY, nextM, day);
+      cells.push({ day, iso, other: true });
+    }
+
+    const monthEn = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][m];
+    const weekdays = ['日','一','二','三','四','五','六'];
+
+    calPop.innerHTML = `
+      <div class="cal-head">
+        <button type="button" class="cal-nav" data-step="-1" aria-label="上個月"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="cal-title">${y} ・ ${m+1} 月<small>${monthEn} ${y}</small></div>
+        <button type="button" class="cal-nav" data-step="1" aria-label="下個月"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div class="cal-grid">
+        ${weekdays.map(w => `<div class="cal-wd">${w}</div>`).join('')}
+        ${cells.map(c => {
+          const cls = ['cal-day'];
+          if (c.other) cls.push('other');
+          if (c.iso === today) cls.push('today');
+          if (c.iso === selectedIso) cls.push('selected');
+          return `<button type="button" class="${cls.join(' ')}" data-iso="${c.iso}">${c.day}</button>`;
+        }).join('')}
+      </div>
+      <div class="cal-foot">
+        <span class="${saving ? 'saving' : ''}">${saving ? '儲存中…' : (selectedIso ? selectedIso.replace(/-/g, '/') : '—')}</span>
+        <button type="button" class="cal-cancel">取消</button>
+      </div>`;
+  }
+
+  function openCalendar(triggerEl, planId, currentStart) {
+    calState.planId = planId;
+    calState.originalIso = currentStart;
+    calState.selectedIso = currentStart;
+    const [y, mm] = currentStart.split('-').map(Number);
+    calState.viewYear = y;
+    calState.viewMonth = mm - 1;
+    calState.saving = false;
+    renderCal();
+    // position fixed near trigger button (anchored bottom-right of button)
+    const rect = triggerEl.getBoundingClientRect();
+    const popW = 280;
+    let left = rect.left + (rect.width / 2) - (popW / 2);
+    if (left < 8) left = 8;
+    if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+    let top = rect.bottom + 8;
+    // if popover would overflow viewport bottom, place above the button
+    const popH = 340;
+    if (top + popH > window.innerHeight - 8) top = Math.max(8, rect.top - popH - 8);
+    calPop.style.left = left + 'px';
+    calPop.style.top = top + 'px';
+    calPop.classList.add('open');
+  }
+
+  function closeCalendar() {
+    calPop.classList.remove('open');
+    calState.planId = null;
+  }
+
+  // calendar event delegation
+  calPop.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const nav = e.target.closest('.cal-nav');
+    if (nav) {
+      const step = Number(nav.dataset.step);
+      let m = calState.viewMonth + step;
+      let y = calState.viewYear;
+      if (m < 0) { m = 11; y--; }
+      if (m > 11) { m = 0; y++; }
+      calState.viewMonth = m; calState.viewYear = y;
+      renderCal();
+      return;
+    }
+    if (e.target.closest('.cal-cancel')) {
+      closeCalendar();
+      return;
+    }
+    const day = e.target.closest('.cal-day');
+    if (day) {
+      const iso = day.dataset.iso;
+      if (iso === calState.originalIso) { closeCalendar(); return; }
+      if (calState.saving) return;
+      calState.saving = true;
+      calState.selectedIso = iso;
+      renderCal();
+      try {
+        const r = await api('/api/plans/' + calState.planId, {
+          method: 'PATCH',
+          body: JSON.stringify({ shift_start_date: iso }),
+        });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error(j.error || ('HTTP ' + r.status));
+        }
+        showToast('已更新出發日為 ' + iso.replace(/-/g, '/'));
+        closeCalendar();
+        load();
+      } catch (err) {
+        showToast('改期失敗：' + err.message);
+        calState.saving = false;
+        renderCal();
+      }
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (calPop.classList.contains('open') && !calPop.contains(e.target) && !e.target.closest('.act-btn.date')) {
+      closeCalendar();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && calPop.classList.contains('open')) closeCalendar();
+  });
+
+  function onDateClick(e) {
+    e.preventDefault(); e.stopPropagation();
+    const btn = e.currentTarget;
+    openCalendar(btn, btn.dataset.id, btn.dataset.start);
+  }
+
   function planLink(id) {
     return 'index.html?plan=' + encodeURIComponent(id) + (params.get('api') ? '&api=' + encodeURIComponent(params.get('api')) : '');
   }
@@ -352,21 +609,41 @@ body{
       $('empty-new').addEventListener('click', createPlan);
       return;
     }
-    const cards = plans.map((p, i) => `
-      <a class="card" href="${planLink(p.id)}">
+    const cards = plans.map((p, i) => {
+      const dateBlock = p.startDate
+        ? `<span class="dates-zh">${fmtRange(p.startDate, p.endDate)}</span>`
+        : '';
+      return `
+      <div class="card" data-id="${p.id}" data-href="${planLink(p.id)}" tabindex="0" role="link">
         <div class="num">N° ${String(i+1).padStart(3, '0')}</div>
         <div class="ttl">${escapeHtml(p.title)}</div>
         <div class="meta-row">
-          <span class="when">最後修改 <b>${fmtDate(p.updatedAt)}</b></span>
+          <span class="when">最後修改 <b>${fmtDate(p.updatedAt)}</b>${dateBlock}</span>
           <span class="actions">
+            ${p.startDate ? `<button type="button" class="act-btn primary date" data-id="${p.id}" data-start="${p.startDate}">改期</button>` : ''}
             <button type="button" class="act-btn rename" data-id="${p.id}" data-title="${escapeAttr(p.title)}">改名</button>
             <button type="button" class="act-btn danger delete" data-id="${p.id}" data-title="${escapeAttr(p.title)}">刪除</button>
           </span>
         </div>
-      </a>`).join('');
+      </div>`;
+    }).join('');
     content.innerHTML = '<div class="grid">' + cards + '</div>';
+    // navigate when clicking card body (not when clicking action buttons)
+    content.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.act-btn')) return;
+        location.href = card.dataset.href;
+      });
+      card.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.act-btn')) {
+          e.preventDefault();
+          location.href = card.dataset.href;
+        }
+      });
+    });
     content.querySelectorAll('.delete').forEach(btn => btn.addEventListener('click', onDelete));
     content.querySelectorAll('.rename').forEach(btn => btn.addEventListener('click', onRename));
+    content.querySelectorAll('.date').forEach(btn => btn.addEventListener('click', onDateClick));
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
