@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trailforge ・ 山徑通行證</title>
+<meta name="theme-color" content="#1e3a1a">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
+<link rel="apple-touch-icon" href="icon-192.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pri:#1e3a1a; --pri-l:#365a2b; --pri-deep:#0a1a06;
+  --gold:#a8802c; --gold-l:#c9a14a; --gold-deep:#6e5316;
+  --paper:#f4eddc; --paper-2:#ebe1c9; --paper-3:#dccfae;
+  --ink:#1a1a17; --ink-l:#4a4640; --ink-soft:#7a7468;
+  --rule:#2a2418;
+  --crimson:#8b2a1f;
+  --serif:"Noto Serif TC","Songti TC",serif;
+  --sans:"Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --display:"Fraunces","Noto Serif TC",serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);min-height:100vh;-webkit-font-smoothing:antialiased}
+body{
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(168,128,44,0.10), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 100% 110%, rgba(30,58,26,0.10), transparent 60%),
+    var(--paper);
+  overflow-x:hidden;
+}
+
+/* ============ TOPOGRAPHIC CONTOUR BACKGROUND ============ */
+.topo{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    radial-gradient(circle at 20% 30%, transparent 0, transparent 80px, rgba(30,58,26,0.045) 80px, rgba(30,58,26,0.045) 81px, transparent 82px),
+    radial-gradient(circle at 20% 30%, transparent 0, transparent 130px, rgba(30,58,26,0.05) 130px, rgba(30,58,26,0.05) 131px, transparent 132px),
+    radial-gradient(circle at 20% 30%, transparent 0, transparent 190px, rgba(30,58,26,0.05) 190px, rgba(30,58,26,0.05) 191px, transparent 192px),
+    radial-gradient(circle at 20% 30%, transparent 0, transparent 260px, rgba(30,58,26,0.04) 260px, rgba(30,58,26,0.04) 261px, transparent 262px),
+    radial-gradient(circle at 20% 30%, transparent 0, transparent 340px, rgba(30,58,26,0.04) 340px, rgba(30,58,26,0.04) 341px, transparent 342px),
+    radial-gradient(circle at 85% 78%, transparent 0, transparent 90px, rgba(168,128,44,0.06) 90px, rgba(168,128,44,0.06) 91px, transparent 92px),
+    radial-gradient(circle at 85% 78%, transparent 0, transparent 150px, rgba(168,128,44,0.05) 150px, rgba(168,128,44,0.05) 151px, transparent 152px),
+    radial-gradient(circle at 85% 78%, transparent 0, transparent 220px, rgba(168,128,44,0.05) 220px, rgba(168,128,44,0.05) 221px, transparent 222px),
+    radial-gradient(circle at 85% 78%, transparent 0, transparent 300px, rgba(168,128,44,0.04) 300px, rgba(168,128,44,0.04) 301px, transparent 302px);
+}
+.grain{
+  position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.45; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.05  0 0 0 .35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ============ TOP BAR ============ */
+.bar{
+  position:relative; z-index:5;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px 36px;
+  border-bottom:1px solid rgba(42,36,24,0.18);
+}
+.bar .brand{display:flex;align-items:center;gap:14px;font-family:var(--display);font-weight:700;font-size:1.18rem;color:var(--pri-deep);letter-spacing:.01em}
+.bar .brand .glyph{
+  width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--gold-l), var(--gold-deep) 75%);
+  position:relative;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.4);
+}
+.bar .brand .glyph::after{
+  content:""; position:absolute; inset:6px;
+  background:
+    linear-gradient(135deg, transparent 45%, rgba(255,255,255,.35) 50%, transparent 55%),
+    conic-gradient(from 200deg at 50% 65%, var(--pri-deep), var(--pri-l) 35%, var(--pri-deep) 70%);
+  clip-path:polygon(50% 10%, 78% 78%, 22% 78%);
+}
+.bar .meta{font-family:var(--mono);font-size:.7rem;letter-spacing:.32em;color:var(--ink-soft);text-transform:uppercase}
+.bar .meta b{color:var(--pri);font-weight:600}
+
+/* ============ LAYOUT ============ */
+.stage{
+  position:relative; z-index:4;
+  display:grid; grid-template-columns: 1.05fr 1fr; gap:0;
+  min-height: calc(100vh - 78px);
+  max-width:1320px; margin:0 auto;
+}
+@media (max-width: 920px){
+  .stage{grid-template-columns:1fr}
+  .lore{order:2; border-left:none !important; border-top:1px solid rgba(42,36,24,.15)}
+}
+
+/* ============ LEFT: LORE PANEL ============ */
+.lore{
+  padding:64px 56px 80px;
+  position:relative;
+}
+.lore .stamp-no{
+  position:absolute; top:64px; right:56px;
+  font-family:var(--mono); font-size:.66rem; letter-spacing:.3em; color:var(--ink-soft);
+  border:1px solid var(--ink-soft); padding:6px 10px; border-radius:2px;
+}
+.lore .kicker{
+  font-family:var(--mono); font-size:.7rem; letter-spacing:.42em; color:var(--gold-deep);
+  text-transform:uppercase; margin-bottom:24px;
+}
+.lore h1{
+  font-family:var(--display); font-weight:900; font-style:italic;
+  font-size:clamp(3.2rem, 6.5vw, 5.2rem); line-height:.92; margin:0 0 6px;
+  color:var(--pri-deep);
+  letter-spacing:-.02em;
+}
+.lore h1 .zh{
+  display:block; font-family:var(--serif); font-style:normal; font-weight:700;
+  font-size:.42em; letter-spacing:.36em; color:var(--ink); margin-top:18px;
+}
+.lore .lede{
+  margin-top:34px; max-width:46ch;
+  font-family:var(--serif); font-weight:300; font-size:1.04rem; line-height:1.85;
+  color:var(--ink-l);
+}
+.lore .lede em{font-style:italic;color:var(--pri-l);font-weight:500}
+
+.coords{
+  margin-top:48px; display:grid; grid-template-columns:repeat(3,1fr); gap:0;
+  border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+}
+.coords > div{
+  padding:18px 14px 18px 0;
+  border-right:1px dashed rgba(42,36,24,.25);
+}
+.coords > div:last-child{border-right:none}
+.coords .lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.28em;color:var(--ink-soft);text-transform:uppercase;margin-bottom:6px}
+.coords .val{font-family:var(--display);font-weight:700;font-size:1.1rem;color:var(--pri-deep);font-feature-settings:"tnum"}
+.coords .val small{display:block;font-family:var(--mono);font-weight:400;font-size:.66rem;color:var(--ink-soft);letter-spacing:.1em;margin-top:4px}
+
+.seal{
+  position:absolute; bottom:60px; left:56px;
+  width:128px; height:128px; border-radius:50%;
+  border:2px solid var(--crimson);
+  display:flex; align-items:center; justify-content:center;
+  text-align:center;
+  color:var(--crimson);
+  font-family:var(--serif); font-weight:700;
+  transform: rotate(-9deg);
+  opacity:.78;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.08), transparent 60%);
+}
+.seal::before{
+  content:""; position:absolute; inset:7px; border-radius:50%; border:1px solid var(--crimson);
+}
+.seal .sealtxt{font-size:.78rem; letter-spacing:.18em; line-height:1.4; padding:0 12px}
+.seal .sealtxt b{display:block;font-size:1.4rem;letter-spacing:.05em;margin-bottom:2px}
+.seal .yr{position:absolute;bottom:14px;font-family:var(--mono);font-size:.56rem;letter-spacing:.3em;font-weight:600}
+@media (max-height: 760px){.seal{display:none}}
+
+/* ============ RIGHT: PERMIT FORM ============ */
+.permit{
+  background: linear-gradient(178deg, #fbf6e8, var(--paper-2));
+  border-left:1px solid rgba(42,36,24,.18);
+  padding:60px 64px 80px;
+  position:relative;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.permit::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:6px;
+  background:repeating-linear-gradient(90deg, var(--pri) 0 18px, transparent 18px 26px, var(--gold) 26px 32px, transparent 32px 50px);
+  opacity:.85;
+}
+.permit::after{
+  content:""; position:absolute; left:18px; top:48px; bottom:48px; width:1px;
+  background:repeating-linear-gradient(180deg, rgba(42,36,24,.35) 0 6px, transparent 6px 12px);
+}
+
+.permit-head{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  margin-bottom:36px; padding-bottom:18px;
+  border-bottom:2px solid var(--rule);
+}
+.permit-head .ttl{
+  font-family:var(--display); font-weight:700; font-size:1.95rem; line-height:1; color:var(--pri-deep);
+  font-feature-settings:"ss01";
+}
+.permit-head .ttl .zh{display:block;font-family:var(--serif);font-weight:500;font-size:.62em;letter-spacing:.4em;color:var(--ink-l);margin-top:8px}
+.permit-head .ref{font-family:var(--mono);font-size:.68rem;letter-spacing:.22em;color:var(--ink-soft);text-align:right;line-height:1.7}
+.permit-head .ref b{color:var(--pri)}
+
+/* mode toggle: physical tab strip */
+.tabs{
+  display:flex; gap:0; margin-bottom:30px;
+  border:1px solid var(--rule);
+  background:var(--paper-3);
+  padding:3px;
+  position:relative;
+}
+.tabs button{
+  flex:1; appearance:none; background:transparent; border:none; cursor:pointer;
+  padding:11px 14px;
+  font-family:var(--serif); font-weight:500; font-size:.95rem; letter-spacing:.18em;
+  color:var(--ink-l);
+  position:relative; z-index:2;
+  transition:color .25s;
+}
+.tabs button .en{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.32em;color:var(--ink-soft);margin-top:3px;font-weight:600}
+.tabs button[aria-selected="true"]{color:var(--paper)}
+.tabs button[aria-selected="true"] .en{color:rgba(244,237,220,.7)}
+.tabs .ink{
+  position:absolute; top:3px; bottom:3px; left:3px; width:calc(50% - 3px);
+  background:var(--pri-deep);
+  z-index:1;
+  transition: transform .42s cubic-bezier(.7,.0,.2,1);
+  box-shadow: 0 2px 0 rgba(0,0,0,.2);
+}
+.tabs[data-mode="login"] .ink{transform:translateX(100%)}
+
+/* form */
+form{display:flex; flex-direction:column; gap:18px}
+.field{display:flex; flex-direction:column; gap:7px; position:relative}
+.field label{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.32em; color:var(--ink-soft);
+  text-transform:uppercase;
+  display:flex; justify-content:space-between; align-items:baseline;
+}
+.field label .zh{font-family:var(--serif);font-weight:500;font-size:.95rem;letter-spacing:.12em;color:var(--ink);text-transform:none}
+.field input{
+  appearance:none; background:transparent; border:none;
+  border-bottom:1.5px solid var(--rule);
+  padding:10px 2px 9px;
+  font-family:var(--serif); font-size:1.08rem; color:var(--pri-deep); font-weight:500;
+  outline:none; transition:border-color .2s, background .2s;
+  border-radius:0;
+}
+.field input:focus{border-bottom-color:var(--gold-deep); background:linear-gradient(180deg, transparent 70%, rgba(168,128,44,.08))}
+.field input::placeholder{color:var(--ink-soft); font-style:italic; font-weight:300}
+.field .hint{font-family:var(--mono); font-size:.62rem; letter-spacing:.18em; color:var(--ink-soft); margin-top:2px}
+.field .hint.err{color:var(--crimson)}
+.field[data-mode="register-only"]{display:none}
+form[data-mode="register"] .field[data-mode="register-only"]{display:flex}
+form[data-mode="register"] .field[data-mode="login-only"]{display:none}
+
+/* submit button: wax-stamped */
+.submit{
+  margin-top:18px;
+  appearance:none; cursor:pointer; border:none;
+  padding:0; background:transparent; position:relative;
+  display:flex; align-items:stretch; gap:0;
+  font-family:var(--display); font-weight:700;
+}
+.submit .body{
+  flex:1; background:var(--pri-deep); color:var(--paper);
+  padding:16px 24px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:1.05rem; letter-spacing:.06em;
+  border:1px solid var(--pri-deep);
+  transition: background .25s, transform .15s;
+}
+.submit .body .arrow{
+  font-family:var(--mono); font-weight:800; font-size:.95rem; letter-spacing:.2em;
+  color:var(--gold-l); transition: transform .25s, color .25s;
+}
+.submit .stamp{
+  background:var(--gold); color:var(--pri-deep);
+  padding:0 16px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:.62rem; font-weight:800; letter-spacing:.28em;
+  border:1px solid var(--gold-deep); border-left:none;
+  text-transform:uppercase;
+}
+.submit:hover .body{background:var(--pri); }
+.submit:hover .body .arrow{transform:translateX(6px); color:#fff}
+.submit:active .body{transform:translateY(1px)}
+.submit:disabled{opacity:.55; cursor:wait}
+
+.foot{
+  margin-top:22px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--mono); font-size:.66rem; letter-spacing:.18em; color:var(--ink-soft);
+}
+.foot a{color:var(--pri); text-decoration:none; border-bottom:1px dotted var(--pri-l)}
+.foot a:hover{color:var(--gold-deep); border-bottom-color:var(--gold-deep)}
+
+/* status banner */
+.banner{
+  margin-top:20px; padding:14px 16px;
+  font-family:var(--serif); font-size:.94rem;
+  border:1px solid;
+  display:none;
+  align-items:flex-start; gap:12px;
+}
+.banner.show{display:flex}
+.banner.ok{background:#eef3e3; border-color:#5a7b3c; color:#2e4a18}
+.banner.err{background:#f7e6e2; border-color:#8b2a1f; color:#6b1a12}
+.banner .tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.28em;font-weight:800;padding:3px 7px;background:currentColor;color:#fff;flex-shrink:0;margin-top:2px}
+.banner.ok .tag{color:#eef3e3}
+.banner.err .tag{color:#f7e6e2}
+
+/* ============ INTRO ANIMATION ============ */
+@keyframes rise { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
+@keyframes seal-stamp { 0%{opacity:0; transform:rotate(-9deg) scale(1.4)} 60%{opacity:.95; transform:rotate(-9deg) scale(.92)} 100%{opacity:.78; transform:rotate(-9deg) scale(1)} }
+.lore .kicker, .lore h1, .lore .lede, .coords{opacity:0; animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+.lore h1{animation-delay:.05s}
+.lore .lede{animation-delay:.18s}
+.coords{animation-delay:.32s}
+.seal{animation: seal-stamp 1.1s cubic-bezier(.6,0,.2,1) .9s forwards; opacity:0}
+.permit-head, form > *, .tabs{opacity:0; animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+.permit-head{animation-delay:.1s}
+.tabs{animation-delay:.2s}
+form .field:nth-child(1){animation-delay:.3s}
+form .field:nth-child(2){animation-delay:.38s}
+form .field:nth-child(3){animation-delay:.46s}
+form .submit{animation-delay:.56s}
+
+@media (max-width:540px){
+  .bar{padding:18px 22px}
+  .lore{padding:40px 28px 60px}
+  .permit{padding:48px 28px 60px}
+  .lore .stamp-no{top:40px;right:28px}
+  .permit-head{flex-direction:column;align-items:flex-start;gap:14px}
+  .permit-head .ref{text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="topo"></div>
+<div class="grain"></div>
+
+<header class="bar">
+  <div class="brand">
+    <span class="glyph" aria-hidden="true"></span>
+    <span>Trailforge</span>
+  </div>
+  <div class="meta">FORM&nbsp;<b>TF-001</b>&nbsp;・&nbsp;山徑通行證 · ISSUE 2026</div>
+</header>
+
+<main class="stage">
+  <!-- LEFT -->
+  <section class="lore">
+    <div class="stamp-no">N° 0001 / 玉</div>
+    <div class="kicker">A Permit For Mountain Passage</div>
+    <h1>
+      Forge<br><i>your trail.</i>
+      <span class="zh">為每一條路徑，鑄造專屬的計劃書</span>
+    </h1>
+    <p class="lede">
+      Trailforge 將你的登山行程、撤退時限、緊急聯絡與留守通報，<em>整合成一本可離線開啟的計劃書</em>。
+      持有通行證後，你可以儲存路線、與隊員共享、並由 AI 依氣象與體能微調行程。
+    </p>
+
+    <div class="coords">
+      <div>
+        <div class="lbl">Datum</div>
+        <div class="val">23.4699° N<small>TWD97 / EPSG:3826</small></div>
+      </div>
+      <div>
+        <div class="lbl">Elevation</div>
+        <div class="val">3,952 m<small>玉山主峰 JADE PEAK</small></div>
+      </div>
+      <div>
+        <div class="lbl">Issued</div>
+        <div class="val">2026 · 04<small>NRT REGION · FLY.IO</small></div>
+      </div>
+    </div>
+
+    <div class="seal" aria-hidden="true">
+      <div class="sealtxt"><b>通行</b>TRAIL<br>PERMIT</div>
+      <div class="yr">MMXXVI</div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="permit" aria-label="登入或註冊表單">
+    <div class="permit-head">
+      <div class="ttl">
+        Issue Permit
+        <span class="zh">辦 ・ 證</span>
+      </div>
+      <div class="ref">
+        REF <b id="ref-no">TF-26-0001</b><br>
+        <span id="ref-time">—</span>
+      </div>
+    </div>
+
+    <div class="tabs" data-mode="register" role="tablist">
+      <button type="button" id="tab-register" role="tab" aria-selected="true">註冊<span class="en">REGISTER</span></button>
+      <button type="button" id="tab-login" role="tab" aria-selected="false">登入<span class="en">SIGN IN</span></button>
+      <span class="ink" aria-hidden="true"></span>
+    </div>
+
+    <form id="auth-form" data-mode="register" novalidate>
+      <div class="field" data-mode="register-only">
+        <label>EMAIL <span class="zh">電子郵件</span></label>
+        <input type="email" name="email" autocomplete="email" placeholder="hiker@example.com" required>
+        <div class="hint">用於帳號驗證與緊急通報。</div>
+      </div>
+
+      <div class="field">
+        <label id="lbl-id">USERNAME <span class="zh">使用者名稱</span></label>
+        <input type="text" id="id-input" name="identifier" autocomplete="username" placeholder="kuotaipeng" required minlength="3" maxlength="32">
+        <div class="hint" id="id-hint">3–32 字元，僅限英數字、底線與短橫線。</div>
+      </div>
+
+      <div class="field">
+        <label>PASSWORD <span class="zh">通行密語</span></label>
+        <input type="password" name="password" autocomplete="new-password" placeholder="通行密語" required minlength="6" maxlength="200">
+        <div class="hint" id="pw-hint">至少 6 字元。</div>
+      </div>
+
+      <button class="submit" type="submit" id="submit-btn">
+        <span class="body"><span id="submit-label">核發通行證</span><span class="arrow">→ ISSUE</span></span>
+        <span class="stamp">SEAL</span>
+      </button>
+
+      <div class="banner" id="banner" role="status">
+        <span class="tag" id="banner-tag">OK</span>
+        <span id="banner-msg"></span>
+      </div>
+
+      <div class="foot">
+        <span>API · <span id="api-host">trailforge-api.fly.dev</span></span>
+        <a href="./" id="back-link">← 回到計劃書</a>
+      </div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  // ---------- Config ----------
+  // GitHub Pages can talk to any HTTPS backend, as long as the API allows the
+  // current origin in CORS. Override at runtime via ?api=https://your-api.example.
+  const DEFAULT_API = "https://trailforge-api.fly.dev";
+  const params = new URLSearchParams(location.search);
+  const API_BASE = (params.get("api") || DEFAULT_API).replace(/\/+$/, "");
+  document.getElementById("api-host").textContent = API_BASE.replace(/^https?:\/\//, "");
+
+  // ---------- Permit ref + clock ----------
+  const refEl = document.getElementById("ref-no");
+  const timeEl = document.getElementById("ref-time");
+  const refSerial = String(Math.floor(1000 + Math.random() * 9000));
+  refEl.textContent = `TF-26-${refSerial}`;
+  const tickClock = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    timeEl.textContent = `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+  tickClock(); setInterval(tickClock, 1000);
+
+  // ---------- Tabs ----------
+  const tabs = document.querySelector(".tabs");
+  const form = document.getElementById("auth-form");
+  const submitLabel = document.getElementById("submit-label");
+  const idInput = document.getElementById("id-input");
+  const idLabel = document.getElementById("lbl-id");
+  const idHint = document.getElementById("id-hint");
+  const pwHint = document.getElementById("pw-hint");
+  const pwInput = form.querySelector('input[name="password"]');
+
+  function setMode(mode) {
+    tabs.dataset.mode = mode;
+    form.dataset.mode = mode;
+    document.getElementById("tab-register").setAttribute("aria-selected", mode === "register");
+    document.getElementById("tab-login").setAttribute("aria-selected", mode === "login");
+    if (mode === "register") {
+      submitLabel.textContent = "核發通行證";
+      idInput.placeholder = "kuotaipeng";
+      idInput.setAttribute("minlength", "3");
+      idInput.setAttribute("pattern", "[a-zA-Z0-9_-]+");
+      idLabel.innerHTML = 'USERNAME <span class="zh">使用者名稱</span>';
+      idHint.textContent = "3–32 字元，僅限英數字、底線與短橫線。";
+      pwInput.setAttribute("autocomplete", "new-password");
+      pwInput.setAttribute("minlength", "6");
+      pwInput.placeholder = "通行密語";
+      pwHint.textContent = "至少 6 字元。";
+    } else {
+      submitLabel.textContent = "驗證並通行";
+      idInput.placeholder = "信箱或使用者名稱";
+      idInput.setAttribute("minlength", "1");
+      idInput.removeAttribute("pattern");
+      idLabel.innerHTML = 'IDENTIFIER <span class="zh">信箱或使用者名稱</span>';
+      idHint.textContent = "可用註冊時填的 email 或 username。";
+      pwInput.setAttribute("autocomplete", "current-password");
+      pwInput.setAttribute("minlength", "1");
+      pwInput.placeholder = "通行密語";
+      pwHint.textContent = "請輸入你的通行密語。";
+    }
+    hideBanner();
+  }
+  document.getElementById("tab-register").addEventListener("click", () => setMode("register"));
+  document.getElementById("tab-login").addEventListener("click", () => setMode("login"));
+
+  // ---------- Banner ----------
+  const banner = document.getElementById("banner");
+  const bannerMsg = document.getElementById("banner-msg");
+  const bannerTag = document.getElementById("banner-tag");
+  function showBanner(kind, tag, msg) {
+    banner.classList.remove("ok", "err");
+    banner.classList.add("show", kind);
+    bannerTag.textContent = tag;
+    bannerMsg.textContent = msg;
+  }
+  function hideBanner() { banner.classList.remove("show"); }
+
+  // ---------- API error map ----------
+  const ERR = {
+    invalid_input: "欄位格式不正確，請檢查 email、使用者名稱或密碼長度。",
+    email_taken: "這個 email 已經有人註冊過了。",
+    username_taken: "這個 username 已被使用，換一個試試。",
+    invalid_credentials: "帳號或密碼錯誤。",
+    rate_limited: "太多次嘗試了，請稍後再試。",
+    register_failed: "註冊失敗，請稍後再試。",
+  };
+
+  // ---------- Submit ----------
+  const btn = document.getElementById("submit-btn");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideBanner();
+    const mode = form.dataset.mode;
+    const fd = new FormData(form);
+    btn.disabled = true;
+    const origLabel = submitLabel.textContent;
+    submitLabel.textContent = mode === "register" ? "核發中…" : "驗證中…";
+
+    try {
+      const url = `${API_BASE}/auth/${mode === "register" ? "register" : "login"}`;
+      const payload = mode === "register"
+        ? { email: fd.get("email"), username: fd.get("identifier"), password: fd.get("password") }
+        : { identifier: fd.get("identifier"), password: fd.get("password") };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg = ERR[data.error] || `(${res.status}) ${data.error || "未知錯誤"}`;
+        showBanner("err", "ERR", msg);
+        return;
+      }
+
+      if (mode === "register") {
+        showBanner("ok", "OK", `通行證已核發給 ${data.username || data.email}。請切到「登入」分頁完成首次驗證。`);
+        setTimeout(() => setMode("login"), 1200);
+      } else {
+        if (data.access_token) {
+          localStorage.setItem("tf_access_token", data.access_token);
+          if (data.refresh_token) localStorage.setItem("tf_refresh_token", data.refresh_token);
+          if (data.user) localStorage.setItem("tf_user", JSON.stringify(data.user));
+        }
+        showBanner("ok", "OK", "通行成功。正在前往你的計劃書…");
+        // After login: if user has plans, open most recent; otherwise go to dashboard.
+        const apiQS = params.get("api") ? "?api=" + encodeURIComponent(params.get("api")) : "";
+        try {
+          const r = await fetch(API_BASE + "/api/plans", {
+            headers: { "Authorization": "Bearer " + data.access_token },
+          });
+          if (r.ok) {
+            const j = await r.json();
+            const plans = (j.plans || []);
+            const dest = plans.length
+              ? "index.html?plan=" + encodeURIComponent(plans[0].id) + (apiQS ? "&" + apiQS.slice(1) : "")
+              : "dashboard.html" + apiQS;
+            setTimeout(() => { location.href = dest; }, 800);
+          } else {
+            setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 800);
+          }
+        } catch {
+          setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 800);
+        }
+      }
+    } catch (err) {
+      showBanner("err", "NET", `無法連線到 ${API_BASE}。確認後端已啟動且 CORS 允許此網域：${location.origin}`);
+    } finally {
+      btn.disabled = false;
+      submitLabel.textContent = origLabel;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -8,6 +8,7 @@ import authRouter from "./routes/auth";
 import settingsRouter from "./routes/settings";
 import usageRouter from "./routes/usage";
 import customizeRouter from "./routes/customize";
+import plansRouter from "./routes/plans";
 
 if (!env.ANTHROPIC_API_KEY) {
   log.warn("anthropic_key_missing", { msg: "/customize will 503 until ANTHROPIC_API_KEY is set" });
@@ -51,6 +52,7 @@ app.route("/auth", authRouter);
 app.route("/api/settings", settingsRouter);
 app.route("/api/usage", usageRouter);
 app.route("/customize", customizeRouter);
+app.route("/api/plans", plansRouter);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 app.onError((err, c) => {

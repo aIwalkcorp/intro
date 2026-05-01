@@ -8,7 +8,7 @@
 #   fly deploy --dockerfile api/Dockerfile
 
 app = "trailforge-api"
-primary_region = "nrt"   # Tokyo — lowest latency for TW users; switch to "hkg" if preferred
+primary_region = "iad"   # us-east (Virginia) — co-located with Neon us-east-1 for low DB latency
 
 [build]
   dockerfile = "api/Dockerfile"
@@ -17,7 +17,7 @@ primary_region = "nrt"   # Tokyo — lowest latency for TW users; switch to "hkg
   PORT = "4100"
   NODE_ENV = "production"
   TRAILFORGE_MODEL = "claude-haiku-4-5-20251001"
-  ALLOWED_ORIGINS = "https://aiwalkcorp.com,https://trailforge.aiwalkcorp.com"
+  ALLOWED_ORIGINS = "https://aiwalkcorp.com,https://aiwalkcorp.pages.dev,https://trailforge.aiwalkcorp.com"
 
 [http_service]
   internal_port = 4100

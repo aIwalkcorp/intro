@@ -10,8 +10,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="玉山計劃">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -773,6 +774,199 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 @media (max-width: 380px) {
   .aiwalk-back .aw-back-text { display: none; }
 }
+/* ==== Dashboard pill — visible when logged in, sits LEFT of permit chip ==== */
+.dash-pill {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);   /* JS will reposition once chip width is known */
+  z-index: 1300;
+  display: none;          /* shown by JS only when logged in */
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: #1f3a23;
+  text-decoration: none;
+  background: linear-gradient(178deg, #fbf6e8, #ebe1c9);
+  border: 1px solid #6e5316;
+  border-radius: 999px;
+  box-shadow:
+    0 2px 10px rgba(10, 26, 6, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.dash-pill.show { display: inline-flex; }
+.dash-pill:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(178deg, #fff8e0, #f0e6cc);
+  box-shadow: 0 4px 14px rgba(10, 26, 6, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.dash-pill:active { transform: translateY(0); }
+.dash-pill svg {
+  width: 14px; height: 14px;
+  stroke: #1f3a23; stroke-width: 2.2; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.dash-pill .dp-en {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 9px; letter-spacing: 0.32em;
+  color: #6e5316; font-weight: 700;
+  display: block; margin-top: 1px;
+}
+.dash-pill .dp-text { display: flex; flex-direction: column; line-height: 1.15; }
+@media (max-width: 480px) {
+  .dash-pill .dp-en { display: none; }
+  .dash-pill { padding: 6px 12px 6px 9px; }
+}
+
+/* ==== Permit chip (auth entry) — top-right mirror of .aiwalk-back ==== */
+.permit-chip {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  z-index: 1300;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 13px 6px 8px;
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: #f4eddc;
+  text-decoration: none;
+  background: linear-gradient(160deg, #1f3a23 0%, #122118 100%);
+  border: 1px solid rgba(168, 128, 44, 0.45);
+  border-radius: 999px;
+  box-shadow:
+    0 2px 12px rgba(10, 26, 6, 0.28),
+    inset 0 1px 0 rgba(255, 213, 138, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+.permit-chip:hover {
+  transform: translateX(2px);
+  border-color: rgba(201, 161, 74, 0.85);
+  box-shadow:
+    0 4px 16px rgba(10, 26, 6, 0.35),
+    inset 0 1px 0 rgba(255, 213, 138, 0.28);
+}
+.permit-chip:active { transform: translateX(2px) scale(0.97); }
+.permit-chip .seal-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #d8b25c 0%, #a8802c 55%, #6e5316 100%);
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.25);
+}
+.permit-chip .seal-dot::after {
+  content: "";
+  position: absolute; inset: 3px;
+  background:
+    linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.35) 50%, transparent 55%),
+    conic-gradient(from 200deg at 50% 65%, #0a1a06, #1f3a23 35%, #0a1a06 70%);
+  clip-path: polygon(50% 18%, 80% 78%, 20% 78%);
+  border-radius: 50%;
+}
+.permit-chip .pc-en {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.32em;
+  color: rgba(244, 237, 220, 0.55);
+  display: block;
+  font-weight: 600;
+  margin-top: 1px;
+}
+.permit-chip .pc-text { display: flex; flex-direction: column; line-height: 1.15; }
+.permit-chip[data-state="in"] .pc-zh { color: #ffe9ad; }
+.permit-chip[data-state="in"] .seal-dot {
+  background: radial-gradient(circle at 35% 30%, #e8c870 0%, #b88a32 55%, #7e6420 100%);
+  animation: sealPulse 2.6s ease-out infinite;
+}
+@keyframes sealPulse {
+  0%, 100% { box-shadow: inset 0 -1px 0 rgba(0,0,0,0.4), 0 0 0 0 rgba(255, 213, 138, 0.0); }
+  50%      { box-shadow: inset 0 -1px 0 rgba(0,0,0,0.4), 0 0 0 4px rgba(255, 213, 138, 0.18); }
+}
+@media (max-width: 380px) {
+  .permit-chip .pc-en { display: none; }
+  .permit-chip { padding: 6px 12px 6px 7px; }
+}
+/* dropdown menu */
+.permit-menu {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 50px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  z-index: 1301;
+  min-width: 188px;
+  padding: 10px;
+  background: linear-gradient(178deg, #fbf6e8, #ebe1c9);
+  border: 1px solid rgba(42, 36, 24, 0.35);
+  border-radius: 4px;
+  box-shadow: 0 12px 36px rgba(10, 26, 6, 0.35), inset 0 1px 0 rgba(255,255,255,0.6);
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  display: none;
+  transform-origin: top right;
+  animation: pmIn .22s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes pmIn { from { opacity: 0; transform: translateY(-6px) scale(.96); } to { opacity: 1; transform: none; } }
+.permit-menu.open { display: block; }
+.permit-menu::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: repeating-linear-gradient(90deg, #1f3a23 0 10px, transparent 10px 14px, #a8802c 14px 17px, transparent 17px 26px);
+}
+.permit-menu .pm-head {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px; letter-spacing: 0.3em;
+  color: #7a7468; text-transform: uppercase;
+  padding: 6px 8px 4px;
+}
+.permit-menu .pm-user {
+  padding: 2px 8px 10px;
+  font-size: 14.5px; font-weight: 700;
+  color: #0a1a06; letter-spacing: 0.04em;
+  border-bottom: 1px dashed rgba(42, 36, 24, 0.3);
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+.permit-menu .pm-item {
+  display: block; width: 100%;
+  padding: 9px 10px;
+  background: transparent; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; font-weight: 500;
+  color: #1a1a17; text-align: left;
+  letter-spacing: 0.08em;
+  border-radius: 2px;
+  transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+}
+.permit-menu .pm-item:hover { background: #1f3a23; color: #f4eddc; }
+.permit-menu .pm-item.danger:hover { background: #8b2a1f; color: #f7e6e2; }
+.permit-menu .pm-item .pm-en {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px; letter-spacing: 0.3em;
+  opacity: 0.55; margin-left: 6px;
+}
+.permit-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 56px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  z-index: 1302;
+  padding: 10px 14px;
+  background: #1f3a23; color: #f4eddc;
+  font-family: "Noto Serif TC", serif; font-size: 13px;
+  border: 1px solid rgba(168, 128, 44, 0.6);
+  border-radius: 3px;
+  opacity: 0; pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.25s, transform 0.25s;
+  max-width: 70vw;
+}
+.permit-toast.show { opacity: 1; transform: none; }
+
 .pwa-install-btn .pwa-dot {
   width: 7px; height: 7px; border-radius: 50%; background: #ffd58a;
   box-shadow: 0 0 0 0 rgba(255,213,138,0.6);
@@ -904,6 +1098,148 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
   <span class="aw-back-text">回到</span>
   <span class="aw-mark">a<span class="aw-i">I</span>walk</span>
 </a>
+
+<a id="dashPill" class="dash-pill" href="dashboard.html" aria-label="我的計劃書 Dashboard">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+  <span class="dp-text"><span>我的計劃書</span><span class="dp-en">DASHBOARD</span></span>
+</a>
+
+<a id="permitChip" class="permit-chip" href="auth.html" data-state="out" aria-label="登入或註冊">
+  <span class="seal-dot" aria-hidden="true"></span>
+  <span class="pc-text">
+    <span class="pc-zh">登入・註冊</span>
+    <span class="pc-en">SIGN IN</span>
+  </span>
+</a>
+<div id="permitMenu" class="permit-menu" role="menu" aria-hidden="true">
+  <div class="pm-head">通行證 · TF-26</div>
+  <div class="pm-user" id="pmUser">—</div>
+  <a class="pm-item" href="dashboard.html" id="pmDashboard" role="menuitem">我的計劃書 <span class="pm-en">PLANS</span></a>
+  <button type="button" class="pm-item danger" id="pmLogout" role="menuitem">登出 <span class="pm-en">SIGN OUT</span></button>
+</div>
+<div id="permitToast" class="permit-toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+  var TOKEN_KEY = 'tf_access_token';
+  var REFRESH_KEY = 'tf_refresh_token';
+  var USER_KEY = 'tf_user';
+  var API_BASE = (new URLSearchParams(location.search).get('api') || 'https://trailforge-api.fly.dev').replace(/\/+$/, '');
+  var chip = document.getElementById('permitChip');
+  var menu = document.getElementById('permitMenu');
+  var pmUser = document.getElementById('pmUser');
+  var toast = document.getElementById('permitToast');
+  var dashPill = document.getElementById('dashPill');
+  var pmDashboard = document.getElementById('pmDashboard');
+  var zh = chip.querySelector('.pc-zh');
+  var en = chip.querySelector('.pc-en');
+
+  // Propagate ?api= query string to dashboard.html so local-API testing keeps working.
+  var apiParam = new URLSearchParams(location.search).get('api');
+  var apiQS = apiParam ? '?api=' + encodeURIComponent(apiParam) : '';
+  dashPill.href = 'dashboard.html' + apiQS;
+  if (pmDashboard) pmDashboard.href = 'dashboard.html' + apiQS;
+
+  // Position dashPill to the left of the chip (chip is fixed top-right).
+  function placeDashPill(){
+    var chipRect = chip.getBoundingClientRect();
+    var rightOffset = window.innerWidth - chipRect.left + 8;  // 8px gap
+    dashPill.style.right = rightOffset + 'px';
+  }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function(){ toast.classList.remove('show'); }, 2400);
+  }
+  function getUser(){
+    try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch(e){ return null; }
+  }
+  function paint(){
+    var token = localStorage.getItem(TOKEN_KEY);
+    var user = getUser();
+    if (token && user && (user.username || user.email)){
+      chip.dataset.state = 'in';
+      chip.removeAttribute('href');
+      chip.setAttribute('role', 'button');
+      chip.setAttribute('tabindex', '0');
+      var name = user.username || (user.email || '').split('@')[0];
+      zh.textContent = name.length > 10 ? name.slice(0, 10) + '…' : name;
+      en.textContent = 'SIGNED IN';
+      pmUser.textContent = user.username ? '@' + user.username : (user.email || '—');
+      dashPill.classList.add('show');
+      requestAnimationFrame(placeDashPill);
+    } else {
+      chip.dataset.state = 'out';
+      chip.setAttribute('href', 'auth.html');
+      chip.removeAttribute('role');
+      chip.removeAttribute('tabindex');
+      zh.textContent = '登入・註冊';
+      en.textContent = 'SIGN IN';
+      menu.classList.remove('open');
+      dashPill.classList.remove('show');
+    }
+  }
+  function toggleMenu(e){
+    if (chip.dataset.state !== 'in') return;
+    e.preventDefault();
+    menu.classList.toggle('open');
+    menu.setAttribute('aria-hidden', menu.classList.contains('open') ? 'false' : 'true');
+  }
+  chip.addEventListener('click', toggleMenu);
+  chip.addEventListener('keydown', function(e){
+    if (chip.dataset.state === 'in' && (e.key === 'Enter' || e.key === ' ')) { toggleMenu(e); }
+  });
+  document.addEventListener('click', function(e){
+    if (!menu.contains(e.target) && !chip.contains(e.target)) menu.classList.remove('open');
+  });
+  document.getElementById('pmLogout').addEventListener('click', async function(){
+    var token = localStorage.getItem(TOKEN_KEY);
+    menu.classList.remove('open');
+    // best-effort server logout; never block UX
+    if (token) {
+      try {
+        await fetch(API_BASE + '/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          keepalive: true,
+        });
+      } catch(e) {}
+    }
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    localStorage.removeItem(USER_KEY);
+    paint();
+    showToast('已登出。');
+  });
+  // refresh user info from /auth/me on load (in case username changed elsewhere)
+  (async function(){
+    var token = localStorage.getItem(TOKEN_KEY);
+    if (!token) { paint(); return; }
+    paint();  // optimistic paint from cache
+    try {
+      var r = await fetch(API_BASE + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (r.ok) {
+        var u = await r.json();
+        localStorage.setItem(USER_KEY, JSON.stringify(u));
+        paint();
+      } else if (r.status === 401) {
+        // token expired; clear and reset
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+        localStorage.removeItem(USER_KEY);
+        paint();
+      }
+    } catch(e) { /* offline – keep cached state */ }
+  })();
+  // Reposition dashPill on resize (chip stays fixed to viewport edge)
+  window.addEventListener('resize', placeDashPill);
+  // listen to cross-tab login (auth.html in another tab)
+  window.addEventListener('storage', function(e){
+    if (e.key === TOKEN_KEY || e.key === USER_KEY) paint();
+  });
+})();
+</script>
 
 <div class="hdr">
   <h1>玉山主峰・北峰</h1>

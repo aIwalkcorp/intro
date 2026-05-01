@@ -247,16 +247,40 @@
 
   window.TF = TF;
 
-  // Render synchronously now: this script tag is placed in the body AFTER
-  // #day-bar and #day-panels-host, so the containers already exist. We must
-  // NOT wait for DOMContentLoaded — the page's own initState IIFE runs as a
-  // synchronous inline <script> after this one, and it calls switchDayTab()
-  // immediately, which depends on .day-btn / .day-panel existing.
+  // If URL has ?plan=<id> and we have an access token, fetch from API and
+  // re-render once it arrives. Otherwise (or in addition) render the static
+  // plan.json baked into <script id="plan-data"> immediately so the page is
+  // never blank on first paint.
+  function autoRender() {
+    render(); // synchronous static render
+    try {
+      const params = new URLSearchParams(location.search);
+      const planId = params.get('plan');
+      const token = localStorage.getItem('tf_access_token');
+      if (!planId || !token) return;
+      const apiBase = (params.get('api') || 'https://trailforge-api.fly.dev').replace(/\/+$/, '');
+      fetch(apiBase + '/api/plans/' + encodeURIComponent(planId), {
+        headers: { 'Authorization': 'Bearer ' + token },
+      }).then(r => {
+        if (!r.ok) return null;
+        return r.json();
+      }).then(row => {
+        if (!row || !row.data) return;
+        window.__PLAN__ = row.data;
+        // Re-render with API-supplied data; render() rebuilds day-bar/panels.
+        render(row.data);
+        // Update title if available
+        if (row.title && document.getElementById('plan-title')) {
+          document.getElementById('plan-title').textContent = row.title;
+        }
+      }).catch(() => {});
+    } catch (e) { /* ignore */ }
+  }
   if (document.getElementById('day-bar') || document.getElementById('day-panels-host')) {
-    render();
+    autoRender();
   } else if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => render());
+    document.addEventListener('DOMContentLoaded', autoRender);
   } else {
-    render();
+    autoRender();
   }
 })();

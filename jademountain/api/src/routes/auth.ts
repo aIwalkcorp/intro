@@ -14,7 +14,7 @@ import { log } from "../lib/logger";
 const RegisterSchema = z.object({
   email: z.string().email().max(254),
   username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_-]+$/, "alphanumeric, _, - only"),
-  password: z.string().min(10).max(200),
+  password: z.string().min(6).max(200),
 });
 
 const LoginSchema = z.object({

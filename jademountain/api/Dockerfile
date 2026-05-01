@@ -1,9 +1,9 @@
-FROM oven/bun:1.1-alpine AS deps
+FROM oven/bun:1.3-alpine AS deps
 WORKDIR /app
 COPY api/package.json api/bun.lock* ./
 RUN bun install --frozen-lockfile --production --no-save || bun install --production --no-save
 
-FROM oven/bun:1.1-alpine
+FROM oven/bun:1.3-alpine
 WORKDIR /app
 RUN apk add --no-cache curl tini
 COPY --from=deps /app/node_modules ./node_modules
