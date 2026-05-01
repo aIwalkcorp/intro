@@ -166,14 +166,16 @@ body{
   border-top:1px dashed rgba(42,36,24,0.25);
 }
 .card .meta-row .when b{color:var(--pri); font-weight:600}
-.card .delete{
+.card .actions{display:flex; gap:8px; align-items:center}
+.card .act-btn{
   appearance:none; background:transparent; border:none; cursor:pointer;
   font-family:var(--mono); font-size:.6rem; letter-spacing:.28em;
   color:var(--ink-soft);
   padding:4px 6px;
   transition: color .15s;
 }
-.card .delete:hover{color:var(--crimson)}
+.card .act-btn:hover{color:var(--pri)}
+.card .act-btn.danger:hover{color:var(--crimson)}
 
 /* Empty state */
 .empty{
@@ -356,11 +358,15 @@ body{
         <div class="ttl">${escapeHtml(p.title)}</div>
         <div class="meta-row">
           <span class="when">最後修改 <b>${fmtDate(p.updatedAt)}</b></span>
-          <button type="button" class="delete" data-id="${p.id}" data-title="${escapeAttr(p.title)}">刪除</button>
+          <span class="actions">
+            <button type="button" class="act-btn rename" data-id="${p.id}" data-title="${escapeAttr(p.title)}">改名</button>
+            <button type="button" class="act-btn danger delete" data-id="${p.id}" data-title="${escapeAttr(p.title)}">刪除</button>
+          </span>
         </div>
       </a>`).join('');
     content.innerHTML = '<div class="grid">' + cards + '</div>';
     content.querySelectorAll('.delete').forEach(btn => btn.addEventListener('click', onDelete));
+    content.querySelectorAll('.rename').forEach(btn => btn.addEventListener('click', onRename));
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
@@ -399,6 +405,28 @@ body{
       showToast('建立失敗：' + e.message);
       newBtn.disabled = false;
       const allEmpty2 = $('empty-new'); if (allEmpty2) allEmpty2.disabled = false;
+    }
+  }
+
+  async function onRename(e) {
+    e.preventDefault(); e.stopPropagation();
+    const id = e.currentTarget.dataset.id;
+    const oldTitle = e.currentTarget.dataset.title;
+    const next = prompt(`為計劃書改名：`, oldTitle);
+    if (next === null) return;                      // cancelled
+    const title = next.trim();
+    if (!title || title === oldTitle) return;
+    if (title.length > 200) { showToast('標題過長（上限 200 字元）'); return; }
+    try {
+      const r = await api('/api/plans/' + id, {
+        method: 'PATCH',
+        body: JSON.stringify({ title }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      showToast('已改名為「' + title + '」');
+      load();
+    } catch (err) {
+      showToast('改名失敗：' + err.message);
     }
   }
 
