@@ -45,14 +45,35 @@
   .nav-back svg { width: 16px; height: 16px; }
   .nav-title { font-size: 14px; font-weight: 700; color: #1a3a5c; letter-spacing: 0.3px; }
   .nav-overview {
-    display: flex; align-items: center; gap: 6px; padding: 5px 14px;
-    border-radius: 24px; font-size: 13px; font-weight: 600;
-    color: #c06a1a; background: rgba(192,106,26,0.08);
-    border: none; cursor: pointer; transition: all 0.2s ease;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 16px;
+    border-radius: 24px;
+    font-size: 13.5px; font-weight: 700; letter-spacing: 0.4px;
+    color: #fff;
+    background: linear-gradient(135deg, #c06a1a 0%, #d4893a 100%);
+    border: none; cursor: pointer;
+    box-shadow:
+      0 3px 12px rgba(192,106,26,0.35),
+      0 0 0 0 rgba(255,180,90,0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     font-family: inherit;
+    animation: navOverviewPulse 3.2s ease-in-out infinite;
   }
-  .nav-overview:hover { background: rgba(192,106,26,0.16); }
-  .nav-overview svg { width: 15px; height: 15px; }
+  @keyframes navOverviewPulse {
+    0%, 100% { box-shadow: 0 3px 12px rgba(192,106,26,0.35), 0 0 0 0 rgba(255,180,90,0.55); }
+    50%      { box-shadow: 0 5px 18px rgba(192,106,26,0.55), 0 0 0 10px rgba(255,180,90,0); }
+  }
+  .nav-overview:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(192,106,26,0.55);
+    animation-play-state: paused;
+  }
+  .nav-overview svg { width: 15px; height: 15px; stroke-width: 2.4; }
+  /* Two-line label: '經營團隊 Team' on top, tiny 'Overview' helper underneath */
+  .nav-overview-label { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; gap: 1px; }
+  .nav-overview-main { font-size: 13px; font-weight: 700; }
+  .nav-overview-sub { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.85; }
+  @media (prefers-reduced-motion: reduce) { .nav-overview { animation: none; } }
   /* Nav label language switch: body[data-lang] drives visibility */
   body[data-lang="en"] .lbl-zh { display: none !important; }
   body[data-lang="zh"] .lbl-en { display: none !important; }
@@ -69,9 +90,16 @@
   .overview.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
   .overview-header {
     position: sticky; top: 0; z-index: 2;
-    display: flex; align-items: baseline; justify-content: space-between;
+    display: flex; align-items: flex-start; justify-content: space-between;
     padding: 28px 48px 20px; gap: 24px;
     background: linear-gradient(180deg, #f8f6f1 72%, rgba(248,246,241,0));
+  }
+  .overview-header > .overview-close { margin-top: 18px; flex-shrink: 0; }
+  .overview-eyebrow {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 11px; font-weight: 700; color: #c06a1a;
+    letter-spacing: 4px; text-transform: uppercase;
+    margin-bottom: 6px;
   }
   .overview-title {
     font-family: 'Noto Serif TC', serif; font-size: 28px; font-weight: 900;
@@ -724,16 +752,29 @@
       radial-gradient(ellipse 90% 60% at 70% 90%, rgba(0,0,0,0.20) 0%, transparent 70%);
     pointer-events: none;
   }
-  .ov-portrait-tag {
-    position: absolute; top: 12px; left: 12px;
-    padding: 4px 10px;
-    background: rgba(255,255,255,0.95);
-    color: #1a3a5c;
-    font-size: 9.5px; font-weight: 700; letter-spacing: 1.5px;
+  /* Bottom-edge ribbon on profile cards — clearly labels the action so users
+     know clicking opens a full bio, not the business-card flip. */
+  .ov-portrait-ribbon {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(15,29,45,0) 0%, rgba(15,29,45,0.85) 60%, rgba(15,29,45,0.95) 100%);
+    color: #fff;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
     text-transform: uppercase;
-    border-radius: 100px;
     z-index: 2;
+    transition: background 0.25s ease;
   }
+  .ov-portrait-ribbon .ov-ribbon-label { display: flex; align-items: baseline; gap: 6px; }
+  .ov-portrait-ribbon .ov-ribbon-label .lbl-zh,
+  .ov-portrait-ribbon .ov-ribbon-label .lbl-en { letter-spacing: 1.5px; }
+  .ov-portrait-ribbon .ov-ribbon-arrow {
+    color: #ffb274; font-size: 18px; line-height: 1; font-weight: 700;
+    transform: translateX(0); transition: transform 0.25s ease;
+  }
+  .ov-card:hover .ov-portrait-ribbon { background: linear-gradient(180deg, rgba(15,29,45,0.1) 0%, rgba(192,106,26,0.92) 100%); }
+  .ov-card:hover .ov-portrait-ribbon .ov-ribbon-arrow { transform: translateX(4px); }
+
   .ov-meta { padding: 18px 20px 18px; flex: 1; display: flex; flex-direction: column; }
   .ov-card.has-profile .ov-initial { font-size: 22px; margin-bottom: 4px; }
   .ov-card.has-profile .ov-name-en { margin-bottom: 12px; }
@@ -752,6 +793,21 @@
     line-height: 1.4;
   }
   .ov-chip.lbl-en { background: rgba(192,106,26,0.08); color: #8a4d12; }
+
+  /* Hint line at the bottom of plain (no-profile) cards so the destination
+     is also explicit there — visually quieter than the ribbon above. */
+  .ov-card:not(.has-profile) .ov-action-hint {
+    margin-top: auto; padding-top: 12px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #94a3b8;
+    border-top: 1px dashed rgba(26,58,92,0.12);
+  }
+  .ov-card:not(.has-profile) .ov-action-hint .ov-hint-arrow {
+    margin-left: auto; color: #c06a1a; transition: transform 0.25s ease;
+  }
+  .ov-card:not(.has-profile):hover .ov-action-hint { color: #1a3a5c; }
+  .ov-card:not(.has-profile):hover .ov-hint-arrow { transform: translateX(3px); }
 
   /* ============================================================
      PROFILE PANEL — full team-page detail view
@@ -972,9 +1028,12 @@
   <span class="nav-title">
     <span class="lbl-zh">數位名片</span><span class="lbl-en">Digital Business Card</span>
   </span>
-  <button class="nav-overview" id="btnOverview" aria-label="Overview">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    <span class="lbl-zh">總覽</span><span class="lbl-en">Overview</span>
+  <button class="nav-overview" id="btnOverview" aria-label="Management Team Overview">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span class="nav-overview-label">
+      <span class="nav-overview-main"><span class="lbl-zh">經營團隊</span><span class="lbl-en">Management Team</span></span>
+      <span class="nav-overview-sub"><span class="lbl-zh">團隊總覽</span><span class="lbl-en">Team Overview</span></span>
+    </span>
   </button>
 </nav>
 
@@ -982,6 +1041,7 @@
 <div class="overview" id="overview" role="dialog" aria-modal="true" aria-label="Team overview">
   <div class="overview-header">
     <div>
+      <div class="overview-eyebrow"><span class="lbl-zh">經營團隊</span><span class="lbl-en">Management Team</span></div>
       <div class="overview-title"><span class="lbl-zh">團隊總覽</span><span class="lbl-en">Team Overview</span></div>
       <div class="overview-subtitle">aIwalk Co., Ltd.</div>
     </div>
@@ -1514,7 +1574,12 @@ function renderOverview() {
         return `<button class="ov-card has-profile" data-id="${p.id}" data-has-profile="1">
           <div class="ov-portrait">
             ${portraitInner}
-            <span class="ov-portrait-tag"><span class="lbl-zh">介紹</span><span class="lbl-en">Profile</span></span>
+            <div class="ov-portrait-ribbon">
+              <span class="ov-ribbon-label">
+                <span class="lbl-zh">完整介紹</span><span class="lbl-en">Full Profile</span>
+              </span>
+              <span class="ov-ribbon-arrow" aria-hidden="true">→</span>
+            </div>
           </div>
           <div class="ov-meta">
             <div class="ov-initial">${escHTML(p.name)}</div>
@@ -1522,14 +1587,16 @@ function renderOverview() {
             <div class="ov-role">${escHTML(roleZh)}${roleEn ? `<span class="ov-role-en">${escHTML(roleEn)}</span>` : ''}</div>
             ${chips ? `<div class="ov-highlights">${chips}</div>` : ''}
           </div>
-          <svg class="ov-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>`;
       }
       return `<button class="ov-card" data-id="${p.id}">
         <div class="ov-initial">${escHTML(p.name)}</div>
         ${enName ? `<div class="ov-name-en">${escHTML(enName)}</div>` : ''}
         <div class="ov-role">${escHTML(roleZh)}${roleEn ? `<span class="ov-role-en">${escHTML(roleEn)}</span>` : ''}</div>
-        <svg class="ov-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        <div class="ov-action-hint">
+          <span class="lbl-zh">數位名片</span><span class="lbl-en">Business Card</span>
+          <span class="ov-hint-arrow" aria-hidden="true">→</span>
+        </div>
       </button>`;
     }).join('');
     return `<div class="overview-group">
@@ -1544,11 +1611,13 @@ function renderOverview() {
   overviewBody.querySelectorAll('.ov-card').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
-      // If this person has a profile → open the rich detail page; else go straight to business card
+      // Profile-equipped: just open profile — keep the underlying card
+      // untouched so there's no flicker/race behind the panel.
       if (btn.dataset.hasProfile === '1') {
         openProfile(id);
         return;
       }
+      // Plain person: flip directly to the business card.
       const idx = VP.findIndex(p => p.id === id);
       if (idx !== -1) {
         current = idx;
@@ -1653,32 +1722,44 @@ function renderProfile(id) {
         if (idx !== -1) {
           current = idx;
           renderPerson(idx);
-          closeProfile();
-          closeOverview();
+          closeProfile(false);   // don't bounce back to overview, land on the card
+          closeOverview();       // belt-and-braces in case overview is somehow still showing
         }
       } else if (action === 'back') {
-        closeProfile();
+        closeProfile();          // default → restore overview if user came from there
       }
     });
   });
 }
 
+// Tracks whether the user opened profile from overview, so 'back' can
+// restore the previous layer instead of falling through to the card.
+let profileCameFromOverview = false;
 function openProfile(id) {
   renderProfile(id);
+  profileCameFromOverview = overview.classList.contains('show');
+  if (profileCameFromOverview) overview.classList.remove('show'); // hide the layer underneath
   profilePanel.classList.add('show');
   profilePanel.scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
-function closeProfile() {
+function closeProfile(restoreOverview = profileCameFromOverview) {
   profilePanel.classList.remove('show');
-  // Only restore body scroll if overview isn't still open
-  if (!overview.classList.contains('show')) {
+  if (restoreOverview) {
+    overview.classList.add('show');
+  } else {
     document.body.style.overflow = '';
   }
+  profileCameFromOverview = false;
 }
 btnProfileBack.addEventListener('click', closeProfile);
+// Profile's Esc handler runs first and stops further Esc handlers (overview's)
+// from firing, so a single Escape only closes the topmost layer.
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && profilePanel.classList.contains('show')) closeProfile();
+  if (e.key === 'Escape' && profilePanel.classList.contains('show')) {
+    closeProfile();
+    e.stopImmediatePropagation();
+  }
 });
 
 function openOverview() {

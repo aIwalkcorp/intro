@@ -493,6 +493,19 @@
     transform: translateY(-2px);
     animation-play-state: paused;
   }
+  /* Two-line variant: main label on top, finer subtitle underneath */
+  .hero-cta-stacked { padding-top: 9px; padding-bottom: 9px; }
+  .hero-cta-stack {
+    display: flex; flex-direction: column; align-items: flex-start;
+    line-height: 1.15; gap: 2px;
+  }
+  .hero-cta-main { font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
+  .hero-cta-sub {
+    font-size: 10.5px; font-weight: 500;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+  .hero-cta-stacked:hover .hero-cta-sub { color: rgba(255,210,150,0.95); }
 
   /* Subtle attention dot beside primary CTA's icon — matches the signal-sweep theme */
   .hero-cta-primary > i[data-lucide]::before { /* unused, lucide replaces with svg */ }
@@ -612,10 +625,8 @@
   @media (prefers-reduced-motion: reduce) {
     .hero-chip-base { transition: none; }
   }
-  @media (hover: none) and (pointer: coarse) {
-    /* No cursor on touch — keep the chip hidden so the hero stays uniformly dark */
-    .hero-chip-base { display: none; }
-  }
+  /* Touch devices: chip-base + text mask stay active and are driven by
+     touch events from JS (touchstart / touchmove). */
 
   /* ===== SECTION CONTAINER ===== */
   .section {
@@ -2244,9 +2255,12 @@
         <i data-lucide="map" style="width:18px;height:18px;"></i>
         <span class="lang-zh">技術藍圖</span><span class="lang-en">Technology Roadmap</span>
       </a>
-      <a class="hero-cta hero-cta-secondary" style="--i:2" href="card.html">
+      <a class="hero-cta hero-cta-secondary hero-cta-stacked" style="--i:2" href="card.html">
         <i data-lucide="contact" style="width:18px;height:18px;"></i>
-        <span class="lang-zh">數位名片</span><span class="lang-en">Business Card</span>
+        <span class="hero-cta-stack">
+          <span class="hero-cta-main"><span class="lang-zh">數位名片</span><span class="lang-en">Business Card</span></span>
+          <span class="hero-cta-sub"><span class="lang-zh">＋ 經營團隊組成</span><span class="lang-en">+ Management Team</span></span>
+        </span>
       </a>
     </div>
   </div>
@@ -2829,8 +2843,8 @@
   (function(){
     const hero = document.querySelector('.hero');
     if (!hero) return;
-    if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
     const cluster = hero.querySelector('.hero-text-cluster');
+    const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     // B2BChip.jpg natural dimensions and the chip's image-relative centre.
     // Image is rendered as background: center / cover, so we replay the
     // cover-fit math each tick to get the chip's real on-screen position.
@@ -2901,6 +2915,28 @@
     window.addEventListener('resize', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); });
     window.addEventListener('scroll', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); }, { passive: true });
     document.addEventListener('aiwalk:lang-changed', () => { if (lastEvt && !raf) raf = requestAnimationFrame(tick); });
+
+    // Touch: tap or drag inside the hero reveals the chip near the touch point.
+    // Releases fade out after a short hold so the visitor can read the chip.
+    if (isTouch) {
+      let releaseTimer = 0;
+      const onTouch = (e) => {
+        const t = e.touches[0]; if (!t) return;
+        // Reuse onMove by faking a clientX/Y carrier
+        lastEvt = { clientX: t.clientX, clientY: t.clientY };
+        if (!raf) raf = requestAnimationFrame(tick);
+        clearTimeout(releaseTimer);
+      };
+      const onTouchEnd = () => {
+        clearTimeout(releaseTimer);
+        // Hold the reveal for ~1.6 s then fade out
+        releaseTimer = setTimeout(reset, 1600);
+      };
+      hero.addEventListener('touchstart', onTouch, { passive: true });
+      hero.addEventListener('touchmove',  onTouch, { passive: true });
+      hero.addEventListener('touchend',   onTouchEnd, { passive: true });
+      hero.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    }
   })();
 
   // Ecosystem media detail toggle
