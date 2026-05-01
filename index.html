@@ -332,28 +332,22 @@
     z-index: 2;
     max-width: 800px;
   }
-  .hero-text-cluster {
-    position: relative;
-    /* Text fades around the chip-reveal pivot. Robust trick: drive the
-       mask's circle RADIUS from --prox instead of varying alpha inside
-       rgba() (Safari/some Chromes drop the latter and fall back to
-       opaque). At --prox=0 the disc is ~0.1 px so the cluster looks
-       fully visible; at --prox=1 a feathered ~220 px hole opens up
-       and the chip shows through. */
-    -webkit-mask-image: radial-gradient(
-      circle calc(var(--prox, 0) * 220px + 0.1px) at var(--cax, 50%) var(--cay, 50%),
-      transparent 0%, transparent 65%,
-      rgba(0,0,0,0.5) 85%, black 100%);
-            mask-image: radial-gradient(
-      circle calc(var(--prox, 0) * 220px + 0.1px) at var(--cax, 50%) var(--cay, 50%),
-      transparent 0%, transparent 65%,
-      rgba(0,0,0,0.5) 85%, black 100%);
+  .hero-text-cluster { position: relative; }
+  /* Tagline + title fade with --prox so the chip below is clearly visible
+     when the visitor approaches it. opacity-on-calc-on-var is rock solid
+     across browsers (no mask-in-rgba quirks), and fading both elements
+     keeps the visual hierarchy intact while the chip is on screen. */
+  .hero-tagline {
+    transition: opacity 240ms ease;
+    opacity: calc(1 - var(--prox, 0) * 0.92);
   }
-  @media (hover: none) and (pointer: coarse) {
-    .hero-text-cluster {
-      -webkit-mask-image: none;
-              mask-image: none;
-    }
+  .hero h1 {
+    transition: opacity 240ms ease;
+    opacity: calc(1 - var(--prox, 0) * 0.55);
+  }
+  .hero .hero-company {
+    transition: opacity 240ms ease;
+    opacity: calc(1 - var(--prox, 0) * 0.85);
   }
   .hero h1 {
     font-size: 56px;
