@@ -688,6 +688,491 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 }
 .qlinks a:hover{border-color:var(--acc);color:var(--pri);transform:translateY(-1px);box-shadow:var(--shadow-2);background:#fdf8ea;}
 .qlinks a:active{transform:translateY(0) scale(.97);}
+
+/* =========================================================================
+   Day mode toggle — global floating segmented control (打卡 / 海拔)
+   The toggle lives once on the page (right-rail, above .fab-stack) and
+   switches every day-panel's panes simultaneously via body[data-jm-mode].
+   ======================================================================= */
+.mode-shell{margin:18px 0 8px;}
+.mode-shell .mode-panes{position:relative;}
+.mode-pane{display:none;}
+/* 出發模式 = 純時間軸（最終使用介面） */
+body[data-jm-mode="checkpoint"] .mode-pane[data-mode="checkpoint"]{
+  display:block;
+  animation:modeFade .4s cubic-bezier(.2,.7,.2,1);
+}
+/* 規劃模式 = 海拔綜覽 + 休息點編輯（不再重複顯示時間軸，避免冗餘） */
+body[data-jm-mode="elevation"] .mode-pane[data-mode="elevation"]{
+  display:block;
+  animation:modeFade .4s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes modeFade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+/* Floating toggle pill — top-right rail, directly below the permit-chip.
+   Compact (icons-only by default, label revealed via tooltip on hover). */
+.jm-mode-toggle{
+  position:fixed;
+  top:calc(env(safe-area-inset-top, 0px) + 48px);
+  right:calc(env(safe-area-inset-right, 0px) + 10px);
+  z-index:1210;
+  display:inline-flex; padding:2px;
+  background:linear-gradient(180deg, #1f3a23 0%, #122118 100%);
+  border:1px solid rgba(168,128,44,0.45);
+  border-radius:999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,213,138,0.18),
+    0 4px 14px rgba(10,26,6,0.30),
+    0 1px 3px rgba(0,0,0,0.20);
+  font-family:var(--serif);
+  user-select:none;
+  animation:jmtIn .55s cubic-bezier(.2,.7,.2,1) .15s both;
+}
+@keyframes jmtIn{
+  from{opacity:0; transform:translateY(-4px) scale(.92);}
+  to  {opacity:1; transform:none;}
+}
+.jm-mode-toggle button{
+  appearance:none; background:transparent; border:none; cursor:pointer;
+  padding:4px 8px;
+  font-family:var(--serif); font-size:.66rem; font-weight:600; letter-spacing:.18em;
+  color:rgba(244,237,220,0.62);
+  position:relative; z-index:2;
+  display:inline-flex; align-items:center; gap:4px;
+  transition:color .25s, transform .15s;
+  border-radius:999px;
+  height:24px;
+}
+.jm-mode-toggle button:active{transform:scale(.94);}
+.jm-mode-toggle button .mt-icon{
+  font-size:.8rem; line-height:1;
+  filter:grayscale(.35); transition:filter .25s, transform .25s;
+  display:inline-block;
+}
+body[data-jm-mode="checkpoint"] .jm-mode-toggle button[data-target-mode="checkpoint"],
+body[data-jm-mode="elevation"]  .jm-mode-toggle button[data-target-mode="elevation"]{
+  color:#0a1a06;
+}
+body[data-jm-mode="checkpoint"] .jm-mode-toggle button[data-target-mode="checkpoint"] .mt-icon,
+body[data-jm-mode="elevation"]  .jm-mode-toggle button[data-target-mode="elevation"] .mt-icon{
+  filter:none; transform:scale(1.06);
+}
+.jm-mode-toggle button .mt-en{display:none;}    /* drop EN entirely — too noisy at this size */
+.jm-mode-toggle .mt-ink{
+  position:absolute; top:2px; bottom:2px; left:2px;
+  width:calc(50% - 2px);
+  background:radial-gradient(circle at 35% 30%, #e8c870, #a8802c 70%, #6e5316 100%);
+  border-radius:999px;
+  z-index:1;
+  transition:transform .42s cubic-bezier(.7,0,.2,1);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.32),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 1px 3px rgba(0,0,0,0.18);
+}
+body[data-jm-mode="elevation"] .jm-mode-toggle .mt-ink{transform:translateX(100%);}
+
+/* Hide global toggle on tabs without itinerary content */
+body:not([data-jm-tab="itin"]) .jm-mode-toggle{display:none;}
+
+@media (max-width:380px){
+  .jm-mode-toggle button{padding:4px 7px;}
+  .jm-mode-toggle button span:not(.mt-icon):not(.mt-en){font-size:.62rem; letter-spacing:.14em;}
+}
+
+/* Elevation pane content */
+.elev-pane{margin-top:14px;}
+.elev-card{
+  background:linear-gradient(178deg, #fbf6e8, #ebe1c9);
+  border:1px solid rgba(42,36,24,0.18);
+  border-radius:8px;
+  padding:18px 18px 16px;
+  position:relative;
+  box-shadow:0 4px 16px rgba(10,26,6,0.06);
+}
+.elev-card::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:3px;
+  border-radius:8px 8px 0 0;
+  background:repeating-linear-gradient(90deg, var(--pri,#1e3a1a) 0 12px, transparent 12px 16px, var(--acc,#a8802c) 16px 19px, transparent 19px 30px);
+  opacity:.85;
+}
+.elev-head{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.32em; color:var(--ink-soft, #7a7468);
+  text-transform:uppercase;
+  margin-bottom:10px; padding-top:6px;
+}
+.elev-head .eh-l{color:var(--gold-deep,#6e5316); font-weight:700;}
+.elev-canvas-wrap{
+  position:relative;
+  height:200px; margin:6px -2px 0;
+  background:linear-gradient(180deg, #fdf9ee, #f3ecd6);
+  border:1px solid rgba(42,36,24,0.12);
+  border-radius:6px;
+  overflow:hidden;
+}
+.elev-canvas-wrap canvas{display:block; width:100%; height:100%;}
+.elev-stats-row{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(95px, 1fr));
+  gap:0; margin-top:14px;
+  border-top:1px solid var(--rule, #2a2418); border-bottom:1px solid var(--rule, #2a2418);
+}
+.elev-stat{
+  padding:14px 10px 14px 0;
+  border-right:1px dashed rgba(42,36,24,0.22);
+}
+.elev-stat:last-child{border-right:none;}
+.elev-stat .es-lbl{
+  font-family:var(--mono); font-size:.58rem; letter-spacing:.28em;
+  color:var(--ink-soft,#7a7468); text-transform:uppercase; margin-bottom:5px;
+}
+.elev-stat .es-val{
+  font-family:"Fraunces", var(--serif); font-weight:700; font-size:1.18rem;
+  color:var(--pri-deep, #0a1a06); font-feature-settings:"tnum";
+  letter-spacing:-.005em; line-height:1;
+}
+.elev-stat .es-val small{
+  display:block; font-family:var(--mono); font-weight:400; font-size:.6rem;
+  color:var(--ink-soft,#7a7468); margin-top:4px; letter-spacing:.1em;
+}
+
+/* 休息點 / segment table */
+.shanghe-block{margin-top:18px;}
+.shanghe-block .sb-head{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 14px;
+  margin-bottom:6px;
+}
+.shanghe-block .sb-title{
+  font-family:var(--serif); font-weight:700; font-size:.94rem;
+  color:var(--pri-deep,#0a1a06); letter-spacing:.04em;
+  display:flex; align-items:center; gap:8px;
+}
+.shanghe-block .sb-title::before{
+  content:""; width:14px; height:2px; background:var(--acc, #a8802c);
+}
+.shanghe-block .sb-title .sb-en{
+  font-family:var(--mono); font-size:.58rem; letter-spacing:.32em;
+  color:var(--ink-soft,#7a7468); font-weight:600; margin-left:4px;
+  text-transform:uppercase;
+}
+.shanghe-block .sb-source{
+  font-family:var(--serif); font-style:italic; font-size:.72rem;
+  color:var(--ink-soft,#7a7468); font-weight:300;
+  letter-spacing:.02em;
+}
+
+/* Speed control row */
+.speed-control{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+  margin:8px 0 14px;
+  padding:9px 12px;
+  background:linear-gradient(178deg, rgba(168,128,44,0.08), rgba(168,128,44,0.04));
+  border:1px solid rgba(168,128,44,0.25);
+  border-left:3px solid var(--acc,#a8802c);
+  border-radius:4px;
+}
+.speed-control .sc-lbl{
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.3em;
+  color:var(--ink-soft,#7a7468); text-transform:uppercase; font-weight:700;
+}
+.speed-control .speed-input{
+  appearance:none; -webkit-appearance:none;
+  font-family:"Fraunces", var(--serif); font-weight:700; font-size:1.1rem;
+  color:var(--pri-deep,#0a1a06); font-feature-settings:"tnum";
+  background:#fdf9ee; border:1px solid rgba(110,83,22,0.45);
+  border-radius:3px;
+  padding:4px 8px; width:78px; text-align:center;
+  outline:none; transition:border-color .2s, box-shadow .2s;
+}
+.speed-control .speed-input:focus{
+  border-color:var(--gold-deep,#6e5316);
+  box-shadow:0 0 0 3px rgba(168,128,44,0.18);
+}
+.speed-control .speed-input::-webkit-outer-spin-button,
+.speed-control .speed-input::-webkit-inner-spin-button{margin-left:4px;}
+.speed-control .sc-x{
+  font-family:"Fraunces", serif; font-weight:700; font-size:1rem; color:var(--gold-deep,#6e5316);
+}
+.speed-control .sc-hint{
+  font-family:var(--serif); font-size:.74rem; color:var(--ink-soft,#7a7468);
+  font-style:italic;
+  flex:1; min-width:120px;
+}
+@media (max-width:480px){
+  .speed-control .sc-hint{font-size:.68rem;}
+}
+.shanghe-list{
+  font-family:var(--serif); font-size:.92rem;
+  border-top:1px solid rgba(42,36,24,0.18);
+}
+.sl-row{
+  display:grid; grid-template-columns:1fr auto 70px auto;
+  gap:10px; align-items:center;
+  padding:9px 8px 9px 12px;
+  border-bottom:1px dashed rgba(42,36,24,0.18);
+  border-left:3px solid transparent;
+  transition:background .15s, border-color .2s, transform .1s;
+  cursor:pointer;
+  user-select:none;
+  position:relative;
+}
+.sl-row:hover{background:rgba(168,128,44,0.06); border-left-color:rgba(168,128,44,0.35);}
+.sl-row:active{transform:scale(.997);}
+.sl-row[aria-pressed="true"]{
+  background:linear-gradient(90deg, rgba(168,128,44,0.18), rgba(168,128,44,0.04));
+  border-left-color:#a8802c;
+}
+.sl-row[aria-pressed="true"]::after{
+  content:"⌖"; position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  font-size:.95rem; color:#6e5316; opacity:.75; pointer-events:none;
+  font-family:"JetBrains Mono", monospace; font-weight:800;
+}
+
+/* Reset / "全段" pill — appears in elev-head when a segment is focused */
+.elev-focus-reset{
+  appearance:none; cursor:pointer; border:1px solid rgba(168,128,44,0.55);
+  background:linear-gradient(180deg, #1f3a23, #122118); color:#f4eddc;
+  font-family:var(--mono,monospace); font-size:.6rem; letter-spacing:.22em;
+  padding:3px 9px; border-radius:999px; font-weight:700;
+  text-transform:uppercase;
+  display:none; align-items:center; gap:5px;
+  transition:transform .15s, background .2s;
+}
+.elev-card[data-focused="true"] .elev-focus-reset{display:inline-flex;}
+.elev-focus-reset:hover{transform:scale(1.04); background:linear-gradient(180deg, #2a4a2c, #1a3020);}
+.elev-focus-reset:active{transform:scale(.96);}
+.elev-focus-reset::before{content:"↻ "; font-size:.78rem; opacity:.85; letter-spacing:0;}
+.sl-row .sl-route{color:var(--ink, #1a1a17); font-weight:500;}
+.sl-row .sl-route .sl-arrow{color:var(--gold-deep,#6e5316); margin:0 4px;}
+.sl-row .sl-meta{
+  font-family:var(--mono); font-size:.66rem; letter-spacing:.08em;
+  color:var(--ink-soft,#7a7468);
+}
+.sl-row .sl-time{
+  font-family:"Fraunces", var(--serif); font-weight:700; font-size:1rem;
+  color:var(--pri-deep,#0a1a06); text-align:right; font-feature-settings:"tnum";
+  line-height:1.15;
+}
+.sl-row .sl-time .sl-time-unit{
+  font-family:var(--mono,monospace); font-size:.62rem; font-weight:500;
+  color:var(--ink-soft,#7a7468); margin-left:1px;
+}
+.sl-row .sl-time .sl-time-base{
+  display:none;
+  font-family:var(--mono,monospace); font-size:.6rem; font-weight:500;
+  color:var(--ink-soft,#7a7468); letter-spacing:.05em;
+}
+.shanghe-block:not([data-speed-factor="1.00"]) .sl-time-base{display:block;}
+.shanghe-block:not([data-speed-factor="1.00"]) .sl-time-derived{
+  color:var(--gold-deep,#6e5316);
+}
+.sl-total .slt-v small[data-total-base]{
+  display:block; margin-left:0; margin-top:2px;
+  font-family:var(--mono); font-size:.62rem; color:var(--ink-soft,#7a7468);
+  letter-spacing:.18em; font-weight:500; text-align:right;
+}
+.shanghe-block[data-speed-factor="1.00"] .sl-total small[data-total-base]{display:none;}
+.sl-row .sl-bar{
+  height:5px; min-width:24px;
+  background:linear-gradient(90deg, var(--gold-deep,#6e5316), var(--acc,#a8802c));
+  border-radius:2px; opacity:.55;
+}
+.sl-total{
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:12px 4px 4px;
+  font-family:var(--serif);
+}
+.sl-total .slt-l{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.3em;
+  color:var(--ink-soft,#7a7468); text-transform:uppercase;
+}
+.sl-total .slt-v{
+  font-family:"Fraunces", var(--serif); font-weight:900; font-size:1.4rem;
+  color:var(--pri-deep,#0a1a06); font-feature-settings:"tnum"; letter-spacing:-.01em;
+}
+.sl-total .slt-v small{
+  font-family:var(--mono); font-size:.62rem; font-weight:600;
+  color:var(--gold-deep,#6e5316); letter-spacing:.18em; margin-left:8px;
+}
+
+/* Clickable decision-point marker overlaid on the elevation chart.
+   For Day 2's 主北岔 (風口) — clicking switches between 2A ↔ 2B routes. */
+.elev-decision-marker{
+  position:absolute; width:30px; height:30px;
+  background:transparent; border:none; padding:0; cursor:pointer;
+  z-index:3;
+  transform:translate(-50%, -50%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.elev-decision-marker .edm-ring{
+  width:18px; height:18px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fca5a5, #dc2626 60%, #7f1d1d 100%);
+  border:2px solid #fff;
+  box-shadow:0 0 0 2px rgba(220,38,38,0.45), 0 2px 6px rgba(0,0,0,0.35);
+  animation:edmPulse 1.8s ease-out infinite;
+}
+@keyframes edmPulse{
+  0%, 100%{ box-shadow:0 0 0 2px rgba(220,38,38,0.45), 0 0 0 0 rgba(220,38,38,0); }
+  50%      { box-shadow:0 0 0 2px rgba(220,38,38,0.45), 0 0 0 8px rgba(220,38,38,0); }
+}
+.elev-decision-marker .edm-label{
+  position:absolute; top:30px; left:50%; transform:translateX(-50%);
+  font-family:var(--mono,monospace); font-size:.58rem; letter-spacing:.18em;
+  color:#7f1d1d; font-weight:800; text-transform:uppercase;
+  background:rgba(255,255,255,0.92); padding:1px 5px; border-radius:2px;
+  border:1px solid rgba(220,38,38,0.4);
+  white-space:nowrap; pointer-events:none;
+  box-shadow:0 1px 2px rgba(0,0,0,0.15);
+}
+.elev-decision-marker:hover .edm-ring{
+  transform:scale(1.15);
+  box-shadow:0 0 0 3px rgba(220,38,38,0.6), 0 4px 10px rgba(0,0,0,0.45);
+}
+.elev-decision-marker:active .edm-ring{transform:scale(.95);}
+
+/* Route-info badge in elev-head — shows current active route variant.
+   Highlights briefly when changed by decision-marker click. */
+.elev-route-info{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.28em;
+  color:var(--ink-soft, #7a7468); text-transform:uppercase;
+  transition:color .35s, background .35s;
+  padding:2px 6px; border-radius:3px;
+}
+.elev-route-info.flash{
+  color:#0a1a06; background:#e8c870;
+  animation:routeFlash 1.2s ease-out;
+}
+@keyframes routeFlash{
+  0%   { background:#e8c870; transform:scale(1.04); }
+  50%  { background:#fde68a; }
+  100% { background:transparent; transform:scale(1); }
+}
+
+/* Inline toast for elevation-card decisions */
+.elev-toast{
+  position:absolute; left:50%; top:14px;
+  transform:translate(-50%, -8px);
+  z-index:6;
+  font-family:var(--serif); font-size:.78rem; font-weight:600;
+  color:#f4eddc; letter-spacing:.04em;
+  background:linear-gradient(180deg, #1f3a23, #122118);
+  border:1px solid rgba(168,128,44,0.55);
+  border-radius:999px; padding:6px 14px;
+  box-shadow:0 4px 14px rgba(10,26,6,0.4);
+  opacity:0; pointer-events:none;
+  transition:opacity .25s, transform .3s;
+  max-width:80%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.elev-toast.show{
+  opacity:1; transform:translate(-50%, 0);
+}
+
+/* =========================================================================
+   Multi-day OVERVIEW elevation card (regulation mode only)
+   ======================================================================= */
+.elev-overview{display:none; margin:18px 0 6px;}
+body[data-jm-mode="elevation"] .elev-overview{display:block;}
+.elev-overview .eo-card{
+  background:linear-gradient(178deg, #fbf6e8, #ebe1c9);
+  border:1px solid rgba(42,36,24,0.22);
+  border-radius:8px;
+  padding:14px 16px 14px;
+  position:relative;
+  box-shadow:0 8px 24px -8px rgba(10,26,6,0.14);
+}
+.elev-overview .eo-card::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:4px;
+  border-radius:8px 8px 0 0;
+  background:repeating-linear-gradient(90deg,
+    var(--pri,#1e3a1a) 0 16px, transparent 16px 20px,
+    var(--acc,#a8802c) 20px 24px, transparent 24px 38px);
+}
+.elev-overview .eo-head{
+  display:flex; align-items:baseline; gap:10px;
+  padding-top:6px; flex-wrap:wrap;
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.32em;
+  color:var(--ink-soft,#7a7468); text-transform:uppercase;
+}
+.elev-overview .eo-head .eo-l{
+  color:var(--gold-deep,#6e5316); font-weight:700;
+}
+.elev-overview .eo-head .eo-zh{
+  font-family:"Fraunces", var(--serif); font-style:italic;
+  font-size:1.05rem; font-weight:700; letter-spacing:.04em;
+  color:var(--pri-deep,#0a1a06); text-transform:none;
+}
+.elev-overview .eo-head .eo-mode-note{
+  flex:1; min-width:160px; text-align:right;
+  font-family:var(--serif); font-style:italic; font-weight:400;
+  font-size:.7rem; letter-spacing:.04em; color:var(--gold-deep,#6e5316);
+  text-transform:none;
+}
+.elev-overview .eo-canvas-wrap{
+  position:relative;
+  height:230px; margin:10px 0 10px;
+  background:linear-gradient(180deg, #fdf9ee, #f3ecd6);
+  border:1px solid rgba(42,36,24,0.12);
+  border-radius:6px; overflow:hidden;
+}
+.elev-overview .eo-canvas-wrap canvas{display:block; width:100%; height:100%;}
+.elev-overview .eo-legend{
+  display:flex; flex-wrap:wrap; gap:6px 18px;
+  font-family:var(--serif); font-size:.78rem; color:var(--ink,#1a1a17);
+  align-items:center;
+}
+.elev-overview .eo-leg{display:inline-flex; align-items:center; gap:6px;}
+.elev-overview .eo-dot{
+  width:14px; height:5px; border-radius:1px; display:inline-block;
+}
+.elev-overview .eo-dot.ascent{background:#1e3a1a;}
+.elev-overview .eo-dot.descent{background:#a8802c;}
+.elev-overview .eo-dot.summit{
+  width:11px; height:11px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fde68a, #a8802c 70%);
+  border:1px solid #0a1a06; box-shadow:inset 0 -1px 0 rgba(0,0,0,.25);
+}
+
+/* In 規劃 mode, the per-day card keeps its chart + stats + segments so
+   the click-to-focus zoom interaction still works on the per-day canvas.
+   The Overview chart at top gives the big picture; this gives day detail. */
+body[data-jm-mode="elevation"] .day-panel .elev-card{
+  margin-top:14px;
+}
+body[data-jm-mode="elevation"] .day-panel .elev-card .elev-head .eh-l::after{
+  content:" · 此天詳細";
+  font-size:.55rem; opacity:.6; margin-left:6px; letter-spacing:.18em;
+}
+
+/* Mode role hint inside .elev-card body, only when in elevation mode */
+.elev-card .elev-role{
+  display:none;
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.28em;
+  color:var(--gold-deep,#6e5316); text-transform:uppercase;
+  margin-top:2px;
+}
+body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
+
+@media (max-width:560px){
+  .elev-overview .eo-canvas-wrap{height:200px;}
+  .elev-overview .eo-head .eo-mode-note{flex-basis:100%; text-align:left; padding-top:2px;}
+}
+
+/* Empty state for non-hiking days */
+.elev-empty{
+  padding:32px 20px; text-align:center;
+  font-family:var(--serif); color:var(--ink-soft,#7a7468); font-size:.95rem;
+  background:rgba(168,128,44,0.04);
+  border:1px dashed rgba(42,36,24,0.2); border-radius:6px;
+}
+
+@media (max-width:560px){
+  .mode-toggle button{padding:7px 14px 6px; font-size:.82rem; letter-spacing:.14em;}
+  .mode-toggle button .mt-en{display:none;}
+  .elev-canvas-wrap{height:170px;}
+  .elev-stat .es-val{font-size:1.05rem;}
+  .sl-row{grid-template-columns:1fr 60px; gap:6px;}
+  .sl-row .sl-meta, .sl-row .sl-bar{display:none;}
+}
 </style>
 <style>
 .ios-install-hint {
@@ -982,7 +1467,7 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 }
 </style>
 </head>
-<body>
+<body data-jm-tab="itin" data-jm-mode="checkpoint">
 
 <button class="pwa-install-btn" id="pwaInstallBtn" type="button" aria-label="安裝 App">
   <span class="pwa-dot" aria-hidden="true"></span>
@@ -1073,7 +1558,18 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 })();
 </script>
 
-<script type="application/json" id="plan-data">{"version":1,"meta":{"title":"玉山主峰・北峰","subtitle":"登山計劃書","start_date":"2026-04-18","end_date":"2026-04-19","depart_date":"2026-04-17","party_size":3,"party_label":"3人","lang":"zh-TW","theme_color":"#1e3a1a","activity_type":"hiking","page_title":"玉山主峰北峰登山計劃書","short_name":"玉山計劃"},"emergency_default":{"standby":{"name":"留守 A","phone":"0900-000-000","phone_tel":"0900000000"},"messenger_url":"https://m.me/","include_112":true,"include_119":true,"local_emergency_label":"南投消防"},"days":[{"id":"d0","date":"2026-04-17","date_label":"4/17 FRI","label":"Day 0・出發","tag":null,"tag_text":"出發日","tag_color_override":"linear-gradient(135deg,#4b5563,#6b7280)","summary":null,"stats":null,"section_title":"Day 0 — 4/17（五）出發","emergency_card_title":"🚨 Day 0・出發關鍵時間","key_times":[{"label":"集合 / 出發","value":"18:00","note":"跟森的接駁地點"},{"label":"預計入住","value":"22:30","note":"示範民宿・已事先告知逾 18:00"},{"label":"明晨叫車","value":"06:30","note":"上塔塔加"}],"quick_links":[{"icon":"📍","text":"跟森的接駁地點","href":"https://maps.app.goo.gl/kmTci2kQMecRgM4h6","external":true},{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"🏠","text":"示範民宿","href":"https://maps.google.com/?q=示範民宿","external":true},{"icon":"📞","text":"示範民宿 0900-000-001","href":"tel:0900000001","external":false},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true},{"icon":"🚧","text":"台21線施工資訊","href":"https://share.google/DvveUzXhSXF3jlzIm","external":true}],"schedule":[{"time":"18:00","title":"週五 18:00 出發","note":"於「跟森的接駁地點」集合 → 前往 示範民宿（南投縣信義鄉）","highlight":true},{"time":"22:30","title":"示範民宿 check-in","note_html":"預計到達 <b>22:30</b>（已逾 18:00 最晚入住，<b>務必事先電話告知</b>，以免被視為取消） 📞 <a href=\"tel:0900000001\">0900-000-001</a>","highlight":true}],"details":[{"icon":"🏠","title":"示範民宿 住宿資訊","rows_html":["<b>地址：</b>[地址略]","<b>電話：</b><a href=\"tel:0900000001\">0900-000-001</a>　<small style=\"color:var(--txtL);\">(非緊急勿 24:00 後撥打)</small>","<b>Google Maps：</b><a href=\"https://maps.google.com/?q=示範民宿\" target=\"_blank\">搜尋「示範民宿」</a>　<small style=\"color:var(--txtL);\">進入部落範圍後請看民宿指示牌，不要太信導航</small>","<div style=\"margin-top:6px;\"><b>Check-in：</b>14:00–18:00　<b>房型：</b>通舖 × 3 人　<b>總房價：</b>$1,500（已付訂金 $1,000）</div>","<b>入住須知：</b>不提供一次性盥洗用品、通舖請自備毛巾、垃圾分類、吸菸限吸菸區、寵物僅限套房"]},{"icon":"💳","title":"訂房 / 匯款 / 退費資訊","rows_html":["<b>訂房：</b>2026/4/17（五）・通舖・3 人・總額 $1,500・定金 $1,000（已付）","<div style=\"margin-top:6px;\"><b>匯款戶資（如需）：</b>國泰世華（013）營業部（218）・帳號 示範帳號・戶名 示範戶名</div>","<div style=\"margin-top:6px;\"><b>取消退費：</b>14 日前 100%・10–13 日 70%・7–9 日 50%・4–6 日 40%・2–3 日 30%・1 日前 10%・當日或未入住 0%</div>","<b>不可抗力（颱風/地震，依政府公告）：</b>全額退款或協助延期 3 個月內","<div style=\"margin-top:6px;\"><b>匯款回報需附：</b>匯款日期、訂房姓名、入住日期、房型</div>"]}],"retreat":null},{"id":"d1","date":"2026-04-18","date_label":"4/18 SAT","label":"Day 1・上山","tag_text":"8.5 KM ｜ +923 M","tag":"d1","section_title":"Day 1 — 4/18（六）塔塔加 → 排雲山莊","emergency_card_title":"🚨 Day 1・上山關鍵時間","key_times":[{"label":"登山口出發","value":"09:00","note":"2,610m 起登"},{"label":"抵達排雲（目標）","value":"15:00","note":"3,402m +923m"},{"label":"排雲供水","value":"16–17","note":"錯過即無水"},{"label":"晚餐・就寢","value":"18:00","note":"19:00 前睡"}],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"schedule":[{"time":"08:30","title":"塔塔加接駁站","note":"搭接駁車至登山口 $100/趟 或步行 2.8km 約 40 分鐘"},{"time":"09:00","title":"玉山登山口出發（0K）","elevation":"2,610m"},{"time":"10:30","title":"孟祿亭（1.7K）","note":"小休 10 分鐘"},{"time":"12:00","title":"白木林觀景台（5.0K）","note":"午餐行動糧 30 分鐘"},{"time":"13:30","title":"大峭壁（6.7K）","note":"拍照留念"},{"time":"15:00","title":"排雲山莊（8.5K）","elevation":"3,402m ｜ +923m","highlight":true},{"time":"17:00","title":"晚餐・整理攻頂包・入睡","note":"供水 16–17:00，晚餐 18:00"}],"details":[],"retreat":{"title":"⚠️ Day 1 撤退","title_color":"#b45309","title_border":"#fcd34d","items_html":["<b>Day 1：</b>身體不適或天候惡劣，原路折返塔塔加。"]}},{"id":"d2","date":"2026-04-19","date_label":"4/19 SUN","label":"Day 2・攻頂","tag_text":null,"tag":null,"section_title":"Day 2 — 4/19（日）攻頂・下山","emergency_card_title":"🚨 Day 2・攻頂關鍵時間","key_times":[{"label":"攻頂折返時限","value":"09:30","note":"過此未登頂即撤退"},{"label":"回排雲最晚","value":"12:00","note":"逾時恐摸黑下山"},{"label":"下山通知","value":"17:30","note":"報留守平安"},{"label":"山難管制","value":"19:00","note":"未回即通報"}],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"routes":[{"id":"d2a","tab_label":"Day 2A 北峰＋主峰","tag_class":"d2b","tag_text":"Day 2A — 北峰 + 主峰","active":true,"schedule":[{"time":"02:00","title":"起床、吃早早餐"},{"time":"03:00","title":"排雲山莊出發（輕裝・頭燈）","elevation":"3,402m"},{"time":"04:30","title":"主北岔路口（風口）— 決策點","note":"風大注意保暖。此處決定走北峰或直上主峰：","decision":true,"decision_buttons":[{"text":"繼續北峰 Day2A","switch_to":"d2a","border":"#ef4444","bg":"#fef2f2","color":"#dc2626"},{"text":"切到主峰 Day2B","switch_to":"d2b","border_var":"--d1","bg":"#eff6ff","color":"#1d4ed8"}]},{"time":"06:00","title":"玉山北峰 / 氣象站","elevation":"3,858m ｜ 金色主峰日出","note":"千元大鈔背面經典角度","highlight":true},{"time":"07:30","title":"離開北峰，碎石坡陡上","note":"最大挑戰，抓好鐵鍊"},{"time":"09:00","title":"回主北岔路口，轉主峰"},{"time":"09:30","title":"登頂玉山主峰","elevation":"3,952m ｜ 台灣最高峰！","highlight":true},{"time":"10:30","title":"下山回排雲山莊"},{"time":"12:00","title":"排雲山莊（吃麵・整裝）"},{"time":"13:00","title":"從排雲下山"},{"time":"16:30","title":"塔塔加登山口","elevation":"2,610m ｜ 搭接駁車","highlight":true}]},{"id":"d2b","tab_label":"Day 2B 僅主峰","tag_class":"d2a","tag_text":"Day 2B — 僅主峰","active":false,"schedule":[{"time":"03:00","title":"起床、吃早餐"},{"time":"04:00","title":"排雲山莊出發","elevation":"3,402m"},{"time":"05:30","title":"主北岔路口（風口）— 決策點","note":"體力充足可改衝北峰：","decision":true,"decision_buttons":[{"text":"切到 Day2A 北峰＋主峰","switch_to":"d2a","border":"#ef4444","bg":"#fef2f2","color":"#dc2626"}]},{"time":"06:20","title":"登頂玉山主峰（日出）","elevation":"3,952m","highlight":true},{"time":"07:30","title":"拍完照離開主峰"},{"time":"09:00","title":"回排雲山莊（補眠）"},{"time":"10:30","title":"排雲下山"},{"time":"14:30","title":"塔塔加登山口","elevation":"2,610m","highlight":true}]}],"details":[],"retreat":{"title":"🛑 Day 2 撤退方案（關鍵）","title_color":"#dc2626","title_border":"#dc2626","items_html":["<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 06:00 未到北峰</b> → 放棄北峰，直攻主峰</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 09:30 未登頂主峰</b> → 立即折返排雲</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 12:00 未回到排雲</b> → 取消當日下山計畫</div>","<div class=\"ret-i\"><b>Day 2 主峰：</b>天候驟變或體力不支，立即折返排雲。</div>","<div class=\"ret-i\"><b>Day 2 北峰：</b>體力不足或時間不夠，放棄北峰直接回排雲下山。</div>"],"raw_html":true}}]}</script>
+<script type="application/json" id="plan-data">{"version":1,"meta":{"title":"玉山主峰・北峰","subtitle":"登山計劃書","start_date":"2026-04-18","end_date":"2026-04-19","depart_date":"2026-04-17","party_size":3,"party_label":"3人","lang":"zh-TW","theme_color":"#1e3a1a","activity_type":"hiking","page_title":"玉山主峰北峰登山計劃書","short_name":"玉山計劃"},"emergency_default":{"standby":{"name":"留守 A","phone":"0900-000-000","phone_tel":"0900000000"},"messenger_url":"https://m.me/","include_112":true,"include_119":true,"local_emergency_label":"南投消防"},"days":[{"id":"d0","date":"2026-04-17","date_label":"4/17 FRI","label":"Day 0・出發","tag":null,"tag_text":"出發日","tag_color_override":"linear-gradient(135deg,#4b5563,#6b7280)","summary":null,"stats":null,"section_title":"Day 0 — 4/17（五）出發","emergency_card_title":"🚨 Day 0・出發關鍵時間","key_times":[{"label":"集合 / 出發","value":"18:00","note":"跟森的接駁地點"},{"label":"預計入住","value":"22:30","note":"示範民宿・已事先告知逾 18:00"},{"label":"明晨叫車","value":"06:30","note":"上塔塔加"}],"quick_links":[{"icon":"📍","text":"跟森的接駁地點","href":"https://maps.app.goo.gl/kmTci2kQMecRgM4h6","external":true},{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"🏠","text":"示範民宿","href":"https://maps.google.com/?q=示範民宿","external":true},{"icon":"📞","text":"示範民宿 0900-000-001","href":"tel:0900000001","external":false},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true},{"icon":"🚧","text":"台21線施工資訊","href":"https://share.google/DvveUzXhSXF3jlzIm","external":true}],"schedule":[{"time":"18:00","title":"週五 18:00 出發","note":"於「跟森的接駁地點」集合 → 前往 示範民宿（南投縣信義鄉）","highlight":true},{"time":"22:30","title":"示範民宿 check-in","note_html":"預計到達 <b>22:30</b>（已逾 18:00 最晚入住，<b>務必事先電話告知</b>，以免被視為取消） 📞 <a href=\"tel:0900000001\">0900-000-001</a>","highlight":true}],"details":[{"icon":"🏠","title":"示範民宿 住宿資訊","rows_html":["<b>地址：</b>[地址略]","<b>電話：</b><a href=\"tel:0900000001\">0900-000-001</a>　<small style=\"color:var(--txtL);\">(非緊急勿 24:00 後撥打)</small>","<b>Google Maps：</b><a href=\"https://maps.google.com/?q=示範民宿\" target=\"_blank\">搜尋「示範民宿」</a>　<small style=\"color:var(--txtL);\">進入部落範圍後請看民宿指示牌，不要太信導航</small>","<div style=\"margin-top:6px;\"><b>Check-in：</b>14:00–18:00　<b>房型：</b>通舖 × 3 人　<b>總房價：</b>$1,500（已付訂金 $1,000）</div>","<b>入住須知：</b>不提供一次性盥洗用品、通舖請自備毛巾、垃圾分類、吸菸限吸菸區、寵物僅限套房"]},{"icon":"💳","title":"訂房 / 匯款 / 退費資訊","rows_html":["<b>訂房：</b>2026/4/17（五）・通舖・3 人・總額 $1,500・定金 $1,000（已付）","<div style=\"margin-top:6px;\"><b>匯款戶資（如需）：</b>國泰世華（013）營業部（218）・帳號 示範帳號・戶名 示範戶名</div>","<div style=\"margin-top:6px;\"><b>取消退費：</b>14 日前 100%・10–13 日 70%・7–9 日 50%・4–6 日 40%・2–3 日 30%・1 日前 10%・當日或未入住 0%</div>","<b>不可抗力（颱風/地震，依政府公告）：</b>全額退款或協助延期 3 個月內","<div style=\"margin-top:6px;\"><b>匯款回報需附：</b>匯款日期、訂房姓名、入住日期、房型</div>"]}],"retreat":null},{"id":"d1","date":"2026-04-18","date_label":"4/18 SAT","label":"Day 1・上山","tag_text":"8.5 KM ｜ +923 M","tag":"d1","section_title":"Day 1 — 4/18（六）塔塔加 → 排雲山莊","emergency_card_title":"🚨 Day 1・上山關鍵時間","key_times":[{"label":"登山口出發","value":"09:00","note":"2,610m 起登"},{"label":"抵達排雲（目標）","value":"15:00","note":"3,402m +923m"},{"label":"排雲供水","value":"16–17","note":"錯過即無水"},{"label":"晚餐・就寢","value":"18:00","note":"19:00 前睡"}],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"schedule":[{"time":"08:30","title":"塔塔加接駁站","note":"搭接駁車至登山口 $100/趟 或步行 2.8km 約 40 分鐘"},{"time":"09:00","title":"玉山登山口出發（0K）","elevation":"2,610m"},{"time":"10:30","title":"孟祿亭（1.7K）","note":"小休 10 分鐘"},{"time":"12:00","title":"白木林觀景台（5.0K）","note":"午餐行動糧 30 分鐘"},{"time":"13:30","title":"大峭壁（6.7K）","note":"拍照留念"},{"time":"15:00","title":"排雲山莊（8.5K）","elevation":"3,402m ｜ +923m","highlight":true},{"time":"17:00","title":"晚餐・整理攻頂包・入睡","note":"供水 16–17:00，晚餐 18:00"}],"details":[],"retreat":{"title":"⚠️ Day 1 撤退","title_color":"#b45309","title_border":"#fcd34d","items_html":["<b>Day 1：</b>身體不適或天候惡劣，原路折返塔塔加。"]},"elevation_profile":{"gpx_ref":"d1","color":"#1e3a1a","fill":"rgba(30,58,26,0.20)","label":"上河文化步程基準","shanghe_segments":[{"id":"d1-s0","from":"登山口","to":"孟祿亭","base_minutes":50,"distance_km":1.7,"ascent_m":140,"anchor_idx":[0,83],"descent_m":0},{"id":"d1-s1","from":"孟祿亭","to":"白木林觀景台","base_minutes":120,"distance_km":3.3,"ascent_m":290,"anchor_idx":[83,240],"descent_m":0},{"id":"d1-s2","from":"白木林觀景台","to":"大峭壁","base_minutes":40,"distance_km":1.7,"ascent_m":110,"anchor_idx":[240,319],"descent_m":0},{"id":"d1-s3","from":"大峭壁","to":"排雲山莊","base_minutes":50,"distance_km":1.8,"ascent_m":160,"anchor_idx":[319,394],"descent_m":0}],"summit_idx":394,"summit_label":"排雲山莊","direction":"ascent_only"}},{"id":"d2","date":"2026-04-19","date_label":"4/19 SUN","label":"Day 2・攻頂","tag_text":null,"tag":null,"section_title":"Day 2 — 4/19（日）攻頂・下山","emergency_card_title":"🚨 Day 2・攻頂關鍵時間","key_times":[{"label":"攻頂折返時限","value":"09:30","note":"過此未登頂即撤退"},{"label":"回排雲最晚","value":"12:00","note":"逾時恐摸黑下山"},{"label":"下山通知","value":"17:30","note":"報留守平安"},{"label":"山難管制","value":"19:00","note":"未回即通報"}],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"routes":[{"id":"d2a","tab_label":"Day 2A 北峰＋主峰","tag_class":"d2b","tag_text":"Day 2A — 北峰 + 主峰","active":true,"schedule":[{"time":"02:00","title":"起床、吃早早餐"},{"time":"03:00","title":"排雲山莊出發（輕裝・頭燈）","elevation":"3,402m"},{"time":"04:30","title":"主北岔路口（風口）— 決策點","note":"風大注意保暖。此處決定走北峰或直上主峰：","decision":true,"decision_buttons":[{"text":"繼續北峰 Day2A","switch_to":"d2a","border":"#ef4444","bg":"#fef2f2","color":"#dc2626"},{"text":"切到主峰 Day2B","switch_to":"d2b","border_var":"--d1","bg":"#eff6ff","color":"#1d4ed8"}]},{"time":"06:00","title":"玉山北峰 / 氣象站","elevation":"3,858m ｜ 金色主峰日出","note":"千元大鈔背面經典角度","highlight":true},{"time":"07:30","title":"離開北峰，碎石坡陡上","note":"最大挑戰，抓好鐵鍊"},{"time":"09:00","title":"回主北岔路口，轉主峰"},{"time":"09:30","title":"登頂玉山主峰","elevation":"3,952m ｜ 台灣最高峰！","highlight":true},{"time":"10:30","title":"下山回排雲山莊"},{"time":"12:00","title":"排雲山莊（吃麵・整裝）"},{"time":"13:00","title":"從排雲下山"},{"time":"16:30","title":"塔塔加登山口","elevation":"2,610m ｜ 搭接駁車","highlight":true}]},{"id":"d2b","tab_label":"Day 2B 僅主峰","tag_class":"d2a","tag_text":"Day 2B — 僅主峰","active":false,"schedule":[{"time":"03:00","title":"起床、吃早餐"},{"time":"04:00","title":"排雲山莊出發","elevation":"3,402m"},{"time":"05:30","title":"主北岔路口（風口）— 決策點","note":"體力充足可改衝北峰：","decision":true,"decision_buttons":[{"text":"切到 Day2A 北峰＋主峰","switch_to":"d2a","border":"#ef4444","bg":"#fef2f2","color":"#dc2626"}]},{"time":"06:20","title":"登頂玉山主峰（日出）","elevation":"3,952m","highlight":true},{"time":"07:30","title":"拍完照離開主峰"},{"time":"09:00","title":"回排雲山莊（補眠）"},{"time":"10:30","title":"排雲下山"},{"time":"14:30","title":"塔塔加登山口","elevation":"2,610m","highlight":true}]}],"details":[],"retreat":{"title":"🛑 Day 2 撤退方案（關鍵）","title_color":"#dc2626","title_border":"#dc2626","items_html":["<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 06:00 未到北峰</b> → 放棄北峰，直攻主峰</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 09:30 未登頂主峰</b> → 立即折返排雲</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 12:00 未回到排雲</b> → 取消當日下山計畫</div>","<div class=\"ret-i\"><b>Day 2 主峰：</b>天候驟變或體力不支，立即折返排雲。</div>","<div class=\"ret-i\"><b>Day 2 北峰：</b>體力不足或時間不夠，放棄北峰直接回排雲下山。</div>"],"raw_html":true},"elevation_profile":{"gpx_ref":"d2","color":"#8b2a1f","fill":"rgba(139,42,31,0.18)","label":"上河文化步程基準（主+北峰）","shanghe_segments":[{"id":"d2a-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":60,"distance_km":1.5,"ascent_m":400,"anchor_idx":[0,94],"descent_m":0},{"id":"d2a-s1","from":"主北岔(風口)","to":"玉山北峰","base_minutes":80,"distance_km":2.5,"ascent_m":58,"anchor_idx":[94,380],"descent_m":0},{"id":"d2a-s2","from":"北峰","to":"主北岔(風口)","base_minutes":65,"distance_km":2.5,"ascent_m":0,"anchor_idx":[380,94],"descent_m":58},{"id":"d2a-s3","from":"主北岔(風口)","to":"玉山主峰","base_minutes":25,"distance_km":0.6,"ascent_m":152,"anchor_idx":[94,140],"descent_m":0},{"id":"d2a-s4","from":"主峰","to":"排雲山莊","base_minutes":45,"distance_km":2.1,"ascent_m":0,"anchor_idx":[140,800],"descent_m":550}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"route_variants":{"d2a":{"label":"Day 2A・北峰 + 主峰","shanghe_segments":[{"id":"d2a-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":60,"distance_km":1.5,"ascent_m":400,"anchor_idx":[0,94],"descent_m":0},{"id":"d2a-s1","from":"主北岔(風口)","to":"玉山北峰","base_minutes":80,"distance_km":2.5,"ascent_m":58,"anchor_idx":[94,380],"descent_m":0},{"id":"d2a-s2","from":"北峰","to":"主北岔(風口)","base_minutes":65,"distance_km":2.5,"ascent_m":0,"anchor_idx":[380,94],"descent_m":58},{"id":"d2a-s3","from":"主北岔(風口)","to":"玉山主峰","base_minutes":25,"distance_km":0.6,"ascent_m":152,"anchor_idx":[94,140],"descent_m":0},{"id":"d2a-s4","from":"主峰","to":"排雲山莊","base_minutes":45,"distance_km":2.1,"ascent_m":0,"anchor_idx":[140,800],"descent_m":550}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"summit_idx":380,"summit_label":"玉山北峰","direction":"out_and_back"},"d2b":{"label":"Day 2B・僅主峰","shanghe_segments":[{"id":"d2b-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":60,"distance_km":1.5,"ascent_m":400,"anchor_idx":[0,94],"descent_m":0},{"id":"d2b-s1","from":"主北岔(風口)","to":"玉山主峰","base_minutes":35,"distance_km":0.6,"ascent_m":152,"anchor_idx":[94,140],"descent_m":0},{"id":"d2b-s2","from":"主峰","to":"排雲山莊","base_minutes":30,"distance_km":2.1,"ascent_m":0,"anchor_idx":[140,800],"descent_m":552}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"summit_idx":140,"summit_label":"玉山主峰","direction":"out_and_back"}},"default_variant":"d2a","summit_idx":380,"summit_label":"玉山北峰","direction":"out_and_back"}}]}</script>
+
+<!-- Global mode toggle: 打卡 ⇄ 海拔 (floats above .fab-stack) -->
+<div id="jmModeToggle" class="jm-mode-toggle" role="tablist" aria-label="行程模式">
+  <button type="button" data-target-mode="checkpoint" role="tab" aria-selected="true" title="出發模式 — 行程時間軸 + 打卡追蹤">
+    <span class="mt-icon">🥾</span><span>出發</span><span class="mt-en">Use</span>
+  </button>
+  <button type="button" data-target-mode="elevation" role="tab" aria-selected="false" title="規劃模式 — 編輯路線與速度，反映到時間軸">
+    <span class="mt-icon">⛰</span><span>規劃</span><span class="mt-en">Plan</span>
+  </button>
+  <span class="mt-ink" aria-hidden="true"></span>
+</div>
 
 <div class="fab-stack">
   <button class="fab alert" id="fab-key" onclick="togglePop('pop-key')" title="關鍵時間 / 緊急聯絡">🚨</button>
@@ -1114,7 +1610,7 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 <div id="permitMenu" class="permit-menu" role="menu" aria-hidden="true">
   <div class="pm-head">通行證 · TF-26</div>
   <div class="pm-user" id="pmUser">—</div>
-  <a class="pm-item" href="dashboard.html" id="pmDashboard" role="menuitem">我的計劃書 <span class="pm-en">PLANS</span></a>
+  <!-- 「我的計劃書」入口由左側 #dashPill 提供，dropdown 不重複 -->
   <button type="button" class="pm-item danger" id="pmLogout" role="menuitem">登出 <span class="pm-en">SIGN OUT</span></button>
 </div>
 <div id="permitToast" class="permit-toast" role="status" aria-live="polite"></div>
@@ -1129,7 +1625,6 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
   var pmUser = document.getElementById('pmUser');
   var toast = document.getElementById('permitToast');
   var dashPill = document.getElementById('dashPill');
-  var pmDashboard = document.getElementById('pmDashboard');
   var zh = chip.querySelector('.pc-zh');
   var en = chip.querySelector('.pc-en');
 
@@ -1137,7 +1632,6 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
   var apiParam = new URLSearchParams(location.search).get('api');
   var apiQS = apiParam ? '?api=' + encodeURIComponent(apiParam) : '';
   dashPill.href = 'dashboard.html' + apiQS;
-  if (pmDashboard) pmDashboard.href = 'dashboard.html' + apiQS;
 
   // Position dashPill to the left of the chip (chip is fixed top-right).
   function placeDashPill(){
@@ -1248,37 +1742,12 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 
 <div class="tab-bar">
   <button class="tab-btn active" onclick="openTab('itin')"><span class="tab-icon">🥾</span>行程</button>
-  <button class="tab-btn" onclick="openTab('map')"><span class="tab-icon">🗺</span>地圖</button>
   <button class="tab-btn" onclick="openTab('contact')"><span class="tab-icon">📞</span>聯絡</button>
   <button class="tab-btn" onclick="openTab('split')"><span class="tab-icon">🎒</span>裝備&amp;注意</button>
 </div>
 
 <!-- ==================== TAB 1: 地圖 ==================== -->
-<div class="tab-panel" id="tab-map">
-  <div class="map-bar">
-    <div style="display:flex;gap:10px;align-items:center;">
-      <div class="leg" onclick="toggleTrack('d1')"><div class="leg-line" style="background:var(--d1);"></div> Day1</div>
-      <div class="leg" onclick="toggleTrack('d2')"><div class="leg-line" style="background:var(--d2b);"></div> Day2</div>
-      <span style="color:var(--bdr);">|</span>
-      <span class="map-chip active" id="chip-cp" onclick="toggleCheckpoints()">打卡點</span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <div class="gps-info" id="gps-info" style="display:none;">
-        <b id="gps-elev">—</b> <span id="gps-acc" style="font-size:0.7rem;"></span>
-      </div>
-      <button class="gps-btn" id="gps-btn" onclick="toggleGPS()">GPS 定位</button>
-    </div>
-  </div>
-  <div id="map-view"></div>
-  <div class="stat-row">
-    <div class="stat-pill"><div class="sv">8.3 km</div>Day 1 距離</div>
-    <div class="stat-pill"><div class="sv">+923m</div>Day 1 爬升</div>
-    <div class="stat-pill"><div class="sv">9.3 km</div>Day 2 距離</div>
-    <div class="stat-pill"><div class="sv">+1,107m</div>Day 2 爬升</div>
-    <div class="stat-pill"><div class="sv">3,957m</div>最高海拔</div>
-  </div>
-  <div class="elev-wrap"><canvas id="elev-canvas"></canvas></div>
-</div>
+<!-- map tab removed — functionality moved into per-day Elevation mode -->
 
 <!-- ==================== TAB: 行程 ==================== -->
 <div class="tab-panel active" id="tab-itin">
@@ -1289,6 +1758,25 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 
   <!-- Day Sub-tabs -->
   <div class="day-bar" id="day-bar"></div>
+
+  <!-- Overview elevation chart — visible only in 海拔/規劃 mode. Spans ALL
+       days end-to-end with day-range labels and ascent (去程)/descent (回程)
+       colour split. Driven by TF.elevation.drawOverview. -->
+  <div id="elev-overview" class="elev-overview" aria-hidden="true">
+    <div class="eo-card">
+      <div class="eo-head">
+        <span class="eo-l">Overview</span>
+        <span class="eo-zh">行程綜覽</span>
+        <span class="eo-mode-note">規劃模式 · 在此編輯路線、休息點與速度</span>
+      </div>
+      <div class="eo-canvas-wrap"><canvas id="elev-overview-canvas"></canvas></div>
+      <div class="eo-legend">
+        <span class="eo-leg"><span class="eo-dot ascent"></span>去程 · 攻頂</span>
+        <span class="eo-leg"><span class="eo-dot descent"></span>回程 · 下山</span>
+        <span class="eo-leg"><span class="eo-dot summit"></span>目標峰</span>
+      </div>
+    </div>
+  </div>
 
   <div id="day-panels-host"></div>
 
@@ -1359,12 +1847,6 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
     </div>
   </div>
 
-  <div class="section">
-    <div class="sec-title">撤退方案</div>
-    <div class="ret-i"><b>Day 1：</b>原路折返塔塔加鞍部登山口。</div>
-    <div class="ret-i"><b>Day 2 主峰：</b>折返排雲山莊。</div>
-    <div class="ret-i"><b>Day 2 北峰：</b>放棄北峰，直接回排雲下山。</div>
-  </div>
 
 </div>
 </div>
@@ -1476,7 +1958,8 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 
 <div class="footer">登山不是只要登頂，而是要安全回家。</div>
 
-<script src="render.js"></script>
+<!-- (external Trailforge scripts moved to end-of-body so they run AFTER the
+     inline GPX data block, which exposes window.__JM_GPX__) -->
 <script>
   // Leaflet 1.9.4 still registers a 'unload' listener which Chromium and the
   // Permissions-Policy header (sent by Cloudflare) deprecate. The listener is
@@ -1507,12 +1990,17 @@ const gpxDay2=[[23.466384, 120.94978, 3400.8], [23.46638, 120.950427, 3407.8], [
 
 // === TABS ===
 function openTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['itin','map','contact','split'][i]===id));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['itin','contact','split'][i]===id));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
+  document.body.dataset.jmTab = id;  // CSS uses this to show/hide global mode toggle
   try{localStorage.setItem('jm_tab',id);}catch(e){}
-  if(id==='map'){setTimeout(()=>{map.invalidateSize();map.fitBounds(allBounds,{padding:[30,30]});},60);}
   if(id==='split'){try{renderSplit();renderChecklist();}catch(e){console.error(e);}}
+  // Elevation canvases must redraw when the itinerary tab becomes visible
+  // (canvases inside hidden tabs report 0 size during initial draw).
+  if(id==='itin' && window.TF && TF.modeToggle && TF.modeToggle.refreshAll){
+    requestAnimationFrame(()=>TF.modeToggle.refreshAll());
+  }
 }
 
 /* Day sub-tab — auto jump by device clock, works offline.
@@ -1541,6 +2029,11 @@ function switchDayTab(id,userInitiated=true){
   }
   updateClockBadge(id);
   renderNowLine();
+  // Newly-visible day panel may host an elevation canvas that was 0×0 while
+  // hidden — let the elevation module redraw any visible canvases.
+  if(window.TF && TF.modeToggle && TF.modeToggle.refreshAll){
+    requestAnimationFrame(()=>TF.modeToggle.refreshAll());
+  }
 }
 function markToday(){
   const t=autoDayByClock();
@@ -1792,11 +2285,7 @@ function jumpToNow(){
   },80);
 }
 
-// === MAP ===
-const map=L.map('map-view',{zoomControl:true});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:19
-}).addTo(map);
+// === GPX data + helpers (map UI removed; data retained for elevation mode) ===
 
 // GPX export — merges Day1 + Day2 tracks into a standard GPX file
 function buildGPX(){
@@ -1818,22 +2307,27 @@ function downloadGPX(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-const gpxCtl=L.control({position:'topleft'});
-gpxCtl.onAdd=function(){
-  const d=L.DomUtil.create('div','leaflet-bar leaflet-control gpx-ctl');
-  d.innerHTML='<a href="#" title="下載 GPX 軌跡檔（Day1+Day2）" role="button">📄</a>';
-  L.DomEvent.disableClickPropagation(d);
-  d.querySelector('a').addEventListener('click',e=>{e.preventDefault();downloadGPX();});
-  return d;
-};
-gpxCtl.addTo(map);
 
-const d1ll=gpxDay1.map(p=>[p[0],p[1]]),d2ll=gpxDay2.map(p=>[p[0],p[1]]);
-const lineD1=L.polyline(d1ll,{color:'#3b82f6',weight:4,opacity:.85}).addTo(map);
-const lineD2=L.polyline(d2ll,{color:'#ef4444',weight:4,opacity:.85}).addTo(map);
-const allBounds=L.latLngBounds(d1ll.concat(d2ll));
-map.fitBounds(allBounds,{padding:[30,30]});
+// Checkpoint metadata (was previously rendered as map markers; kept as data
+// for the per-day elevation mode, where each ckpt becomes an anchor on the
+// elevation profile).
+const checkpointsData=[
+  // Day 1
+  {lat:23.475727,lon:120.899933,label:'登山口',time:'09:00',elev:'2,610m',color:'#3b82f6',emoji:'🚩',day:'d1'},
+  {lat:23.471448,lon:120.911163,label:'孟祿亭',time:'10:30',elev:'2.7K',color:'#3b82f6',day:'d1'},
+  {lat:23.464638,lon:120.931147,label:'白木林觀景台',time:'12:00',elev:'3.0K',color:'#3b82f6',day:'d1'},
+  {lat:23.466918,lon:120.940657,label:'大峭壁',time:'13:30',elev:'3.1K',color:'#3b82f6',day:'d1'},
+  {lat:23.466730,lon:120.950243,label:'排雲山莊',time:'15:00',elev:'3,402m',color:'#3b82f6',emoji:'🏠',day:'d1'},
+  // Day 2
+  {lat:23.468080,lon:120.954901,label:'主南岔路',time:'—',elev:'3,650m',color:'#ef4444',day:'d2'},
+  {lat:23.469446,lon:120.955846,label:'主北岔路(風口)',time:'04:30',elev:'3,800m',color:'#ef4444',emoji:'🌬',day:'d2'},
+  {lat:23.469980,lon:120.957252,label:'玉山主峰',time:'—',elev:'3,952m',color:'#ef4444',emoji:'⛰',day:'d2'},
+  {lat:23.487570,lon:120.959459,label:'玉山北峰',time:'06:00',elev:'3,858m',color:'#ef4444',emoji:'🏔',day:'d2'},
+];
+window.__JM_GPX__ = { d1: gpxDay1, d2: gpxDay2, checkpoints: checkpointsData };
 
+// --- legacy map/leaflet stubs (no-op now that map UI is removed) ---
+function _noop(){}
 function makeIcon(emoji,sz){
   return L.divIcon({html:'<div style="font-size:'+sz+'px;text-shadow:0 1px 3px rgba(0,0,0,.4);line-height:1;">'+emoji+'</div>',
     iconSize:[sz+4,sz+4],iconAnchor:[(sz+4)/2,sz+2],popupAnchor:[0,-sz],className:''});
@@ -1854,145 +2348,12 @@ function makeCheckpointIcon(label,emoji){
   return L.divIcon({html,iconSize:[0,0],iconAnchor:[0,0],popupAnchor:[14,-4],className:''});
 }
 
-// Checkpoints on map
-const cpMarkers=[];
-const checkpointsData=[
-  // Day 1
-  {lat:23.475727,lon:120.899933,label:'登山口',time:'09:00',elev:'2,610m',color:'#3b82f6',emoji:'🚩'},
-  {lat:23.471448,lon:120.911163,label:'孟祿亭',time:'10:30',elev:'1.7K',color:'#3b82f6'},
-  {lat:23.464638,lon:120.931147,label:'白木林觀景台',time:'12:00',elev:'5.0K',color:'#3b82f6'},
-  {lat:23.466918,lon:120.940657,label:'大峭壁',time:'13:30',elev:'6.7K',color:'#3b82f6'},
-  {lat:23.466730,lon:120.950243,label:'排雲山莊',time:'15:00',elev:'3,402m',color:'#3b82f6',emoji:'🏠'},
-  // Day 2
-  {lat:23.468080,lon:120.954901,label:'主南岔路',time:'—',elev:'3,650m',color:'#ef4444'},
-  {lat:23.469446,lon:120.955846,label:'主北岔路(風口)',time:'04:30',elev:'3,800m',color:'#ef4444',emoji:'🌬'},
-  {lat:23.469980,lon:120.957252,label:'玉山主峰',time:'—',elev:'3,952m',color:'#ef4444',emoji:'⛰'},
-  {lat:23.487570,lon:120.959459,label:'玉山北峰',time:'06:00',elev:'3,858m',color:'#ef4444',emoji:'🏔'},
-];
-checkpointsData.forEach(cp=>{
-  const m=L.marker([cp.lat,cp.lon],{icon:makeCheckpointIcon(cp.label,cp.emoji)});
-  m.bindPopup('<b>'+cp.label+'</b><br>'+cp.elev+(cp.time!=='—'?' ｜ 預定 '+cp.time:''));
-  m.addTo(map);
-  cpMarkers.push(m);
-});
-
-let cpVisible=true;
-function toggleCheckpoints(){
-  cpVisible=!cpVisible;
-  document.getElementById('chip-cp').classList.toggle('active',cpVisible);
-  cpMarkers.forEach(m=>cpVisible?m.addTo(map):map.removeLayer(m));
-}
-
-const trackLayers={d1:lineD1,d2:lineD2};
-function toggleTrack(id){const l=trackLayers[id];map.hasLayer(l)?map.removeLayer(l):map.addLayer(l);}
-
-// === GPS ===
-let gpsWatchId=null,gpsMarker=null,gpsCircle=null,gpsOn=false;
-let headingDeg=0,orientHandler=null;
-function updateArrowRotation(){
-  const el=gpsMarker&&gpsMarker.getElement();
-  const arrow=el&&el.querySelector('.gps-arrow');
-  if(arrow) arrow.style.transform=`rotate(${headingDeg}deg)`;
-}
-function attachOrientation(){
-  const handle=e=>{
-    let h=null;
-    if(typeof e.webkitCompassHeading==='number') h=e.webkitCompassHeading;       // iOS (true north)
-    else if(e.absolute && typeof e.alpha==='number') h=360-e.alpha;              // Android absolute
-    else if(typeof e.alpha==='number') h=360-e.alpha;
-    if(h===null||isNaN(h))return;
-    headingDeg=h;updateArrowRotation();
-  };
-  const start=()=>{
-    window.addEventListener('deviceorientationabsolute',handle,true);
-    window.addEventListener('deviceorientation',handle,true);
-    orientHandler=handle;
-  };
-  if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
-    // iOS 13+ — must be triggered from user gesture (we are)
-    DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')start();}).catch(()=>{});
-  } else { start(); }
-}
-function detachOrientation(){
-  if(orientHandler){
-    window.removeEventListener('deviceorientationabsolute',orientHandler,true);
-    window.removeEventListener('deviceorientation',orientHandler,true);
-    orientHandler=null;
-  }
-}
-const GPS_ARROW_HTML=`<div class="gps-arrow-wrap"><div class="gps-arrow"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 2 L18 20 L12 16 L6 20 Z" fill="#2563eb" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></svg></div><div class="gps-dot"></div></div>`;
-
-function toggleGPS(){
-  if(gpsOn){stopGPS();return;}
-  if(!navigator.geolocation){alert('瀏覽器不支援定位');return;}
-  const btn=document.getElementById('gps-btn');
-  btn.textContent='定位中...';btn.classList.add('on');
-  document.getElementById('gps-info').style.display='';
-  gpsOn=true;
-  attachOrientation(); // request compass permission in same user-gesture
-  gpsWatchId=navigator.geolocation.watchPosition(pos=>{
-    const{latitude:lat,longitude:lon,altitude:alt,accuracy:acc,heading}=pos.coords;
-    btn.textContent='關閉 GPS';
-    if(!gpsMarker){
-      const icon=L.divIcon({className:'gps-icon',html:GPS_ARROW_HTML,iconSize:[36,36],iconAnchor:[18,18]});
-      gpsMarker=L.marker([lat,lon],{icon,zIndexOffset:1000}).addTo(map);
-      gpsCircle=L.circle([lat,lon],{radius:acc,color:'#2563eb',fillColor:'#2563eb',fillOpacity:.1,weight:1}).addTo(map);
-    }else{gpsMarker.setLatLng([lat,lon]);gpsCircle.setLatLng([lat,lon]);gpsCircle.setRadius(acc);}
-    // fallback: if no compass events yet, use GPS heading (only valid when moving)
-    if(!orientHandler && typeof heading==='number' && !isNaN(heading)){headingDeg=heading;}
-    updateArrowRotation();
-    document.getElementById('gps-elev').textContent=alt?Math.round(alt)+'m':'—';
-    const accEl=document.getElementById('gps-acc');
-    accEl.textContent='±'+Math.round(acc)+'m';
-    accEl.style.color=acc<=15?'#059669':acc<=50?'#d97706':'#dc2626';
-    map.setView([lat,lon],Math.max(map.getZoom(),15));
-  },err=>{
-    const codes={1:'權限被拒絕（手機設定需允許此瀏覽器存取位置）',2:'訊號無法取得（戶外開闊處重試，首次冷啟動可能需 30–60 秒）',3:'等待逾時（已延長，請再試一次）'};
-    alert('定位失敗：'+(codes[err.code]||err.message)+'\n\n若此檔案以 file:// 開啟，部分手機瀏覽器會封鎖定位。建議：\n1. 用電腦本機 http 伺服器開\n2. 或用離線地圖 app（Organic Maps / 山林日誌 / Hikingbook）另外查位置');
-    stopGPS();
-  },
-  {enableHighAccuracy:true,maximumAge:5000,timeout:60000});
-}
-function stopGPS(){
-  if(gpsWatchId!==null)navigator.geolocation.clearWatch(gpsWatchId);
-  detachOrientation();
-  gpsWatchId=null;gpsOn=false;
-  if(gpsMarker){map.removeLayer(gpsMarker);gpsMarker=null;}
-  if(gpsCircle){map.removeLayer(gpsCircle);gpsCircle=null;}
-  document.getElementById('gps-btn').textContent='GPS 定位';
-  document.getElementById('gps-btn').classList.remove('on');
-  document.getElementById('gps-info').style.display='none';
-  map.fitBounds(allBounds,{padding:[30,30]});
-}
-
-// === Elevation Profile ===
-function hav(a1,o1,a2,o2){const R=6371e3,dL=((a2-a1)*Math.PI)/180,dO=((o2-o1)*Math.PI)/180;const a=Math.sin(dL/2)**2+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-function drawElev(){
-  const c=document.getElementById('elev-canvas'),dpr=devicePixelRatio||1,r=c.getBoundingClientRect();
-  c.width=r.width*dpr;c.height=r.height*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);
-  const W=r.width,H=r.height,p={t:10,r:8,b:20,l:38},gW=W-p.l-p.r,gH=H-p.t-p.b;
-  function cd(pts){let d=[0];for(let i=1;i<pts.length;i++)d.push(d[i-1]+hav(pts[i-1][0],pts[i-1][1],pts[i][0],pts[i][1]));return d;}
-  const c1=cd(gpxDay1),c2=cd(gpxDay2),tD=c1[c1.length-1]+c2[c2.length-1];
-  const aE=gpxDay1.map(q=>q[2]).concat(gpxDay2.map(q=>q[2])),mn=Math.min(...aE)-50,mx=Math.max(...aE)+50;
-  x.fillStyle='#faf9f6';x.fillRect(0,0,W,H);
-  x.strokeStyle='#e0ddd5';x.lineWidth=.5;
-  for(let i=0;i<=4;i++){const y=p.t+gH-(i/4)*gH;x.beginPath();x.moveTo(p.l,y);x.lineTo(p.l+gW,y);x.stroke();}
-  function dT(pts,cd,ox,col,fc){
-    x.beginPath();x.moveTo(p.l+(ox/tD)*gW,p.t+gH);
-    for(let i=0;i<pts.length;i++){const xx=p.l+((ox+cd[i])/tD)*gW,yy=p.t+gH-((pts[i][2]-mn)/(mx-mn))*gH;x.lineTo(xx,yy);}
-    x.lineTo(p.l+((ox+cd[cd.length-1])/tD)*gW,p.t+gH);x.closePath();x.fillStyle=fc;x.fill();
-    x.beginPath();for(let i=0;i<pts.length;i++){const xx=p.l+((ox+cd[i])/tD)*gW,yy=p.t+gH-((pts[i][2]-mn)/(mx-mn))*gH;i===0?x.moveTo(xx,yy):x.lineTo(xx,yy);}
-    x.strokeStyle=col;x.lineWidth=2;x.stroke();
-  }
-  dT(gpxDay1,c1,0,'#3b82f6','rgba(59,130,246,.1)');dT(gpxDay2,c2,c1[c1.length-1],'#ef4444','rgba(239,68,68,.1)');
-  const dv=p.l+(c1[c1.length-1]/tD)*gW;x.setLineDash([3,3]);x.strokeStyle='#999';x.lineWidth=1;x.beginPath();x.moveTo(dv,p.t);x.lineTo(dv,p.t+gH);x.stroke();x.setLineDash([]);
-  x.font='10px sans-serif';x.textAlign='center';
-  x.fillStyle='#3b82f6';x.fillText('Day 1',p.l+(c1[c1.length-1]/tD/2)*gW,p.t+gH+14);
-  x.fillStyle='#ef4444';x.fillText('Day 2',dv+((c2[c2.length-1]/tD/2)*gW),p.t+gH+14);
-  x.fillStyle='#666';x.font='9px sans-serif';x.textAlign='right';
-  for(let i=0;i<=4;i++){const e=mn+(mx-mn)*(i/4),y=p.t+gH-(i/4)*gH;x.fillText(Math.round(e)+'m',p.l-3,y+3);}
-}
-drawElev();window.addEventListener('resize',drawElev);
+// (Map UI, GPS tracking, drawElev() and related functions have been removed.
+//  Their data — gpxDay1, gpxDay2, checkpointsData — is now exposed on
+//  window.__JM_GPX__ for js/elevation.js to consume per-day.)
+function toggleCheckpoints(){}  // legacy stub; called by removed map UI
+function toggleTrack(){}        // legacy stub
+function toggleGPS(){}          // legacy stub
 
 // === Route tabs ===
 function switchRoute(id){
@@ -2146,5 +2507,12 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
   },1000);
 })();
 </script>
+
+<!-- Trailforge external modules — must load AFTER the inline GPX block above,
+     because render.js's autoRender() reads window.__JM_GPX__ during render. -->
+<script src="js/elevation.js"></script>
+<script src="js/mode-toggle.js"></script>
+<script src="render.js"></script>
+<script src="js/edit.js"></script>
 </body>
 </html>

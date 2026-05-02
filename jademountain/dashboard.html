@@ -543,6 +543,8 @@ body{
     viewYear: 0, viewMonth: 0,
     selectedIso: null, originalIso: null,
     duration: 1, originalDuration: 1,
+    partySize: 1, originalPartySize: 1,
+    partyLabel: '', originalPartyLabel: '',
     saving: false,
   };
 
@@ -621,14 +623,22 @@ body{
           <button type="button" class="step" data-dur="1" aria-label="多一天" ${calState.duration >= 30 ? 'disabled' : ''}>+</button>
         </span>
       </div>
+      <div class="cal-dur">
+        <span class="lbl">人數</span>
+        <span class="stepper">
+          <button type="button" class="step" data-party="-1" aria-label="少一人" ${calState.partySize <= 1 ? 'disabled' : ''}>−</button>
+          <span class="val">${calState.partySize} 人</span>
+          <button type="button" class="step" data-party="1" aria-label="多一人" ${calState.partySize >= 99 ? 'disabled' : ''}>+</button>
+        </span>
+      </div>
       <div class="cal-foot">
         <span class="${saving ? 'saving' : ''}">${saving ? '儲存中…' : ''}</span>
         <button type="button" class="cal-cancel">取消</button>
-        <button type="button" class="cal-apply" ${(selectedIso === calState.originalIso && calState.duration === calState.originalDuration) || saving ? 'disabled' : ''}>套用</button>
+        <button type="button" class="cal-apply" ${(selectedIso === calState.originalIso && calState.duration === calState.originalDuration && calState.partySize === calState.originalPartySize) || saving ? 'disabled' : ''}>套用</button>
       </div>`;
   }
 
-  function openCalendar(triggerEl, planId, currentStart, currentEnd) {
+  function openCalendar(triggerEl, planId, currentStart, currentEnd, partySize, partyLabel) {
     calState.planId = planId;
     calState.originalIso = currentStart;
     calState.selectedIso = currentStart;
@@ -637,6 +647,10 @@ body{
       : 1;
     calState.originalDuration = dur;
     calState.duration = dur;
+    calState.originalPartySize = partySize || 1;
+    calState.partySize = partySize || 1;
+    calState.originalPartyLabel = partyLabel || '';
+    calState.partyLabel = partyLabel || '';
     const [y, mm] = currentStart.split('-').map(Number);
     calState.viewYear = y;
     calState.viewMonth = mm - 1;
@@ -679,8 +693,13 @@ body{
     }
     const stepBtn = e.target.closest('.cal-dur .step');
     if (stepBtn) {
-      const delta = Number(stepBtn.dataset.dur);
-      calState.duration = Math.max(1, Math.min(30, calState.duration + delta));
+      if (stepBtn.dataset.dur !== undefined) {
+        const delta = Number(stepBtn.dataset.dur);
+        calState.duration = Math.max(1, Math.min(30, calState.duration + delta));
+      } else if (stepBtn.dataset.party !== undefined) {
+        const delta = Number(stepBtn.dataset.party);
+        calState.partySize = Math.max(1, Math.min(99, calState.partySize + delta));
+      }
       renderCal();
       return;
     }
@@ -694,13 +713,15 @@ body{
     if (e.target.closest('.cal-apply')) {
       const startChanged = calState.selectedIso !== calState.originalIso;
       const durChanged = calState.duration !== calState.originalDuration;
-      if (!startChanged && !durChanged) { closeCalendar(); return; }
+      const partyChanged = calState.partySize !== calState.originalPartySize;
+      if (!startChanged && !durChanged && !partyChanged) { closeCalendar(); return; }
       calState.saving = true;
       renderCal();
       try {
         const body = {};
         if (startChanged) body.shift_start_date = calState.selectedIso;
         if (durChanged) body.set_duration = calState.duration;
+        if (partyChanged) body.set_party_size = calState.partySize;
         const r = await api('/api/plans/' + calState.planId, {
           method: 'PATCH',
           body: JSON.stringify(body),
@@ -712,6 +733,7 @@ body{
         const parts = [];
         if (startChanged) parts.push('出發日 ' + calState.selectedIso.replace(/-/g, '/'));
         if (durChanged) parts.push(calState.duration + ' 天');
+        if (partyChanged) parts.push(calState.partySize + ' 人');
         showToast('已更新：' + parts.join('・'));
         closeCalendar();
         load();
@@ -735,7 +757,9 @@ body{
   function onDateClick(e) {
     e.preventDefault(); e.stopPropagation();
     const btn = e.currentTarget;
-    openCalendar(btn, btn.dataset.id, btn.dataset.start, btn.dataset.end || null);
+    const partySize = btn.dataset.party ? parseInt(btn.dataset.party, 10) : 1;
+    const partyLabel = btn.dataset.partyLabel || '';
+    openCalendar(btn, btn.dataset.id, btn.dataset.start, btn.dataset.end || null, partySize, partyLabel);
   }
 
   function planLink(id) {
@@ -756,9 +780,10 @@ body{
       return;
     }
     const cards = plans.map((p, i) => {
+      const partyTxt = p.partyLabel || (p.partySize ? `${p.partySize}人` : '');
       const dateBlock = p.startDate
-        ? `<span class="dates-zh">${fmtRange(p.startDate, p.endDate)}${p.endDate ? ' · ' + computeNights(p.startDate, p.endDate) : ''}</span>`
-        : '';
+        ? `<span class="dates-zh">${fmtRange(p.startDate, p.endDate)}${p.endDate ? ' · ' + computeNights(p.startDate, p.endDate) : ''}${partyTxt ? ' · ' + escapeHtml(partyTxt) : ''}</span>`
+        : (partyTxt ? `<span class="dates-zh">${escapeHtml(partyTxt)}</span>` : '');
       return `
       <div class="card" data-id="${p.id}" data-href="${planLink(p.id)}" tabindex="0" role="link">
         <div class="num">N° ${String(i+1).padStart(3, '0')}</div>
@@ -780,7 +805,7 @@ body{
         <div class="meta-row">
           <span class="when">最後修改 <b>${fmtDate(p.updatedAt)}</b>${dateBlock}</span>
           <span class="actions">
-            ${p.startDate ? `<button type="button" class="act-btn primary date" data-id="${p.id}" data-start="${p.startDate}" data-end="${p.endDate || ''}">改期</button>` : ''}
+            ${p.startDate ? `<button type="button" class="act-btn primary date" data-id="${p.id}" data-start="${p.startDate}" data-end="${p.endDate || ''}" data-party="${p.partySize || 1}" data-party-label="${escapeAttr(p.partyLabel || '')}">改期 / 人數</button>` : ''}
             <button type="button" class="act-btn danger delete" data-id="${p.id}" data-title="${escapeAttr(p.title)}">刪除</button>
           </span>
         </div>

@@ -22,6 +22,9 @@ const PatchSchema = z.object({
   // grows/shrinks the days[] array. Days BEFORE start_date (depart days) are
   // preserved untouched.
   set_duration: z.number().int().min(1).max(30).optional(),
+  // set_party_size / set_party_label: trip head-count, mirrored to data.meta
+  set_party_size: z.number().int().min(1).max(99).optional(),
+  set_party_label: z.string().min(1).max(40).optional(),
 });
 
 const router = new Hono();
@@ -52,6 +55,8 @@ router.get("/", async (c) => {
     updatedAt: plans.updatedAt,
     startDate: sql<string | null>`${plans.data}->'meta'->>'start_date'`,
     endDate:   sql<string | null>`${plans.data}->'meta'->>'end_date'`,
+    partySize: sql<number | null>`(${plans.data}->'meta'->>'party_size')::int`,
+    partyLabel: sql<string | null>`${plans.data}->'meta'->>'party_label'`,
   }).from(plans).where(eq(plans.userId, u.sub)).orderBy(desc(plans.updatedAt));
   return c.json({ plans: rows });
 });
@@ -93,12 +98,28 @@ router.patch("/:id", async (c) => {
 
   const update: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (parsed.data.shift_start_date || parsed.data.set_duration !== undefined) {
-    // Load existing plan to compute offset + apply shift/resize in-place.
+  // Decide whether to load+mutate existing data. We do so when:
+  //  - dates are being shifted/resized
+  //  - title is being changed (we mirror it into data.meta.title so the
+  //    rendered schedule heading stays in sync with the dashboard rename)
+  // If a full `data` is supplied, that takes precedence at the end.
+  const needsExisting =
+    parsed.data.shift_start_date !== undefined ||
+    parsed.data.set_duration !== undefined ||
+    parsed.data.set_party_size !== undefined ||
+    parsed.data.set_party_label !== undefined ||
+    parsed.data.title !== undefined;
+
+  let working: any = null;
+  if (needsExisting) {
     const [existing] = await db.select().from(plans)
       .where(and(eq(plans.id, id), eq(plans.userId, u.sub))).limit(1);
     if (!existing) return c.json({ error: "not_found" }, 404);
-    const data: any = JSON.parse(JSON.stringify(existing.data));    // deep clone
+    working = JSON.parse(JSON.stringify(existing.data));    // deep clone
+  }
+
+  if (parsed.data.shift_start_date || parsed.data.set_duration !== undefined) {
+    const data = working;
     const oldStart = data?.meta?.start_date;
     if (!oldStart) return c.json({ error: "plan_has_no_start_date" }, 400);
 
@@ -169,10 +190,32 @@ router.patch("/:id", async (c) => {
       }
       data.days = [...departDays, ...resized];
     }
-    update.data = data;
   }
 
+  // Mirror title / party fields into data.meta so the rendered header stays
+  // in sync with dashboard edits. Done after shift/resize so any nested
+  // mutation sees the correct working object.
+  if (working) {
+    if (!working.meta) working.meta = {};
+    if (parsed.data.title !== undefined) working.meta.title = parsed.data.title;
+    if (parsed.data.set_party_size !== undefined) {
+      working.meta.party_size = parsed.data.set_party_size;
+      // auto-sync label if it's empty or already in plain "N人" format and no label override is supplied
+      if (parsed.data.set_party_label === undefined) {
+        const cur = working.meta.party_label;
+        if (!cur || /^\d+人$/.test(String(cur).trim())) {
+          working.meta.party_label = `${parsed.data.set_party_size}人`;
+        }
+      }
+    }
+    if (parsed.data.set_party_label !== undefined) {
+      working.meta.party_label = parsed.data.set_party_label;
+    }
+  }
+
+  if (working) update.data = working;
   if (parsed.data.title !== undefined) update.title = parsed.data.title;
+  // Explicit full-data update wins over mirrored mutations
   if (parsed.data.data !== undefined)  update.data  = parsed.data.data;
 
   if (Object.keys(update).length === 1) return c.json({ error: "no_changes" }, 400);

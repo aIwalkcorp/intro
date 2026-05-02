@@ -5,7 +5,7 @@
 //   - Cross-origin API: passthrough, never cache (auth, /api/*)
 //   - POST / non-GET:   never cache
 
-const CACHE = 'jademountain-v2';
+const CACHE = 'jademountain-v5';
 
 // Same-origin assets we want available offline on first install
 const PRECACHE_LOCAL = [
@@ -15,6 +15,8 @@ const PRECACHE_LOCAL = [
   './manifest.json',
   './render.js',
   './plan.json',
+  './js/elevation.js',
+  './js/mode-toggle.js',
   './icon-192.png',
   './icon-512.png',
 ];

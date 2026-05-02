@@ -15,7 +15,10 @@
 (function () {
   'use strict';
 
-  const TF = {};
+  // IMPORTANT: merge with any TF namespace that other modules (elevation.js,
+  // mode-toggle.js) may have already populated. Using `const TF = {}` here and
+  // then `window.TF = TF` at the bottom would WIPE TF.elevation / TF.modeToggle.
+  const TF = (window.TF = window.TF || {});
 
   function escapeHtml(s) {
     if (s == null) return '';
@@ -170,13 +173,182 @@
       </div>`;
   }
 
+  // ---- segment-row HTML + anchor computation (used by elevation pane and
+  //      by route-switch updates from mode-toggle.js) ---------------------
+  function segmentRowsHTML(segs) {
+    return (segs || []).map(s => {
+      const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+      const lo = ai.length === 2 ? Math.min(ai[0], ai[1]) : '';
+      const hi = ai.length === 2 ? Math.max(ai[0], ai[1]) : '';
+      const baseMin = s.base_minutes || 0;
+      const asc = +s.ascent_m || 0;
+      const desc = +s.descent_m || 0;
+      const elevBits = [];
+      if (asc) elevBits.push(`<span class="sl-asc">↑${asc}<small>m</small></span>`);
+      if (desc) elevBits.push(`<span class="sl-desc">↓${desc}<small>m</small></span>`);
+      if (!elevBits.length) elevBits.push(`<span class="sl-flat">─ 平</span>`);
+      const distHtml = s.distance_km != null ? `<span class="sl-km">${(+s.distance_km).toFixed(1)}<small>km</small></span>` : '';
+      return `
+      <div class="sl-row" role="button" tabindex="0" aria-pressed="false"
+              data-segment-id="${attr(s.id || '')}"
+              data-focus-start="${attr(String(lo))}"
+              data-focus-end="${attr(String(hi))}"
+              data-base-min="${baseMin}"
+              title="點擊聚焦此段海拔剖面">
+        <div class="sl-route">${escapeHtml(s.from || '')}<span class="sl-arrow">→</span>${escapeHtml(s.to || '')}</div>
+        <div class="sl-meta">${distHtml}${elevBits.join('')}</div>
+        <div class="sl-bar" style="flex-grow:${Math.max(1, baseMin / 30)}"></div>
+        <div class="sl-time" data-display="time">
+          <span class="sl-time-derived" data-derived>${baseMin}</span><small class="sl-time-unit"> 分</small>
+          <span class="sl-time-base" data-base>(基準 ${baseMin} 分)</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  TF.segmentRowsHTML = segmentRowsHTML;
+
+  // Build deduped left-to-right anchor list from a segments array.
+  function segmentAnchors(segs) {
+    const seenIdx = new Set();
+    const anchorPairs = [];
+    (segs || []).forEach((s, i) => {
+      const candidates = (i === 0)
+        ? [{ idx: s.anchor_idx?.[0], lbl: s.from }, { idx: s.anchor_idx?.[1], lbl: s.to }]
+        : [{ idx: s.anchor_idx?.[1], lbl: s.to }];
+      candidates.forEach(c => {
+        if (c.idx != null && !seenIdx.has(c.idx)) {
+          seenIdx.add(c.idx);
+          anchorPairs.push(c);
+        }
+      });
+    });
+    anchorPairs.sort((a, b) => a.idx - b.idx);
+    return {
+      idx: anchorPairs.map(p => p.idx),
+      labels: anchorPairs.map(p => p.lbl),
+    };
+  }
+  TF.segmentAnchors = segmentAnchors;
+
+  // ---- elevation profile section (海拔模式) ----
+  // Renders the segmented control + two panes (打卡 / 海拔). For days without
+  // `elevation_profile`, returns the schedule section directly (no toggle).
+  function renderModeSection(day) {
+    const ep = day.elevation_profile;
+    const scheduleHtml = renderScheduleSection(day);
+    if (!ep || !ep.gpx_ref) return scheduleHtml;  // no toggle for non-hiking days
+
+    const segs = Array.isArray(ep.shanghe_segments) ? ep.shanghe_segments : [];
+    const segRows = segmentRowsHTML(segs);
+
+    const totalBase = segs.reduce((acc, s) => acc + (s.base_minutes || 0), 0);
+    const totalH = Math.floor(totalBase / 60), totalM = totalBase % 60;
+    const totalLabel = totalH > 0 ? `${totalH}h ${totalM}m` : `${totalM} min`;
+
+    // Deduped + sorted anchors for the chart (collapses lollipop revisits).
+    const _a = segmentAnchors(segs);
+    const anchorIdxStr = JSON.stringify(_a.idx);
+    const anchorLblStr = JSON.stringify(_a.labels);
+
+    return `
+      <div class="mode-shell" data-day="${attr(day.id)}">
+        <div class="mode-panes">
+          <div class="mode-pane" data-mode="checkpoint">
+            ${scheduleHtml}
+          </div>
+          <div class="mode-pane" data-mode="elevation">
+            <div class="elev-pane">
+              <div class="elev-card">
+                <div class="elev-head">
+                  <span class="eh-l">Elevation Profile</span>
+                  <button type="button" class="elev-focus-reset" data-action="reset-focus" title="檢視全段海拔">全段</button>
+                  <span class="elev-route-info" data-route-info>${escapeHtml(ep.label || '上河文化步程基準')}</span>
+                </div>
+                <div class="elev-canvas-wrap">
+                  <canvas class="elev-canvas-day"
+                          data-gpx-ref="${attr(ep.gpx_ref)}"
+                          data-color="${attr(ep.color || '#1e3a1a')}"
+                          data-fill="${attr(ep.fill || 'rgba(168,128,44,0.22)')}"
+                          data-anchor-idx='${attr(anchorIdxStr)}'
+                          data-anchor-labels='${attr(anchorLblStr)}'
+                          data-decision-anchors='${attr(JSON.stringify(ep.decision_anchors || []))}'></canvas>
+                </div>
+                <div class="elev-stats-row" data-stats-for="${attr(ep.gpx_ref)}">
+                  <div class="elev-stat"><div class="es-lbl">Distance</div><div class="es-val" data-stat="distance">— km</div></div>
+                  <div class="elev-stat"><div class="es-lbl">Ascent</div><div class="es-val" data-stat="ascent">— m</div></div>
+                  <div class="elev-stat"><div class="es-lbl">Descent</div><div class="es-val" data-stat="descent">— m</div></div>
+                  <div class="elev-stat"><div class="es-lbl">Max Elev</div><div class="es-val" data-stat="max">— m</div></div>
+                </div>
+                ${segs.length ? `
+                <div class="shanghe-block" data-speed-factor="1.00"
+                     data-gpx-ref="${attr(ep.gpx_ref)}"
+                     data-route-variants='${attr(JSON.stringify(ep.route_variants || null))}'>
+                  <div class="sb-head">
+                    <div class="sb-title">休息點<span class="sb-en">REST POINTS</span></div>
+                    <div class="sb-source">資料來源：上河圖步程 + 他人健行筆記紀錄綜合</div>
+                  </div>
+                  <div class="speed-control">
+                    <label for="speed-${attr(ep.gpx_ref)}" class="sc-lbl">上河速度倍率</label>
+                    <input type="number" class="speed-input"
+                           id="speed-${attr(ep.gpx_ref)}"
+                           min="0.5" max="2.5" step="0.05" value="1.00"
+                           data-gpx-ref="${attr(ep.gpx_ref)}"
+                           inputmode="decimal" aria-label="上河速度倍率">
+                    <span class="sc-x">×</span>
+                    <span class="sc-hint">1.0 = 上河基準｜&gt;1 較慢｜&lt;1 較快</span>
+                  </div>
+                  <div class="shanghe-list" data-list>${segRows}</div>
+                  <div class="sl-total">
+                    <span class="slt-l">總計</span>
+                    <span class="slt-v">
+                      <span data-total-derived>${totalLabel}</span>
+                      <small data-total-base>基準 ${totalLabel}</small>
+                    </span>
+                  </div>
+                </div>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // After day panels are inserted into the DOM, fill in stats values for each
+  // elevation card and bind toggles. Called by renderDayPanels().
+  function hydrateElevation(rootEl) {
+    rootEl = rootEl || document;
+    if (window.TF && TF.elevation) {
+      rootEl.querySelectorAll('.elev-stats-row').forEach(row => {
+        const ref = row.dataset.statsFor;
+        const data = (window.__JM_GPX__ && window.__JM_GPX__[ref]) || null;
+        if (!data) return;
+        const s = TF.elevation.stats(data);
+        const setVal = (sel, txt) => {
+          const el = row.querySelector(`[data-stat="${sel}"]`);
+          if (el) el.innerHTML = txt;
+        };
+        setVal('distance', `${s.distanceKm.toFixed(1)}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> km</small>`);
+        setVal('ascent',   `+${s.ascentM}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> m</small>`);
+        setVal('descent',  `−${s.descentM}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> m</small>`);
+        setVal('max',      `${s.maxElev}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> m</small>`);
+      });
+    }
+    if (window.TF && TF.modeToggle) {
+      TF.modeToggle.init(rootEl);
+      // If user persisted mode === 'elevation' from a previous visit, the
+      // toggle may have fired refreshAll() before day panels existed in DOM.
+      // Re-run it now that canvases are present.
+      if (TF.modeToggle.refreshAll) requestAnimationFrame(TF.modeToggle.refreshAll);
+    }
+  }
+
   // ---- per-day panel ----
   function renderDayPanel(day, emergencyDefault) {
     return `<div class="day-panel" id="day-${attr(day.id)}">
       <!-- Emergency -->
       ${renderEqCard(day, emergencyDefault)}
       ${renderQLinks(day)}
-      ${renderScheduleSection(day)}
+      ${renderModeSection(day)}
       ${renderDetails(day)}
       ${renderRetreat(day)}
     </div>`;
@@ -199,6 +371,7 @@
     host.innerHTML = (plan.days || [])
       .map(d => renderDayPanel(d, plan.emergency_default))
       .join('');
+    hydrateElevation(host);
   }
   TF.renderDayPanels = renderDayPanels;
 
@@ -244,8 +417,7 @@
   }
   TF.render = render;
   TF.loadPlan = loadPlan;
-
-  window.TF = TF;
+  // (TF was bound to window.TF up top — no reassignment here.)
 
   // If URL has ?plan=<id> and we have an access token, fetch from API and
   // re-render once it arrives. Otherwise (or in addition) render the static
