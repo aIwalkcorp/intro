@@ -108,6 +108,28 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
   color:var(--acc-soft);margin-top:4px;text-transform:uppercase;opacity:.9;
 }
 
+/* On narrow screens, the centred hero title was getting overlapped by the
+   top-right floating chip rail. Left-align + clear right padding for FABs
+   and tighten typography so the title stays inside the safe zone. */
+@media (max-width:520px){
+  .hdr{
+    text-align:left;
+    padding:14px 14px 12px;
+    padding-right:130px;   /* reserve space for top-right FAB rail */
+  }
+  .hdr h1{
+    font-size:1.18rem; letter-spacing:.02em;
+    display:inline-block;
+    max-width:100%;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .hdr h1::before,
+  .hdr h1::after{display:none;}   /* drop decorative hairlines on mobile */
+  .hdr .sub{font-size:.62rem; letter-spacing:.18em;}
+  .hdr-retreat{margin-top:8px;}
+  .demo-badge{top:10px; left:10px; font-size:.5rem; padding:2px 7px;}
+}
+
 /* Tab bar — brass ticks */
 .tab-bar{
   display:flex;position:sticky;top:0;z-index:999;
@@ -779,6 +801,56 @@ body:not([data-jm-tab="itin"]) .jm-mode-toggle{display:none;}
    the user opens a personal plan via ?plan=<id>. */
 body[data-jm-context="plan"] .demo-only{display:none !important;}
 
+/* ── Hero "撤退方案" inline link (always-visible safety surface) ── */
+.hdr-retreat{
+  display:inline-flex; align-items:center; gap:7px;
+  margin-top:10px; padding:5px 12px 4px;
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.32em;
+  color:#f5ecd6; text-transform:uppercase; text-decoration:none;
+  background:rgba(220,38,38,0.18);
+  border:1px solid rgba(252,165,165,0.45);
+  border-radius:999px;
+  transition:background .2s, transform .15s, border-color .2s;
+}
+.hdr-retreat:hover{
+  background:rgba(220,38,38,0.32);
+  border-color:#fca5a5;
+  transform:translateY(-1px);
+}
+.hdr-retreat:active{transform:translateY(0) scale(.97);}
+.hdr-retreat .hr-dot{
+  width:7px; height:7px; border-radius:50%;
+  background:#fca5a5;
+  box-shadow:0 0 0 2px rgba(252,165,165,0.25);
+  animation:hrPulse 2.4s ease-out infinite;
+}
+@keyframes hrPulse{
+  0%, 100%{box-shadow:0 0 0 0 rgba(252,165,165,0);}
+  50%     {box-shadow:0 0 0 5px rgba(252,165,165,0.35);}
+}
+.hdr-retreat .hr-zh{font-family:"Noto Serif TC", serif; font-weight:700; font-size:.78rem; letter-spacing:.2em;}
+.hdr-retreat .hr-en{opacity:.6; font-weight:600;}
+@media (max-width:480px){
+  .hdr-retreat .hr-en{display:none;}
+  .hdr-retreat{padding:4px 10px; gap:6px;}
+}
+
+/* ── Demo badge (top-left of hero, only when viewing 玉山 demo) ── */
+.demo-badge{
+  display:none;
+  position:absolute; top:12px; left:14px; z-index:2;
+  font-family:var(--mono); font-size:.55rem; letter-spacing:.34em;
+  color:#0a1a06; font-weight:800; text-transform:uppercase;
+  background:linear-gradient(178deg, #e8c870, #a8802c);
+  border:1px solid #6e5316;
+  padding:3px 9px 2px; border-radius:2px;
+  transform:rotate(-3deg);
+  box-shadow:0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,.4);
+  pointer-events:none;
+}
+body[data-jm-context="demo"] .demo-badge{display:inline-block;}
+.demo-badge::before{content:"⌬ "; opacity:.7;}
+
 /* Retreat block — surfaced in the 🚨 popup; keep DOM (popup clones it) but
    hide the inline duplicate inside each day panel. */
 .day-panel > .retreat-section{display:none;}
@@ -906,6 +978,13 @@ body[data-jm-context="plan"] .demo-only{display:none !important;}
   font-family:var(--serif); font-size:.74rem; color:var(--ink-soft,#7a7468);
   font-style:italic;
   flex:1; min-width:120px;
+}
+.speed-control .sc-warn{
+  font-family:var(--mono); font-size:.58rem; letter-spacing:.18em;
+  color:#92400e; background:rgba(252,211,77,0.18);
+  border:1px solid rgba(146,64,14,0.3); border-radius:3px;
+  padding:3px 7px; cursor:help;
+  white-space:nowrap;
 }
 @media (max-width:480px){
   .speed-control .sc-hint{font-size:.68rem;}
@@ -1782,8 +1861,14 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 </script>
 
 <div class="hdr">
+  <span class="demo-badge" aria-hidden="true">示範 · DEMO</span>
   <h1>玉山主峰・北峰</h1>
   <div class="sub">2026/04/18–19 ｜ 2天1夜 ｜ 3人</div>
+  <a class="hdr-retreat" href="#" onclick="event.preventDefault();togglePop('pop-key');" title="緊急撤退方案 — 點擊展開">
+    <span class="hr-dot" aria-hidden="true"></span>
+    <span class="hr-zh">撤退方案</span>
+    <span class="hr-en">RETREAT&nbsp;PLAN</span>
+  </a>
 </div>
 
 <div class="tab-bar">

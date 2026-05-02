@@ -296,6 +296,7 @@
                            inputmode="decimal" aria-label="上河速度倍率">
                     <span class="sc-x">×</span>
                     <span class="sc-hint">1.0 = 上河基準｜&gt;1 較慢｜&lt;1 較快</span>
+                    <span class="sc-warn" title="此倍率目前只更新休息點段落表的衍生時間，出發模式時間軸尚未自動套用">⚠ 出發時間軸暫未連動</span>
                   </div>
                   <div class="shanghe-list" data-list>${segRows}</div>
                   <div class="sl-total">
@@ -358,9 +359,12 @@
   function renderDayBar(plan) {
     const bar = document.getElementById('day-bar');
     if (!bar) return;
-    bar.innerHTML = (plan.days || []).map(d =>
+    const days = plan.days || [];
+    bar.innerHTML = days.map(d =>
       `<button class="day-btn" data-day="${attr(d.id)}" onclick="switchDayTab('${attr(d.id)}')"><span class="dlbl">${escapeHtml(d.date_label || '')}</span><span class="dname">${escapeHtml(d.label || '')}</span></button>`
     ).join('');
+    // Single-day trips: collapse the day-bar (it's just one tab, no value)
+    bar.style.display = (days.length <= 1) ? 'none' : '';
   }
   TF.renderDayBar = renderDayBar;
 
