@@ -70,7 +70,9 @@
   body.tf-editing .tf-edit-fab .en{color:rgba(244,237,220,0.55)}
   @media (max-width: 480px){
     .tf-edit-fab .en{display:none}
-    .tf-edit-fab{padding:6px 11px 6px 8px}
+    .tf-edit-fab{padding:6px 10px; gap:0}
+    .tf-edit-fab .label-stack{display:none}    /* icon-only on mobile */
+    .tf-edit-fab svg{width:16px; height:16px}
   }
 
   /* Save bar (visible while editing) */

@@ -1311,6 +1311,22 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   display: block; margin-top: 1px;
 }
 .dash-pill .dp-text { display: flex; flex-direction: column; line-height: 1.15; }
+
+/* On mobile, the top-right rail (edit FAB + dashPill + permitChip) competes
+   for limited width with the sticky .hdr title. Collapse pills to icon-only. */
+@media (max-width: 480px) {
+  .dash-pill { padding: 6px 10px; gap: 0; }
+  .dash-pill .dp-text { display: none; }
+  .dash-pill svg { width: 16px; height: 16px; }
+  .permit-chip .pc-text { display: none; }
+  .permit-chip[data-state="in"] .pc-text { display: flex; }  /* keep username when signed in */
+  .permit-chip[data-state="in"] .pc-en { display: none; }
+}
+@media (max-width: 380px) {
+  /* Even tighter: also collapse the username when very narrow */
+  .permit-chip .pc-text { display: none !important; }
+  .permit-chip { padding: 6px 9px; }
+}
 @media (max-width: 480px) {
   .dash-pill .dp-en { display: none; }
   .dash-pill { padding: 6px 12px 6px 9px; }
@@ -2519,5 +2535,6 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
 <script src="render.js"></script>
 <script src="js/outbox.js"></script>
 <script src="js/edit.js"></script>
+<script src="js/manifest-dynamic.js"></script>
 </body>
 </html>
