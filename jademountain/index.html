@@ -780,6 +780,17 @@ body[data-jm-mode="elevation"]  .jm-mode-toggle button[data-target-mode="elevati
   filter:none; transform:scale(1.06);
 }
 .jm-mode-toggle button .mt-en{display:none;}    /* drop EN entirely — too noisy at this size */
+.jm-mode-toggle button .mt-lbl-pwa{display:none;}  /* PWA-only label, browser hides it */
+/* When launched as installed PWA, swap to TIME / TopoMap labels —
+   they describe what the user sees ("time view" vs "topographic map view")
+   in plain English, useful when the home-screen icon is the only context. */
+@media (display-mode: standalone){
+  .jm-mode-toggle button .mt-lbl-web{display:none;}
+  .jm-mode-toggle button .mt-lbl-pwa{display:inline;}
+  /* In standalone PWA there's no parent browser context to go back to —
+     hide the aIwalk back link entirely. */
+  .aiwalk-back{display:none !important;}
+}
 .jm-mode-toggle .mt-ink{
   position:absolute; top:2px; bottom:2px; left:2px;
   width:calc(50% - 2px);
@@ -1688,10 +1699,16 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 <!-- Global mode toggle: 打卡 ⇄ 海拔 (floats above .fab-stack) -->
 <div id="jmModeToggle" class="jm-mode-toggle" role="tablist" aria-label="行程模式">
   <button type="button" data-target-mode="checkpoint" role="tab" aria-selected="true" title="出發模式 — 行程時間軸 + 打卡追蹤">
-    <span class="mt-icon">🥾</span><span>出發</span><span class="mt-en">Use</span>
+    <span class="mt-icon">🥾</span>
+    <span class="mt-lbl mt-lbl-web">出發</span>
+    <span class="mt-lbl mt-lbl-pwa">TIME</span>
+    <span class="mt-en">Use</span>
   </button>
-  <button type="button" data-target-mode="elevation" role="tab" aria-selected="false" title="規劃模式 — 編輯路線與速度，反映到時間軸">
-    <span class="mt-icon">⛰</span><span>規劃</span><span class="mt-en">Plan</span>
+  <button type="button" data-target-mode="elevation" role="tab" aria-selected="false" title="規劃模式 — 編輯路線與速度">
+    <span class="mt-icon">⛰</span>
+    <span class="mt-lbl mt-lbl-web">規劃</span>
+    <span class="mt-lbl mt-lbl-pwa">TopoMap</span>
+    <span class="mt-en">Plan</span>
   </button>
   <span class="mt-ink" aria-hidden="true"></span>
 </div>
