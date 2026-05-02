@@ -8,7 +8,7 @@
 #   fly deploy --dockerfile api/Dockerfile
 
 app = "trailforge-api"
-primary_region = "iad"   # us-east (Virginia) — co-located with Neon us-east-1 for low DB latency
+primary_region = "sin"   # Singapore — co-located with Neon ap-southeast-1; ~30ms to TW clients
 
 [build]
   dockerfile = "api/Dockerfile"
