@@ -318,9 +318,21 @@
   }
 
   // ---------- API helper ----------
+  // Mutating calls go through TF_OUTBOX so a network drop queues the save.
   async function api(path, opts = {}) {
+    const method = (opts.method || "GET").toUpperCase();
     const headers = { Authorization: "Bearer " + token, ...(opts.headers || {}) };
     if (opts.body && !headers["content-type"]) headers["content-type"] = "application/json";
+
+    if (method !== "GET" && window.TF_OUTBOX) {
+      const r = await window.TF_OUTBOX.send(apiBase + path, {
+        method, headers, body: opts.body, label: method + " " + path,
+      });
+      if (r.queued) {
+        return { ok: true, status: 202, queued: true, json: async () => r.body || {} };
+      }
+      return { ok: r.ok, status: r.status, json: async () => r.body || {} };
+    }
     return fetch(apiBase + path, { ...opts, headers });
   }
 
@@ -623,6 +635,11 @@
         method: "PATCH",
         body: JSON.stringify({ data }),
       });
+      if (r.queued) {
+        showToast("離線：已暫存。連回網路時請點右上「⬆ 上傳」。");
+        setTimeout(() => location.reload(), 1100);
+        return;
+      }
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j.error || "HTTP " + r.status);

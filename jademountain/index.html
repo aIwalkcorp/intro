@@ -775,6 +775,10 @@ body[data-jm-mode="elevation"] .jm-mode-toggle .mt-ink{transform:translateX(100%
 /* Hide global toggle on tabs without itinerary content */
 body:not([data-jm-tab="itin"]) .jm-mode-toggle{display:none;}
 
+/* Demo-only fixtures (玉山-specific 上河驗算 + 注意事項) — hidden when
+   the user opens a personal plan via ?plan=<id>. */
+body[data-jm-context="plan"] .demo-only{display:none !important;}
+
 @media (max-width:380px){
   .jm-mode-toggle button{padding:4px 7px;}
   .jm-mode-toggle button span:not(.mt-icon):not(.mt-en){font-size:.62rem; letter-spacing:.14em;}
@@ -1467,7 +1471,28 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 </style>
 </head>
-<body data-jm-tab="itin" data-jm-mode="checkpoint">
+<body data-jm-tab="itin" data-jm-mode="checkpoint" data-jm-context="demo">
+<script>
+// Two early-load behaviours:
+//   (1) Mark body[data-jm-context="plan"] when ?plan=<id> is present so CSS
+//       can hide demo-only fixtures (上河驗算, 注意事項 — 玉山-specific).
+//   (2) Auto-redirect logged-in users from bare index.html → dashboard.
+//       Skip when ?plan=<id> (deep-link) or ?demo=1 (explicit demo).
+(function () {
+  try {
+    var params = new URLSearchParams(location.search);
+    if (params.get('plan')) {
+      document.body.dataset.jmContext = 'plan';
+      return;  // viewing a specific plan → don't auto-redirect
+    }
+    if (params.get('demo') === '1') return;
+    var token = localStorage.getItem('tf_access_token');
+    if (!token) return;
+    var qs = params.get('api') ? '?api=' + encodeURIComponent(params.get('api')) : '';
+    location.replace('dashboard.html' + qs);
+  } catch (e) { /* ignore */ }
+})();
+</script>
 
 <button class="pwa-install-btn" id="pwaInstallBtn" type="button" aria-label="安裝 App">
   <span class="pwa-dot" aria-hidden="true"></span>
@@ -1780,40 +1805,9 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 
   <div id="day-panels-host"></div>
 
-  <!-- 上河驗算 (shared) -->
-  <details class="exp"><summary>📐 上河文化步程驗算（詳細）</summary><div class="exp-body">
-  <div class="section" style="margin-bottom:0;">
-    <div class="sec-title" style="display:none;">上河文化步程驗算</div>
-    <div style="font-size:0.78rem;color:var(--txtL);margin-bottom:10px;">參考上河文化精緻地圖標準腳程。行程表含休息，合理慢於上河。</div>
-    <div style="margin-bottom:14px;">
-      <div style="font-weight:700;font-size:0.85rem;color:var(--d1);margin-bottom:6px;">Day 1：登山口 → 排雲</div>
-      <div class="sh-row"><div class="sh-node"><b>登山口</b><small>2,610m</small></div><div class="sh-arrow">→<br>50分</div><div class="sh-node"><b>孟祿亭</b></div><div class="sh-arrow">→<br>75分</div><div class="sh-node"><b>前峰登山口</b></div><div class="sh-arrow">→<br>45分</div><div class="sh-node"><b>休憩亭</b></div><div class="sh-arrow">→<br>40分</div><div class="sh-node"><b>大峭壁</b></div><div class="sh-arrow">→<br>50分</div><div class="sh-node pk"><b>排雲山莊</b><small>3,402m</small></div></div>
-      <div class="sh-result"><b>上河 260分 ≈ 4h20m</b> ／ 行程表 6h（含休息 1.5h）<span style="color:#059669;font-weight:600;"> ✓</span></div>
-    </div>
-    <div style="margin-bottom:14px;">
-      <div style="font-weight:700;font-size:0.85rem;color:var(--d2b);margin-bottom:6px;">Day 2A：排雲 → 北峰 → 主峰 → 排雲</div>
-      <div class="sh-row"><div class="sh-node r"><b>排雲</b></div><div class="sh-arrow red">→<br>45分</div><div class="sh-node r"><b>主南岔</b></div><div class="sh-arrow red">→<br>15分</div><div class="sh-node r"><b>主北岔</b><small>風口</small></div><div class="sh-arrow red">→<br>10分</div><div class="sh-node r"><b>北峰鞍</b></div><div class="sh-arrow red">→<br>70分</div><div class="sh-node rp"><b>北峰</b><small>3,858m</small></div></div>
-      <div class="sh-row" style="margin-top:4px;"><div class="sh-node rp"><b>北峰</b></div><div class="sh-arrow red">↩<br>45分</div><div class="sh-node r"><b>北峰鞍</b></div><div class="sh-arrow red">→<br>20分</div><div class="sh-node r"><b>主北岔</b></div><div class="sh-arrow red">→<br>25分</div><div class="sh-node rp"><b>主峰</b><small>3,952m</small></div><div class="sh-arrow red">↩<br>15+30</div><div class="sh-node r"><b>排雲</b></div></div>
-      <div class="sh-result"><b>上河 290分 ≈ 4h50m</b> ／ 行程表 9h（含日出停留 4h）<span style="color:#059669;font-weight:600;"> ✓</span></div>
-    </div>
-    <div style="margin-bottom:14px;">
-      <div style="font-weight:700;font-size:0.85rem;color:var(--d2a);margin-bottom:6px;">Day 2B：排雲 → 主峰 → 排雲</div>
-      <div class="sh-row"><div class="sh-node" style="background:#fefce8;border-color:#fde68a;"><b>排雲</b></div><div class="sh-arrow" style="color:var(--d2a);">→<br>95分</div><div class="sh-node" style="background:#fde68a;border-color:#f59e0b;"><b>主峰</b><small>3,952m</small></div><div class="sh-arrow" style="color:#92400e;">↩<br>30分</div><div class="sh-node" style="background:#fefce8;border-color:#fde68a;"><b>排雲</b></div></div>
-      <div class="sh-result"><b>上河 125分 ≈ 2h05m</b> ／ 行程表 5h（含日出 3h）<span style="color:#059669;font-weight:600;"> ✓</span></div>
-    </div>
-    <div style="padding:8px;background:#f0fdf4;border-radius:6px;font-size:0.8rem;"><b>結論：</b>行程表約上河 1.3～1.5 倍（含休息），安排合理。</div>
-  </div>
-  </div></details>
-
-  <!-- 注意事項 -->
-  <details class="exp"><summary>📋 注意事項（詳細）</summary><div class="exp-body">
-    <div class="note-i">排雲供水：早 6–7:00、傍晚 4–5:00。無飲水機，訂協作才有熱水。建議帶耳塞。</div>
-    <div class="note-i">四月凌晨零下，可能降雪。備妥保暖衣物、帽子、手套。洋蔥式穿法，避免棉質。</div>
-    <div class="note-i">高山症：慢速上升、帶足水。有症狀立即下撤。備止痛藥、丹木斯。</div>
-    <div class="note-i">攻頂帶頭燈，出發前檢查電池。北峰碎石坡抓鐵鍊，回程最累。</div>
-    <div class="note-i">台21線 110k~145k 每日 17:30–07:00 禁止通行，自駕注意。<br><a href="https://share.google/k4yvOaDUDmZJGFNlK" target="_blank">📹 台21線 110K+500 草坪頭管制站即時影像</a>　<a href="https://share.google/DvveUzXhSXF3jlzIm" target="_blank">🚧 台21線 中部道路施工資訊</a></div>
-    <div class="note-i">入園證列印攜帶。下山填「出園回報」。垃圾自行帶下山。</div>
-  </div></details>
+  <!-- (Removed demo-only 上河驗算 + 注意事項 blocks. They were 玉山-specific
+       static fixtures that couldn't be edited via edit.js. Per-plan notes
+       belong in plan.data.days[].details, which IS editable.) -->
 
 
 </div>
@@ -2513,6 +2507,7 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
 <script src="js/elevation.js"></script>
 <script src="js/mode-toggle.js"></script>
 <script src="render.js"></script>
+<script src="js/outbox.js"></script>
 <script src="js/edit.js"></script>
 </body>
 </html>

@@ -547,26 +547,10 @@ form .submit{animation-delay:.56s}
           if (data.refresh_token) localStorage.setItem("tf_refresh_token", data.refresh_token);
           if (data.user) localStorage.setItem("tf_user", JSON.stringify(data.user));
         }
-        showBanner("ok", "OK", "通行成功。正在前往你的計劃書…");
-        // After login: if user has plans, open most recent; otherwise go to dashboard.
+        showBanner("ok", "OK", "通行成功。正在前往儀表板…");
+        // After login: always land on dashboard so user can pick a plan.
         const apiQS = params.get("api") ? "?api=" + encodeURIComponent(params.get("api")) : "";
-        try {
-          const r = await fetch(API_BASE + "/api/plans", {
-            headers: { "Authorization": "Bearer " + data.access_token },
-          });
-          if (r.ok) {
-            const j = await r.json();
-            const plans = (j.plans || []);
-            const dest = plans.length
-              ? "index.html?plan=" + encodeURIComponent(plans[0].id) + (apiQS ? "&" + apiQS.slice(1) : "")
-              : "dashboard.html" + apiQS;
-            setTimeout(() => { location.href = dest; }, 800);
-          } else {
-            setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 800);
-          }
-        } catch {
-          setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 800);
-        }
+        setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 700);
       }
     } catch (err) {
       showBanner("err", "NET", `無法連線到 ${API_BASE}。確認後端已啟動且 CORS 允許此網域：${location.origin}`);

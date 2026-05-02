@@ -5,7 +5,7 @@
 //   - Cross-origin API: passthrough, never cache (auth, /api/*)
 //   - POST / non-GET:   never cache
 
-const CACHE = 'jademountain-v5';
+const CACHE = 'jademountain-v6';
 
 // Same-origin assets we want available offline on first install
 const PRECACHE_LOCAL = [
@@ -34,6 +34,10 @@ const NO_CACHE_HOSTS = [
   'trailforge-api.fly.dev',
 ];
 
+// Path prefixes that should NEVER be cached, regardless of host.
+// Covers local dev (localhost:4100) and any future API hosts.
+const NO_CACHE_PATH_PREFIXES = ['/api/', '/auth/'];
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
@@ -58,7 +62,11 @@ self.addEventListener('activate', (event) => {
 });
 
 function isNoCacheHost(url) {
-  return NO_CACHE_HOSTS.some((h) => url.host === h);
+  if (NO_CACHE_HOSTS.some((h) => url.host === h)) return true;
+  // Path-based exclusion catches localhost API in dev (localhost:4100/api/...)
+  // and any future API host without enumerating each one.
+  if (NO_CACHE_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return true;
+  return false;
 }
 
 function isHtmlRequest(req) {

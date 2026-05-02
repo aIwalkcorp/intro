@@ -496,9 +496,27 @@ body{
     showToast._t = setTimeout(() => toast.classList.remove('show'), ms);
   }
 
+  // Read calls go straight to fetch (no queue — there's nothing to queue if you can't read).
+  // Mutating calls (POST / PATCH / DELETE) route through TF_OUTBOX so a network drop just
+  // queues the change and surfaces an "⬆ 上傳" pill instead of failing.
   async function api(path, opts = {}) {
+    const method = (opts.method || 'GET').toUpperCase();
     const headers = { 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) };
     if (opts.body && !headers['content-type']) headers['content-type'] = 'application/json';
+
+    if (method !== 'GET' && window.TF_OUTBOX) {
+      const r = await window.TF_OUTBOX.send(API_BASE + path, { method, headers, body: opts.body, label: method + ' ' + path });
+      if (r.queued) {
+        return { ok: true, status: 202, queued: true, json: async () => ({ ok: true, queued: true }) };
+      }
+      if (r.status === 401) {
+        localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(REFRESH_KEY); localStorage.removeItem(USER_KEY);
+        location.replace('auth.html' + location.search);
+        throw new Error('unauthenticated');
+      }
+      return { ok: r.ok, status: r.status, json: async () => r.body };
+    }
+
     const res = await fetch(API_BASE + path, { ...opts, headers });
     if (res.status === 401) {
       localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(REFRESH_KEY); localStorage.removeItem(USER_KEY);
@@ -726,7 +744,7 @@ body{
           method: 'PATCH',
           body: JSON.stringify(body),
         });
-        if (!r.ok) {
+        if (!r.ok && !r.queued) {
           const j = await r.json().catch(() => ({}));
           throw new Error(j.error || ('HTTP ' + r.status));
         }
@@ -734,7 +752,7 @@ body{
         if (startChanged) parts.push('出發日 ' + calState.selectedIso.replace(/-/g, '/'));
         if (durChanged) parts.push(calState.duration + ' 天');
         if (partyChanged) parts.push(calState.partySize + ' 人');
-        showToast('已更新：' + parts.join('・'));
+        showToast(r.queued ? '離線：' + parts.join('・') + ' 已暫存（按右上「⬆ 上傳」）' : '已更新：' + parts.join('・'));
         closeCalendar();
         load();
       } catch (err) {
@@ -861,6 +879,12 @@ body{
         method: 'POST',
         body: JSON.stringify({ title, data: tpl }),
       });
+      if (r.queued) {
+        showToast('離線：新增已暫存。請連上網後按「⬆ 上傳」。');
+        newBtn.disabled = false;
+        const allEmptyQ = $('empty-new'); if (allEmptyQ) allEmptyQ.disabled = false;
+        return;
+      }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const created = await r.json();
       showToast('已建立 — 開啟中…');
@@ -967,9 +991,9 @@ body{
         method: 'PATCH',
         body: JSON.stringify({ title: newTitle }),
       });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!r.ok && !r.queued) throw new Error('HTTP ' + r.status);
       ttl.dataset.title = newTitle;
-      showToast('已改名為「' + newTitle + '」');
+      showToast(r.queued ? '離線：改名已暫存（按右上「⬆ 上傳」）' : '已改名為「' + newTitle + '」');
     } catch (err) {
       showToast('改名失敗：' + err.message);
       ttl.textContent = oldTitle;
@@ -983,8 +1007,8 @@ body{
     if (!confirm(`確定要刪除「${title}」？此動作無法還原。`)) return;
     try {
       const r = await api('/api/plans/' + id, { method: 'DELETE' });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      showToast('已刪除。');
+      if (!r.ok && !r.queued) throw new Error(`HTTP ${r.status}`);
+      showToast(r.queued ? '離線：刪除已暫存（按右上「⬆ 上傳」）' : '已刪除。');
       load();
     } catch (err) {
       showToast('刪除失敗：' + err.message);
@@ -1003,5 +1027,6 @@ body{
   load();
 })();
 </script>
+<script src="js/outbox.js"></script>
 </body>
 </html>
