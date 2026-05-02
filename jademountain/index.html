@@ -779,6 +779,11 @@ body:not([data-jm-tab="itin"]) .jm-mode-toggle{display:none;}
    the user opens a personal plan via ?plan=<id>. */
 body[data-jm-context="plan"] .demo-only{display:none !important;}
 
+/* Retreat block — surfaced in the 🚨 popup; keep DOM (popup clones it) but
+   hide the inline duplicate inside each day panel. */
+.day-panel > .retreat-section{display:none;}
+@media print{ .day-panel > .retreat-section{display:block !important;} }
+
 @media (max-width:380px){
   .jm-mode-toggle button{padding:4px 7px;}
   .jm-mode-toggle button span:not(.mt-icon):not(.mt-en){font-size:.62rem; letter-spacing:.14em;}
@@ -2103,9 +2108,14 @@ function togglePop(id){
   if(opening){
     if(id==='pop-key'){
       const day=activeDayId()||'d0';
-      const src=document.querySelector(`#day-${day} > .eq-card`);
+      const dayEl=document.getElementById('day-'+day);
+      const eq=dayEl?dayEl.querySelector(':scope > .eq-card'):null;
+      const retreat=dayEl?dayEl.querySelector(':scope > .retreat-section'):null;
       const body=document.getElementById('pop-key-body');
-      body.innerHTML=src?src.outerHTML:'<div style="color:var(--txtL);font-size:.86rem;">此日無關鍵時間資料</div>';
+      const parts=[];
+      if(eq) parts.push(eq.outerHTML);
+      if(retreat) parts.push(retreat.outerHTML);
+      body.innerHTML=parts.length?parts.join(''):'<div style="color:var(--txtL);font-size:.86rem;">此日無關鍵時間資料</div>';
     }
     pop.classList.add('open');
     const fab=document.getElementById(fabMap[id]);if(fab)fab.classList.add('active');

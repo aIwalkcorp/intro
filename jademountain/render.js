@@ -167,7 +167,7 @@
       return `<div class="ret-i">${it}</div>`;
     }).join('');
     return `
-      <div class="section">
+      <div class="section retreat-section">
         <div class="sec-title" style="${titleStyle.join(';')}">${escapeHtml(r.title || '')}</div>
         ${items}
       </div>`;
