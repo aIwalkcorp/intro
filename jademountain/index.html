@@ -2107,14 +2107,27 @@ const gpxDay2=[[23.466384, 120.94978, 3400.8], [23.46638, 120.950427, 3407.8], [
 
 // === TABS ===
 function openTab(id){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['itin','contact','split'][i]===id));
+  // Guard against stale localStorage values (e.g. 'map' from before the
+  // map tab was removed). Without this, getElementById returns null and
+  // .classList.add throws — leaving NO panel active so users only see
+  // the footer.
+  const VALID = ['itin','contact','split'];
+  if (!VALID.includes(id)) {
+    console.warn('[trailforge] openTab: invalid id', id, '— falling back to itin');
+    id = 'itin';
+    try { localStorage.removeItem('jm_tab'); } catch(e){}
+  }
+  const panel = document.getElementById('tab-' + id);
+  if (!panel) {  // even valid id might be missing if HTML changed; fail-safe
+    console.warn('[trailforge] openTab: #tab-' + id + ' missing');
+    return;
+  }
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', VALID[i]===id));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  document.body.dataset.jmTab = id;  // CSS uses this to show/hide global mode toggle
+  panel.classList.add('active');
+  document.body.dataset.jmTab = id;
   try{localStorage.setItem('jm_tab',id);}catch(e){}
   if(id==='split'){try{renderSplit();renderChecklist();}catch(e){console.error(e);}}
-  // Elevation canvases must redraw when the itinerary tab becomes visible
-  // (canvases inside hidden tabs report 0 size during initial draw).
   if(id==='itin' && window.TF && TF.modeToggle && TF.modeToggle.refreshAll){
     requestAnimationFrame(()=>TF.modeToggle.refreshAll());
   }

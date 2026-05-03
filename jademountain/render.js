@@ -412,12 +412,25 @@
   function render(plan) {
     plan = plan || loadPlan();
     if (!plan) { console.warn('TF.render: no plan'); return; }
-    renderHeader(plan);
-    renderDayBar(plan);
-    renderDayPanels(plan);
+    // Wrap each render step independently so a partial failure (e.g. a
+    // schema mismatch in one day) doesn't blank the entire page — users
+    // were reporting only the footer being visible after JS crashes.
+    try { renderHeader(plan); }     catch (e) { console.error('renderHeader failed', e); }
+    try { renderDayBar(plan); }     catch (e) { console.error('renderDayBar failed', e); }
+    try { renderDayPanels(plan); }  catch (e) { console.error('renderDayPanels failed', e); showFallback(e); }
     if (typeof window.lucide !== 'undefined' && lucide.createIcons) {
       try { lucide.createIcons(); } catch (e) {}
     }
+  }
+  function showFallback(err) {
+    const host = document.getElementById('day-panels-host');
+    if (!host) return;
+    host.innerHTML = `
+      <div style="padding:32px 20px; text-align:center; font-family:'Noto Serif TC',serif; color:#7a7468; background:rgba(168,128,44,0.05); border:1px dashed rgba(42,36,24,0.2); border-radius:6px; margin:18px 0;">
+        <div style="font-size:1rem; color:#0a1a06; margin-bottom:6px; font-weight:700;">⚠ 計劃書載入錯誤</div>
+        <div style="font-size:.82rem; margin-bottom:12px;">資料格式有異常，請重新整理或回報。</div>
+        <details style="font-size:.72rem; text-align:left; max-width:480px; margin:0 auto; color:#92400e;"><summary>技術細節</summary><pre style="white-space:pre-wrap; word-break:break-word; padding:8px; background:#fef3c7; border-radius:3px;">${(err && err.stack || String(err)).replace(/</g, '&lt;')}</pre></details>
+      </div>`;
   }
   TF.render = render;
   TF.loadPlan = loadPlan;
@@ -428,7 +441,113 @@
   // plan.json baked into <script id="plan-data"> immediately so the page is
   // never blank on first paint.
   function autoRender() {
-    render(); // synchronous static render
+    const params = new URLSearchParams(location.search);
+    const planId = params.get('plan');
+
+    // When ?plan=<id> is present, the user is opening their personal plan.
+    // DO NOT first paint the inline 玉山 demo — that causes the "mess up
+    // with jade mountain" flash users were reporting. Instead:
+    //   1. Try a localStorage-cached copy of this plan for instant paint
+    //   2. Otherwise show a loading skeleton
+    //   3. Fetch from API; on success replace; on failure show error
+    if (planId) {
+      const cacheKey = 'tf_plan_cache_' + planId;
+      let cached = null;
+      try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) cached = JSON.parse(raw);
+      } catch (e) {}
+      if (cached && cached.data) {
+        window.__PLAN__ = cached.data;
+        render(cached.data);
+      } else {
+        showLoadingSkeleton();
+      }
+      fetchAndRender(params, planId, cacheKey);
+      return;
+    }
+
+    // No ?plan= → public demo / first paint with inline 玉山 plan-data.
+    render();
+  }
+
+  function showLoadingSkeleton() {
+    const host = document.getElementById('day-panels-host');
+    const bar = document.getElementById('day-bar');
+    if (bar) bar.innerHTML = '';
+    if (host) {
+      host.innerHTML = `
+        <div class="tf-skeleton" style="padding:32px 18px; text-align:center; font-family:'Noto Serif TC',serif; color:#6e5316;">
+          <div style="width:46px; height:46px; border-radius:50%;
+                      background:radial-gradient(circle at 35% 30%, #e8c870, #a8802c 70%);
+                      margin:0 auto 14px; opacity:.7;
+                      animation:tfPulse 1.6s ease-in-out infinite;"></div>
+          <div style="font-size:.86rem; letter-spacing:.18em;">載入計劃書中…</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:.62rem;
+                      letter-spacing:.32em; color:#7a7468; margin-top:6px; text-transform:uppercase;">
+            FETCHING FROM API
+          </div>
+        </div>
+        <style>@keyframes tfPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.12);opacity:.9}}</style>`;
+    }
+  }
+
+  function showApiError(msg) {
+    const host = document.getElementById('day-panels-host');
+    if (!host) return;
+    host.innerHTML = `
+      <div style="padding:28px 22px; text-align:center; font-family:'Noto Serif TC',serif; color:#7f1d1d;
+                  background:#fef2f2; border:1px solid #fecaca; border-radius:6px; margin:18px 0;">
+        <div style="font-size:1rem; font-weight:700; margin-bottom:6px;">⚠ 無法載入計劃書</div>
+        <div style="font-size:.82rem; color:#92400e; margin-bottom:14px;">${msg}</div>
+        <button onclick="location.reload()" style="appearance:none; cursor:pointer; padding:6px 14px;
+                  font-family:'Noto Serif TC',serif; font-size:.78rem; letter-spacing:.16em;
+                  background:#1f3a23; color:#f4eddc; border:1px solid #6e5316; border-radius:999px;">
+          重新整理
+        </button>
+      </div>`;
+  }
+
+  function fetchAndRender(params, planId, cacheKey) {
+    const token = localStorage.getItem('tf_access_token');
+    if (!token) {
+      showApiError('尚未登入，請先 <a href="auth.html" style="color:#1f3a23;">登入</a> 後再開此計劃。');
+      return;
+    }
+    const apiBase = (params.get('api') || 'https://trailforge-api.fly.dev').replace(/\/+$/, '');
+    fetch(apiBase + '/api/plans/' + encodeURIComponent(planId), {
+      headers: { 'Authorization': 'Bearer ' + token },
+    }).then(r => {
+      if (r.status === 401) throw new Error('Token 已過期，請重新登入。');
+      if (r.status === 404) throw new Error('找不到此計劃書（可能已被刪除或不屬於你）。');
+      if (!r.ok) throw new Error('伺服器錯誤 (HTTP ' + r.status + ')');
+      return r.json();
+    }).then(row => {
+      if (!row || !row.data) throw new Error('回應格式不正確（缺 data 欄位）');
+      window.__PLAN__ = row.data;
+      // Cache for instant paint next time.
+      try { localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), title: row.title, data: row.data })); } catch (e) {}
+      render(row.data);
+      if (row.title && document.getElementById('plan-title')) {
+        document.getElementById('plan-title').textContent = row.title;
+      }
+    }).catch(err => {
+      // If we already painted from cache, leave that visible — log and bail.
+      const host = document.getElementById('day-panels-host');
+      const hasContent = host && host.querySelector('.day-panel');
+      if (hasContent) {
+        console.warn('[trailforge] fetch failed but cache is showing:', err);
+        return;
+      }
+      showApiError(String(err.message || err));
+    });
+  }
+
+  // Legacy entry retained for compatibility (unused now that autoRender
+  // handles the ?plan= flow internally — but kept in case other code calls
+  // the old shape).
+  function _legacyAutoRender_unused() {
+    render();
     try {
       const params = new URLSearchParams(location.search);
       const planId = params.get('plan');
@@ -443,7 +562,6 @@
       }).then(row => {
         if (!row || !row.data) return;
         window.__PLAN__ = row.data;
-        // Re-render with API-supplied data; render() rebuilds day-bar/panels.
         render(row.data);
         // Update title if available
         if (row.title && document.getElementById('plan-title')) {
