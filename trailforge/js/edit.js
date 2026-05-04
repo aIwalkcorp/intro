@@ -779,8 +779,11 @@
         const j = await r.json().catch(() => ({}));
         throw new Error(j.error || "HTTP " + r.status);
       }
-      // Successful save — clear any stashed pending edits for this plan.
+      // Successful save — clear any stashed pending edits for this plan,
+      // and ALSO drop the PWA frozen snapshot so the next reload pulls the
+      // fresh version (which then re-freezes if running standalone).
       clearPendingFor(planId);
+      try { localStorage.removeItem("tf_pwa_frozen_" + planId); } catch (e) {}
       showToast("已儲存。重新載入計劃書…");
       intentionalReload(600);
     } catch (e) {

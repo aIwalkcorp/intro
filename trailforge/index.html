@@ -1788,6 +1788,43 @@ body[data-jm-context="demo"] .demo-badge{display:inline-block;}
 }
 .elev-decision-marker:active .edm-ring{transform:scale(.95);}
 
+/* Same marker pattern, but for the multi-day Overview chart. Tucked into
+   .eo-canvas-wrap (which is position:relative). Slightly smaller dot,
+   gold accent (matches the rest of the planning card's brass palette). */
+.eo-canvas-wrap .elev-overview-decision{
+  position:absolute; width:28px; height:28px;
+  background:transparent; border:none; padding:0; cursor:pointer;
+  z-index:4;
+  transform:translate(-50%, -50%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.eo-canvas-wrap .elev-overview-decision .eod-ring{
+  width:14px; height:14px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fde68a, #a8802c 60%, #6e5316 100%);
+  border:2px solid #fdf9ee;
+  box-shadow:0 0 0 2px rgba(168,128,44,0.55), 0 2px 6px rgba(10,26,6,0.35);
+  animation:eodPulse 2.2s ease-out infinite;
+}
+@keyframes eodPulse{
+  0%, 100%{ box-shadow:0 0 0 2px rgba(168,128,44,0.55), 0 0 0 0 rgba(168,128,44,0); }
+  50%      { box-shadow:0 0 0 2px rgba(168,128,44,0.55), 0 0 0 7px rgba(168,128,44,0); }
+}
+.eo-canvas-wrap .elev-overview-decision .eod-label{
+  position:absolute; top:18px; left:50%; transform:translateX(-50%);
+  font-family:var(--serif), serif; font-style:italic; font-weight:700;
+  font-size:.66rem; letter-spacing:.04em;
+  color:#6e5316;
+  background:rgba(253,249,238,0.94); padding:1px 6px; border-radius:3px;
+  border:1px solid rgba(110,83,22,0.4);
+  white-space:nowrap; pointer-events:none;
+  box-shadow:0 1px 2px rgba(10,26,6,0.18);
+}
+.eo-canvas-wrap .elev-overview-decision:hover .eod-ring{
+  transform:scale(1.15);
+  box-shadow:0 0 0 3px rgba(168,128,44,0.7), 0 4px 10px rgba(10,26,6,0.4);
+}
+.eo-canvas-wrap .elev-overview-decision:active .eod-ring{transform:scale(.95);}
+
 /* Route-info badge in elev-head — shows current active route variant.
    Highlights briefly when changed by decision-marker click. */
 .elev-route-info{
@@ -2116,6 +2153,31 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   border-color:#1e3a1a; color:#1e3a1a;
 }
 .gpx-io .gx-btn-upload:hover{background:#1e3a1a; color:#fdfaf0;}
+.gpx-io .gx-day-custom{background:#a8802c;}
+.gpx-io .gx-row-custom{background:rgba(168,128,44,0.06);}
+.gpx-io .gx-btn-delete{
+  border-color:#a83d2c; color:#a83d2c; padding:5px 8px;
+  font-size:.7rem; line-height:1;
+}
+.gpx-io .gx-btn-delete:hover{background:#a83d2c; color:#fdfaf0;}
+.gpx-io .gx-row-add{
+  display:flex; justify-content:center;
+  padding:10px 12px; background:transparent; border-bottom:none;
+}
+.gpx-io .gx-btn-add{
+  font-family:var(--serif); font-style:italic; font-size:.78rem;
+  padding:6px 14px; border:1px dashed rgba(110,83,22,0.45);
+  background:rgba(168,128,44,0.04); color:var(--gold-deep,#6e5316);
+  border-radius:6px; cursor:pointer; letter-spacing:.04em;
+  transition:background .15s, border-color .15s;
+}
+.gpx-io .gx-btn-add:hover{
+  background:rgba(168,128,44,0.14); border-color:#a8802c; color:#1e3a1a;
+}
+.gpx-io .gx-row-add-full .gx-add-full-msg{
+  font-family:var(--serif); font-style:italic; font-size:.72rem;
+  color:var(--ink-soft,#7a7468); padding:6px 14px;
+}
 
 /* Toast (shared with rest of app feel — bottom-right, fade-in) */
 .gx-toast{
@@ -2170,6 +2232,51 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   flex:1; min-width:200px; text-align:right;
   font-family:var(--serif); font-style:italic; font-size:.72rem;
   color:var(--ink-soft,#7a7468);
+}
+
+/* Route-variant picker chips — sits between rp-head and speed control.
+   One group per day-with-variants; chips toggle the active route. */
+.overview-rest-points .rp-route-variants{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:8px 10px; margin:6px 0 8px;
+  background:linear-gradient(180deg, rgba(220,38,38,0.04), rgba(168,128,44,0.06));
+  border:1px solid rgba(168,128,44,0.32);
+  border-left:3px solid #a8802c;
+  border-radius:5px;
+}
+.overview-rest-points .rp-rv-title{
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.28em;
+  color:#7f1d1d; font-weight:800; text-transform:uppercase;
+  padding-right:6px; border-right:1px dashed rgba(110,83,22,0.35);
+}
+.overview-rest-points .rp-rv-group{
+  display:inline-flex; align-items:center; gap:8px; flex-wrap:nowrap;
+}
+.overview-rest-points .rp-rv-day{
+  font-family:var(--serif); font-style:italic; font-weight:700;
+  font-size:.78rem; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-rv-arrow{
+  color:var(--ink-soft,#7a7468); font-size:.78rem;
+}
+.overview-rest-points .rp-rv-chips{
+  display:inline-flex; gap:4px; flex-wrap:wrap;
+}
+.overview-rest-points .rp-rv-chip{
+  font-family:var(--serif); font-style:italic; font-weight:600;
+  font-size:.74rem; line-height:1;
+  padding:5px 10px; border-radius:14px; cursor:pointer;
+  background:#fdfaf0; color:var(--gold-deep,#6e5316);
+  border:1px solid rgba(110,83,22,0.4);
+  transition:background .15s, color .15s, border-color .15s;
+}
+.overview-rest-points .rp-rv-chip:hover:not(:disabled){
+  background:rgba(168,128,44,0.16); border-color:#a8802c; color:#1e3a1a;
+}
+.overview-rest-points .rp-rv-chip.active,
+.overview-rest-points .rp-rv-chip[disabled]{
+  background:#1e3a1a; color:#fdfaf0; border-color:#1e3a1a;
+  cursor:default;
 }
 
 /* Speed control */
@@ -2541,6 +2648,32 @@ body[data-jm-lang="en"] .jm-lang-toggle [data-jl-target="en"]{
 /* Apply language: hide the spans for the inactive language. Default zh. */
 body[data-jm-lang="en"] .lang-zh{ display:none !important; }
 body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
+
+/* ==== Sync chip — only visible in PWA standalone mode on a personal plan.
+   Style matches the lang toggle skeleton: transparent, serif, gold accent.
+   JS toggles body.tf-pwa-frozen to flip visibility. ==== */
+.jm-sync-chip{
+  position:fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 48px);
+  right: calc(env(safe-area-inset-right, 0px) + 280px);  /* JS adjusts at runtime */
+  z-index:1300;
+  display:none;
+  align-items:center; gap:6px;
+  height:30px; padding:0 6px;
+  background:transparent; border:none; border-radius:0; box-shadow:none;
+  font-family:var(--serif), "Noto Sans TC", sans-serif;
+  font-size:.7rem; font-weight:600; letter-spacing:.14em;
+  color:#d9c590; cursor:pointer;
+  opacity:.55;
+  transition: opacity .2s ease, transform .15s ease, color .2s ease;
+}
+.jm-sync-chip svg{ width:13px; height:13px; flex:none; transition: transform .55s cubic-bezier(.5,.05,.2,1); }
+body.tf-pwa-frozen .jm-sync-chip{ display:inline-flex; }
+.jm-sync-chip:hover{ opacity:1; color:#fff; }
+.jm-sync-chip:hover svg{ transform: rotate(180deg); }
+.jm-sync-chip:active{ transform:scale(.95); }
+.jm-sync-chip.spinning svg{ animation: tfSpin .9s linear infinite; }
+@keyframes tfSpin{ to{ transform: rotate(360deg); } }
 
 /* ==== Save chip — same skeleton as .jm-lang-toggle. Visible only when
    body.tf-editing AND body.tf-dirty. Subtle gold pulse on the text invites
@@ -3344,6 +3477,15 @@ window.tfConfirm = function (opts) {
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
   <span class="lang-zh">儲存</span>
   <span class="lang-en">SAVE</span>
+</button>
+
+<!-- ==== Sync chip — only visible in PWA standalone mode + on a personal plan.
+     Frozen offline copy is the default; tap this to fetch the latest from
+     the server and re-freeze. ==== -->
+<button id="jmSyncChip" class="jm-sync-chip" type="button" aria-label="同步最新版 / Sync latest" title="同步最新版本">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.3M21 4v5h-5M21 12a9 9 0 0 1-15.5 6.3M3 20v-5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="lang-zh">同步</span>
+  <span class="lang-en">SYNC</span>
 </button>
 
 <a id="dashPill" class="dash-pill" href="dashboard.html" aria-label="我的計劃書 Dashboard">
@@ -4168,6 +4310,13 @@ function switchRoute(id){
   document.getElementById('route-'+id).classList.add('active');
   document.querySelectorAll('.r-tab').forEach(t=>{if((id==='d2a'&&t.textContent.includes('北峰'))||(id==='d2b'&&t.textContent.includes('僅')))t.classList.add('active');});
   renderNowLine();
+  // Tell the elevation overview + rest-points list to re-render so the
+  // chart's path, summit markers, decision-pill colours, and segment
+  // table all reflect the newly-active route variant.
+  try {
+    if (window.TF && window.TF.modeToggle && window.TF.modeToggle.refreshAll) window.TF.modeToggle.refreshAll();
+    if (window.TF && window.TF.overview && window.TF.overview.render) window.TF.overview.render();
+  } catch (e) { console.warn('switchRoute: overview refresh failed', e); }
 }
 
 // === Checklist ===
@@ -4319,6 +4468,43 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
   // re-run after fonts/animations settle
   setTimeout(positionLang, 100);
   setTimeout(positionLang, 600);
+})();
+
+// === Sync chip — visible only when running as installed PWA on a personal
+//     plan. Tap re-fetches the plan from the server and re-freezes the
+//     localStorage snapshot. ===
+(function initSyncChip(){
+  const params = new URLSearchParams(location.search);
+  const planId = params.get('plan');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       window.navigator.standalone === true;
+  if (!planId || !isStandalone) return;     // browser tab → never show
+  document.body.classList.add('tf-pwa-frozen');
+  const chip = document.getElementById('jmSyncChip');
+  const lang = document.getElementById('jmLangToggle');
+  if (!chip) return;
+  chip.addEventListener('click', () => {
+    chip.classList.add('spinning');
+    if (window.TF && typeof window.TF.refreshFrozen === 'function') {
+      window.TF.refreshFrozen(planId);
+    } else {
+      const u = new URL(location.href);
+      u.searchParams.set('refresh', '1');
+      location.href = u.toString();
+    }
+  });
+  function positionSync(){
+    if (!lang) return;
+    const r = lang.getBoundingClientRect();
+    if (r.width === 0) return;
+    const vw = document.documentElement.clientWidth;
+    const langRightOffset = vw - r.right;
+    chip.style.right = (langRightOffset + r.width + 8) + 'px';
+  }
+  positionSync();
+  window.addEventListener('resize', positionSync);
+  setTimeout(positionSync, 200);
+  setTimeout(positionSync, 800);
 })();
 
 // === Save chip — sits to the LEFT of the lang toggle, visible only when

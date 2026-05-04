@@ -507,22 +507,78 @@
   TF.loadPlan = loadPlan;
   // (TF was bound to window.TF up top — no reassignment here.)
 
-  // If URL has ?plan=<id> and we have an access token, fetch from API and
-  // re-render once it arrives. Otherwise (or in addition) render the static
-  // plan.json baked into <script id="plan-data"> immediately so the page is
-  // never blank on first paint.
+  // PWA standalone mode = "frozen offline app per plan". Once the plan has
+  // been fetched once into localStorage[tf_pwa_frozen_<id>], we never refetch
+  // on subsequent launches — users explicitly tap a 同步/refresh action to
+  // pull a new copy. This makes each installed PWA behave like a downloaded
+  // offline map, immune to network flakiness or unexpected reconnects.
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+  function frozenKey(id) { return 'tf_pwa_frozen_' + id; }
+  function readFrozen(id) {
+    try { const raw = localStorage.getItem(frozenKey(id)); if (raw) return JSON.parse(raw); }
+    catch (e) {}
+    return null;
+  }
+  function writeFrozen(id, title, data) {
+    try { localStorage.setItem(frozenKey(id), JSON.stringify({ at: Date.now(), title, data })); }
+    catch (e) {}
+  }
+  function clearFrozen(id) {
+    try { localStorage.removeItem(frozenKey(id)); } catch (e) {}
+  }
+  // Expose so the "強制更新" button can wipe + reload.
+  window.TF = window.TF || {};
+  window.TF.refreshFrozen = function (planId) {
+    if (!planId) {
+      const p = new URLSearchParams(location.search).get('plan');
+      if (p) planId = p;
+    }
+    if (planId) clearFrozen(planId);
+    // strip any ?refresh=1 remnant before reload to avoid loops
+    const u = new URL(location.href);
+    u.searchParams.delete('refresh');
+    location.replace(u.toString());
+  };
+
   function autoRender() {
     const params = new URLSearchParams(location.search);
     const planId = params.get('plan');
+    const wantsRefresh = params.get('refresh') === '1';
 
     // When ?plan=<id> is present, the user is opening their personal plan.
     // DO NOT first paint the inline 玉山 demo — that causes the "mess up
-    // with jade mountain" flash users were reporting. Instead:
-    //   1. Try a localStorage-cached copy of this plan for instant paint
-    //   2. Otherwise show a loading skeleton
-    //   3. Fetch from API; on success replace; on failure show error
+    // with jade mountain" flash users were reporting.
     if (planId) {
       const cacheKey = 'tf_plan_cache_' + planId;
+      const standalone = isStandalone();
+
+      // Manual "force refresh" path: drop the frozen snapshot and proceed to
+      // a normal fetch. Triggered by the 同步 chip in PWA mode.
+      if (wantsRefresh) clearFrozen(planId);
+
+      // ── PWA frozen-snapshot path ──
+      // Standalone + frozen exists → render frozen, NEVER touch the network.
+      // This is the primary "offline app per plan" behavior the user asked
+      // for — once installed, the plan is locked at install-time content.
+      if (standalone && !wantsRefresh) {
+        const frozen = readFrozen(planId);
+        if (frozen && frozen.data) {
+          window.__PLAN__ = frozen.data;
+          render(frozen.data);
+          if (frozen.title && document.getElementById('plan-title')) {
+            document.getElementById('plan-title').textContent = frozen.title;
+          }
+          return;   // skip the fetch entirely
+        }
+        // First standalone launch → fall through to fetch + freeze.
+      }
+
+      // ── Normal browser / first PWA launch path ──
+      // 1. Paint cached data if any (instant)
+      // 2. Fetch from API; on success replace + (in PWA) freeze
       let cached = null;
       try {
         const raw = localStorage.getItem(cacheKey);
@@ -534,7 +590,7 @@
       } else {
         showLoadingSkeleton();
       }
-      fetchAndRender(params, planId, cacheKey);
+      fetchAndRender(params, planId, cacheKey, { freezeAfter: standalone });
       return;
     }
 
@@ -579,7 +635,8 @@
       </div>`;
   }
 
-  function fetchAndRender(params, planId, cacheKey) {
+  function fetchAndRender(params, planId, cacheKey, opts) {
+    const o = opts || {};
     const token = localStorage.getItem('tf_access_token');
     if (!token) {
       showApiError('尚未登入，請先 <a href="auth.html" style="color:#1f3a23;">登入</a> 後再開此計劃。');
@@ -598,6 +655,8 @@
       window.__PLAN__ = row.data;
       // Cache for instant paint next time.
       try { localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), title: row.title, data: row.data })); } catch (e) {}
+      // Freeze for PWA standalone mode — locks the snapshot until user taps 同步.
+      if (o.freezeAfter) writeFrozen(planId, row.title, row.data);
       render(row.data);
       if (row.title && document.getElementById('plan-title')) {
         document.getElementById('plan-title').textContent = row.title;
