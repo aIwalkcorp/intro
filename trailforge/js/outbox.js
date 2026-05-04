@@ -34,6 +34,10 @@
   /**
    * send(url, opts) — fetch with auto-queue on network failure.
    * Returns {ok, queued, status, body, error}.
+   *
+   * opts.queueOnly = true → skip the fetch entirely; just enqueue. Used so
+   * that "儲存" only commits locally and the user must explicitly tap the
+   * "上傳" pill to push edits to the backend.
    */
   async function send(url, opts) {
     const headers = { ...(opts.headers || {}) };
@@ -41,6 +45,20 @@
     const persistedHeaders = { ...headers };
     delete persistedHeaders.Authorization;
     delete persistedHeaders.authorization;
+
+    if (opts.queueOnly) {
+      const q = load();
+      q.push({
+        url,
+        method: (opts.method || "GET").toUpperCase(),
+        headers: persistedHeaders,
+        body: typeof opts.body === "string" ? opts.body : null,
+        ts: Date.now(),
+        label: opts.label || `${opts.method || "GET"} ${url}`,
+      });
+      save(q);
+      return { ok: false, queued: true, queueOnly: true };
+    }
 
     try {
       const r = await fetch(url, opts);
@@ -149,10 +167,25 @@
     pill.classList.remove("draining");
     showToast(
       r.remaining === 0
-        ? `已上傳 ${r.sent} 筆暫存修改`
+        ? `已上傳 ${r.sent} 筆。重新載入計劃書…`
         : `${r.sent} 筆已上傳，${r.remaining} 筆仍失敗（請稍後再試）`
     );
     placePill();
+    // After a clean drain, reload so the page picks up fresh server state
+    // (the user's edits are now persisted; render fetches the canonical copy).
+    if (r.remaining === 0 && r.sent > 0) {
+      if (window.tfMarkIntentionalNav) window.tfMarkIntentionalNav();
+      // Drop the dirty class first so the beforeunload guard doesn't fire
+      // even if the marker race-conditions with the reload.
+      document.body.classList.remove("tf-dirty");
+      // Also drop the PWA frozen snapshot so the reload re-freezes with the
+      // freshly-uploaded server state.
+      try {
+        const planId = new URLSearchParams(location.search).get("plan");
+        if (planId) localStorage.removeItem("tf_pwa_frozen_" + planId);
+      } catch (e) {}
+      setTimeout(() => location.reload(), 600);
+    }
   });
 
   function showToast(msg) {

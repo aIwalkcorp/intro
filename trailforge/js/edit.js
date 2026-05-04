@@ -338,7 +338,11 @@
   }
 
   // ---------- API helper ----------
-  // Mutating calls go through TF_OUTBOX so a network drop queues the save.
+  // Mutating calls (PATCH plans etc.) ALWAYS queue locally — they only push
+  // to the backend when the user explicitly taps the 上傳 pill. This makes
+  // upload purely manual; the user controls when their edits go online.
+  // GETs (e.g. fetching a plan to enter edit mode) still hit the network
+  // directly so the user sees the latest copy when they start editing.
   async function api(path, opts = {}) {
     const method = (opts.method || "GET").toUpperCase();
     const headers = { Authorization: "Bearer " + token, ...(opts.headers || {}) };
@@ -347,11 +351,11 @@
     if (method !== "GET" && window.TF_OUTBOX) {
       const r = await window.TF_OUTBOX.send(apiBase + path, {
         method, headers, body: opts.body, label: method + " " + path,
+        queueOnly: true,    // never auto-push; user drains via the upload pill
       });
-      if (r.queued) {
-        return { ok: true, status: 202, queued: true, json: async () => r.body || {} };
-      }
-      return { ok: r.ok, status: r.status, json: async () => r.body || {} };
+      // queueOnly always returns { queued: true } — surface as "queued" so
+      // save() can show the right toast.
+      return { ok: true, status: 202, queued: true, json: async () => ({}) };
     }
     return fetch(apiBase + path, { ...opts, headers });
   }
@@ -765,8 +769,15 @@
         body: JSON.stringify({ data }),
       });
       if (r.queued) {
-        showToast("離線：已暫存。連回網路時請點右上「⬆ 上傳」。");
-        intentionalReload(1100);
+        // queueOnly path: edit is now in the upload queue. Don't reload —
+        // keep the user's edits visible until they tap 上傳 to push. Save
+        // chip goes dormant (not dirty), upload pill takes over the "you have
+        // pending action" signal via its own count badge + breath animation.
+        setDirty(false);
+        showToast("已暫存於本機。請點右上「⬆ 上傳」推送到伺服器。");
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+        saveBtn.textContent = "儲存";
         return;
       }
       // Auth required — token missing/expired. Stash unsaved data so the user
