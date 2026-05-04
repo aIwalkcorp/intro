@@ -346,6 +346,10 @@
   }
 
   // ─── Overview chart (all-days consolidated, only in elevation mode) ─────
+  // Reads optional focus state from the overview card's dataset (set by
+  // overview.js when the user clicks a rest-point row). Renders both the
+  // main chart (with zoom applied if focused) and a flat minimap below it
+  // (always full-trip, with a highlight rectangle when focused).
   function drawOverviewChart() {
     if (!TF.elevation || !TF.elevation.drawOverview) return;
     const overview = document.getElementById('elev-overview');
@@ -359,6 +363,7 @@
 
     const gpx = window.__JM_GPX__ || {};
     const days = [];
+    const dayIds = [];  // parallel array of plan-day ids, so overview.js can map
     plan.days.forEach(d => {
       const ep = d.elevation_profile;
       if (!ep || !ep.gpx_ref) return;
@@ -368,6 +373,7 @@
       let summitIdx = ep.summit_idx;
       let summitLabel = ep.summit_label;
       let direction = ep.direction;
+      let segments = ep.shanghe_segments || [];
       if (ep.route_variants) {
         // Find which route is currently active in DOM
         const dayPanel = document.getElementById('day-' + d.id);
@@ -381,6 +387,7 @@
             if (v.summit_idx != null) summitIdx = v.summit_idx;
             if (v.summit_label) summitLabel = v.summit_label;
             if (v.direction) direction = v.direction;
+            if (v.shanghe_segments) segments = v.shanghe_segments;
           }
         }
       }
@@ -388,10 +395,47 @@
         gpx: track,
         label: d.label || ('Day ' + d.id),
         summitIdx, summitLabel, direction,
+        segments,
       });
+      dayIds.push(d.id);
     });
     if (!days.length) return;
-    TF.elevation.drawOverview(canvas, days);
+
+    // Auto-return-descent: append a reversed-ascent_only synthetic day
+    // when the trip clearly returns to its trailhead but no later day
+    // covers that descent. Must run BEFORE stitchDayBoundaries so the
+    // synthetic day participates in boundary stitching. Driven by a
+    // user-level checkbox (see initAutoReturnToggle below); falls back
+    // to default ON when no preference recorded.
+    if (TF.overview && TF.overview.synthesizeReturnDay) {
+      TF.overview.synthesizeReturnDay(days, plan, { enabled: getAutoReturn() });
+    }
+
+    // PR-22 part 2: stitch day boundaries so vertical cliffs at junctions
+    // become smooth interpolated joins. We mutate the days array (overview
+    // chart is the only consumer) — anchor_idx shifts are applied inline.
+    if (TF.overview && TF.overview.stitchDayBoundaries) {
+      TF.overview.stitchDayBoundaries(days);
+    }
+
+    // Read focus from dataset (set by overview.js row clicks).
+    let focusRange = null;
+    if (overview.dataset.focusDayId && overview.dataset.focusLo && overview.dataset.focusHi) {
+      const dayIdx = dayIds.indexOf(overview.dataset.focusDayId);
+      const lo = parseInt(overview.dataset.focusLo, 10);
+      const hi = parseInt(overview.dataset.focusHi, 10);
+      if (dayIdx >= 0 && Number.isFinite(lo) && Number.isFinite(hi) && hi > lo) {
+        focusRange = { dayIdx, lo, hi };
+      }
+    }
+
+    TF.elevation.drawOverview(canvas, days, { focusRange });
+
+    // Minimap (only when card has focus state — saves a render otherwise)
+    const mini = document.getElementById('elev-overview-minimap');
+    if (mini) {
+      TF.elevation.drawOverview(mini, days, { focusRange, minimap: true });
+    }
   }
 
   function bindToggle() {
@@ -417,9 +461,39 @@
     });
   }
 
+  // ─── Auto-return-descent toggle ──────────────────────────────────────
+  // Per-plan localStorage (so two different plans can have different
+  // settings on the same device). Default ON when no preference recorded.
+  function autoReturnKey() {
+    const params = new URLSearchParams(location.search);
+    const planId = params.get('plan') || 'static';
+    return 'tf_auto_return::' + planId;
+  }
+  function getAutoReturn() {
+    try {
+      const v = localStorage.getItem(autoReturnKey());
+      if (v === '0') return false;
+      return true;  // default on
+    } catch (e) { return true; }
+  }
+  function setAutoReturn(v) {
+    try { localStorage.setItem(autoReturnKey(), v ? '1' : '0'); } catch (e) {}
+  }
+  function initAutoReturnToggle() {
+    const cb = document.getElementById('elev-auto-return');
+    if (!cb || cb.__bound) return;
+    cb.__bound = true;
+    cb.checked = getAutoReturn();
+    cb.addEventListener('change', () => {
+      setAutoReturn(!!cb.checked);
+      drawOverviewChart();
+    });
+  }
+
   // Initialise the global mode on DOM ready (or immediately if already loaded).
   function boot() {
     bindToggle();
+    initAutoReturnToggle();
     set(recall());
   }
   if (document.readyState === 'loading') {

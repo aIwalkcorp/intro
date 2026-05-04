@@ -28,6 +28,10 @@
   const css = `
   /* Pinned to the top-right strip alongside the permit chip + dashboard pill.
      Position is computed by JS so it lands just LEFT of those elements. */
+  /* FAB hidden — the segmented mode toggle (檢視/編輯) is now the unified
+     view/edit switch, shared across all tabs. Kept in DOM as a safety net but
+     not visually shown. */
+  .tf-edit-fab{ display:none !important; }
   .tf-edit-fab{
     position:fixed;
     top: calc(env(safe-area-inset-top, 0px) + 10px);
@@ -414,6 +418,58 @@
   setTimeout(placeFab, 200);
   setTimeout(placeFab, 800);
 
+  // ---- Bridge: segmented mode toggle (檢視/編輯) ↔ edit mode ----
+  // The top-right segmented control sets body[data-jm-mode] = checkpoint|elevation.
+  // Treat "elevation" as the unified edit-mode trigger so contacts/gear tabs
+  // also respond to it. Sync both directions so FAB/programmatic enter still
+  // updates the segmented chip.
+  let bridging = false;          // re-entry guard
+  function syncModeFromEditing() {
+    if (!window.TF || !TF.modeToggle) return;
+    bridging = true;
+    try { TF.modeToggle.set(editing ? "elevation" : "checkpoint"); }
+    finally { setTimeout(() => { bridging = false; }, 30); }
+  }
+  const modeObs = new MutationObserver(() => {
+    if (bridging) return;
+    const mode = document.body.getAttribute("data-jm-mode") || "checkpoint";
+    if (mode === "elevation" && !editing) {
+      enterEdit();
+    } else if (mode === "checkpoint" && editing) {
+      if (dirty && !confirm("有未儲存的變更，確定要切回檢視？")) {
+        // user cancelled — revert chip back to elevation
+        bridging = true;
+        try { document.body.setAttribute("data-jm-mode", "elevation"); }
+        finally { setTimeout(() => { bridging = false; }, 30); }
+        return;
+      }
+      intentionalReload();   // exit edit mode by reloading to a clean state
+    }
+  });
+  modeObs.observe(document.body, { attributes: true, attributeFilter: ["data-jm-mode"] });
+  document.addEventListener("tf:edit-enter", syncModeFromEditing);
+
+  // If we have stashed pending edits for this plan AND a valid auth token,
+  // auto-enter edit mode so the user lands back where they were after login.
+  function maybeAutoResumeEdit() {
+    if (!planId) return;
+    const token = localStorage.getItem("tf_access_token");
+    if (!token) return;
+    let stash = null;
+    try {
+      const raw = localStorage.getItem("tf_pending_edit_" + planId);
+      if (raw) stash = JSON.parse(raw);
+    } catch (e) {}
+    if (!stash || stash.planId !== planId) return;
+    // Defer slightly so render.js / contacts.js have a chance to mount first.
+    setTimeout(() => { if (!editing) enterEdit(); }, 600);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", maybeAutoResumeEdit);
+  } else {
+    maybeAutoResumeEdit();
+  }
+
   function setDirty(v) {
     dirty = v;
     const s = document.getElementById("tfEditStatus");
@@ -421,7 +477,39 @@
       s.textContent = v ? "未儲存" : "未變更";
       s.classList.toggle("dirty", v);
     }
+    // Toggle a body-level class so the top-right save chip can react to dirty
+    // state via CSS alone (paired with body.tf-editing).
+    document.body.classList.toggle("tf-dirty", !!v);
   }
+
+  // All edit.js-side navigation (reload after save/cancel/exit) is intentional;
+  // clear dirty + flag the navigation so the global beforeunload guard skips.
+  function intentionalReload(delay) {
+    setDirty(false);
+    if (window.tfMarkIntentionalNav) window.tfMarkIntentionalNav();
+    if (delay) setTimeout(() => location.reload(), delay);
+    else location.reload();
+  }
+
+  // Public extension API — lets other modules (contacts editor, gear editor,
+  // etc.) participate in edit-mode lifecycle without duplicating save/dirty
+  // plumbing. They register a collector that runs during save() and merges
+  // its return value into the saved data.
+  const collectors = [];
+  window.TF_EDIT = window.TF_EDIT || {};
+  // Replace any early <body> stub markers — this is the auth-aware version.
+  window.TF_EDIT._isStub = false;
+  // Carry over collectors registered against the stub before edit.js loaded.
+  if (window.TF_EDIT._stubCollectors && window.TF_EDIT._stubCollectors.length) {
+    collectors.push(...window.TF_EDIT._stubCollectors);
+    window.TF_EDIT._stubCollectors = [];
+  }
+  window.TF_EDIT.setDirty = (v) => setDirty(!!v);
+  window.TF_EDIT.isEditing = () => editing;
+  window.TF_EDIT.registerCollector = (fn) => { if (typeof fn === "function") collectors.push(fn); };
+  // Custom event so modules can re-render on enter/exit edit mode.
+  window.TF_EDIT.onEnter = (fn) => document.addEventListener("tf:edit-enter", fn);
+  window.TF_EDIT.onExit  = (fn) => document.addEventListener("tf:edit-exit",  fn);
 
   // ---------- Enter / Exit edit ----------
   async function enterEdit() {
@@ -435,13 +523,30 @@
       const row = await r.json();
       originalData = row.data;
       workingData = JSON.parse(JSON.stringify(row.data));
+      // If we previously stashed unsaved edits (e.g. user got 401 and was sent
+      // to auth.html, then came back), restore them now.
+      let restored = false;
+      try {
+        const raw = localStorage.getItem("tf_pending_edit_" + planId);
+        if (raw) {
+          const stash = JSON.parse(raw);
+          if (stash && stash.data && stash.planId === planId) {
+            workingData = stash.data;
+            restored = true;
+          }
+        }
+      } catch (e) {}
       document.body.classList.add("tf-editing");
       editing = true;
-      setDirty(false);
+      setDirty(restored);
+      if (restored) {
+        showToast("已還原上次未儲存的變更");
+      }
       bar.classList.add("show");
       fab.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg><span class="label-stack"><span class="zh">結束</span><span class="en">EXIT</span></span>`;
       placeFab();
       decorate();
+      document.dispatchEvent(new CustomEvent("tf:edit-enter", { detail: { workingData } }));
     } catch (e) {
       showToast("載入失敗：" + e.message);
     } finally {
@@ -451,7 +556,7 @@
 
   function exitEditAsk() {
     if (dirty && !confirm("有未儲存的變更，確定要結束編輯？")) return;
-    location.reload();
+    intentionalReload();
   }
 
   // ---------- Decorations ----------
@@ -633,6 +738,13 @@
         day.details = secs;
       }
     });
+    // Run any externally-registered collectors (contacts, gear, etc.).
+    for (const fn of collectors) {
+      try {
+        const patch = fn(data);
+        if (patch && typeof patch === "object") Object.assign(data, patch);
+      } catch (e) { console.warn("[tf-edit] collector failed:", e); }
+    }
     return data;
   }
 
@@ -654,28 +766,67 @@
       });
       if (r.queued) {
         showToast("離線：已暫存。連回網路時請點右上「⬆ 上傳」。");
-        setTimeout(() => location.reload(), 1100);
+        intentionalReload(1100);
+        return;
+      }
+      // Auth required — token missing/expired. Stash unsaved data so the user
+      // doesn't lose work when redirected to auth, then jump.
+      if (r.status === 401) {
+        stashPendingAndRedirect(data, "尚未登入或登入已過期。登入後將自動還原你的變更。");
         return;
       }
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j.error || "HTTP " + r.status);
       }
+      // Successful save — clear any stashed pending edits for this plan.
+      clearPendingFor(planId);
       showToast("已儲存。重新載入計劃書…");
-      setTimeout(() => location.reload(), 600);
+      intentionalReload(600);
     } catch (e) {
-      showToast("儲存失敗：" + e.message);
+      // Network failure: stash locally so the next session can recover.
+      const offline = e && /Failed to fetch|NetworkError|TypeError/i.test(e.message || "");
+      if (offline) {
+        stashPendingAndRedirect(data, "目前無法連線到伺服器，變更已暫存於本機。", { redirect: false });
+      } else {
+        showToast("儲存失敗：" + e.message);
+      }
       saveBtn.disabled = false;
       cancelBtn.disabled = false;
       saveBtn.textContent = "儲存";
     }
   }
 
+  // Stash unsaved edit data in localStorage keyed by planId; on auth-required
+  // we redirect to auth.html with ?next=<this URL> so we come back here after
+  // the user logs in. enterEdit() picks up any stash on the next visit.
+  function stashPendingAndRedirect(data, msg, opts) {
+    const o = opts || {};
+    try {
+      const stash = { at: Date.now(), planId, data,
+                      title: data && data.meta && data.meta.title || null };
+      localStorage.setItem("tf_pending_edit_" + planId, JSON.stringify(stash));
+    } catch (e) { /* quota / disabled storage — fall through */ }
+    if (msg) showToast(msg);
+    if (o.redirect === false) return;
+    const params = new URLSearchParams(location.search);
+    const apiVal = params.get("api");
+    const here = location.pathname + location.search;
+    const qs = new URLSearchParams();
+    if (apiVal) qs.set("api", apiVal);
+    qs.set("next", here);
+    if (window.tfMarkIntentionalNav) window.tfMarkIntentionalNav();
+    setTimeout(() => { location.href = "auth.html?" + qs.toString(); }, 900);
+  }
+  function clearPendingFor(id) {
+    try { localStorage.removeItem("tf_pending_edit_" + id); } catch (e) {}
+  }
+
   bar.addEventListener("click", (e) => {
     if (e.target.id === "tfEditSave") save();
     if (e.target.id === "tfEditCancel" || e.target.id === "tfEditClose") {
       if (dirty && !confirm("放棄所有未儲存的變更？")) return;
-      location.reload();
+      intentionalReload();
     }
   });
   // Esc dismisses the bar (and exits edit mode after confirm-if-dirty)
@@ -683,7 +834,7 @@
     if (e.key !== "Escape") return;
     if (!editing) return;
     if (dirty && !confirm("放棄所有未儲存的變更？")) return;
-    location.reload();
+    intentionalReload();
   });
 
   // ---------- Re-decorate if render.js re-renders during edit ----------

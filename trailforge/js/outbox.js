@@ -190,7 +190,12 @@
     placePill();
   }
   function placePill() {
+    // Sit to the LEFT of save chip → lang toggle → mode toggle (whichever exists
+    // and is visible). Falls back to the legacy top-right strip if none found.
     const anchors = [
+      document.getElementById("jmSaveChip"),
+      document.getElementById("jmLangToggle"),
+      document.getElementById("jmModeToggle"),
       document.querySelector(".tf-edit-fab"),
       document.querySelector(".dash-pill.show"),
       document.getElementById("dashPill"),
@@ -199,6 +204,8 @@
     let anchor = null;
     for (const a of anchors) {
       if (!a) continue;
+      const cs = getComputedStyle(a);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
       const r = a.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) continue;
       anchor = a; break;

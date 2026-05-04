@@ -230,128 +230,167 @@
   }
   TF.segmentAnchors = segmentAnchors;
 
-  // ---- elevation profile section (海拔模式) ----
-  // Renders the segmented control + two panes (打卡 / 海拔). For days without
-  // `elevation_profile`, returns the schedule section directly (no toggle).
+  // ---- elevation profile section ----
+  // PR-22: Per-day elevation card removed. The unified Elevation Profile +
+  // Rest Points list now live in the Overview card at the top of itin tab
+  // (rendered by js/overview.js, only visible in 規劃模式). The day-panel
+  // keeps only its schedule timeline for View mode; planning mode hides
+  // everything except the day-notes block (CSS — see index.html § PLANNING
+  // / EDIT MODE).
   function renderModeSection(day) {
-    const ep = day.elevation_profile;
-    const scheduleHtml = renderScheduleSection(day);
-    if (!ep || !ep.gpx_ref) return scheduleHtml;  // no toggle for non-hiking days
-
-    const segs = Array.isArray(ep.shanghe_segments) ? ep.shanghe_segments : [];
-    const segRows = segmentRowsHTML(segs);
-
-    const totalBase = segs.reduce((acc, s) => acc + (s.base_minutes || 0), 0);
-    const totalH = Math.floor(totalBase / 60), totalM = totalBase % 60;
-    const totalLabel = totalH > 0 ? `${totalH}h ${totalM}m` : `${totalM} min`;
-
-    // Deduped + sorted anchors for the chart (collapses lollipop revisits).
-    const _a = segmentAnchors(segs);
-    const anchorIdxStr = JSON.stringify(_a.idx);
-    const anchorLblStr = JSON.stringify(_a.labels);
-
-    return `
-      <div class="mode-shell" data-day="${attr(day.id)}">
-        <div class="mode-panes">
-          <div class="mode-pane" data-mode="checkpoint">
-            ${scheduleHtml}
-          </div>
-          <div class="mode-pane" data-mode="elevation">
-            <div class="elev-pane">
-              <div class="elev-card">
-                <div class="elev-head">
-                  <span class="eh-l">Elevation Profile</span>
-                  <button type="button" class="elev-focus-reset" data-action="reset-focus" title="檢視全段海拔">全段</button>
-                  <span class="elev-route-info" data-route-info>${escapeHtml(ep.label || '上河文化步程基準')}</span>
-                </div>
-                <div class="elev-canvas-wrap">
-                  <canvas class="elev-canvas-day"
-                          data-gpx-ref="${attr(ep.gpx_ref)}"
-                          data-color="${attr(ep.color || '#1e3a1a')}"
-                          data-fill="${attr(ep.fill || 'rgba(168,128,44,0.22)')}"
-                          data-anchor-idx='${attr(anchorIdxStr)}'
-                          data-anchor-labels='${attr(anchorLblStr)}'
-                          data-decision-anchors='${attr(JSON.stringify(ep.decision_anchors || []))}'></canvas>
-                </div>
-                <div class="elev-stats-row" data-stats-for="${attr(ep.gpx_ref)}">
-                  <div class="elev-stat"><div class="es-lbl">Distance</div><div class="es-val" data-stat="distance">— km</div></div>
-                  <div class="elev-stat"><div class="es-lbl">Ascent</div><div class="es-val" data-stat="ascent">— m</div></div>
-                  <div class="elev-stat"><div class="es-lbl">Descent</div><div class="es-val" data-stat="descent">— m</div></div>
-                  <div class="elev-stat"><div class="es-lbl">Max Elev</div><div class="es-val" data-stat="max">— m</div></div>
-                </div>
-                ${segs.length ? `
-                <div class="shanghe-block" data-speed-factor="1.00"
-                     data-gpx-ref="${attr(ep.gpx_ref)}"
-                     data-route-variants='${attr(JSON.stringify(ep.route_variants || null))}'>
-                  <div class="sb-head">
-                    <div class="sb-title">休息點<span class="sb-en">REST POINTS</span></div>
-                    <div class="sb-source">資料來源：上河圖步程 + 他人健行筆記紀錄綜合</div>
-                  </div>
-                  <div class="speed-control">
-                    <label for="speed-${attr(ep.gpx_ref)}" class="sc-lbl">上河速度倍率</label>
-                    <input type="number" class="speed-input"
-                           id="speed-${attr(ep.gpx_ref)}"
-                           min="0.5" max="2.5" step="0.05" value="1.00"
-                           data-gpx-ref="${attr(ep.gpx_ref)}"
-                           inputmode="decimal" aria-label="上河速度倍率">
-                    <span class="sc-x">×</span>
-                    <span class="sc-hint">1.0 = 上河基準｜&gt;1 較慢｜&lt;1 較快</span>
-                    <span class="sc-warn" title="此倍率目前只更新休息點段落表的衍生時間，出發模式時間軸尚未自動套用">⚠ 出發時間軸暫未連動</span>
-                  </div>
-                  <div class="shanghe-list" data-list>${segRows}</div>
-                  <div class="sl-total">
-                    <span class="slt-l">總計</span>
-                    <span class="slt-v">
-                      <span data-total-derived>${totalLabel}</span>
-                      <small data-total-base>基準 ${totalLabel}</small>
-                    </span>
-                  </div>
-                </div>` : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
+    return renderScheduleSection(day);
   }
 
-  // After day panels are inserted into the DOM, fill in stats values for each
-  // elevation card and bind toggles. Called by renderDayPanels().
+  // After day panels are inserted, kick the global Overview renderer (for
+  // 規劃模式 elevation chart + unified rest-points list at the top of the
+  // itin tab). modeToggle.refreshAll() will redraw everything; overview.js
+  // hooks the same refresh cycle so it stays in sync with route variants.
   function hydrateElevation(rootEl) {
     rootEl = rootEl || document;
-    if (window.TF && TF.elevation) {
-      rootEl.querySelectorAll('.elev-stats-row').forEach(row => {
-        const ref = row.dataset.statsFor;
-        const data = (window.__JM_GPX__ && window.__JM_GPX__[ref]) || null;
-        if (!data) return;
-        const s = TF.elevation.stats(data);
-        const setVal = (sel, txt) => {
-          const el = row.querySelector(`[data-stat="${sel}"]`);
-          if (el) el.innerHTML = txt;
-        };
-        setVal('distance', `${s.distanceKm.toFixed(1)}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> km</small>`);
-        setVal('ascent',   `+${s.ascentM}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> m</small>`);
-        setVal('descent',  `−${s.descentM}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> m</small>`);
-        setVal('max',      `${s.maxElev}<small style="font-family:var(--mono);font-size:.6rem;color:var(--ink-soft,#7a7468);"> m</small>`);
-      });
-    }
     if (window.TF && TF.modeToggle) {
       TF.modeToggle.init(rootEl);
-      // If user persisted mode === 'elevation' from a previous visit, the
-      // toggle may have fired refreshAll() before day panels existed in DOM.
-      // Re-run it now that canvases are present.
       if (TF.modeToggle.refreshAll) requestAnimationFrame(TF.modeToggle.refreshAll);
     }
+    if (window.TF && TF.overview && TF.overview.render) {
+      requestAnimationFrame(TF.overview.render);
+    }
+    // gpx-io re-renders after plan arrives from API so the strip
+    // reflects gpx_meta/gpx_tracks fetched from the backend.
+    if (window.TF && TF.gpxIO && TF.gpxIO.render) {
+      requestAnimationFrame(TF.gpxIO.render);
+    }
   }
+
+  // ---- planning-mode notes block ----
+  // A free-form day-notes editor surfaced ONLY in elevation/edit mode (CSS
+  // toggles visibility). Each day gets its own notes block — header (day
+  // label) + N note cards (icon + title + plain-text body + N hyperlinks)
+  // + "add note" button. Body text is contenteditable=plaintext-only and
+  // persists to localStorage under jm_notes_<dayId>; the cloud-sync
+  // placeholder lives in the header (locked until login — handled in
+  // index.html).
+  //
+  // Initial seed: any day.details items become starter notes (icon, title,
+  // body flattened to plain text, AND <a href> links extracted from
+  // rows_html into a structured links array). User edits override the seed.
+  // The 20 climbing-relevant emoji palette is picked here too.
+  function renderNotes(day) {
+    // Seed: collect ALL links across day.details rows_html into one
+    // day-level link list (chips render once per day, above the notes).
+    // Note cards keep only icon + title + body (no per-note links).
+    const dayLinks = [];
+    const seenHref = new Set();
+    (day.quick_links || []).forEach(L => {
+      const href = L.href || '';
+      if (!href || seenHref.has(href)) return;
+      seenHref.add(href);
+      dayLinks.push({ href, label: L.text || L.label || href });
+    });
+    (day.details || []).forEach(d => {
+      (d.rows_html || []).forEach(r => extractLinks(r).forEach(L => {
+        if (!seenHref.has(L.href)) { seenHref.add(L.href); dayLinks.push(L); }
+      }));
+    });
+
+    const seed = (day.details || []).map((d, i) => ({
+      id: `${day.id}-note-${i}`,
+      icon: d.icon || '📝',
+      title: d.title || '',
+      body: (d.rows_html || []).map(r => stripHtml(r)).join('\n'),
+    }));
+    const dateLine = day.date_label || '';
+    const dayName  = day.label || ('Day ' + day.id);
+    return `<div class="day-notes" data-day-id="${attr(day.id)}">
+      <div class="dn-head">
+        <div class="dn-head-l">
+          <span class="dn-day">${escapeHtml(dayName)}</span>
+          <span class="dn-date">${escapeHtml(dateLine)}</span>
+        </div>
+      </div>
+
+      <!-- Links section (above notes) — one chip set per day. -->
+      <div class="dn-section">
+        <div class="dn-section-head">
+          <span class="dn-section-l">🔗 連結</span>
+          <button type="button" class="dn-link-add" data-day-id="${attr(day.id)}" aria-label="新增連結">+ 連結</button>
+        </div>
+        <div class="dn-links" data-day-id="${attr(day.id)}">${
+          dayLinks.map(L => renderLinkChip(L)).join('')
+        }</div>
+      </div>
+
+      <!-- Notes section. -->
+      <div class="dn-section">
+        <div class="dn-section-head">
+          <span class="dn-section-l">📝 備註</span>
+          <button type="button" class="dn-add" data-day-id="${attr(day.id)}" aria-label="新增備註">+ 備註</button>
+        </div>
+        <div class="dn-list" data-day-id="${attr(day.id)}">${
+          seed.map(n => renderNoteCard(n)).join('')
+        }</div>
+      </div>
+    </div>`;
+  }
+  function renderNoteCard(n) {
+    return `<div class="dn-card" data-note-id="${attr(n.id)}">
+      <button type="button" class="dn-icon" data-note-id="${attr(n.id)}" aria-label="選擇圖示">${escapeHtml(n.icon)}</button>
+      <div class="dn-body-wrap">
+        <div class="dn-title" contenteditable="plaintext-only" data-field="title" data-note-id="${attr(n.id)}" spellcheck="false">${escapeHtml(n.title)}</div>
+        <div class="dn-body" contenteditable="plaintext-only" data-field="body" data-note-id="${attr(n.id)}" spellcheck="false">${escapeHtml(n.body)}</div>
+      </div>
+      <button type="button" class="dn-del" data-note-id="${attr(n.id)}" aria-label="刪除備註">×</button>
+    </div>`;
+  }
+  function renderLinkChip(L) {
+    const icon = inferLinkIcon(L.href);
+    return `<a class="dn-link" href="${attr(L.href)}" target="_blank" rel="noopener noreferrer" data-href="${attr(L.href)}">
+      <span class="dn-link-ic">${icon}</span>
+      <span class="dn-link-lbl">${escapeHtml(L.label || L.href)}</span>
+      <button type="button" class="dn-link-del" aria-label="刪除連結">×</button>
+    </a>`;
+  }
+  function inferLinkIcon(href) {
+    const h = String(href || '').toLowerCase();
+    if (h.startsWith('tel:'))     return '📞';
+    if (h.startsWith('mailto:'))  return '✉️';
+    if (h.includes('maps.google') || h.includes('goo.gl/maps') || h.includes('share.google')) return '🗺';
+    if (h.includes('cwa.gov') || h.includes('weather'))         return '🌦';
+    if (h.includes('youtube') || h.includes('youtu.be'))         return '📹';
+    return '🔗';
+  }
+  function extractLinks(html) {
+    if (!html) return [];
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(html);
+    return [...tmp.querySelectorAll('a[href]')].map(a => ({
+      href: a.getAttribute('href') || '',
+      label: (a.textContent || '').trim() || a.getAttribute('href') || '',
+    }));
+  }
+  function stripHtml(s) {
+    if (!s) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(s);
+    return (tmp.textContent || '').trim();
+  }
+  TF.renderNotes = renderNotes;
+  TF.renderNoteCard = renderNoteCard;
+  TF.renderLinkChip = renderLinkChip;
+  TF.inferLinkIcon = inferLinkIcon;
 
   // ---- per-day panel ----
   function renderDayPanel(day, emergencyDefault) {
-    return `<div class="day-panel" id="day-${attr(day.id)}">
+    // Surface the day id (D0/D1/D2) as a data attribute so planning-mode CSS
+    // can render a small gutter label on each band.
+    const labelText = (day.id || '').toUpperCase();
+    return `<div class="day-panel" id="day-${attr(day.id)}" data-day-label="${attr(labelText)}">
       <!-- Emergency -->
       ${renderEqCard(day, emergencyDefault)}
       ${renderQLinks(day)}
       ${renderModeSection(day)}
       ${renderDetails(day)}
       ${renderRetreat(day)}
+      ${renderNotes(day)}
     </div>`;
   }
 
@@ -388,12 +427,26 @@
     if (!sub) return;
     const startSlash = m.start_date ? m.start_date.replace(/-/g, '/') : '';
     const endDay = m.end_date ? m.end_date.split('-')[2] : '';
-    const range = startSlash && endDay ? `${startSlash}–${endDay}` : startSlash;
+    // Range string includes depart_date if present (e.g. 4/17 出發 → 4/19),
+    // otherwise just start–end. Format: "4/17–4/19" if depart differs from
+    // start, else "2026/4/18–19".
+    let range = '';
+    if (m.depart_date && m.start_date && m.depart_date !== m.start_date) {
+      const departSlash = m.depart_date.replace(/-/g, '/');
+      const endSlash = m.end_date ? m.end_date.replace(/-/g, '/') : '';
+      range = endSlash ? `${departSlash}–${endSlash.split('/').slice(-1)[0]}` : departSlash;
+    } else {
+      range = startSlash && endDay ? `${startSlash}–${endDay}` : startSlash;
+    }
     let dur = '';
     if (m.start_date && m.end_date) {
-      const days = Math.round((new Date(m.end_date) - new Date(m.start_date)) / 86400000) + 1;
-      const nights = Math.max(0, days - 1);
-      dur = m.lang === 'en' ? `${days}D${nights}N` : `${days}天${nights}夜`;
+      // Hiking days: start_date → end_date (inclusive count).
+      const hikingDays = Math.round((new Date(m.end_date) - new Date(m.start_date)) / 86400000) + 1;
+      // Nights: from depart_date if present (counts the pre-trail lodging
+      // night too, so 4/17 出發 + 4/18 山屋 = 2 nights), else hikingDays-1.
+      const nightsFrom = m.depart_date || m.start_date;
+      const nights = Math.max(0, Math.round((new Date(m.end_date) - new Date(nightsFrom)) / 86400000));
+      dur = m.lang === 'en' ? `${hikingDays}D${nights}N` : `${hikingDays}天${nights}夜`;
     }
     const parts = [range, dur, m.party_label].filter(Boolean);
     sub.textContent = parts.join(' ｜ ');
@@ -412,6 +465,8 @@
   function render(plan) {
     plan = plan || loadPlan();
     if (!plan) { console.warn('TF.render: no plan'); return; }
+    window.__PLAN__ = plan;
+    try { document.dispatchEvent(new CustomEvent('tf:plan-loaded', { detail: { plan } })); } catch(e){}
     // Wrap each render step independently so a partial failure (e.g. a
     // schema mismatch in one day) doesn't blank the entire page — users
     // were reporting only the footer being visible after JS crashes.

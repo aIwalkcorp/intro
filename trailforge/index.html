@@ -244,6 +244,290 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
 .info-item .vl{font-weight:600;padding-left:10px;margin-top:3px;font-family:var(--serif);font-size:.98rem;}
 .info-item .vl a{color:var(--pri);text-decoration:none;border-bottom:1px dotted var(--acc);}
 
+/* ====== Member info cards (per-person personal data) ====== */
+.member-cards{display:flex; flex-direction:column; gap:14px;}
+.member-card{
+  background:var(--card); border:1px solid var(--bdr); border-radius:12px;
+  padding:14px 16px 16px; box-shadow:var(--shadow-1);
+  position:relative;
+}
+.member-card::before{
+  content:""; position:absolute; left:0; top:12px; bottom:12px; width:3px;
+  background:linear-gradient(180deg, var(--acc), var(--pri));
+  border-radius:2px;
+}
+.mc-head{
+  display:flex; align-items:baseline; gap:10px;
+  padding:0 0 10px 8px; margin-bottom:12px;
+  border-bottom:1px dashed var(--bdr-2);
+}
+.mc-num{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.24em;
+  color:var(--txtL); font-weight:700;
+}
+.mc-name{
+  font-family:var(--serif); font-weight:700; font-size:1.06rem;
+  margin:0; flex:1; color:var(--ink, var(--pri-deep)); line-height:1.2;
+}
+.mc-tag{
+  font-family:var(--mono); font-size:.56rem; letter-spacing:.32em; font-weight:700;
+  color:var(--acc); border:1px solid var(--acc); padding:2px 7px; border-radius:3px;
+}
+.mc-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px 18px; margin:0; padding-left:8px;
+}
+.mc-pair{
+  display:flex; flex-direction:column; gap:3px;
+  min-width:0;
+}
+.mc-pair dt{
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.22em;
+  color:var(--txtL); text-transform:uppercase;
+  margin:0;
+}
+.mc-pair dd{
+  margin:0; font-family:var(--serif); font-weight:600; font-size:.94rem;
+  color:var(--ink, var(--pri-deep));
+  word-break:break-word;
+}
+.mc-pair dd small{
+  font-family:var(--mono); font-size:.6rem; color:var(--txtL);
+  font-weight:400; letter-spacing:.06em; margin-left:6px;
+}
+.mc-pair-wide{grid-column:1 / -1;}
+.mc-hint{
+  font-family:var(--mono); font-size:.7rem; letter-spacing:.06em;
+  color:var(--txtL); margin:6px 2px 0; line-height:1.6;
+}
+@media(max-width:520px){
+  .mc-grid{grid-template-columns:1fr;}
+  .mc-pair-wide{grid-column:auto;}
+}
+
+/* ====== Contact tab — edit mode ====== */
+/* Design: paper-fill edit fields. No heavy borders; a hairline dotted rule
+   under each value reads as "ruled paper", matching the editorial aesthetic.
+   Focus state lifts the rule to a solid brass line. */
+
+/* Emergency contacts in edit mode — register-style log entries.
+   One row = label column / value column / delete. Hairline rules between
+   rows; no boxed cards. Matches the dotted-underline aesthetic of the
+   member-card and gear edit modes. */
+.info-grid.editing{
+  display:flex; flex-direction:column;
+  gap:0;
+  background:rgba(255,255,255,.32);
+  border:1px solid var(--bdr); border-radius:8px;
+  overflow:hidden;
+}
+.info-item.ec-edit{
+  display:grid;
+  grid-template-columns: minmax(78px, 120px) 1fr auto;
+  gap:14px; align-items:center;
+  padding:9px 12px;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  border-bottom:1px solid var(--bdr-2);
+  box-shadow:none;
+  transition: background .15s ease;
+}
+.info-item.ec-edit:last-child{ border-bottom:0; }
+.info-item.ec-edit:hover{ background:rgba(255,255,255,.55); }
+.info-item.ec-edit::before{ display:none; }
+.info-item.ec-edit .ec-label,
+.info-item.ec-edit .ec-value{
+  font:inherit;
+  background:transparent; border:0;
+  border-bottom:1px dotted transparent;   /* underline appears on focus only */
+  border-radius:0; padding:3px 0 4px;
+  color:var(--ink, var(--pri-deep));
+  width:100%; box-sizing:border-box; min-width:0;
+  transition: border-color .2s, background .2s;
+}
+.info-item.ec-edit .ec-label{
+  font-family:var(--mono); font-size:.68rem; letter-spacing:.22em;
+  color:var(--txtL); text-transform:uppercase; font-weight:700;
+}
+.info-item.ec-edit .ec-value{
+  font-family:var(--serif); font-size:.96rem; font-weight:600;
+}
+.info-item.ec-edit .ec-label:focus,
+.info-item.ec-edit .ec-value:focus{
+  outline:none;
+  border-bottom:1px solid #a8802c;
+  background:rgba(255,255,255,.5);
+}
+.info-item.ec-edit .ec-label::placeholder,
+.info-item.ec-edit .ec-value::placeholder{
+  color:rgba(42,36,24,.32);
+}
+.info-item.ec-edit .ec-del{
+  width:24px; height:24px; line-height:1;
+  border:1px solid transparent; background:transparent;
+  border-radius:50%; color:#9a8666;
+  font-family:var(--mono); font-size:1.05rem; font-weight:400;
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.info-item.ec-edit .ec-del:hover{
+  background:#8b2a1f; color:#fff; border-color:#8b2a1f;
+}
+@media(max-width:520px){
+  .info-item.ec-edit{
+    grid-template-columns: minmax(64px, 80px) 1fr auto;
+    gap:10px; padding:8px 10px;
+  }
+  .info-item.ec-edit .ec-label{ font-size:.62rem; letter-spacing:.18em; }
+  .info-item.ec-edit .ec-value{ font-size:.9rem; }
+}
+
+/* Footer "add" buttons sit under each section, separated by margin */
+.ec-footer, .mc-footer, .gk-footer{ margin-top:14px; display:flex; justify-content:flex-start; }
+
+/* Refined "add row" button — brass-pin pill that matches the editorial /
+   parchment aesthetic. Higher specificity than edit.js's injected default
+   so it wins regardless of style-sheet order. */
+body .tf-row-add{
+  appearance:none;
+  display:inline-flex; align-items:center; gap:10px;
+  padding:9px 22px 9px 18px; height:auto; width:auto;
+  font-family:var(--serif), "Noto Serif TC", serif;
+  font-size:.8rem; font-weight:700; letter-spacing:.22em;
+  color:#5a4515;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.7), transparent 70%),
+    linear-gradient(180deg, #fbf6e8, #f3e6c4);
+  border:1px dashed rgba(168,128,44,.65);
+  border-radius:999px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 2px 8px -3px rgba(60,46,18,.18);
+  cursor:pointer;
+  transition: background .2s ease, border-color .2s ease, transform .15s ease, box-shadow .2s ease, color .2s ease;
+  position:relative;
+}
+body .tf-row-add::before{
+  /* Replace the leading "＋ " in label with a styled brass plus glyph */
+  content:"＋"; flex:none;
+  font-family:var(--mono); font-size:1.05rem; font-weight:700;
+  color:#a8802c; line-height:1;
+  transform:translateY(-1px);
+  transition: transform .2s ease, color .2s ease;
+}
+body .tf-row-add:hover{
+  border-style:solid; border-color:#a8802c;
+  background:linear-gradient(180deg, #fff8e5, #f6dfa3);
+  transform:translateY(-1px);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 4px 12px -4px rgba(60,46,18,.3);
+  color:#3b2a0e;
+}
+body .tf-row-add:hover::before{ transform: translateY(-1px) rotate(90deg); color:#7a4f12; }
+body .tf-row-add:active{ transform:scale(.97); }
+body .tf-row-add:focus-visible{
+  outline:none;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 0 0 3px rgba(168,128,44,.35);
+}
+
+/* Member cards in edit mode — same shell, value cells become inputs.
+   The grid layout doesn't change; only dd content swaps to <input>. */
+.member-card.editing .mc-head{ padding-bottom:12px; margin-bottom:14px; }
+.member-card.editing .mc-del{
+  appearance:none; cursor:pointer; flex:none;
+  width:26px; height:26px; border:1px solid rgba(42,36,24,.25);
+  background:transparent; color:#7a6a4a; border-radius:50%;
+  font-family:var(--mono); font-size:1rem; font-weight:500;
+  display:inline-flex; align-items:center; justify-content:center;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.member-card.editing .mc-del:hover{
+  background:#8b2a1f; color:#fff; border-color:#8b2a1f;
+}
+.member-card.editing .mc-input{
+  width:100%; box-sizing:border-box;
+  font:inherit;
+  font-family:var(--serif); font-size:.94rem; font-weight:600;
+  color:var(--ink, var(--pri-deep));
+  padding:4px 0 5px;
+  background:transparent; border:0;
+  border-bottom:1px dotted rgba(42,36,24,.3);
+  border-radius:0;
+  transition: border-color .2s, background .2s;
+}
+.member-card.editing .mc-input:focus{
+  outline:none; background:rgba(255,255,255,.6);
+  border-bottom:1px solid #a8802c;
+}
+.member-card.editing .mc-input::placeholder{
+  color:rgba(42,36,24,.32); font-weight:500;
+}
+
+.mc-empty{ color:var(--txtL); font-weight:400; font-style:italic; opacity:.6; }
+
+/* ====== Gear checklist — edit mode ====== */
+/* Editorial register: numbered serif rows, dotted underline inputs, no boxes.
+   2-column at width ≥720px, single column on phones. Each row has a small
+   mono numeral in the left margin to read like a bound list. */
+#checklist.editing{
+  counter-reset: gk;
+  display:grid; grid-template-columns:1fr;
+  gap:0;
+  background:rgba(255,255,255,.32);
+  border:1px solid var(--bdr); border-radius:8px;
+  padding:4px 8px;
+}
+@media(min-width:720px){
+  #checklist.editing{
+    grid-template-columns:1fr 1fr;
+    column-gap:24px;
+  }
+}
+#checklist.editing .gk-row{
+  counter-increment: gk;
+  display:grid; grid-template-columns:28px 1fr 28px;
+  gap:8px; align-items:center;
+  padding:6px 4px;
+  border-bottom:1px dotted rgba(168,128,44,.28);
+  background:transparent; border-left:0; border-right:0; border-top:0;
+  border-radius:0;
+  transition: background .15s ease;
+}
+#checklist.editing .gk-row:hover{ background:rgba(255,255,255,.5); }
+#checklist.editing .gk-row::before{
+  /* Brass numeral in the left gutter */
+  content: counter(gk, decimal-leading-zero);
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.16em;
+  color:rgba(168,128,44,.7); font-weight:700;
+  text-align:right; padding-right:2px;
+}
+#checklist.editing .gk-input{
+  width:100%; min-width:0; box-sizing:border-box;
+  font:inherit; padding:4px 0 5px;
+  background:transparent; border:0;
+  border-bottom:1px dotted transparent;   /* invisible until focus */
+  border-radius:0;
+  font-family:var(--serif), "Noto Sans TC", sans-serif;
+  font-size:.94rem; color:var(--ink, var(--pri-deep));
+  transition: border-color .2s, background .2s;
+}
+#checklist.editing .gk-input::placeholder{ color:rgba(42,36,24,.32); }
+#checklist.editing .gk-input:focus{
+  outline:none;
+  border-bottom:1px solid #a8802c;
+  background:rgba(255,255,255,.5);
+}
+#checklist.editing .gk-del{
+  width:24px; height:24px; line-height:1;
+  border:1px solid transparent; background:transparent;
+  border-radius:50%; color:#9a8666;
+  font-family:var(--mono); font-size:1.05rem; font-weight:400;
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+#checklist.editing .gk-del:hover{
+  background:#8b2a1f; color:#fff; border-color:#8b2a1f;
+}
+
 /* Timeline — alpine journal */
 .day-tag{
   display:inline-block;padding:5px 14px;border-radius:2px;color:#fff;font-size:.72rem;font-weight:700;
@@ -441,20 +725,148 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
 .add-exp-form .btn-add:hover{transform:translateY(-1px);}
 .add-exp-form .btn-add:active{transform:translateY(0) scale(.98);}
 .exp-del{cursor:pointer;color:#b91c1c;font-size:.72rem;border:1px solid #fecaca;border-radius:4px;padding:3px 8px;background:#fef2f2;font-weight:700;}
+/* ============ 排雲山莊價目表 — kitchen-menu / printed-card aesthetic ============
+   Deep cream paper, brass rules, serif numerals. The strikethrough "原價"
+   sits beside the bold gold "優惠價" so the saving reads at a glance. */
 .price-ref{
-  font-size:.8rem;background:linear-gradient(180deg,#fffbeb,#fef3c7);
-  border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:16px;
-  box-shadow:var(--shadow-1);
+  position:relative;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(184,134,59,.10), transparent 65%),
+    linear-gradient(180deg,#fbf5e3,#f3e6c4);
+  border:1px solid rgba(168,128,44,.4);
+  border-radius:12px;
+  padding:18px 20px 20px;
+  margin-bottom:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px -10px rgba(60,46,18,.35);
+  font-family:var(--serif),"Noto Serif TC",serif;
+  overflow:hidden;
 }
-.price-ref table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.78rem;}
-.price-ref th{text-align:left;padding:5px 8px;border-bottom:1px solid #fde68a;font-weight:700;font-family:var(--mono);letter-spacing:.05em;color:var(--ember-2);}
-.price-ref td{padding:5px 8px;font-family:var(--sans);}
+.price-ref::before{
+  /* Hairline brass rule along top, like a printed card's header rule. */
+  content:""; position:absolute; left:18px; right:18px; top:14px;
+  height:1px; background:linear-gradient(90deg, transparent, rgba(168,128,44,.7), transparent);
+}
+.price-ref::after{
+  /* Tiny brass seal mark at top-right reading "排雲". Decorative, hidden on
+     phones to keep the table breathing. */
+  content:"排雲"; position:absolute; right:14px; top:8px;
+  font-family:var(--serif); font-weight:900; font-size:.7rem; letter-spacing:.42em;
+  color:rgba(168,128,44,.55);
+}
+.price-ref table{
+  width:100%; border-collapse:collapse;
+  margin-top:14px;
+  font-feature-settings:"tnum" on, "lnum" on;   /* tabular figures align price columns */
+}
+.price-ref thead th{
+  text-align:left; padding:6px 8px;
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.28em;
+  text-transform:uppercase; font-weight:700;
+  color:#7a5a1a;
+  border-bottom:1.5px solid rgba(168,128,44,.55);
+}
+.price-ref thead th:nth-child(3),
+.price-ref thead th:nth-child(4){ text-align:right; }
+.price-ref tbody td{
+  padding:8px 8px; font-size:.86rem;
+  border-bottom:1px dotted rgba(168,128,44,.35);
+}
+.price-ref tbody tr:last-child td{ border-bottom:0; }
+.price-ref tbody tr:hover td{ background:rgba(255,255,255,.32); }
+.price-ref tbody td:nth-child(1){ font-weight:700; color:#3b2a0e; }
+.price-ref tbody td:nth-child(2){ font-family:var(--mono); font-size:.72rem; color:var(--txtL); letter-spacing:.04em; }
+.price-ref tbody td:nth-child(3){
+  text-align:right; font-family:var(--mono); color:#a89373;
+  text-decoration:line-through; text-decoration-color:rgba(168,128,44,.6);
+  font-size:.76rem;
+}
+.price-ref tbody td:nth-child(4){
+  text-align:right; font-family:var(--mono); font-weight:800;
+  color:#7a4f12; font-size:.92rem;
+}
+/* Special: 羽絨睡袋 — same price both columns, drop strikethrough */
+.price-ref tbody tr:has(td:nth-child(3):is([data-same],td)) td:nth-child(3){
+  /* (no-op fallback; real opt-in via class below) */
+}
+.price-ref .price-note{
+  margin-top:10px; padding:8px 10px;
+  font-family:var(--serif); font-size:.74rem; line-height:1.65;
+  color:#5a4d2a;
+  background:rgba(255,255,255,.45);
+  border-left:2px solid rgba(168,128,44,.55); border-radius:2px;
+}
+.price-ref .price-note b{ color:#7a4f12; font-weight:800; font-size:.84rem; padding:0 2px; }
+
+/* ============ 睡袋使用須知 — bilingual notice / 公告 aesthetic ============
+   Cream paper, slate-ink body text, crimson reserved for warnings only.
+   Each numbered section has a circled brass numeral in the margin. */
 .notice-box{
-  background:linear-gradient(135deg,#fef2f2,#fee2e2);
-  border:1px solid #fecaca;border-radius:12px;padding:16px;margin-top:18px;font-size:.84rem;line-height:1.85;
+  position:relative;
+  background:
+    repeating-linear-gradient(0deg,
+      transparent 0, transparent 27px,
+      rgba(168,128,44,.08) 27px, rgba(168,128,44,.08) 28px),
+    linear-gradient(180deg,#fbf6e8,#f3eacd);
+  border:1px solid rgba(168,128,44,.4);
+  border-radius:12px;
+  padding:22px 24px 24px 56px;
+  margin-top:18px;
+  font-family:var(--serif),"Noto Serif TC",serif;
+  font-size:.88rem; line-height:1.9;
+  color:#3b2e14;
+  counter-reset: notice;
+  box-shadow:0 1px 0 rgba(255,255,255,.55) inset, 0 6px 18px -10px rgba(60,46,18,.32);
+  overflow:hidden;
 }
-.notice-box h4{color:#b91c1c;margin-bottom:8px;font-family:var(--serif);font-size:1rem;}
-.notice-box .warn{color:#b91c1c;font-weight:700;}
+.notice-box::before{
+  /* "須知 / NOTICE" stamp at top-right */
+  content:"須 知\A NOTICE";
+  white-space:pre; text-align:center;
+  position:absolute; top:14px; right:14px;
+  width:54px; height:54px; border-radius:50%;
+  border:1.5px solid #8b2a1f; color:#8b2a1f;
+  font-family:var(--serif); font-weight:900; font-size:.72rem; letter-spacing:.16em;
+  display:flex; align-items:center; justify-content:center;
+  transform:rotate(-8deg);
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.4), transparent 65%);
+  opacity:.85;
+}
+.notice-box h4{
+  position:relative; counter-increment: notice;
+  margin:18px 0 6px; padding-left:0;
+  font-family:var(--serif); font-weight:800; font-size:1.02rem;
+  color:#1f3a23;
+  letter-spacing:.04em;
+}
+.notice-box h4:first-of-type{ margin-top:4px; }
+.notice-box h4::before{
+  /* Brass numeral badge in the gutter */
+  content: counter(notice);
+  position:absolute; left:-40px; top:-2px;
+  width:28px; height:28px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 35% 30%, #f0d398, #b8863b 75%);
+  border:1px solid #8a6420;
+  color:#3b2a0e; font-family:var(--mono); font-weight:800; font-size:.78rem;
+  box-shadow:0 1px 0 rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.notice-box .warn{
+  display:block;
+  margin-top:4px; padding-left:14px;
+  position:relative;
+  color:#7c1d1d; font-weight:600;
+}
+.notice-box .warn::before{
+  /* Vertical crimson rule on the left of every warning row */
+  content:""; position:absolute; left:4px; top:6px; bottom:6px;
+  width:2px; background:#8b2a1f; border-radius:1px;
+}
+.notice-box .warn:first-line{ font-weight:700; }
+@media(max-width:520px){
+  .notice-box{ padding:18px 18px 20px 46px; font-size:.84rem; }
+  .notice-box h4::before{ left:-34px; width:24px; height:24px; font-size:.7rem; }
+  .notice-box::before{ width:46px; height:46px; font-size:.62rem; }
+}
 .split-check{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
 .split-check label{
   display:flex;align-items:center;gap:5px;padding:5px 12px;
@@ -717,6 +1129,238 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 .day-panel{display:none;animation:fadeUp .35s ease both;}
 .day-panel.active{display:block;}
 
+/* =========================================================================
+   PLANNING / EDIT MODE — the elev-overview chart at the top IS the editor.
+   Below the chart we surface ONE notes block per day (free-form icon+title+
+   plain-text cards, seeded from day.details) and tint each day with its own
+   warm cream band so days read as distinct sections without needing tabs.
+   Everything else inside .day-panel (emergency card, quick-links, route
+   tabs, timeline, retreat block, etc.) stays hidden — that surface is for
+   View mode only.
+   Checkpoint mode keeps the original tabbed per-day UX untouched.
+   ======================================================================= */
+body[data-jm-mode="elevation"] .day-bar{ display:none !important; }
+body[data-jm-mode="elevation"] .day-panel{
+  display:block !important;
+  animation:none;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  padding:18px calc(50vw - 50%) 24px;
+  border-top:1px solid rgba(168,128,44,0.18);
+  position:relative;
+}
+body[data-jm-mode="elevation"] .day-panel:first-of-type{ border-top:none; padding-top:8px; }
+/* Day band tints — three warm cream → darker cream stops cycling per 3. */
+body[data-jm-mode="elevation"] .day-panel:nth-of-type(3n+1){ background:#faf6ea; }
+body[data-jm-mode="elevation"] .day-panel:nth-of-type(3n+2){ background:#f3ead2; }
+body[data-jm-mode="elevation"] .day-panel:nth-of-type(3n+3){ background:#ece1bf; }
+/* Inside the day-panel, hide the View-mode surfaces — only .day-notes is
+   visible in planning mode. */
+body[data-jm-mode="elevation"] .day-panel > .eq-card,
+body[data-jm-mode="elevation"] .day-panel > .qlinks,
+body[data-jm-mode="elevation"] .day-panel > .mode-section,
+body[data-jm-mode="elevation"] .day-panel > .exp,
+body[data-jm-mode="elevation"] .day-panel > .retreat-section,
+body[data-jm-mode="elevation"] .day-panel > .section{
+  display:none !important;
+}
+/* And conversely: the notes block is ONLY visible in planning mode. */
+.day-notes{ display:none; }
+body[data-jm-mode="elevation"] .day-notes{ display:block; }
+
+/* ---- day-notes block visual ---- */
+.day-notes .dn-head{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:14px; padding:8px 0 12px;
+  border-bottom:1px dashed rgba(110,83,22,0.30);
+  margin-bottom:14px;
+}
+.day-notes .dn-head-l{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.day-notes .dn-day{
+  font-family:var(--serif); font-weight:700; font-size:1.15rem;
+  color:var(--pri-deep,#0a1a06); letter-spacing:.02em;
+}
+.day-notes .dn-date{
+  font-family:var(--mono); font-size:.7rem; letter-spacing:.18em;
+  color:var(--gold-deep,#6e5316); text-transform:uppercase;
+}
+.day-notes .dn-add{
+  border:1px solid rgba(168,128,44,0.55); background:#fffbeb;
+  color:var(--gold-deep,#6e5316); font-family:var(--sans);
+  font-size:.78rem; font-weight:600; letter-spacing:.04em;
+  padding:6px 12px; border-radius:99px; cursor:pointer;
+  transition: background .2s, border-color .2s;
+}
+.day-notes .dn-add:hover{ background:#fef3c7; border-color:#a8802c; }
+
+.day-notes .dn-list{ display:flex; flex-direction:column; gap:10px; }
+.day-notes .dn-card{
+  display:grid; grid-template-columns:48px 1fr 28px;
+  gap:12px; align-items:start;
+  background:rgba(255,251,235,0.7);
+  border:1px solid rgba(168,128,44,0.22);
+  border-radius:10px; padding:12px 12px 12px 12px;
+  position:relative;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.day-notes .dn-card:hover{
+  border-color:rgba(168,128,44,0.45);
+  box-shadow:0 6px 16px -8px rgba(110,83,22,0.20);
+}
+.day-notes .dn-icon{
+  width:44px; height:44px; border-radius:50%;
+  border:1px solid rgba(168,128,44,0.40);
+  background:#fdf9ee; cursor:pointer;
+  font-size:1.45rem; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition: border-color .2s, transform .15s;
+}
+.day-notes .dn-icon:hover{ border-color:#a8802c; transform:scale(1.06); }
+.day-notes .dn-body-wrap{ min-width:0; }
+.day-notes .dn-title,
+.day-notes .dn-body{
+  outline:none; border-radius:4px; padding:2px 4px;
+  transition: background .15s, box-shadow .15s;
+}
+.day-notes .dn-title:focus,
+.day-notes .dn-body:focus{
+  background:#fffbeb;
+  box-shadow:inset 0 0 0 1.5px rgba(168,128,44,0.55);
+}
+.day-notes .dn-title{
+  font-family:var(--serif); font-weight:700; font-size:1rem;
+  color:var(--pri-deep,#0a1a06); letter-spacing:.01em;
+  min-height:1.4em;
+}
+.day-notes .dn-title:empty::before{
+  content:"標題…"; color:rgba(110,83,22,0.45);
+  font-weight:400; font-style:italic;
+}
+.day-notes .dn-body{
+  font-family:var(--sans); font-size:.85rem; line-height:1.55;
+  color:var(--ink,#1a1a17); margin-top:4px;
+  white-space:pre-wrap; word-break:break-word;
+  min-height:1.4em;
+}
+.day-notes .dn-body:empty::before{
+  content:"備註內容…"; color:rgba(110,83,22,0.45); font-style:italic;
+}
+.day-notes .dn-del{
+  width:24px; height:24px; border-radius:50%; border:none;
+  background:transparent; color:rgba(110,83,22,0.45);
+  font-size:1.1rem; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition: background .15s, color .15s;
+}
+.day-notes .dn-del:hover{ background:rgba(168,128,44,0.15); color:#8b2a1f; }
+
+/* ---- link chips inside a note ---- */
+.day-notes .dn-links{
+  display:flex; flex-wrap:wrap; gap:6px;
+  margin-top:8px; padding-top:8px;
+  border-top:1px dotted rgba(110,83,22,0.22);
+}
+.day-notes .dn-link{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 4px 4px 8px; border-radius:99px;
+  background:#fffbeb; border:1px solid rgba(168,128,44,0.30);
+  font-family:var(--sans); font-size:.74rem;
+  color:var(--gold-deep,#6e5316); text-decoration:none;
+  max-width:240px; cursor:pointer;
+  transition: background .15s, border-color .15s;
+}
+.day-notes .dn-link:hover{
+  background:#fef3c7; border-color:#a8802c;
+}
+.day-notes .dn-link-ic{ font-size:.9rem; line-height:1; }
+.day-notes .dn-link-lbl{
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  max-width:180px;
+}
+.day-notes .dn-link-del{
+  width:18px; height:18px; border:none; background:transparent;
+  color:rgba(110,83,22,0.45); font-size:.95rem; line-height:1;
+  border-radius:50%; cursor:pointer; padding:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.day-notes .dn-link-del:hover{ color:#8b2a1f; background:rgba(168,128,44,0.18); }
+.day-notes .dn-link-add{
+  border:1px dashed rgba(168,128,44,0.50); background:transparent;
+  color:var(--gold-deep,#6e5316); font-family:var(--sans);
+  font-size:.72rem; padding:4px 10px; border-radius:99px;
+  cursor:pointer; transition: background .15s, border-style .15s;
+}
+.day-notes .dn-link-add:hover{
+  background:#fffbeb; border-style:solid;
+}
+
+/* link-add popover form */
+.dn-link-form{
+  position:absolute; z-index:9000; min-width:260px;
+  background:#fdf9ee; border:1px solid rgba(168,128,44,0.50);
+  border-radius:10px; padding:12px;
+  box-shadow:0 12px 32px -8px rgba(10,26,6,0.25);
+  font-family:var(--sans);
+  display:flex; flex-direction:column; gap:8px;
+}
+.dn-link-form label{
+  display:flex; flex-direction:column; gap:3px;
+  font-size:.7rem; letter-spacing:.06em;
+  color:var(--gold-deep,#6e5316); text-transform:uppercase;
+  font-weight:600;
+}
+.dn-link-form input{
+  border:1px solid rgba(168,128,44,0.40); border-radius:6px;
+  padding:6px 8px; font-size:.85rem; font-family:var(--sans);
+  background:#fffbeb; outline:none;
+  color:var(--ink,#1a1a17); text-transform:none; letter-spacing:0;
+}
+.dn-link-form input:focus{ border-color:#a8802c; }
+.dn-link-form-actions{
+  display:flex; justify-content:flex-end; gap:6px; margin-top:2px;
+}
+.dn-link-form-actions button{
+  border:1px solid rgba(168,128,44,0.45); background:#fffbeb;
+  color:var(--gold-deep,#6e5316); font-family:var(--sans);
+  font-size:.78rem; font-weight:600; padding:5px 12px;
+  border-radius:6px; cursor:pointer;
+}
+.dn-link-form-actions button[data-act="save"]{
+  background:#a8802c; color:#fdf9ee; border-color:#a8802c;
+}
+.dn-link-form-actions button:hover{ filter:brightness(1.05); }
+
+/* ---- emoji picker popover ---- */
+.dn-emoji-pop{
+  position:absolute; z-index:9000;
+  background:#fdf9ee; border:1px solid rgba(168,128,44,0.50);
+  border-radius:10px; padding:10px;
+  box-shadow:0 12px 32px -8px rgba(10,26,6,0.25);
+  display:grid; grid-template-columns:repeat(5, 36px); gap:4px;
+  font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif;
+}
+.dn-emoji-pop button{
+  width:36px; height:36px; border:none; background:transparent;
+  font-size:1.3rem; line-height:1; border-radius:6px; cursor:pointer;
+  transition: background .12s, transform .1s;
+}
+.dn-emoji-pop button:hover{ background:rgba(168,128,44,0.18); transform:scale(1.15); }
+.dn-emoji-pop input{
+  grid-column:1/-1; margin-top:6px;
+  border:1px solid rgba(168,128,44,0.40); border-radius:6px;
+  padding:5px 8px; font-size:.85rem; font-family:var(--sans);
+  background:#fffbeb; outline:none;
+}
+.dn-emoji-pop input:focus{ border-color:#a8802c; }
+
+/* Login-required cloud-sync banner inside the day-notes head — surfaced
+   when user is anonymous; replaced with a sync chip once logged in. */
+.dn-sync-hint{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.18em;
+  color:rgba(110,83,22,0.55); text-transform:uppercase;
+  margin-left:6px;
+}
+
 /* Quick link chips */
 .qlinks{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
 .qlinks a{
@@ -819,8 +1463,9 @@ body[data-jm-mode="elevation"]  .jm-mode-toggle button[data-target-mode="elevati
 }
 body[data-jm-mode="elevation"] .jm-mode-toggle .mt-ink{transform:translateX(100%);}
 
-/* Hide global toggle on tabs without itinerary content */
-body:not([data-jm-tab="itin"]) .jm-mode-toggle{display:none;}
+/* Mode toggle (檢視/編輯) is the unified view/edit switch — visible on all tabs.
+   (Was hidden outside 行程 tab; that broke the lang toggle's positioning since
+   it uses jm-mode-toggle's bounding rect to anchor itself.) */
 
 /* Demo-only fixtures (玉山-specific 上河驗算 + 注意事項) — hidden when
    the user opens a personal plan via ?plan=<id>. */
@@ -1214,6 +1859,20 @@ body[data-jm-mode="elevation"] .elev-overview{display:block;}
   font-size:1.05rem; font-weight:700; letter-spacing:.04em;
   color:var(--pri-deep,#0a1a06); text-transform:none;
 }
+.elev-overview .eo-head .eo-auto-return{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--serif); font-style:italic; font-weight:500;
+  font-size:.72rem; letter-spacing:.02em; text-transform:none;
+  color:var(--gold-deep,#6e5316); cursor:pointer;
+  padding:2px 8px; border:1px dashed rgba(110,83,22,0.35);
+  border-radius:10px; user-select:none;
+}
+.elev-overview .eo-head .eo-auto-return:hover{
+  background:rgba(168,128,44,0.08);
+}
+.elev-overview .eo-head .eo-auto-return input{
+  accent-color:var(--pri,#1e3a1a); margin:0; cursor:pointer;
+}
 .elev-overview .eo-head .eo-mode-note{
   flex:1; min-width:160px; text-align:right;
   font-family:var(--serif); font-style:italic; font-weight:400;
@@ -1222,7 +1881,7 @@ body[data-jm-mode="elevation"] .elev-overview{display:block;}
 }
 .elev-overview .eo-canvas-wrap{
   position:relative;
-  height:230px; margin:10px 0 10px;
+  height:420px; margin:10px 0 10px;
   background:linear-gradient(180deg, #fdf9ee, #f3ecd6);
   border:1px solid rgba(42,36,24,0.12);
   border-radius:6px; overflow:hidden;
@@ -1243,6 +1902,47 @@ body[data-jm-mode="elevation"] .elev-overview{display:block;}
   width:11px; height:11px; border-radius:50%;
   background:radial-gradient(circle at 35% 30%, #fde68a, #a8802c 70%);
   border:1px solid #0a1a06; box-shadow:inset 0 -1px 0 rgba(0,0,0,.25);
+}
+
+/* Focus-reset button (right-aligned in legend) */
+.elev-overview .eo-focus-reset{
+  font-family:var(--mono); font-size:.6rem; font-weight:700;
+  letter-spacing:.18em; text-transform:uppercase;
+  padding:3px 9px; border-radius:3px;
+  background:transparent; color:var(--gold-deep,#6e5316);
+  border:1px solid rgba(168,128,44,0.45);
+  cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.elev-overview[data-focused="true"] .eo-focus-reset{
+  background:var(--gold-deep,#6e5316); color:#fdfaf0;
+  border-color:var(--gold-deep,#6e5316);
+}
+.elev-overview .eo-focus-reset:hover{
+  background:rgba(168,128,44,0.12);
+}
+.elev-overview[data-focused="true"] .eo-focus-reset:hover{
+  background:#1e3a1a; border-color:#1e3a1a;
+}
+
+/* Minimap — flat strip below main chart, only visible when focused */
+.elev-overview .eo-minimap-wrap{
+  display:none;
+  position:relative;
+  margin-top:8px;
+  height:54px;
+  background:linear-gradient(180deg, #fdf9ee, #f0e5c8);
+  border:1px solid rgba(42,36,24,0.12);
+  border-radius:4px; overflow:hidden;
+}
+.elev-overview[data-focused="true"] .eo-minimap-wrap{display:block;}
+.elev-overview .eo-minimap-wrap canvas{display:block; width:100%; height:100%;}
+.elev-overview .eo-minimap-lbl{
+  position:absolute; top:3px; left:6px; z-index:2;
+  font-family:var(--mono); font-size:.55rem; letter-spacing:.28em;
+  text-transform:uppercase; color:var(--gold-deep,#6e5316);
+  font-weight:700; pointer-events:none;
+  background:rgba(253,249,238,0.85); padding:1px 4px; border-radius:2px;
 }
 
 /* In 規劃 mode, the per-day card keeps its chart + stats + segments so
@@ -1266,8 +1966,464 @@ body[data-jm-mode="elevation"] .day-panel .elev-card .elev-head .eh-l::after{
 body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 
 @media (max-width:560px){
-  .elev-overview .eo-canvas-wrap{height:200px;}
+  .elev-overview .eo-canvas-wrap{height:320px;}
   .elev-overview .eo-head .eo-mode-note{flex-basis:100%; text-align:left; padding-top:2px;}
+}
+
+/* =========================================================================
+   GPX upload/download strip (PR-23) — sits at top of .eo-card. Same
+   cream+olive+brass vocabulary as the rest of the planning card; rows
+   feel like a compact data table rather than a settings dialog.
+   Hidden when no gpx_refs (gpx-io.js sets innerHTML="").
+   ======================================================================= */
+.gpx-io:empty{display:none;}
+.gpx-io{
+  margin:6px 0 14px; padding:10px 12px;
+  background:rgba(253,250,240,0.6);
+  border:1px solid rgba(42,36,24,0.18);
+  border-left:3px solid var(--gold-deep,#6e5316);
+  border-radius:5px;
+}
+.gpx-io .gx-head{
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  margin-bottom:8px;
+}
+.gpx-io .gx-title{
+  font-family:"Fraunces", var(--serif); font-style:italic; font-weight:700;
+  font-size:1rem; color:var(--pri-deep,#0a1a06);
+}
+.gpx-io .gx-title-en{
+  font-family:var(--mono); font-size:.55rem; font-weight:600;
+  letter-spacing:.32em; color:var(--gold-deep,#6e5316);
+  margin-left:8px; text-transform:uppercase;
+}
+.gpx-io .gx-hint{
+  flex:1; min-width:200px; text-align:right;
+  font-family:var(--serif); font-style:italic; font-size:.72rem;
+  color:var(--ink-soft,#7a7468);
+}
+.gpx-io .gx-list{
+  display:flex; flex-direction:column;
+  border:1px solid rgba(42,36,24,0.16);
+  border-radius:4px; overflow:hidden;
+  background:#fdfaf0;
+}
+.gpx-io .gx-row{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap:10px; align-items:center;
+  padding:8px 12px;
+  border-bottom:1px dotted rgba(42,36,24,0.18);
+  font-size:.82rem;
+}
+.gpx-io .gx-row:last-child{border-bottom:none;}
+.gpx-io .gx-row:nth-child(even){background:rgba(168,128,44,0.04);}
+
+.gpx-io .gx-row-l{
+  display:flex; align-items:center; gap:8px;
+  min-width:0; flex-wrap:wrap;
+}
+.gpx-io .gx-day-chip{
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:.58rem; font-weight:700;
+  letter-spacing:.18em;
+  padding:3px 7px; border-radius:3px;
+  background:#5a5448; color:#fdf9ee;
+  min-width:30px;
+}
+.gpx-io .gx-day-d0{background:#7a7468;}
+.gpx-io .gx-day-d1{background:#1e3a1a;}
+.gpx-io .gx-day-d2{background:#a8802c;}
+.gpx-io .gx-ref-name{
+  font-family:var(--mono); font-size:.7rem; font-weight:700;
+  color:var(--gold-deep,#6e5316); letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.gpx-io .gx-chip{
+  font-family:var(--mono); font-size:.55rem; font-weight:700;
+  letter-spacing:.18em; text-transform:uppercase;
+  padding:2px 6px; border-radius:2px;
+  border:1px solid currentColor;
+}
+.gpx-io .gx-chip-cloud{
+  color:#1e3a1a; background:rgba(30,58,26,0.08);
+}
+.gpx-io .gx-chip-localonly{
+  color:#a8802c; background:rgba(168,128,44,0.12);
+}
+.gpx-io .gx-chip-default{
+  color:var(--ink-soft,#7a7468); background:rgba(122,116,104,0.08);
+}
+.gpx-io .gx-chip-empty{
+  color:#a8802c; background:rgba(168,128,44,0.08);
+}
+.gpx-io .gx-filename{
+  font-family:var(--serif); font-size:.78rem; font-style:italic;
+  color:var(--ink,#1a1a17);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  min-width:0; flex:1;
+}
+
+.gpx-io .gx-row-m{
+  font-family:var(--mono); font-size:.78rem;
+  display:flex; align-items:center; min-width:0;
+}
+.gpx-io .gx-stats{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.gpx-io .gx-stats-empty{color:var(--ink-soft,#7a7468); font-style:italic;}
+.gpx-io .gx-stat-asc{color:#1e3a1a; font-weight:700;}
+.gpx-io .gx-stat-desc{color:#a8802c; font-weight:700;}
+.gpx-io .gx-stat-pts{color:var(--ink-soft,#7a7468); font-weight:600;}
+.gpx-io .gx-stats small{font-size:.6rem; opacity:.7; margin-left:1px;}
+.gpx-io .gx-badge{
+  font-family:var(--serif); font-style:italic; font-size:.7rem;
+  font-weight:600; color:#6e5316;
+  padding:2px 8px; border-radius:10px;
+  background:rgba(168,128,44,0.12);
+  border:1px solid rgba(168,128,44,0.3);
+  white-space:nowrap;
+}
+.gpx-io .gx-status{
+  font-family:var(--mono); font-size:.7rem; font-style:italic;
+  color:var(--gold-deep,#6e5316);
+}
+.gpx-io .gx-status-err{color:#a83d2c;}
+
+.gpx-io .gx-row-r{
+  display:flex; gap:6px; flex-shrink:0;
+}
+.gpx-io .gx-btn{
+  font-family:var(--mono); font-size:.62rem; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase;
+  padding:5px 10px; border-radius:3px;
+  border:1px solid var(--gold-deep,#6e5316);
+  background:#fdfaf0; color:var(--gold-deep,#6e5316);
+  cursor:pointer;
+  transition:background .15s, color .15s, transform .1s;
+}
+.gpx-io .gx-btn:hover{
+  background:var(--gold-deep,#6e5316); color:#fdfaf0;
+}
+.gpx-io .gx-btn:active{transform:translateY(1px);}
+.gpx-io .gx-btn:disabled{
+  opacity:.4; cursor:not-allowed;
+  background:#fdfaf0; color:var(--ink-soft,#7a7468);
+  border-color:rgba(42,36,24,0.2);
+}
+.gpx-io .gx-btn-i{font-size:.85em; margin-right:2px;}
+.gpx-io .gx-btn-upload{
+  border-color:#1e3a1a; color:#1e3a1a;
+}
+.gpx-io .gx-btn-upload:hover{background:#1e3a1a; color:#fdfaf0;}
+
+/* Toast (shared with rest of app feel — bottom-right, fade-in) */
+.gx-toast{
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  background:#1e3a1a; color:#fdfaf0;
+  font-family:var(--serif); font-size:.85rem; font-weight:500;
+  padding:10px 16px; border-radius:5px;
+  box-shadow:0 8px 24px -6px rgba(10,26,6,0.3);
+  opacity:0; transform:translateY(10px) scale(.96);
+  transition:opacity .25s, transform .25s;
+  pointer-events:none; max-width:340px;
+}
+.gx-toast.show{opacity:1; transform:translateY(0) scale(1);}
+.gx-toast-err{background:#a83d2c;}
+
+@media (max-width:680px){
+  .gpx-io .gx-row{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  .gpx-io .gx-row-r{justify-content:flex-end;}
+  .gpx-io .gx-hint{flex-basis:100%; text-align:left;}
+}
+
+/* =========================================================================
+   Unified rest-points list (PR-22) — lives inside .elev-overview .eo-card
+   below the chart + legend. Only visible in 規劃模式 (parent gates it).
+   Design vocabulary: cream + olive + brass — same family as the rest of
+   the planning card, but slightly denser type and a mono-grid feel that
+   reads as "data table" rather than "decorative band".
+   ======================================================================= */
+.overview-rest-points{
+  margin-top:14px;
+  border-top:1px dashed rgba(42,36,24,0.22);
+  padding-top:12px;
+}
+.overview-rest-points .rp-head{
+  display:flex; align-items:baseline; gap:14px;
+  flex-wrap:wrap; margin-bottom:6px;
+}
+.overview-rest-points .rp-title{
+  font-family:"Fraunces", var(--serif); font-style:italic; font-weight:700;
+  font-size:1.02rem; color:var(--pri-deep,#0a1a06);
+  letter-spacing:.02em;
+}
+.overview-rest-points .rp-title-en{
+  font-family:var(--mono); font-size:.55rem; font-style:normal;
+  letter-spacing:.32em; color:var(--gold-deep,#6e5316);
+  margin-left:8px; text-transform:uppercase; font-weight:600;
+}
+.overview-rest-points .rp-source{
+  flex:1; min-width:200px; text-align:right;
+  font-family:var(--serif); font-style:italic; font-size:.72rem;
+  color:var(--ink-soft,#7a7468);
+}
+
+/* Speed control */
+.overview-rest-points .rp-speed-control{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:8px 10px; margin:6px 0 10px;
+  background:rgba(168,128,44,0.08);
+  border:1px solid rgba(168,128,44,0.28);
+  border-radius:5px;
+}
+.overview-rest-points .rp-sc-lbl{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.24em;
+  color:var(--gold-deep,#6e5316); text-transform:uppercase;
+  font-weight:700;
+}
+.overview-rest-points .rp-speed-input{
+  width:64px; padding:3px 6px;
+  font-family:var(--mono); font-size:.85rem; font-weight:700;
+  text-align:center;
+  border:1px solid rgba(42,36,24,0.32); border-radius:3px;
+  background:#fdf9ee; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-speed-input:focus{
+  outline:none; border-color:var(--gold-deep,#6e5316);
+  box-shadow:0 0 0 2px rgba(168,128,44,0.22);
+}
+.overview-rest-points .rp-sc-x{
+  font-family:var(--mono); font-size:.85rem; font-weight:700;
+  color:var(--ink,#1a1a17);
+}
+.overview-rest-points .rp-sc-hint{
+  font-family:var(--serif); font-style:italic; font-size:.7rem;
+  color:var(--ink-soft,#7a7468); margin-left:auto;
+}
+
+/* Rows — flex layout for responsive collapse, mono numerics */
+.overview-rest-points .rp-list{
+  display:flex; flex-direction:column;
+  border:1px solid rgba(42,36,24,0.18);
+  border-radius:5px; overflow:hidden;
+  background:#fdfaf0;
+}
+.overview-rest-points .rp-row{
+  display:grid;
+  grid-template-columns: 38px 56px 1fr 220px 120px;
+  gap:8px; align-items:center;
+  padding:7px 10px;
+  border-bottom:1px solid rgba(42,36,24,0.10);
+  font-family:var(--serif); font-size:.84rem;
+  color:var(--ink,#1a1a17);
+}
+.overview-rest-points .rp-row:last-child{border-bottom:none;}
+.overview-rest-points .rp-row:nth-child(even):not(.rp-day-header){
+  background:rgba(168,128,44,0.04);
+}
+
+/* Day chip — D0/D1/D2 distinct accents */
+.overview-rest-points .rp-chip{
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:.6rem; font-weight:700;
+  letter-spacing:.12em;
+  padding:2px 5px; border-radius:3px;
+  color:#fdfaf0;
+  min-width:30px;
+}
+.overview-rest-points .rp-chip-d0{background:#7a7468;}
+.overview-rest-points .rp-chip-d1{background:#1e3a1a;}
+.overview-rest-points .rp-chip-d2{background:#a8802c;}
+/* Fallback for unknown day ids */
+.overview-rest-points .rp-chip{background:#5a5448;}
+.overview-rest-points .rp-chip-d0{background:#7a7468;}
+.overview-rest-points .rp-chip-d1{background:#1e3a1a;}
+.overview-rest-points .rp-chip-d2{background:#a8802c;}
+
+.overview-rest-points .rp-cum{
+  font-family:var(--mono); font-size:.78rem; font-weight:600;
+  color:var(--gold-deep,#6e5316); text-align:right;
+}
+.overview-rest-points .rp-cum small{font-size:.6rem; opacity:.7; margin-left:1px;}
+
+.overview-rest-points .rp-route{
+  display:flex; align-items:center; gap:6px;
+  min-width:0;
+}
+.overview-rest-points .rp-from,
+.overview-rest-points .rp-to{
+  font-family:var(--serif); font-weight:600; color:var(--pri-deep,#0a1a06);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.overview-rest-points .rp-arrow{
+  font-family:var(--mono); color:var(--gold-deep,#6e5316);
+  font-size:.78rem; flex-shrink:0;
+}
+
+.overview-rest-points .rp-meta{
+  display:flex; gap:8px; align-items:center; justify-content:flex-end;
+  font-family:var(--mono); font-size:.74rem;
+}
+.overview-rest-points .rp-km{
+  color:var(--ink,#1a1a17); font-weight:600;
+}
+.overview-rest-points .rp-km small{font-size:.6rem; opacity:.6; margin-left:1px;}
+.overview-rest-points .rp-asc{color:#1e3a1a; font-weight:600;}
+.overview-rest-points .rp-desc{color:#a8802c; font-weight:600;}
+.overview-rest-points .rp-asc small,
+.overview-rest-points .rp-desc small{font-size:.58rem; opacity:.6; margin-left:1px;}
+.overview-rest-points .rp-flat{color:var(--ink-soft,#7a7468); opacity:.5;}
+
+.overview-rest-points .rp-time{
+  display:flex; flex-direction:column; align-items:flex-end;
+  font-family:var(--mono); line-height:1.15;
+}
+.overview-rest-points .rp-time-derived{
+  font-size:1rem; font-weight:700; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-time small{font-size:.6rem; opacity:.7; margin-left:1px;}
+.overview-rest-points .rp-time-base{
+  font-family:var(--serif); font-style:italic;
+  font-size:.65rem; color:var(--ink-soft,#7a7468); font-weight:400;
+}
+
+/* Day-header row — non-hiking day pill, full-width text. Use grid-column
+   span so it overrides the row template (5 cols → 1 spanning row). */
+.overview-rest-points .rp-day-header{
+  display:flex; align-items:center; gap:10px;
+  background:rgba(122,116,104,0.08);
+  font-family:var(--serif); font-style:italic;
+  color:var(--ink-soft,#7a7468);
+  padding:6px 10px;
+}
+.overview-rest-points .rp-day-header .rp-day-name{
+  font-style:normal; font-weight:600; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-day-header .rp-day-note{
+  font-size:.78rem;
+}
+
+/* Day-subtotal row — sits after the last segment of each day, summarises
+   that day's km / ↑ / ↓ / minutes. Lighter than the global total but with
+   a left accent in the day's chip colour. */
+.overview-rest-points .rp-subtotal{
+  display:grid;
+  grid-template-columns: 38px 56px 1fr 220px 120px;
+  gap:8px; align-items:center;
+  padding:6px 10px;
+  background:rgba(168,128,44,0.06);
+  border-top:1px dashed rgba(42,36,24,0.18);
+  font-family:var(--mono);
+}
+.overview-rest-points .rp-subtotal-l{
+  grid-column:1 / 4;
+  display:flex; align-items:baseline; gap:8px;
+  font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--gold-deep,#6e5316); font-weight:700;
+}
+.overview-rest-points .rp-subtotal-l .rp-subtotal-day{
+  font-family:"Fraunces", var(--serif); font-style:italic;
+  font-size:.85rem; letter-spacing:.02em; text-transform:none;
+  color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-subtotal-meta{
+  display:flex; gap:10px; justify-content:flex-end;
+  font-size:.74rem;
+}
+.overview-rest-points .rp-subtotal-meta .rp-km{color:var(--ink,#1a1a17); font-weight:700;}
+.overview-rest-points .rp-subtotal-meta .rp-asc{color:#1e3a1a; font-weight:700;}
+.overview-rest-points .rp-subtotal-meta .rp-desc{color:#a8802c; font-weight:700;}
+.overview-rest-points .rp-subtotal-meta small{font-size:.58rem; opacity:.6; margin-left:1px;}
+.overview-rest-points .rp-subtotal-time{
+  display:flex; flex-direction:column; align-items:flex-end;
+  line-height:1.15;
+}
+.overview-rest-points .rp-subtotal-time .rp-time-derived{
+  font-size:.92rem; font-weight:700; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-subtotal-time .rp-time-base{
+  font-family:var(--serif); font-style:italic;
+  font-size:.62rem; color:var(--ink-soft,#7a7468);
+}
+
+/* Clickable segment rows — focus the chart on this segment */
+.overview-rest-points .rp-row[data-focusable="true"]{
+  cursor:pointer;
+  transition:background .12s;
+}
+.overview-rest-points .rp-row[data-focusable="true"]:hover{
+  background:rgba(168,128,44,0.14) !important;
+}
+.overview-rest-points .rp-row[data-focusable="true"][aria-pressed="true"]{
+  background:rgba(168,128,44,0.22) !important;
+  box-shadow:inset 3px 0 0 var(--gold-deep,#6e5316);
+}
+.overview-rest-points .rp-row[data-focusable="true"][aria-pressed="true"] .rp-from,
+.overview-rest-points .rp-row[data-focusable="true"][aria-pressed="true"] .rp-to{
+  color:var(--gold-deep,#6e5316);
+}
+
+/* Total row */
+.overview-rest-points .rp-total{
+  display:grid;
+  grid-template-columns: 1fr 220px 120px;
+  gap:8px; align-items:center;
+  padding:9px 10px; margin-top:6px;
+  background:linear-gradient(180deg, rgba(168,128,44,0.10), rgba(168,128,44,0.18));
+  border:1px solid rgba(168,128,44,0.34);
+  border-radius:5px;
+}
+.overview-rest-points .rp-total-l{
+  font-family:var(--mono); font-size:.66rem; letter-spacing:.28em;
+  color:var(--gold-deep,#6e5316); font-weight:700; text-transform:uppercase;
+}
+.overview-rest-points .rp-total-meta{
+  display:flex; gap:10px; justify-content:flex-end;
+  font-family:var(--mono); font-size:.78rem;
+}
+.overview-rest-points .rp-total-km{color:var(--ink,#1a1a17); font-weight:700;}
+.overview-rest-points .rp-total-asc{color:#1e3a1a; font-weight:700;}
+.overview-rest-points .rp-total-desc{color:#a8802c; font-weight:700;}
+.overview-rest-points .rp-total-meta small{font-size:.6rem; opacity:.6; margin-left:1px;}
+.overview-rest-points .rp-total-time{
+  display:flex; flex-direction:column; align-items:flex-end;
+  font-family:var(--mono); line-height:1.15;
+}
+.overview-rest-points .rp-total-derived{
+  font-size:1.1rem; font-weight:800; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-total-base{
+  font-family:var(--serif); font-style:italic;
+  font-size:.7rem; color:var(--ink-soft,#7a7468);
+}
+
+/* Mobile collapse — stack meta below route */
+@media (max-width:720px){
+  .overview-rest-points .rp-row{
+    grid-template-columns: 32px 50px 1fr;
+    grid-template-rows:auto auto;
+    row-gap:3px;
+  }
+  .overview-rest-points .rp-meta{
+    grid-column:2 / 4; justify-content:flex-start;
+  }
+  .overview-rest-points .rp-time{
+    grid-column:2 / 4; flex-direction:row; align-items:baseline;
+    justify-content:flex-start; gap:8px;
+  }
+  .overview-rest-points .rp-total{
+    grid-template-columns: 1fr 1fr;
+  }
+  .overview-rest-points .rp-total-meta{
+    grid-column:1 / 3; justify-content:flex-start;
+  }
+  .overview-rest-points .rp-total-time{
+    grid-column:1 / 3; flex-direction:row; align-items:baseline; gap:10px;
+  }
 }
 
 /* Empty state for non-hiking days */
@@ -1341,46 +2497,431 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 .pwa-install-btn:hover { background: linear-gradient(135deg, #3a5644, #283530); }
 .pwa-install-btn:active { transform: translateY(1px); }
 .pwa-install-btn svg { width: 16px; height: 16px; }
-/* ==== Language toggle (zh ↔ en) — top-right, sits directly below the
-   mode toggle (檢視 / 編輯) so the two segmented chips form one visual stack. */
+/* ==== Language toggle (zh ↔ en) — sits to the LEFT of the mode toggle
+   (檢視 / 編輯) on the same row. Minimal: two letters + thin divider, no
+   chip background — reads as a quiet inline switch beside the mode pill. */
 .jm-lang-toggle{
   position:fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 92px);
-  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  top: calc(env(safe-area-inset-top, 0px) + 48px);
+  /* JS sets `right` at runtime to (mode-toggle width + 10 + 8px gap).
+     Fallback keeps it visible if JS hasn't run yet. */
+  right: calc(env(safe-area-inset-right, 0px) + 152px);
   z-index:1300;
-  display:inline-flex; align-items:center; gap:4px;
-  padding:4px 10px;
+  display:inline-flex; align-items:center; justify-content:center; gap:0;
+  height:30px;
+  padding:0 4px;
+  background:transparent;
+  border:none;
+  border-radius:0;
+  box-shadow:none;
   font-family:var(--serif), "Noto Sans TC", sans-serif;
-  font-size:.66rem; font-weight:700; letter-spacing:.18em;
+  font-size:.7rem; font-weight:600; letter-spacing:.14em;
   color:#f5ecd6; cursor:pointer;
-  background:linear-gradient(180deg, #1f3a23 0%, #122118 100%);
-  border:1px solid rgba(168,128,44,0.45);
-  border-radius:999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255,213,138,0.18),
-    0 4px 14px rgba(10,26,6,0.30),
-    0 1px 3px rgba(0,0,0,0.20);
-  transition: transform .2s ease, box-shadow .2s ease;
+  transition: opacity .2s ease;
   animation:jmtIn .55s cubic-bezier(.2,.7,.2,1) .25s both;
 }
-.jm-lang-toggle:hover{
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,213,138,0.22),
-    0 6px 18px rgba(10,26,6,0.38),
-    0 1px 3px rgba(0,0,0,0.22);
-}
+.jm-lang-toggle:hover{ transform:none; }
 .jm-lang-toggle:active{ transform: scale(.96); }
-.jm-lang-toggle .jl-sep{ opacity:.4; font-weight:400; padding:0 2px }
-.jm-lang-toggle [data-jl-target]{ opacity:.5; color:rgba(245,236,214,.65); transition: opacity .2s ease, color .2s ease; }
+.jm-lang-toggle .jl-sep{
+  opacity:.55; font-weight:300; padding:0 6px;
+  color:#d9c590;
+  font-size:.9em;
+}
+.jm-lang-toggle [data-jl-target]{
+  opacity:.7; color:#d9c590;
+  transition: opacity .2s ease, color .2s ease;
+  min-width:1em; text-align:center;
+}
+.jm-lang-toggle:hover [data-jl-target]{ opacity:.9; }
 body[data-jm-lang="zh"] .jm-lang-toggle [data-jl-target="zh"],
 body[data-jm-lang="en"] .jm-lang-toggle [data-jl-target="en"]{
-  opacity:1; color:var(--gold-l, #ffd58a);
+  opacity:1; color:#ffd58a; font-weight:700;
 }
 
 /* Apply language: hide the spans for the inactive language. Default zh. */
 body[data-jm-lang="en"] .lang-zh{ display:none !important; }
 body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
+
+/* ==== Save chip — same skeleton as .jm-lang-toggle. Visible only when
+   body.tf-editing AND body.tf-dirty. Subtle gold pulse on the text invites
+   the click; no chrome (border/box) so the two chips read as one strip. */
+/* ============ SAVE CHIP — three-state, brass-on-paper ============
+   1) Hidden        — no edit mode in progress
+   2) Dormant       — edit mode active but nothing changed: dim cream, quiet
+   3) AWAKE / DIRTY — user edited: full gold, halo, gentle hover pulse, plus a
+                      one-shot "wake" shake on the rising edge of dirty so the
+                      chip catches the eye when it first lights up. */
+.jm-save-chip{
+  position:fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 48px);
+  right: calc(env(safe-area-inset-right, 0px) + 200px);   /* JS adjusts to sit LEFT of lang toggle */
+  z-index:1300;
+  display:none;
+  align-items:center; gap:0;
+  height:30px; padding:0 6px;
+  background:transparent; border:none; border-radius:0; box-shadow:none;
+  font-family:var(--serif), "Noto Sans TC", sans-serif;
+  font-size:.7rem; font-weight:700; letter-spacing:.14em;
+  color:#c9b07c; cursor:pointer;
+  opacity:.45;
+  transition: opacity .25s ease, color .25s ease, transform .15s ease, text-shadow .25s ease;
+  animation:jmtIn .45s cubic-bezier(.2,.7,.2,1) both;
+}
+.jm-save-chip svg{
+  width:11px; height:11px; flex:none; margin-right:6px;
+  opacity:.85; transition: opacity .25s ease, filter .25s ease, transform .35s ease;
+}
+.jm-save-chip .lang-zh, .jm-save-chip .lang-en{ color:inherit; }
+.jm-save-chip .lang-en{ font-family:var(--mono); font-size:.66rem; letter-spacing:.18em; }
+
+/* Dormant state: visible whenever editing is on, regardless of dirty. */
+body.tf-editing .jm-save-chip{ display:inline-flex; }
+
+/* AWAKE — solid brass pill, white text, ring + outer halo, red unsaved dot.
+   Visually dominant: high contrast against the dark green chip rail and the
+   parchment page below. Wakes with a one-shot shake, then breathes. */
+body.tf-editing.tf-dirty .jm-save-chip{
+  opacity:1;
+  color:#1f2014;                                /* dark text on gold pill */
+  height:34px;                                  /* slight size bump for presence */
+  padding:0 16px 0 14px;
+  border-radius:999px;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
+    linear-gradient(180deg, #ffd98a 0%, #d99a2a 100%);
+  border:1px solid #b8862c;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    inset 0 -1px 0 rgba(0,0,0,.18),
+    0 0 0 2px rgba(255,213,138,.35),           /* tight outer ring */
+    0 0 18px 4px rgba(255,213,138,.45),         /* soft halo */
+    0 4px 14px -4px rgba(120,80,10,.55);
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+  animation:
+    jmtIn .45s cubic-bezier(.2,.7,.2,1) both,
+    saveChipWake .65s cubic-bezier(.36,.07,.19,.97) .05s 1,
+    saveChipBreath 1.8s ease-in-out 1.2s infinite;
+}
+body.tf-editing.tf-dirty .jm-save-chip svg{
+  opacity:1;
+  filter: drop-shadow(0 0 3px rgba(255,255,255,.5));
+}
+body.tf-editing.tf-dirty .jm-save-chip svg path{ stroke:#1f2014; }
+
+/* Crimson "unsaved" dot to the LEFT of the chip — strong universal "alert"
+   signal, stays put on the chip rail. Pulses on its own beat. */
+body.tf-editing.tf-dirty .jm-save-chip::before{
+  content:"";
+  position:absolute; right:100%; top:50%;
+  margin-right:9px; transform: translateY(-50%);
+  width:8px; height:8px; border-radius:50%;
+  background:#dc2626;
+  box-shadow:
+    0 0 0 2px rgba(220,38,38,.25),
+    0 0 12px 2px rgba(220,38,38,.6);
+  animation: saveDotPulse 1.2s ease-in-out infinite;
+}
+
+.jm-save-chip:hover{
+  opacity:1; color:#1f2014;
+  transform:translateY(-1px) scale(1.06);
+}
+body.tf-editing.tf-dirty .jm-save-chip:hover{
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.7), transparent 60%),
+    linear-gradient(180deg, #fff0c5 0%, #e8a93a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 0 0 2px rgba(255,213,138,.55),
+    0 0 26px 6px rgba(255,213,138,.65),
+    0 6px 20px -4px rgba(120,80,10,.6);
+}
+.jm-save-chip:active{ transform:scale(.96); }
+.jm-save-chip:disabled{ opacity:.5; cursor:wait; animation:none; }
+
+@keyframes saveChipWake{
+  0%   { transform: translateX(0)    scale(1);    }
+  10%  { transform: translateX(-3px) scale(1.05); }
+  25%  { transform: translateX(3px)  scale(1.10); }
+  40%  { transform: translateX(-3px) scale(1.08); }
+  55%  { transform: translateX(2px)  scale(1.05); }
+  70%  { transform: translateX(-1px) scale(1.03); }
+  100% { transform: translateX(0)    scale(1);    }
+}
+@keyframes saveChipBreath{
+  0%, 100%{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.6),
+      inset 0 -1px 0 rgba(0,0,0,.18),
+      0 0 0 2px rgba(255,213,138,.3),
+      0 0 14px 3px rgba(255,213,138,.35),
+      0 4px 12px -4px rgba(120,80,10,.5);
+  }
+  50%{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.7),
+      inset 0 -1px 0 rgba(0,0,0,.18),
+      0 0 0 3px rgba(255,213,138,.55),
+      0 0 26px 7px rgba(255,213,138,.7),
+      0 5px 16px -4px rgba(120,80,10,.6);
+  }
+}
+@keyframes saveDotPulse{
+  0%, 100%{ transform: translateY(-50%) scale(1);   opacity:1;   }
+  50%     { transform: translateY(-50%) scale(1.4); opacity:.6;  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  body.tf-editing.tf-dirty .jm-save-chip{
+    animation: jmtIn .45s cubic-bezier(.2,.7,.2,1) both;
+  }
+  body.tf-editing.tf-dirty .jm-save-chip::before{ animation: none; }
+}
+
+/* ============ OUTBOX UPLOAD PILL — offline-stash retry button ============
+   Owned by js/outbox.js (which manages count + click → drain). We override
+   its visuals here so it matches the save chip "AWAKE / DIRTY" aesthetic and
+   sits in the same chip rail. Shown by outbox.js whenever count > 0 (the
+   `.show` class is added by JS). High specificity (body prefix) wins over
+   outbox.js's own CSS-in-JS injection. */
+body .tf-outbox-pill{
+  position:fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 48px) !important;   /* chip rail row */
+  right: calc(env(safe-area-inset-right, 0px) + 280px);          /* fallback; JS overrides at runtime */
+  z-index:1305;
+  height:34px; padding:0 14px 0 12px;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
+    linear-gradient(180deg, #ffd98a 0%, #d99a2a 100%);
+  border:1px solid #b8862c;
+  border-radius:999px;
+  color:#1f2014;
+  font-family:var(--serif), "Noto Serif TC", serif;
+  font-size:.7rem; font-weight:700; letter-spacing:.18em;
+  text-shadow:0 1px 0 rgba(255,255,255,.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    inset 0 -1px 0 rgba(0,0,0,.18),
+    0 0 0 2px rgba(255,213,138,.35),
+    0 0 18px 4px rgba(255,213,138,.45),
+    0 4px 14px -4px rgba(120,80,10,.55);
+  animation: saveChipBreath 1.8s ease-in-out 1.2s infinite;
+}
+body .tf-outbox-pill svg{
+  width:13px; height:13px; stroke:#1f2014; stroke-width:2.4;
+  filter: drop-shadow(0 0 3px rgba(255,255,255,.5));
+}
+body .tf-outbox-pill .num{
+  background:#8b2a1f;            /* crimson badge — count of pending items */
+  color:#fff8e1;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10px; font-weight:800; letter-spacing:.04em;
+  padding:1px 7px; border-radius:999px; min-width:18px; text-align:center;
+  box-shadow: 0 0 8px rgba(220,38,38,.5);
+}
+body .tf-outbox-pill:hover{
+  transform:translateY(-1px) scale(1.04);
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.7), transparent 60%),
+    linear-gradient(180deg, #fff0c5 0%, #e8a93a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 0 0 2px rgba(255,213,138,.55),
+    0 0 26px 6px rgba(255,213,138,.65),
+    0 6px 20px -4px rgba(120,80,10,.6);
+}
+body .tf-outbox-pill.draining{ opacity:.7; cursor:wait; animation:none; }
+@media (prefers-reduced-motion: reduce){
+  body .tf-outbox-pill{ animation:none; }
+}
+
+/* ============ RESTORE BANNER — "你上次未儲存的編輯已還原" ============
+   Sticky bar pinned to the top of the viewport, dismissable. Stays visible
+   until the user takes action (logs in / saves / dismisses). Slides down on
+   first paint then idles. Brass-on-parchment, matches the rest of the chrome. */
+#tfRestoreBanner{
+  position:fixed; left:50%; top:0;
+  transform: translate(-50%, -120%);          /* hidden above viewport */
+  z-index:1400;                                /* above hero, below modals */
+  display:flex; align-items:center; gap:12px;
+  padding:10px 14px 10px 16px;
+  margin-top:env(safe-area-inset-top, 0px);
+  background:
+    linear-gradient(180deg, #fff8e3 0%, #f3e6c4 100%);
+  border:1px solid #b8862c;
+  border-top:none;
+  border-radius:0 0 14px 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 8px 22px -10px rgba(60,46,18,.45);
+  font-family:var(--serif),"Noto Serif TC",serif;
+  color:#3b2a0e;
+  max-width:min(540px, calc(100vw - 24px));
+  transition: transform .45s cubic-bezier(.2,.7,.2,1);
+}
+#tfRestoreBanner.show{ transform: translate(-50%, 0); }
+#tfRestoreBanner .tr-icon{
+  font-size:1.2rem; line-height:1; flex:none;
+  filter: drop-shadow(0 0 4px rgba(255,213,138,.55));
+}
+#tfRestoreBanner .tr-msg{
+  display:flex; flex-direction:column; gap:1px; line-height:1.3; flex:1; min-width:0;
+}
+#tfRestoreBanner .tr-msg b{
+  font-weight:700; font-size:.92rem; letter-spacing:.04em; color:#1f3a23;
+}
+#tfRestoreBanner .tr-msg small{
+  font-family:var(--mono);
+  font-size:.62rem; letter-spacing:.18em;
+  color:#7a5a1a;
+  text-transform:uppercase;
+}
+#tfRestoreBanner .tr-btn{
+  appearance:none; cursor:pointer; flex:none;
+  padding:7px 14px; border-radius:999px;
+  font-family:var(--serif),serif; font-size:.78rem; font-weight:700;
+  letter-spacing:.18em; color:#1f2014;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.6), transparent 60%),
+    linear-gradient(180deg, #ffd98a 0%, #d99a2a 100%);
+  border:1px solid #8a6420;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 2px 8px -2px rgba(120,80,10,.5);
+  transition: transform .15s, box-shadow .2s, background .2s;
+}
+#tfRestoreBanner .tr-btn:hover{
+  transform:translateY(-1px);
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.75), transparent 60%),
+    linear-gradient(180deg, #fff0c5 0%, #e8a93a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 4px 14px -2px rgba(120,80,10,.6);
+}
+#tfRestoreBanner .tr-btn:active{ transform:scale(.97); }
+#tfRestoreBanner .tr-dismiss{
+  appearance:none; cursor:pointer; flex:none;
+  width:26px; height:26px; border-radius:50%;
+  border:1px solid transparent; background:transparent;
+  color:#7a5a1a; font-family:var(--mono); font-size:1.05rem; font-weight:400;
+  display:inline-flex; align-items:center; justify-content:center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+#tfRestoreBanner .tr-dismiss:hover{
+  background:#8b2a1f; color:#fff; border-color:#8b2a1f;
+}
+@media (max-width:520px){
+  #tfRestoreBanner{ gap:8px; padding:9px 10px 9px 12px; max-width:calc(100vw - 12px); border-radius:0 0 10px 10px; }
+  #tfRestoreBanner .tr-msg b{ font-size:.84rem; }
+  #tfRestoreBanner .tr-msg small{ display:none; }
+  #tfRestoreBanner .tr-btn{ padding:6px 11px; font-size:.7rem; letter-spacing:.14em; }
+}
+
+/* ============ TF MODAL — custom confirm dialog ============ */
+.tf-modal-overlay{
+  position:fixed; inset:0; z-index:1900;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(13,31,10,.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity:0; transition: opacity .25s ease;
+  padding:20px;
+}
+.tf-modal-overlay.show{ opacity:1; }
+.tf-modal{
+  position:relative;
+  width:100%; max-width:420px;
+  padding:32px 28px 22px;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -10%, rgba(255,255,255,.7), transparent 65%),
+    linear-gradient(180deg,#fbf6e8,#f3e6c4);
+  border:1px solid rgba(168,128,44,.6);
+  border-radius:14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 18px 50px -10px rgba(13,31,10,.55),
+    0 4px 14px rgba(0,0,0,.25);
+  font-family:var(--serif),"Noto Serif TC",serif;
+  color:#3b2a0e;
+  transform: translateY(8px) scale(.97);
+  transition: transform .35s cubic-bezier(.2,.7,.2,1);
+}
+.tf-modal-overlay.show .tf-modal{ transform: translateY(0) scale(1); }
+.tf-modal-stamp{
+  position:absolute; left:-12px; top:-12px;
+  width:38px; height:38px; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #f0d398, #b8863b 75%);
+  border:1.5px solid #8a6420;
+  color:#3b2a0e; font-family:var(--serif); font-weight:900; font-size:1.1rem;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px -2px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.5);
+  transform:rotate(-8deg);
+}
+.tf-modal-title{
+  margin:0 0 4px;
+  font-family:var(--serif); font-weight:800; font-size:1.18rem;
+  color:#1f3a23; letter-spacing:.04em;
+}
+.tf-modal-en{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.32em;
+  color:#7a5a1a; text-transform:uppercase;
+  padding-bottom:14px; margin-bottom:14px;
+  border-bottom:1px dashed rgba(168,128,44,.45);
+}
+.tf-modal-body{
+  margin:0 0 22px;
+  font-size:.92rem; line-height:1.75;
+  color:#3b2a0e;
+}
+.tf-modal-actions{
+  display:flex; justify-content:flex-end; gap:8px;
+}
+.tf-modal-btn{
+  appearance:none; cursor:pointer;
+  padding:9px 18px; border-radius:999px;
+  font-family:var(--serif),serif; font-weight:700; font-size:.84rem;
+  letter-spacing:.18em;
+  transition: transform .15s, box-shadow .2s, background .2s, border-color .2s;
+}
+.tf-modal-btn.cancel{
+  background:transparent; color:#5a4515;
+  border:1px solid rgba(168,128,44,.5);
+}
+.tf-modal-btn.cancel:hover{
+  background:rgba(168,128,44,.12);
+  border-color:#a8802c; color:#3b2a0e;
+}
+.tf-modal-btn.ok{
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.6), transparent 60%),
+    linear-gradient(180deg, #ffd98a 0%, #d99a2a 100%);
+  border:1px solid #8a6420;
+  color:#1f2014;
+  display:inline-flex; align-items:center; gap:8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 2px 10px -2px rgba(120,80,10,.5);
+}
+.tf-modal-btn.ok:hover{
+  transform:translateY(-1px);
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.75), transparent 60%),
+    linear-gradient(180deg, #fff0c5 0%, #e8a93a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 5px 16px -2px rgba(120,80,10,.6);
+}
+.tf-modal-btn.ok:active{ transform:scale(.97); }
+.tf-modal-btn.ok .tmb-en{
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.32em; opacity:.7;
+  padding-left:6px; border-left:1px solid rgba(31,32,20,.3);
+}
+@media (max-width:420px){
+  .tf-modal{ padding:28px 22px 18px; }
+  .tf-modal-actions{ flex-direction:column-reverse; }
+  .tf-modal-btn{ width:100%; padding:11px; }
+}
 /* ==== Dashboard pill — visible when logged in, sits LEFT of permit chip ==== */
 .dash-pill {
   position: fixed;
@@ -1607,6 +3148,125 @@ body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
 </head>
 <body data-jm-tab="itin" data-jm-mode="checkpoint" data-jm-context="demo">
 <script>
+/* Early TF_EDIT stub — exists BEFORE any module script so contacts.js / gear.js
+   can always call setDirty() and have the save chip respond, even on demo URL
+   where edit.js bails out early. edit.js's IIFE will OVERWRITE these with
+   auth-aware versions on personal plans. */
+(function () {
+  window.TF_EDIT = window.TF_EDIT || {};
+  const TE = window.TF_EDIT;
+  // Marker so the no-auth bridge can tell our stub apart from edit.js's full
+  // setup. edit.js clears _isStub when it installs the auth-aware versions.
+  TE._isStub = true;
+  TE.setDirty          = (v) => document.body.classList.toggle("tf-dirty", !!v);
+  TE.isEditing         = () => document.body.classList.contains("tf-editing");
+  TE.onEnter           = (fn) => document.addEventListener("tf:edit-enter", fn);
+  TE.onExit            = (fn) => document.addEventListener("tf:edit-exit",  fn);
+  TE._stubCollectors   = TE._stubCollectors || [];
+  TE.registerCollector = (fn) => TE._stubCollectors.push(fn);
+})();
+
+/* Warn before unload if there are unsaved edits (body.tf-dirty), UNLESS the
+   navigation was triggered intentionally (e.g. clicking the save chip which
+   redirects to auth.html, or edit.js stashing on 401). */
+window.__tf_intentionalNav = false;
+window.tfMarkIntentionalNav = () => { window.__tf_intentionalNav = true; };
+window.addEventListener("beforeunload", (e) => {
+  if (window.__tf_intentionalNav) return;
+  if (document.body.classList.contains("tf-dirty")) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+/* Defensive dirty tracking: any input/textarea/contenteditable change inside
+   the plan view while in edit mode auto-marks the body dirty. This is a safety
+   net so the save chip lights up even if a per-tab module forgets to wire its
+   own dirty calls. Excludes the chrome chips (lang/save/mode toggles). */
+document.addEventListener("input", (e) => {
+  if (!document.body.classList.contains("tf-editing")) return;
+  const t = e.target;
+  if (!t || !t.matches) return;
+  if (!t.matches("input, textarea, [contenteditable]")) return;
+  if (t.closest("#jmLangToggle, #jmSaveChip, #jmModeToggle")) return;
+  if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+  else document.body.classList.add("tf-dirty");
+}, true);  // capture phase — fires before per-element handlers, but those still fire too
+
+/* Demo / no-plan edit stash. Without a planId there's nowhere to PATCH on the
+   server, so the in-memory edits would die on any navigation. We snapshot the
+   full editor state (contacts + gear, and any other module that registers a
+   collector) into localStorage so the user can resume where they left off —
+   on a fresh page load OR after they sign in and come back. */
+window.tfStashDemoData = function () {
+  try {
+    const snap = { at: Date.now() };
+    if (window.__TF_CONTACTS__ && window.__TF_CONTACTS__.data) {
+      snap.contacts = JSON.parse(JSON.stringify(window.__TF_CONTACTS__.data));
+    }
+    if (window.__TF_GEAR__ && Array.isArray(window.__TF_GEAR__.items)) {
+      snap.gear = { checklist: window.__TF_GEAR__.items.slice() };
+    }
+    if (snap.contacts || snap.gear) {
+      localStorage.setItem("tf_demo_pending", JSON.stringify(snap));
+    }
+  } catch (e) { /* localStorage full / disabled — best-effort */ }
+};
+window.tfClearDemoStash = function () {
+  try { localStorage.removeItem("tf_demo_pending"); } catch (e) {}
+};
+
+/* Belt-and-braces: stash on pagehide too. Triggers when user closes tab,
+   navigates away, or the page is suspended on mobile. */
+window.addEventListener("pagehide", () => {
+  if (document.body.classList.contains("tf-dirty")) window.tfStashDemoData();
+});
+
+/* Promise-based custom confirm modal. Replaces the browser-native confirm()
+   so the dialog matches the trailforge aesthetic (parchment + brass + serif).
+   Returns Promise<boolean> resolving true if user confirmed, false otherwise.
+   opts: { title, en, body, okText, okEn, cancelText, cancelEn } */
+window.tfConfirm = function (opts) {
+  return new Promise((resolve) => {
+    const o = opts || {};
+    const overlay = document.createElement("div");
+    overlay.className = "tf-modal-overlay";
+    overlay.innerHTML = `
+      <div class="tf-modal" role="alertdialog" aria-modal="true" aria-labelledby="tfModalTitle">
+        <div class="tf-modal-stamp" aria-hidden="true">!</div>
+        <h3 id="tfModalTitle" class="tf-modal-title">${(o.title || "請確認").replace(/[<>]/g, "")}</h3>
+        ${o.en ? `<div class="tf-modal-en">${String(o.en).replace(/[<>]/g, "")}</div>` : ""}
+        <p class="tf-modal-body">${(o.body || "").replace(/[<>]/g, "")}</p>
+        <div class="tf-modal-actions">
+          <button type="button" class="tf-modal-btn cancel">${o.cancelText || "取消"}</button>
+          <button type="button" class="tf-modal-btn ok">
+            <span class="tmb-zh">${o.okText || "確定"}</span>
+            ${o.okEn ? `<span class="tmb-en">${o.okEn}</span>` : ""}
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    const finish = (val) => {
+      overlay.classList.remove("show");
+      setTimeout(() => overlay.remove(), 280);
+      document.removeEventListener("keydown", onKey);
+      resolve(val);
+    };
+    overlay.querySelector(".cancel").addEventListener("click", () => finish(false));
+    overlay.querySelector(".ok").addEventListener("click", () => finish(true));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) finish(false); });
+    function onKey(e) {
+      if (e.key === "Escape") finish(false);
+      if (e.key === "Enter")  finish(true);
+    }
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => overlay.querySelector(".ok").focus(), 60);
+  });
+};
+</script>
+<script>
 // Two early-load behaviours:
 //   (1) Mark body[data-jm-context="plan"] when ?plan=<id> is present so CSS
 //       can hide demo-only fixtures (上河驗算, 注意事項 — 玉山-specific).
@@ -1754,10 +3414,18 @@ body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
 </div>
 
 <!-- ==== Language toggle (zh ↔ en) — top-left chip ==== -->
-<button id="jmLangToggle" class="jm-lang-toggle" type="button" aria-label="切換語言 / Switch language" title="切換中文／英文">
+<button id="jmLangToggle" class="jm-lang-toggle" type="button" aria-label="切換語言 / Switch language" title="切換中文／英文" style="color: rgb(244, 237, 220)">
   <span class="jl-zh" data-jl-target="zh">中</span>
   <span class="jl-sep">／</span>
   <span class="jl-en" data-jl-target="en">EN</span>
+</button>
+
+<!-- ==== Save chip — sits next to lang toggle. Visibility tied to edit mode;
+     label follows the current language (中/EN) via the existing lang spans. ==== -->
+<button id="jmSaveChip" class="jm-save-chip" type="button" aria-label="儲存編輯 / Save changes" title="儲存編輯">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="lang-zh">儲存</span>
+  <span class="lang-en">SAVE</span>
 </button>
 
 <a id="dashPill" class="dash-pill" href="dashboard.html" aria-label="我的計劃書 Dashboard">
@@ -1932,15 +3600,40 @@ body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
     <div class="eo-card">
       <div class="eo-head">
         <span class="eo-l">Overview</span>
-        <span class="eo-zh">行程綜覽</span>
+        <span class="eo-zh">地形總覽</span>
+        <label class="eo-auto-return" title="當行程起終點不同、且某天為單向上山時，自動以該天 GPX 倒序作為回程下山路線">
+          <input type="checkbox" id="elev-auto-return" checked>
+          <span class="lang-zh">自動補回程</span><span class="lang-en">Auto return</span>
+        </label>
         <span class="eo-mode-note">規劃模式 · 在此編輯路線、休息點與速度</span>
       </div>
+      <!-- GPX upload/download strip (PR-23) — populated by js/gpx-io.js.
+           Lists every plan-level gpx_ref, lets users upload .gpx (parsed
+           + simplified + persisted into plan.data.gpx_tracks via the
+           same PATCH /api/plans/:id flow as edit.js) or download the
+           current track. Empty when plan has no gpx_refs. -->
+      <div id="gpx-io" class="gpx-io"></div>
       <div class="eo-canvas-wrap"><canvas id="elev-overview-canvas"></canvas></div>
       <div class="eo-legend">
         <span class="eo-leg"><span class="eo-dot ascent"></span>去程 · 攻頂</span>
         <span class="eo-leg"><span class="eo-dot descent"></span>回程 · 下山</span>
         <span class="eo-leg"><span class="eo-dot summit"></span>目標峰</span>
+        <span class="eo-leg eo-leg-reset" style="margin-left:auto;">
+          <button type="button" class="eo-focus-reset" data-action="overview-focus-reset"
+                  title="顯示全程">全程</button>
+        </span>
       </div>
+      <!-- Minimap: full-trip outline with focus highlight rectangle.
+           Hidden when no focus state is active. -->
+      <div class="eo-minimap-wrap">
+        <span class="eo-minimap-lbl">總覽</span>
+        <canvas id="elev-overview-minimap"></canvas>
+      </div>
+      <!-- Unified rest-points list (PR-22): every 上河 segment across the
+           whole trip in one continuous, sortable table. Rendered by
+           js/overview.js, only visible in 規劃模式 (CSS via parent
+           .elev-overview which is itself gated on body[data-jm-mode]). -->
+      <div id="overview-rest-points" class="overview-rest-points"></div>
     </div>
   </div>
 
@@ -1959,26 +3652,37 @@ body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
 <div class="container">
 
   <div class="section">
-    <div class="sec-title">基本資訊</div>
+    <div class="sec-title">緊急通報聯絡</div>
     <div class="info-grid">
-      <div class="info-item"><div class="lb">活動名稱</div><div class="vl">示範行程</div></div>
-      <div class="info-item"><div class="lb">日期</div><div class="vl">示範日期</div></div>
-      <div class="info-item"><div class="lb">天數 / 人數</div><div class="vl">部署前請自行填入</div></div>
       <div class="info-item"><div class="lb">領隊</div><div class="vl">領隊 / 0900-000-002</div></div>
       <div class="info-item"><div class="lb">醫療</div><div class="vl">醫療 / 0900-000-006</div></div>
-      <div class="info-item"><div class="lb">留守</div><div class="vl">留守 A / 0900-000-000<br><small style="color:var(--txtL);">部署前請自行填入</small></div></div>
+      <div class="info-item"><div class="lb">留守</div><div class="vl">留守 A / 0900-000-000</div></div>
       <div class="info-item"><div class="lb">山難管制</div><div class="vl">Day2 19:00</div></div>
       <div class="info-item"><div class="lb">下山通知</div><div class="vl">Day2 17:30</div></div>
     </div>
   </div>
 
   <div class="section">
-    <div class="sec-title">隊員名單</div>
-    <div style="overflow-x:auto;">
-    <table class="tbl">
-      <thead><tr><th>職稱</th><th>姓名</th><th>電話</th><th>緊急聯絡</th></tr></thead>
-      <tbody><tr><td colspan="4" style="text-align:center;color:var(--txtL);padding:18px;">隊員名單為示範資料，部署前請自行填入<br><small>This roster is a placeholder; populate before publishing.</small></td></tr></tbody>
-    </table>
+    <div class="sec-title">隊員資料</div>
+    <div class="member-cards">
+      <article class="member-card">
+        <header class="mc-head">
+          <span class="mc-num">01</span>
+          <h3 class="mc-name">示範隊員</h3>
+          <span class="mc-tag">DEMO</span>
+        </header>
+        <dl class="mc-grid">
+          <div class="mc-row"><dt>姓名</dt><dd>示範隊員</dd></div>
+          <div class="mc-row"><dt>生日</dt><dd>90/09/09</dd></div>
+          <div class="mc-row"><dt>身分證字號</dt><dd>A1######## <small>（部署前填入）</small></dd></div>
+          <div class="mc-row mc-row-wide"><dt>戶籍地址</dt><dd>台北市信義區（地址略）</dd></div>
+          <div class="mc-row"><dt>聯絡電話</dt><dd>09##-###-###</dd></div>
+          <div class="mc-row"><dt>緊急聯絡人</dt><dd>緊急聯絡人 A</dd></div>
+          <div class="mc-row"><dt>關係</dt><dd>親屬</dd></div>
+          <div class="mc-row"><dt>緊急電話</dt><dd>09##-###-###</dd></div>
+        </dl>
+      </article>
+      <p class="mc-hint">隊員資料為示範。請於編輯模式下逐一填入每位隊員的個資；本網頁僅在你的計劃書內保存，不會公開。</p>
     </div>
   </div>
 
@@ -1989,27 +3693,6 @@ body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
 <!-- ==================== TAB 4: 分錢 ==================== -->
 <div class="tab-panel" id="tab-split">
 <div class="container">
-
-  <!-- 排雲山莊價目參考 -->
-  <div class="section">
-    <div class="sec-title">排雲山莊價目表（臨時廚房優惠價）</div>
-    <div class="price-ref">
-      <table>
-        <thead><tr><th>品項</th><th>供餐時間</th><th>定價</th><th>優惠價</th></tr></thead>
-        <tbody>
-          <tr><td>午餐</td><td>11:30–12:30</td><td>$400</td><td>$300</td></tr>
-          <tr><td>晚餐</td><td>17:00–18:30</td><td>$400</td><td>$300</td></tr>
-          <tr><td>早早餐</td><td>1:30–3:30</td><td>$200</td><td>$150</td></tr>
-          <tr><td>早餐</td><td>6:30–7:00</td><td>$200</td><td>$150</td></tr>
-          <tr><td>早午麵食</td><td>8:00–10:00</td><td>$200</td><td>$150</td></tr>
-          <tr><td>羽絨睡袋</td><td>—</td><td>$400</td><td>$400</td></tr>
-        </tbody>
-      </table>
-      <div style="margin-top:6px;color:var(--txtL);font-size:0.72rem;">
-        ⓘ 優惠套餐：睡袋租一晚＋三餐（晚餐＋早餐或早早餐＋麵食）＝定價$1,000 → 優惠 <b>$840</b>。團體12人訂購再免一人。
-      </div>
-    </div>
-  </div>
 
   <!-- 裝備 -->
   <div class="section">
@@ -2058,6 +3741,28 @@ body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
       <tbody id="exp-body"></tbody>
       <tfoot><tr style="font-weight:700;background:#f0fdf4;"><td colspan="3">總支出</td><td class="amt" id="exp-total">$0</td><td></td></tr></tfoot>
     </table>
+    </div>
+  </div>
+
+  <!-- 排雲山莊價目參考 (臨時廚房優惠價) -->
+  <div class="section">
+    <div class="sec-title">排雲山莊價目表（臨時廚房優惠價）</div>
+    <div class="price-ref">
+      <table>
+        <thead><tr><th>品項</th><th>供餐時間</th><th>定價</th><th>優惠價</th></tr></thead>
+        <tbody>
+          <tr><td>午餐</td><td>11:30–12:30</td><td>$400</td><td>$300</td></tr>
+          <tr><td>晚餐</td><td>17:00–18:30</td><td>$400</td><td>$300</td></tr>
+          <tr><td>早早餐</td><td>1:30–3:30</td><td>$200</td><td>$150</td></tr>
+          <tr><td>早餐</td><td>6:30–7:00</td><td>$200</td><td>$150</td></tr>
+          <tr><td>早午麵食</td><td>8:00–10:00</td><td>$200</td><td>$150</td></tr>
+          <tr><td>羽絨睡袋</td><td>—</td><td>$400</td><td>$400</td></tr>
+        </tbody>
+      </table>
+      <div class="price-note">
+        <span style="font-family:var(--mono); letter-spacing:.18em; font-size:.66rem; color:#7a5a1a; text-transform:uppercase;">SET MEAL</span><br>
+        優惠套餐：睡袋租一晚＋三餐（晚餐＋早餐或早早餐＋麵食）＝定價 <b>$1,000</b> → 優惠 <b>$840</b>。團體 12 人訂購再免一人。
+      </div>
     </div>
   </div>
 
@@ -2145,7 +3850,14 @@ function openTab(id){
   panel.classList.add('active');
   document.body.dataset.jmTab = id;
   try{localStorage.setItem('jm_tab',id);}catch(e){}
-  if(id==='split'){try{renderSplit();renderChecklist();}catch(e){console.error(e);}}
+  if(id==='split'){
+    try{renderSplit();}catch(e){console.error('renderSplit',e);}
+    // Defer to gear.js if loaded (handles edit-mode); else legacy view-only.
+    try{
+      if(window.__TF_GEAR__ && window.__TF_GEAR__.render) window.__TF_GEAR__.render();
+      else renderChecklist();
+    }catch(e){console.error('checklist render',e);}
+  }
   if(id==='itin' && window.TF && TF.modeToggle && TF.modeToggle.refreshAll){
     requestAnimationFrame(()=>TF.modeToggle.refreshAll());
   }
@@ -2629,7 +4341,9 @@ function renderSplit(){
   if(sl.innerHTML===''){sl.innerHTML='<div style="text-align:center;color:var(--txtL);font-size:0.85rem;padding:12px;">✅ 所有人已結清！</div>';}
 }
 /* ==== Checklist (gear & notes) ==== */
-const CHECKLIST=[
+// `var` (not const) so gear.js can read AND mutate via window.CHECKLIST when
+// the user edits the list — keeps view/edit modes in sync without forking.
+var CHECKLIST=[
   '登山背包 (30L+)','睡袋 (3℃ 以下)','頭燈＋備用電池','雨衣褲 / 風雨衣',
   '保暖中層（羽絨/化纖）','排汗內層（非棉）','保暖帽＋手套','遮陽帽＋太陽眼鏡',
   '登山杖','登山鞋＋羊毛襪','水壺 2L＋保溫瓶','行動糧（巧克力/堅果）',
@@ -2670,7 +4384,84 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
     const next=document.body.getAttribute('data-jm-lang')==='en'?'zh':'en';
     apply(next);
     try{ localStorage.setItem(KEY, next); }catch(e){}
+    positionLang();
   });
+  // Position the lang toggle to the LEFT of the mode toggle, with an 8px gap.
+  function positionLang(){
+    if(!btn) return;
+    const mode=document.getElementById('jmModeToggle');
+    if(!mode) return;
+    const modeRect=mode.getBoundingClientRect();
+    const vw=document.documentElement.clientWidth;
+    const modeRightOffset=vw-modeRect.right; // distance from viewport right
+    btn.style.right=(modeRightOffset+modeRect.width+8)+'px';
+  }
+  positionLang();
+  window.addEventListener('resize', positionLang);
+  // re-run after fonts/animations settle
+  setTimeout(positionLang, 100);
+  setTimeout(positionLang, 600);
+})();
+
+// === Save chip — sits to the LEFT of the lang toggle, visible only when
+//     body.tf-editing.tf-dirty. Click delegates to the existing #tfEditSave
+//     button so all save logic stays in edit.js (no duplication). ===
+(function initSaveChip(){
+  const saveChip=document.getElementById('jmSaveChip');
+  const lang=document.getElementById('jmLangToggle');
+  if(!saveChip) return;
+  saveChip.addEventListener('click', async ()=>{
+    const token = localStorage.getItem('tf_access_token');
+    const params = new URLSearchParams(location.search);
+    const planId = params.get('plan');
+    const editSave = document.getElementById('tfEditSave');
+
+    // Authenticated personal-plan path: edit.js's full save flow handles auth + API.
+    if (token && planId && editSave && !editSave.disabled) {
+      editSave.click();
+      return;
+    }
+
+    // Otherwise: not logged in (or demo). Show a custom modal that matches
+    // the trailforge aesthetic instead of the browser's native confirm().
+    const isDemo = !planId;
+    const ok = await tfConfirm(isDemo ? {
+      title: '示範頁面 · 無法直接儲存',
+      en: 'Demo · Sign in required',
+      body: '示範頁面只能本地暫存。註冊或登入後即可在你自己的計劃書中保存編輯。',
+      okText: '前往登入', okEn: 'SIGN IN',
+      cancelText: '繼續編輯',
+    } : {
+      title: '需要登入',
+      en: 'Sign in to save',
+      body: '你的登入已過期或尚未登入。系統會先暫存你的變更，登入後將自動還原。',
+      okText: '前往登入', okEn: 'SIGN IN',
+      cancelText: '取消',
+    });
+    if (!ok) return;
+
+    const apiVal = params.get('api');
+    const here = location.pathname + location.search;
+    const qs = new URLSearchParams();
+    if (apiVal) qs.set('api', apiVal);
+    qs.set('next', here);
+    if (window.tfStashDemoData) window.tfStashDemoData();
+    if (window.tfMarkIntentionalNav) window.tfMarkIntentionalNav();
+    location.href = 'auth.html?' + qs.toString();
+  });
+  function positionSave(){
+    if(!lang) return;
+    const r=lang.getBoundingClientRect();
+    const vw=document.documentElement.clientWidth;
+    const langRightOffset=vw-r.right;
+    saveChip.style.right=(langRightOffset+r.width+8)+'px';
+  }
+  positionSave();
+  window.addEventListener('resize', positionSave);
+  setTimeout(positionSave, 200);
+  setTimeout(positionSave, 800);
+  // re-position whenever the body class changes (becomes visible)
+  new MutationObserver(positionSave).observe(document.body, { attributes:true, attributeFilter:['class'] });
 })();
 
 // === Init: restore main tab + day from user's last choice (no auto date lock) ===
@@ -2702,9 +4493,101 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
      because render.js's autoRender() reads window.__JM_GPX__ during render. -->
 <script src="js/elevation.js"></script>
 <script src="js/mode-toggle.js"></script>
+<script src="js/overview.js"></script>
 <script src="render.js"></script>
+<script src="js/day-notes.js"></script>
 <script src="js/outbox.js"></script>
 <script src="js/edit.js"></script>
+<script src="js/contacts.js"></script>
+<script src="js/gear.js"></script>
+<script src="js/gpx-io.js"></script>
 <script src="js/manifest-dynamic.js"></script>
+
+<!-- After modules init: if any of them restored from the demo stash, auto
+     enter edit mode + mark dirty so the user immediately sees the save chip
+     glowing and knows their edits are still here. Runs once. -->
+<script>
+(function () {
+  function maybeResume() {
+    if (!window.__TF_DEMO_RESTORED__) return;
+    // Switch to edit mode via mode-toggle so the segmented chip stays in sync.
+    if (window.TF && window.TF.modeToggle && window.TF.modeToggle.set) {
+      try { window.TF.modeToggle.set("elevation"); } catch (e) {}
+    } else {
+      document.body.classList.add("tf-editing");
+    }
+    if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+    else document.body.classList.add("tf-dirty");
+
+    // Persistent banner — stays until the user dismisses it or saves.
+    showRestoreBanner();
+  }
+
+  // Sticky, dismissable banner anchored to the top of the page. Reads as part
+  // of the chrome (parchment + brass) so it doesn't feel like an alert popup.
+  function showRestoreBanner() {
+    if (document.getElementById("tfRestoreBanner")) return;   // already shown
+    const b = document.createElement("aside");
+    b.id = "tfRestoreBanner";
+    b.innerHTML = `
+      <span class="tr-icon" aria-hidden="true">⏳</span>
+      <span class="tr-msg">
+        <b>已還原上次未儲存的編輯</b>
+        <small>登入並儲存後將上傳到你的計劃書</small>
+      </span>
+      <button type="button" class="tr-btn tr-save">登入並儲存</button>
+      <button type="button" class="tr-dismiss" aria-label="關閉">×</button>
+    `;
+    document.body.appendChild(b);
+    // Slide in
+    requestAnimationFrame(() => b.classList.add("show"));
+    // Wire actions
+    b.querySelector(".tr-save").addEventListener("click", () => {
+      const chip = document.getElementById("jmSaveChip");
+      if (chip) chip.click();
+    });
+    b.querySelector(".tr-dismiss").addEventListener("click", () => {
+      b.classList.remove("show");
+      setTimeout(() => b.remove(), 260);
+    });
+  }
+  // Modules init on DOMContentLoaded; restoration flag is set inside loadFromPlan.
+  // Wait two ticks for everything to settle (render + observers attached).
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => setTimeout(maybeResume, 200));
+  } else {
+    setTimeout(maybeResume, 200);
+  }
+})();
+</script>
+
+<!-- No-auth edit-mode bridge: lets users on the demo URL preview the edit
+     interface without logging in. For personal plans, edit.js sets up
+     window.TF_EDIT and its own bridge — this script then no-ops. -->
+<script>
+(function () {
+  // Skip ONLY when edit.js has installed the full auth-aware version. The
+  // early <body>-stub sets _isStub=true; we must still run the bridge in
+  // that case so demo URL can toggle tf-editing via the segmented control.
+  if (window.TF_EDIT && !window.TF_EDIT._isStub) return;
+  let bridging = false;
+  new MutationObserver(() => {
+    if (bridging) return;
+    const mode = document.body.getAttribute("data-jm-mode") || "checkpoint";
+    const editing = document.body.classList.contains("tf-editing");
+    if (mode === "elevation" && !editing) {
+      bridging = true;
+      document.body.classList.add("tf-editing");
+      document.dispatchEvent(new CustomEvent("tf:edit-enter"));
+      bridging = false;
+    } else if (mode === "checkpoint" && editing) {
+      bridging = true;
+      document.body.classList.remove("tf-editing");
+      document.dispatchEvent(new CustomEvent("tf:edit-exit"));
+      bridging = false;
+    }
+  }).observe(document.body, { attributes: true, attributeFilter: ["data-jm-mode"] });
+})();
+</script>
 </body>
 </html>

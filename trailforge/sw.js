@@ -5,7 +5,7 @@
 //   - Cross-origin API: passthrough, never cache (auth, /api/*)
 //   - POST / non-GET:   never cache
 
-const CACHE = 'trailforge-v19';  // renamed from jademountain-v* — bump invalidates all old caches
+const CACHE = 'trailforge-v45';
 
 // Same-origin assets we want available offline on first install
 const PRECACHE_LOCAL = [
@@ -17,6 +17,14 @@ const PRECACHE_LOCAL = [
   './plan.json',
   './js/elevation.js',
   './js/mode-toggle.js',
+  './js/edit.js',
+  './js/contacts.js',
+  './js/gear.js',
+  './js/overview.js',
+  './js/day-notes.js',
+  './js/outbox.js',
+  './js/gpx-io.js',
+  './js/manifest-dynamic.js',
   './icon-192.png',
   './icon-512.png',
 ];

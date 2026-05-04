@@ -644,10 +644,20 @@ form .submit{animation-delay:.56s}
           if (data.refresh_token) localStorage.setItem("tf_refresh_token", data.refresh_token);
           if (data.user) localStorage.setItem("tf_user", JSON.stringify(data.user));
         }
-        showBanner("ok", "OK", "通行成功。正在前往儀表板…");
-        // After login: always land on dashboard so user can pick a plan.
+        // If the user was redirected here from a 401 during plan editing,
+        // honor ?next=<url> so we land back on the plan with their stashed
+        // edits ready to restore. Otherwise default to dashboard.
+        const next = params.get("next");
         const apiQS = params.get("api") ? "?api=" + encodeURIComponent(params.get("api")) : "";
-        setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 700);
+        let dest;
+        if (next && /^\/[a-zA-Z0-9_\-./?&=%]*$/.test(next)) {
+          dest = next;
+          showBanner("ok", "OK", "通行成功。正在返回原計劃書…");
+        } else {
+          dest = "dashboard.html" + apiQS;
+          showBanner("ok", "OK", "通行成功。正在前往儀表板…");
+        }
+        setTimeout(() => { location.href = dest; }, 700);
       }
     } catch (err) {
       showBanner("err", "NET", `無法連線到 ${API_BASE}。確認後端已啟動且 CORS 允許此網域：${location.origin}`);

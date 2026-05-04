@@ -309,9 +309,22 @@
   //   summitLabel: '排雲山莊',
   //   direction: 'ascent_only' | 'out_and_back',
   // }, ...]
+  // opts.focusRange (optional):
+  //   { dayIdx, lo, hi } — clamp the X-axis to days[dayIdx].gpx[lo..hi]
+  //   The chart still uses the same elevation range for stable Y context,
+  //   but the visible distance window is just that segment. When focusRange
+  //   is set, dimmed-context day labels and other days' fills are skipped
+  //   so the eye lands on the focused segment.
+  // opts.minimap (optional, boolean):
+  //   When true, render a flat 50px-tall minimap variant: full-trip outline
+  //   only, with a translucent highlight rectangle over the focusRange.
+  //   Suppresses axes / labels / summit markers / checkpoints — purely for
+  //   "where in the whole trip am I zoomed to?" navigation.
   function drawOverview(canvas, days, opts) {
     if (!canvas || !Array.isArray(days) || !days.length) return;
     opts = opts || {};
+    const isMinimap = !!opts.minimap;
+    const focusRange = opts.focusRange || null;
     const dpr = window.devicePixelRatio || 1;
     const r = canvas.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
@@ -322,7 +335,9 @@
     ctx.scale(dpr, dpr);
 
     const W = r.width, H = r.height;
-    const pad = { t: 22, r: 14, b: 22, l: 48 };
+    const pad = isMinimap
+      ? { t: 4, r: 8, b: 4, l: 8 }
+      : { t: 32, r: 18, b: 56, l: 52 };
     const gW = W - pad.l - pad.r;
     const gH = H - pad.t - pad.b;
 
@@ -338,23 +353,114 @@
     let runOff = 0;
     perDay.forEach(d => { d.offset = runOff; runOff += d.len; });
 
-    // Combined elevation min/max
+    // ── Focus window: compute the global-distance range we want X-mapped to
+    // span pad.l..pad.l+gW. Without focus, that's [0, totalDist].
+    let focusStartDist = 0, focusEndDist = totalDist;
+    if (focusRange && !isMinimap) {
+      const fd = perDay[focusRange.dayIdx];
+      if (fd) {
+        const lo = Math.max(0, Math.min(fd.cd.length - 1, focusRange.lo));
+        const hi = Math.max(0, Math.min(fd.cd.length - 1, focusRange.hi));
+        if (hi > lo) {
+          focusStartDist = fd.offset + fd.cd[lo];
+          focusEndDist   = fd.offset + fd.cd[hi];
+        }
+      }
+    }
+    const focusSpan = (focusEndDist - focusStartDist) || totalDist;
+
+    // Combined elevation min/max — when focused, only sample within the
+    // focused window so Y axis is sized to the segment of interest.
     let minE = Infinity, maxE = -Infinity;
-    perDay.forEach(d => d.gpx.forEach(p => {
-      if (p[2] < minE) minE = p[2];
-      if (p[2] > maxE) maxE = p[2];
-    }));
+    if (focusRange && !isMinimap) {
+      const fd = perDay[focusRange.dayIdx];
+      if (fd) {
+        const lo = Math.max(0, Math.min(fd.gpx.length - 1, focusRange.lo));
+        const hi = Math.max(0, Math.min(fd.gpx.length - 1, focusRange.hi));
+        for (let i = lo; i <= hi; i++) {
+          const e = fd.gpx[i][2];
+          if (e < minE) minE = e;
+          if (e > maxE) maxE = e;
+        }
+      }
+    }
+    if (!Number.isFinite(minE) || !Number.isFinite(maxE)) {
+      minE = Infinity; maxE = -Infinity;
+      perDay.forEach(d => d.gpx.forEach(p => {
+        if (p[2] < minE) minE = p[2];
+        if (p[2] > maxE) maxE = p[2];
+      }));
+    }
     minE -= 50; maxE += 50;
     const eRange = maxE - minE || 1;
 
     const xOf = (dayObj, sliceIdx) =>
-      pad.l + ((dayObj.offset + dayObj.cd[sliceIdx]) / totalDist) * gW;
+      pad.l + ((dayObj.offset + dayObj.cd[sliceIdx] - focusStartDist) / focusSpan) * gW;
     const yOf = (dayObj, sliceIdx) =>
       pad.t + gH - ((dayObj.gpx[sliceIdx][2] - minE) / eRange) * gH;
 
     // Background
     ctx.fillStyle = '#fdf9ee';
     ctx.fillRect(0, 0, W, H);
+
+    // ── Minimap variant: flat full-trip outline + focus highlight rect.
+    // Bails out before any of the heavyweight axes / labels / summit
+    // markers / checkpoints; minimap is purely navigational.
+    if (isMinimap) {
+      // Simple combined area chart, no day-split colours.
+      ctx.beginPath();
+      ctx.moveTo(pad.l, pad.t + gH);
+      perDay.forEach(d => {
+        for (let i = 0; i < d.gpx.length; i++) ctx.lineTo(xOf(d, i), yOf(d, i));
+      });
+      ctx.lineTo(pad.l + gW, pad.t + gH);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(30,58,26,0.18)';
+      ctx.fill();
+      // Outline
+      ctx.beginPath();
+      let firstPt = true;
+      perDay.forEach(d => {
+        for (let i = 0; i < d.gpx.length; i++) {
+          if (firstPt) { ctx.moveTo(xOf(d, i), yOf(d, i)); firstPt = false; }
+          else ctx.lineTo(xOf(d, i), yOf(d, i));
+        }
+      });
+      ctx.lineWidth = 1.25;
+      ctx.strokeStyle = '#1e3a1a';
+      ctx.stroke();
+      // Day boundaries — thin dashed
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(110,83,22,0.55)';
+      ctx.lineWidth = 0.8;
+      perDay.forEach((d, k) => {
+        if (k === 0) return;
+        const bx = pad.l + (d.offset / totalDist) * gW;
+        ctx.beginPath();
+        ctx.moveTo(bx, pad.t);
+        ctx.lineTo(bx, pad.t + gH);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      // Focus highlight rectangle
+      if (focusRange) {
+        const fd = perDay[focusRange.dayIdx];
+        if (fd) {
+          const lo = Math.max(0, Math.min(fd.gpx.length - 1, focusRange.lo));
+          const hi = Math.max(0, Math.min(fd.gpx.length - 1, focusRange.hi));
+          if (hi > lo) {
+            const x1 = pad.l + ((fd.offset + fd.cd[lo]) / totalDist) * gW;
+            const x2 = pad.l + ((fd.offset + fd.cd[hi]) / totalDist) * gW;
+            ctx.fillStyle = 'rgba(168,128,44,0.32)';
+            ctx.fillRect(x1, pad.t, Math.max(2, x2 - x1), gH);
+            ctx.strokeStyle = '#a8802c';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x1, pad.t, Math.max(2, x2 - x1), gH);
+          }
+        }
+      }
+      return;
+    }
 
     // Y-grid + elevation labels
     ctx.strokeStyle = 'rgba(42,36,24,0.10)';
@@ -423,8 +529,10 @@
         ctx.stroke();
       }
 
-      // Summit marker
-      if (typeof d.summitIdx === 'number' && d.summitIdx >= 0 && d.summitIdx < d.gpx.length) {
+      // Summit marker — only when we have a label (a peak worth naming).
+      // Synthetic/descent-only days set summitIdx=0 to drive zone colours
+      // but don't want a dot at the start.
+      if (d.summitLabel && typeof d.summitIdx === 'number' && d.summitIdx >= 0 && d.summitIdx < d.gpx.length) {
         const sx = xOf(d, d.summitIdx);
         const sy = yOf(d, d.summitIdx);
         ctx.beginPath();
@@ -443,6 +551,62 @@
           ctx.textAlign = 'center';
           ctx.fillText('▲ ' + d.summitLabel, sx, sy - 9);
         }
+      }
+
+      // Per-segment checkpoint markers — every segment endpoint becomes a
+      // labelled tick. We collect unique gpx indices from segment.anchor_idx
+      // and build a name map from segment.from / segment.to so we can draw
+      // each checkpoint exactly once with the correct station name.
+      // Skip indices that coincide with the summit (already marked above).
+      // Also skip names listed in d._suppressCheckpointNames — used by the
+      // cross-day dedupe pass below to avoid drawing e.g. 排雲山莊 twice
+      // when it appears as Day N's last stop AND Day N+1's first stop.
+      if (Array.isArray(d.segments) && d.segments.length) {
+        const cpMap = new Map(); // idx -> name
+        d.segments.forEach(s => {
+          const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+          if (ai.length >= 2) {
+            if (s.from && !cpMap.has(ai[0])) cpMap.set(ai[0], s.from);
+            if (s.to   && !cpMap.has(ai[1])) cpMap.set(ai[1], s.to);
+          }
+        });
+        const suppress = d._suppressCheckpointNames || new Set();
+        // Sort so labels render left → right (helps stagger placement)
+        const cps = [...cpMap.entries()]
+          .filter(([idx]) => idx >= 0 && idx < d.gpx.length)
+          .filter(([idx]) => idx !== d.summitIdx)
+          .filter(([, name]) => !suppress.has(name))
+          .sort((a, b) => a[0] - b[0]);
+
+        ctx.font = '600 9px "Noto Serif TC", serif';
+        cps.forEach(([idx, name], i) => {
+          const cx = xOf(d, idx);
+          const cy = yOf(d, idx);
+          // Tick — small dark green dot ringed in cream
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#fdf9ee';
+          ctx.fill();
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = '#1e3a1a';
+          ctx.stroke();
+          // Drop line down to baseline so checkpoint reads as a station
+          ctx.setLineDash([2, 3]);
+          ctx.lineWidth = 0.7;
+          ctx.strokeStyle = 'rgba(30,58,26,0.35)';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy + 4);
+          ctx.lineTo(cx, pad.t + gH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          // Label — all labels live on the X-axis (below the chart) so
+          // the elevation profile itself stays clean. Stagger two rows
+          // to reduce collision when checkpoints sit close together.
+          ctx.fillStyle = '#0a1a06';
+          ctx.textAlign = 'center';
+          const rowY = (i % 2 === 0) ? (pad.t + gH + 13) : (pad.t + gH + 25);
+          ctx.fillText(name, cx, rowY);
+        });
       }
     });
 
@@ -474,13 +638,14 @@
       }
     });
 
-    // X-axis distance scale
+    // X-axis distance scale — sits below the two checkpoint-label rows
+    // (rows are at +13 and +25; km labels live at +40).
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#7a7468';
     ctx.textAlign = 'left';
-    ctx.fillText('0', pad.l, pad.t + gH + 13);
+    ctx.fillText('0', pad.l, pad.t + gH + 40);
     ctx.textAlign = 'right';
-    ctx.fillText((totalDist / 1000).toFixed(1) + ' km', pad.l + gW, pad.t + gH + 13);
+    ctx.fillText((totalDist / 1000).toFixed(1) + ' km', pad.l + gW, pad.t + gH + 40);
   }
 
   TF.elevation = {
