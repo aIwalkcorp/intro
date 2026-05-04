@@ -418,6 +418,22 @@
     try { renderHeader(plan); }     catch (e) { console.error('renderHeader failed', e); }
     try { renderDayBar(plan); }     catch (e) { console.error('renderDayBar failed', e); }
     try { renderDayPanels(plan); }  catch (e) { console.error('renderDayPanels failed', e); showFallback(e); }
+    // Activate a day panel. The bootstrap in index.html calls switchDayTab('d0')
+    // before personal-plan panels exist in the DOM (autoRender → fetchAndRender
+    // is async), and personal plans may not have a 'd0' (e.g. single-day trips
+    // that start at id 'd1'). Pick saved-day if it still matches an existing
+    // panel, otherwise fall back to the first day in the plan.
+    try {
+      if (typeof window.switchDayTab === 'function') {
+        const days = plan.days || [];
+        if (days.length) {
+          let savedDay = null;
+          try { savedDay = localStorage.getItem('jm_day'); } catch (e) {}
+          const valid = savedDay && days.some(d => d.id === savedDay);
+          window.switchDayTab(valid ? savedDay : days[0].id, false);
+        }
+      }
+    } catch (e) { console.error('post-render switchDayTab failed', e); }
     if (typeof window.lucide !== 'undefined' && lucide.createIcons) {
       try { lucide.createIcons(); } catch (e) {}
     }
