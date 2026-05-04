@@ -22,12 +22,14 @@ primary_region = "sin"   # Singapore — co-located with Neon ap-southeast-1; ~3
 [http_service]
   internal_port = 4100
   force_https = true
-  # Keep one machine always running so login/register doesn't pay cold-start
-  # latency (~400ms-1s) on every first request. shared-cpu-1x ~$2-3/month.
-  # Burst still scales up via auto_start; idle machines past min suspend.
+  # Cost-saving default: scale to zero when idle. First request after suspend
+  # pays ~400ms-1s cold start. The frontend mitigates this by firing a
+  # /healthz prefetch on auth.html load, so by submit time the machine is hot.
+  # Bump min_machines_running to 1 (~$3-5/mo extra) once user volume warrants
+  # always-on. See trailforge/api/PERFORMANCE.md for the trade-off + steps.
   auto_stop_machines = "suspend"
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
 
   [http_service.concurrency]
     type = "requests"
