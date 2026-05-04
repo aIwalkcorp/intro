@@ -22,9 +22,12 @@ primary_region = "sin"   # Singapore — co-located with Neon ap-southeast-1; ~3
 [http_service]
   internal_port = 4100
   force_https = true
-  auto_stop_machines = "suspend"   # scale to zero when idle (Fly Machines V2)
+  # Keep one machine always running so login/register doesn't pay cold-start
+  # latency (~400ms-1s) on every first request. shared-cpu-1x ~$2-3/month.
+  # Burst still scales up via auto_start; idle machines past min suspend.
+  auto_stop_machines = "suspend"
   auto_start_machines = true
-  min_machines_running = 0          # raise to 2 once you want HA always-on
+  min_machines_running = 1
 
   [http_service.concurrency]
     type = "requests"

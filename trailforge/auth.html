@@ -10,6 +10,10 @@
 <link rel="apple-touch-icon" href="icon-192.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Open TLS connection to the API on page load so login submit doesn't pay
+     handshake latency on top of password hashing. -->
+<link rel="preconnect" href="https://trailforge-api.fly.dev" crossorigin>
+<link rel="dns-prefetch" href="https://trailforge-api.fly.dev">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -527,6 +531,16 @@ form .submit{animation-delay:.56s}
   const params = new URLSearchParams(location.search);
   const API_BASE = (params.get("api") || DEFAULT_API).replace(/\/+$/, "");
   document.getElementById("api-host").textContent = API_BASE.replace(/^https?:\/\//, "");
+
+  // Warm-up: ping /healthz immediately on page load. By the time the user
+  // finishes typing email + password, the Fly machine is awake (if it was
+  // suspended), the TLS handshake is done, and the DB connection is hot.
+  // Fire-and-forget; we don't care about the response.
+  try {
+    fetch(API_BASE + "/healthz", {
+      method: "GET", mode: "cors", credentials: "omit", cache: "no-store",
+    }).catch(() => {});
+  } catch (e) {}
 
   // ---------- Permit ref + clock ----------
   const refEl = document.getElementById("ref-no");
