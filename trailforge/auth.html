@@ -60,7 +60,23 @@ body{
   padding:22px 36px;
   border-bottom:1px solid rgba(42,36,24,0.18);
 }
-.bar .brand{display:flex;align-items:center;gap:14px;font-family:var(--display);font-weight:700;font-size:1.18rem;color:var(--pri-deep);letter-spacing:.01em}
+.bar .brand{display:flex;align-items:center;gap:14px;color:var(--pri-deep)}
+.bar .brand-stack{display:flex;flex-direction:column;gap:2px;line-height:1.1}
+.bar .brand-name{font-family:var(--display);font-weight:700;font-size:1.18rem;letter-spacing:.01em}
+.bar .brand-attrib{
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.22em;
+  color:var(--ink-soft); text-transform:uppercase;
+  text-decoration:none;
+  display:inline-flex; align-items:center; gap:6px;
+  transition:color .2s ease;
+}
+.bar .brand-attrib:hover{ color:var(--pri-deep) }
+.bar .brand-attrib .ba-i{ font-family:"Times New Roman", Georgia, serif; font-style:italic; text-transform:none; }
+.bar .brand-attrib .ba-zh{ font-family:var(--serif); font-weight:500; font-size:.66rem; letter-spacing:.16em; text-transform:none; }
+.bar .brand-attrib .ba-sep{ opacity:.45 }
+@media (max-width:540px){
+  .bar .brand-attrib .ba-zh, .bar .brand-attrib .ba-sep{ display:none }
+}
 .bar .brand .glyph{
   width:34px;height:34px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%, var(--gold-l), var(--gold-deep) 75%);
@@ -133,17 +149,29 @@ body{
 .coords .val{font-family:var(--display);font-weight:700;font-size:1.1rem;color:var(--pri-deep);font-feature-settings:"tnum"}
 .coords .val small{display:block;font-family:var(--mono);font-weight:400;font-size:.66rem;color:var(--ink-soft);letter-spacing:.1em;margin-top:4px}
 
+/* Seal link — the stamp is the button; an inline left-pointing arrow on the
+   right side reads as "click that stamp ←". */
+.seal-link{
+  position:absolute; bottom:48px; left:56px;
+  display:flex; align-items:center; gap:20px;
+  text-decoration:none; color:inherit;
+  cursor:pointer;
+}
 .seal{
-  position:absolute; bottom:60px; left:56px;
-  width:128px; height:128px; border-radius:50%;
+  position:relative;
+  width:128px; height:128px; border-radius:50%; flex:none;
   border:2px solid var(--crimson);
   display:flex; align-items:center; justify-content:center;
   text-align:center;
   color:var(--crimson);
   font-family:var(--serif); font-weight:700;
   transform: rotate(-9deg);
-  opacity:.78;
+  opacity:.85;
   background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.08), transparent 60%);
+  transition:
+    transform .35s cubic-bezier(.2,.7,.2,1),
+    opacity .25s ease,
+    box-shadow .3s ease;
 }
 .seal::before{
   content:""; position:absolute; inset:7px; border-radius:50%; border:1px solid var(--crimson);
@@ -151,6 +179,55 @@ body{
 .seal .sealtxt{font-size:.78rem; letter-spacing:.18em; line-height:1.4; padding:0 12px}
 .seal .sealtxt b{display:block;font-size:1.4rem;letter-spacing:.05em;margin-bottom:2px}
 .seal .yr{position:absolute;bottom:14px;font-family:var(--mono);font-size:.56rem;letter-spacing:.3em;font-weight:600}
+
+.seal-cta{
+  display:flex; align-items:center; gap:14px;
+  color:var(--crimson);
+}
+.seal-cta-arrow{
+  width:56px; height:18px; flex:none;
+  color:var(--crimson);
+  animation: seal-arrow-nudge 1.8s ease-in-out 2.4s infinite;
+}
+@keyframes seal-arrow-nudge{
+  0%, 100% { transform: translateX(0)    }
+  50%      { transform: translateX(-7px) }
+}
+.seal-cta-text{
+  display:flex; flex-direction:column; gap:4px;
+  font-family:var(--serif);
+}
+.seal-cta-zh{
+  font-weight:700; font-size:1.02rem; letter-spacing:.18em;
+}
+.seal-cta-en{
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.34em;
+  text-transform:uppercase; color:rgba(139,42,31,.72);
+}
+
+/* Hover: the stamp commits — pulse stops, stamp lifts, ink shadow blooms. */
+.seal-link:hover .seal{
+  transform: rotate(-3deg) scale(1.08);
+  opacity:1;
+  box-shadow:
+    0 8px 26px -10px rgba(139,42,31,.55),
+    0 0 0 1px rgba(139,42,31,.25);
+}
+.seal-link:hover .seal-cta-arrow{ animation:none; transform: translateX(-4px); transition:transform .25s ease }
+.seal-link:hover .seal-cta-en{ color:var(--crimson) }
+.seal-link:focus-visible{ outline:none }
+.seal-link:focus-visible .seal{
+  opacity:1; box-shadow:0 0 0 3px rgba(139,42,31,.3);
+}
+.seal-link:active .seal{ transform: rotate(-9deg) scale(.97) }
+
+@media (max-height: 760px){ .seal-link{ display:none } }
+@media (max-width: 880px){
+  .seal-link{ position:static; margin-top:32px; bottom:auto; left:auto; }
+}
+@media (prefers-reduced-motion: reduce){
+  .seal-cta-arrow{ animation:none }
+}
 @media (max-height: 760px){.seal{display:none}}
 
 /* ============ RIGHT: PERMIT FORM ============ */
@@ -294,7 +371,7 @@ form[data-mode="register"] .field[data-mode="login-only"]{display:none}
 
 /* ============ INTRO ANIMATION ============ */
 @keyframes rise { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
-@keyframes seal-stamp { 0%{opacity:0; transform:rotate(-9deg) scale(1.4)} 60%{opacity:.95; transform:rotate(-9deg) scale(.92)} 100%{opacity:.78; transform:rotate(-9deg) scale(1)} }
+@keyframes seal-stamp { 0%{opacity:0; transform:rotate(-9deg) scale(1.4)} 60%{opacity:1; transform:rotate(-9deg) scale(.92)} 100%{opacity:.85; transform:rotate(-9deg) scale(1)} }
 .lore .kicker, .lore h1, .lore .lede, .coords{opacity:0; animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
 .lore h1{animation-delay:.05s}
 .lore .lede{animation-delay:.18s}
@@ -325,7 +402,15 @@ form .submit{animation-delay:.56s}
 <header class="bar">
   <div class="brand">
     <span class="glyph" aria-hidden="true"></span>
-    <span>Trailforge</span>
+    <div class="brand-stack">
+      <span class="brand-name">Trailforge</span>
+      <a class="brand-attrib" href="https://aiwalkcorp.com/" rel="noopener"
+         title="Operated by aIwalk Corp · 智意行科技維運">
+        <span class="ba-en">An a<span class="ba-i">I</span>walk product</span>
+        <span class="ba-sep" aria-hidden="true">・</span>
+        <span class="ba-zh">由 智意行科技 維運</span>
+      </a>
+    </div>
   </div>
   <div class="meta">FORM&nbsp;<b>TF-001</b>&nbsp;・&nbsp;山徑通行證 · ISSUE 2026</div>
 </header>
@@ -359,10 +444,23 @@ form .submit{animation-delay:.56s}
       </div>
     </div>
 
-    <div class="seal" aria-hidden="true">
-      <div class="sealtxt"><b>通行</b>TRAIL<br>PERMIT</div>
-      <div class="yr">MMXXVI</div>
-    </div>
+    <a class="seal-link" href="index.html" aria-label="開啟玉山示範計劃書">
+      <span class="seal" aria-hidden="true">
+        <span class="sealtxt"><b>通行</b>TRAIL<br>PERMIT</span>
+        <span class="yr">MMXXVI</span>
+      </span>
+      <span class="seal-cta" aria-hidden="true">
+        <svg class="seal-cta-arrow" viewBox="0 0 56 18">
+          <path d="M54,9 L8,9 M14,3 L8,9 L14,15"
+                fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="seal-cta-text">
+          <span class="seal-cta-zh">點 此 ・ 看 玉山 範本</span>
+          <span class="seal-cta-en">Click the stamp · view demo</span>
+        </span>
+      </span>
+    </a>
   </section>
 
   <!-- RIGHT -->
@@ -415,7 +513,6 @@ form .submit{animation-delay:.56s}
 
       <div class="foot">
         <span>API · <span id="api-host">trailforge-api.fly.dev</span></span>
-        <a href="./" id="back-link">← 回到計劃書</a>
       </div>
     </form>
   </section>

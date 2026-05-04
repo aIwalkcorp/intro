@@ -1,10 +1,10 @@
 # Fly.io config for Trailforge API.
 # Create the app once:
-#   cd intro/jademountain
+#   cd intro/trailforge
 #   fly launch --no-deploy --copy-config --name trailforge-api --region nrt
 # Set secrets (DATABASE_URL, JWT_SECRET, ANTHROPIC_API_KEY) before first deploy:
 #   fly secrets set DATABASE_URL=... JWT_SECRET=... ANTHROPIC_API_KEY=...
-# Deploy from the jademountain/ directory (the Dockerfile context is jademountain/, not api/):
+# Deploy from the trailforge/ directory (the Dockerfile context is trailforge/, not api/):
 #   fly deploy --dockerfile api/Dockerfile
 
 app = "trailforge-api"

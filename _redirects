@@ -1,0 +1,3 @@
+# Cloudflare Pages redirects.
+# Folder rename: jademountain/ → trailforge/. Keep old share links + PWA installs working.
+/jademountain/*  /trailforge/:splat  301

@@ -45,10 +45,10 @@ curl localhost:4100/healthz
 
 ## Build + run via Docker
 
-The build context is `intro/jademountain/` (so the container can `COPY skill/`):
+The build context is `intro/trailforge/` (so the container can `COPY skill/`):
 
 ```bash
-cd intro/jademountain
+cd intro/trailforge
 docker build -t trailforge-api -f api/Dockerfile .
 docker run --rm -p 4100:4100 --env-file api/.env trailforge-api
 ```

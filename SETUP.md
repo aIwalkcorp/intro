@@ -12,14 +12,14 @@ PWA 安裝過後，舊的 Service Worker 會繼續服務快取裡的舊 JS / CSS
 
 **完整清掉一次**：
 
-1. 打開 `https://aiwalkcorp.com/jademountain/?plan=<某 id>`
+1. 打開 `https://aiwalkcorp.com/trailforge/?plan=<某 id>`
 2. F12 → **Application** 分頁
-3. 左側 **Service Workers** → 找到 `jademountain` → 點 **Unregister**
+3. 左側 **Service Workers** → 找到 `trailforge` → 點 **Unregister**
 4. 左側 **Storage** → 最上方 **Clear site data**
 5. **Ctrl+Shift+R** 強制重整（繞過 HTTP cache）
 
 之後新版 SW 接管，所有靜態資源（HTML / CSS / JS / icon）回到最新。
-**只要做一次**，之後 SW 自己會跟著 cache version 升級（`sw.js` 裡的 `CACHE = 'jademountain-vN'` 每次有重大改動就會 bump，自動清舊 cache）。
+**只要做一次**，之後 SW 自己會跟著 cache version 升級（`sw.js` 裡的 `CACHE = 'trailforge-vN'` 每次有重大改動就會 bump，自動清舊 cache）。
 
 iOS Safari 沒有「Unregister SW」UI → 解除 PWA 安裝再重新加入主畫面就行。
 
@@ -59,10 +59,10 @@ fly auth whoami         # 確認帳號是 chatgpt420230901@gmail.com
 
 **在舊電腦跑**：
 ```bash
-cat /home/ntk/exo/ExoPulse/intro/jademountain/api/.env
+cat /home/ntk/exo/ExoPulse/intro/trailforge/api/.env
 ```
 
-把整段輸出複製，貼到新電腦的 `intro/jademountain/api/.env`。
+把整段輸出複製，貼到新電腦的 `intro/trailforge/api/.env`。
 
 ⚠️ **`JWT_SECRET` 必須與 prod 一致**（也就是跟舊電腦一致）。否則本地 API 簽出的 token 換到 prod 就 invalid，反之亦然。
    - 要重 generate `JWT_SECRET` 等於要強迫所有用戶重登，prod 跟本地都要同步。
@@ -72,7 +72,7 @@ cat /home/ntk/exo/ExoPulse/intro/jademountain/api/.env
 ### 安裝 + 啟動
 
 ```bash
-cd jademountain/api
+cd trailforge/api
 bun install                      # 裝後端依賴
 
 # 本地預覽（兩個 terminal 各跑一個）：
@@ -83,7 +83,7 @@ cd ../.. && python3 -m http.server 8765   # 前端靜態 @ 8765
 ### 本地預覽 URL
 
 ```
-http://localhost:8765/jademountain/dashboard.html?api=http://localhost:4100
+http://localhost:8765/trailforge/dashboard.html?api=http://localhost:4100
 ```
 
 `?api=http://localhost:4100` 是必要的 — 沒帶就會打到 prod fly.dev，被 CORS 擋。

@@ -29,7 +29,7 @@ Save it — you'll set it as a Fly secret in step 4.
 
 ## 3. Run migrations against Neon
 
-From `intro/jademountain/api/`:
+From `intro/trailforge/api/`:
 
 ```bash
 cp .env.example .env
@@ -53,8 +53,8 @@ curl -L https://fly.io/install.sh | sh
 # Auth
 fly auth login
 
-# From intro/jademountain/, NOT from api/ (Dockerfile context is jademountain/)
-cd intro/jademountain
+# From intro/trailforge/, NOT from api/ (Dockerfile context is trailforge/)
+cd intro/trailforge
 fly launch --no-deploy --copy-config --name trailforge-api --region nrt
 ```
 
@@ -95,7 +95,7 @@ Add the shown CNAME / A / AAAA records at your DNS provider (Cloudflare etc.). C
 
 ## 6. Frontend points at the API
 
-In `intro/jademountain/render.js` (or wherever the API base URL lives), set:
+In `intro/trailforge/render.js` (or wherever the API base URL lives), set:
 
 ```js
 const API_BASE = "https://trailforge.aiwalkcorp.com";   // or trailforge-api.fly.dev pre-DNS
@@ -123,7 +123,7 @@ const API_BASE = "https://trailforge.aiwalkcorp.com";   // or trailforge-api.fly
 ## 9. Local development
 
 ```bash
-cd intro/jademountain/api
+cd intro/trailforge/api
 cp .env.example .env   # fill DATABASE_URL pointing to Neon dev branch (or local Postgres)
 bun install
 bun run db:migrate     # apply schema

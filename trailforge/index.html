@@ -80,7 +80,7 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
 /* Header — editorial masthead */
 .hdr{
   position:sticky;top:0;z-index:1000;
-  color:#f5ecd6;padding:18px 18px 14px;text-align:center;
+  color:#f5ecd6;padding:18px 100px 14px;text-align:center;  /* symmetric padding clears top-left lang chip + top-right chip rail */
   background:
     linear-gradient(180deg,rgba(13,31,10,.92),rgba(13,31,10,.82)),
     radial-gradient(600px 200px at 50% 120%,rgba(184,134,59,.35),transparent 70%),
@@ -115,6 +115,7 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
   .hdr{
     text-align:left;
     padding:14px 14px 12px;
+    padding-left:60px;     /* reserve space for top-left lang chip */
     padding-right:130px;   /* reserve space for top-right FAB rail */
   }
   .hdr h1{
@@ -590,14 +591,41 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 .tl-anchor.running::before{content:"⏱";animation:etaPulse 2s ease-in-out infinite;}
 .tl-anchor.paused-chip{background:linear-gradient(135deg,#92400e,#d97706);color:#fff;border-style:solid;border-color:#b45309;font-family:var(--mono);}
 .tl-anchor.paused-chip::before{content:"⏸";}
+
+/* Inline tracker controls (play/pause + reset). Only rendered on the active
+   anchor row when tracker is non-idle. Replaces the old bottom-right HUD. */
+.tl-trk-ctrls{
+  display:inline-flex; gap:6px; align-items:center;
+  margin-left:6px; vertical-align:middle;
+}
+.tl-trk-btn{
+  appearance:none; cursor:pointer; flex:none;
+  width:30px; height:30px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid rgba(0,0,0,.10);
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.tl-trk-btn svg{ width:13px; height:13px; fill:currentColor; }
+.tl-trk-btn.play{
+  background:linear-gradient(180deg,#e6c98a,#b8863b);
+  color:#1a1a1a;
+  box-shadow:0 3px 8px -2px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.tl-trk-btn.reset{
+  background:rgba(255,255,255,.7);
+  color:#5a4d2a;
+  box-shadow:0 1px 4px rgba(0,0,0,.10);
+}
+.tl-trk-btn:hover{ transform:scale(1.06); }
+.tl-trk-btn:active{ transform:scale(.94); }
 .tl-i.is-next{border-color:#fca5a5;box-shadow:0 0 0 2px rgba(252,165,165,.25),var(--shadow-1);}
 .tl-i.is-past{opacity:.55;}
 .tl-i.is-past .tl-t{color:var(--txtL);}
 
-/* Floating HUD — NOW + tracker controls */
+/* Floating HUD — NOW jump + delay indicator (play/reset moved inline to active row) */
 .nowbtn{
   position:fixed;right:14px;bottom:18px;z-index:1200;
-  display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;
+  display:inline-flex;align-items:center;gap:8px;padding:6px 12px;
   border-radius:999px;border:1px solid rgba(230,201,138,.2);
   background:linear-gradient(135deg,#1e3a1a,#0d1f0a);color:#f5ecd6;
   font-family:var(--sans);font-weight:800;font-size:.78rem;letter-spacing:.05em;
@@ -605,17 +633,6 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 }
 .nowbtn.running{border-color:rgba(134,239,172,.45);}
 .nowbtn.paused{border-color:rgba(252,211,77,.5);}
-.nowbtn .nb-ctrl{
-  width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;flex:none;
-  display:inline-flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#e6c98a,#b8863b);color:#1a1a1a;
-  box-shadow:0 3px 8px -2px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.35);
-  transition:transform .15s;
-}
-.nowbtn .nb-ctrl:hover{transform:scale(1.08);}
-.nowbtn .nb-ctrl:active{transform:scale(.92);}
-.nowbtn .nb-ctrl.ghost{background:rgba(255,255,255,.06);color:#f5ecd6;border:1px solid rgba(245,236,214,.22);width:26px;height:26px;}
-.nowbtn .nb-ctrl svg{width:12px;height:12px;fill:currentColor;}
 .nowbtn .nb-jump{
   display:inline-flex;flex-direction:column;line-height:1.05;cursor:pointer;
   padding:2px 4px;align-items:center;
@@ -787,9 +804,6 @@ body[data-jm-mode="elevation"]  .jm-mode-toggle button[data-target-mode="elevati
 @media (display-mode: standalone){
   .jm-mode-toggle button .mt-lbl-web{display:none;}
   .jm-mode-toggle button .mt-lbl-pwa{display:inline;}
-  /* In standalone PWA there's no parent browser context to go back to —
-     hide the aIwalk back link entirely. */
-  .aiwalk-back{display:none !important;}
 }
 .jm-mode-toggle .mt-ink{
   position:absolute; top:2px; bottom:2px; left:2px;
@@ -1327,37 +1341,46 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 .pwa-install-btn:hover { background: linear-gradient(135deg, #3a5644, #283530); }
 .pwa-install-btn:active { transform: translateY(1px); }
 .pwa-install-btn svg { width: 16px; height: 16px; }
-.aiwalk-back {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  left: calc(env(safe-area-inset-left, 0px) + 10px);
-  z-index: 1300;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px 6px 9px;
-  font-family: -apple-system, "Noto Sans TC", sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: #1f2a24;
-  text-decoration: none;
-  background: rgba(245, 236, 214, 0.82);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-  backdrop-filter: blur(10px) saturate(150%);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 999px;
-  box-shadow: 0 2px 10px rgba(60, 50, 30, 0.10);
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+/* ==== Language toggle (zh ↔ en) — top-right, sits directly below the
+   mode toggle (檢視 / 編輯) so the two segmented chips form one visual stack. */
+.jm-lang-toggle{
+  position:fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 92px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  z-index:1300;
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 10px;
+  font-family:var(--serif), "Noto Sans TC", sans-serif;
+  font-size:.66rem; font-weight:700; letter-spacing:.18em;
+  color:#f5ecd6; cursor:pointer;
+  background:linear-gradient(180deg, #1f3a23 0%, #122118 100%);
+  border:1px solid rgba(168,128,44,0.45);
+  border-radius:999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,213,138,0.18),
+    0 4px 14px rgba(10,26,6,0.30),
+    0 1px 3px rgba(0,0,0,0.20);
+  transition: transform .2s ease, box-shadow .2s ease;
+  animation:jmtIn .55s cubic-bezier(.2,.7,.2,1) .25s both;
 }
-.aiwalk-back:hover { background: rgba(255, 255, 255, 0.95); transform: translateX(-2px); box-shadow: 0 3px 14px rgba(60, 50, 30, 0.18); }
-.aiwalk-back:active { transform: translateX(-3px) scale(0.96); }
-.aiwalk-back svg { width: 12px; height: 12px; opacity: 0.85; }
-.aiwalk-back .aw-mark { font-weight: 700; letter-spacing: 0; }
-.aiwalk-back .aw-mark .aw-i { font-family: "Times New Roman", Georgia, serif; font-style: italic; }
-@media (max-width: 380px) {
-  .aiwalk-back .aw-back-text { display: none; }
+.jm-lang-toggle:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,213,138,0.22),
+    0 6px 18px rgba(10,26,6,0.38),
+    0 1px 3px rgba(0,0,0,0.22);
 }
+.jm-lang-toggle:active{ transform: scale(.96); }
+.jm-lang-toggle .jl-sep{ opacity:.4; font-weight:400; padding:0 2px }
+.jm-lang-toggle [data-jl-target]{ opacity:.5; color:rgba(245,236,214,.65); transition: opacity .2s ease, color .2s ease; }
+body[data-jm-lang="zh"] .jm-lang-toggle [data-jl-target="zh"],
+body[data-jm-lang="en"] .jm-lang-toggle [data-jl-target="en"]{
+  opacity:1; color:var(--gold-l, #ffd58a);
+}
+
+/* Apply language: hide the spans for the inactive language. Default zh. */
+body[data-jm-lang="en"] .lang-zh{ display:none !important; }
+body:not([data-jm-lang="en"]) .lang-en{ display:none !important; }
 /* ==== Dashboard pill — visible when logged in, sits LEFT of permit chip ==== */
 .dash-pill {
   position: fixed;
@@ -1422,7 +1445,7 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .dash-pill { padding: 6px 12px 6px 9px; }
 }
 
-/* ==== Permit chip (auth entry) — top-right mirror of .aiwalk-back ==== */
+/* ==== Permit chip (auth entry) — top-right ==== */
 .permit-chip {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
@@ -1698,17 +1721,17 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 
 <!-- Global mode toggle: 打卡 ⇄ 海拔 (floats above .fab-stack) -->
 <div id="jmModeToggle" class="jm-mode-toggle" role="tablist" aria-label="行程模式">
-  <button type="button" data-target-mode="checkpoint" role="tab" aria-selected="true" title="出發模式 — 行程時間軸 + 打卡追蹤">
+  <button type="button" data-target-mode="checkpoint" role="tab" aria-selected="true" title="檢視模式 — 行程時間軸 + 打卡追蹤 / View — itinerary timeline + check-in">
     <span class="mt-icon">🥾</span>
-    <span class="mt-lbl mt-lbl-web">出發</span>
+    <span class="mt-lbl mt-lbl-web"><span class="lang-zh">檢視</span><span class="lang-en">View</span></span>
     <span class="mt-lbl mt-lbl-pwa">TIME</span>
-    <span class="mt-en">Use</span>
+    <span class="mt-en">View</span>
   </button>
-  <button type="button" data-target-mode="elevation" role="tab" aria-selected="false" title="規劃模式 — 編輯路線與速度">
+  <button type="button" data-target-mode="elevation" role="tab" aria-selected="false" title="編輯模式 — 編輯路線與速度 / Edit — route &amp; pacing">
     <span class="mt-icon">⛰</span>
-    <span class="mt-lbl mt-lbl-web">規劃</span>
+    <span class="mt-lbl mt-lbl-web"><span class="lang-zh">編輯</span><span class="lang-en">Edit</span></span>
     <span class="mt-lbl mt-lbl-pwa">TopoMap</span>
-    <span class="mt-en">Plan</span>
+    <span class="mt-en">Edit</span>
   </button>
   <span class="mt-ink" aria-hidden="true"></span>
 </div>
@@ -1721,9 +1744,8 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   <div id="pop-key-body"></div>
 </div>
 
+<!-- HUD: NOW jump + delay indicator (play/reset are inline on active row) -->
 <div class="nowbtn" id="nowbtn">
-  <button class="nb-ctrl" id="nb-play" title="開始／暫停" onclick="trkToggle()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-  <button class="nb-ctrl ghost" id="nb-reset" title="重置" onclick="trkResetActive()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></button>
   <div class="nb-jump" onclick="jumpToNow()" title="跳到目前時間">
     <span class="lbl">NOW</span>
     <span class="nb-time" id="nb-time">--:--</span>
@@ -1731,11 +1753,12 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   <span class="nb-delay idle" id="nb-delay">未開始</span>
 </div>
 
-<a class="aiwalk-back" href="https://aiwalkcorp.com/" rel="noopener" aria-label="回到 aIwalk 首頁">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-  <span class="aw-back-text">回到</span>
-  <span class="aw-mark">a<span class="aw-i">I</span>walk</span>
-</a>
+<!-- ==== Language toggle (zh ↔ en) — top-left chip ==== -->
+<button id="jmLangToggle" class="jm-lang-toggle" type="button" aria-label="切換語言 / Switch language" title="切換中文／英文">
+  <span class="jl-zh" data-jl-target="zh">中</span>
+  <span class="jl-sep">／</span>
+  <span class="jl-en" data-jl-target="en">EN</span>
+</button>
 
 <a id="dashPill" class="dash-pill" href="dashboard.html" aria-label="我的計劃書 Dashboard">
   <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
@@ -1881,17 +1904,12 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   <span class="demo-badge" aria-hidden="true">示範 · DEMO</span>
   <h1>玉山主峰・北峰</h1>
   <div class="sub">2026/04/18–19 ｜ 2天1夜 ｜ 3人</div>
-  <a class="hdr-retreat" href="#" onclick="event.preventDefault();togglePop('pop-key');" title="緊急撤退方案 — 點擊展開">
-    <span class="hr-dot" aria-hidden="true"></span>
-    <span class="hr-zh">撤退方案</span>
-    <span class="hr-en">RETREAT&nbsp;PLAN</span>
-  </a>
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="openTab('itin')"><span class="tab-icon">🥾</span>行程</button>
-  <button class="tab-btn" onclick="openTab('contact')"><span class="tab-icon">📞</span>聯絡</button>
-  <button class="tab-btn" onclick="openTab('split')"><span class="tab-icon">🎒</span>裝備&amp;注意</button>
+  <button class="tab-btn active" onclick="openTab('itin')"><span class="tab-icon">🥾</span><span class="lang-zh">行程</span><span class="lang-en">Itinerary</span></button>
+  <button class="tab-btn" onclick="openTab('contact')"><span class="tab-icon">📞</span><span class="lang-zh">聯絡</span><span class="lang-en">Contact</span></button>
+  <button class="tab-btn" onclick="openTab('split')"><span class="tab-icon">🎒</span><span class="lang-zh">裝備&amp;注意</span><span class="lang-en">Gear&nbsp;&amp;&nbsp;Notes</span></button>
 </div>
 
 <!-- ==================== TAB 1: 地圖 ==================== -->
@@ -2312,22 +2330,6 @@ function renderNowLine(){
   const trk=getTrk(activeDay);
   const delay=computeDelay(activeDay);
 
-  // --- Update floating HUD (right-bottom) ---
-  const hud=document.getElementById('nowbtn');
-  const playBtn=document.getElementById('nb-play');
-  const delayPill=document.getElementById('nb-delay');
-  if(hud){
-    hud.classList.toggle('running',trk.state==='running');
-    hud.classList.toggle('paused',trk.state==='paused');
-    if(playBtn) playBtn.innerHTML = trk.state==='running'?PAUSE_SVG:PLAY_SVG;
-    let delayCls='idle',delayTxt='未開始';
-    if(trk.state!=='idle'){
-      if(delay>=5){delayCls='late';delayTxt=`+${delay}分`;}
-      else if(delay<=-5){delayCls='early';delayTxt=`${delay}分`;}
-      else{delayCls='ok';delayTxt=delay===0?'準時':`${delay>0?'+':''}${delay}分`;}
-    }
-    if(delayPill){delayPill.className=`nb-delay ${delayCls}`;delayPill.textContent=delayTxt;}
-  }
 
   // --- Apply shifted times to all .tl-t inside active day panel ---
   // Restore originals first
@@ -2350,7 +2352,31 @@ function renderNowLine(){
   document.querySelectorAll('.tl-eta,.tl-anchor').forEach(e=>e.remove());
   document.querySelectorAll('.tl-i.is-anchor').forEach(e=>e.classList.remove('is-anchor'));
 
-  // Inject 📍 "我在這" anchor button on every timeline item of the active day
+  // --- Update HUD: running/paused border + NOW time + delay pill ---
+  const hud=document.getElementById('nowbtn');
+  const nbTime=document.getElementById('nb-time');
+  const delayPill=document.getElementById('nb-delay');
+  if(hud){
+    hud.classList.toggle('running',trk.state==='running');
+    hud.classList.toggle('paused',trk.state==='paused');
+    if(nbTime){
+      const n=new Date();
+      nbTime.textContent=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+    }
+    let delayCls='idle',delayTxt='未開始';
+    if(trk.state!=='idle'){
+      if(delay>=5){delayCls='late';delayTxt=`+${delay}分`;}
+      else if(delay<=-5){delayCls='early';delayTxt=`${delay}分`;}
+      else{delayCls='ok';delayTxt=delay===0?'準時':`${delay>0?'+':''}${delay}分`;}
+    }
+    if(delayPill){delayPill.className=`nb-delay ${delayCls}`;delayPill.textContent=delayTxt;}
+  }
+
+  // wipe old inline tracker controls
+  document.querySelectorAll('.tl-trk-ctrls').forEach(e=>e.remove());
+
+  // Inject 📍 "我在這" anchor button on every timeline item of the active day.
+  // The active row also gets inline ⏸/▶/■ controls (option C: HUD removed).
   active.querySelectorAll('.tl-i').forEach(it=>{
     const tt=it.querySelector('.tl-t');const orig=tt?.dataset.orig;if(!orig)return;
     const btn=document.createElement('button');
@@ -2374,6 +2400,21 @@ function renderNowLine(){
     } else {btn.textContent='我在這';}
     btn.onclick=(e)=>{e.stopPropagation();trkAnchorTo(activeDay,orig);};
     it.appendChild(btn);
+
+    // Inline play/pause/reset cluster — shown only on the active anchor row
+    // when tracker has actually been started or anchored.
+    if(isActive && trk.state!=='idle'){
+      const ctrls=document.createElement('div');
+      ctrls.className='tl-trk-ctrls';
+      const pauseLabel = trk.state==='running' ? '暫停' : '繼續';
+      const pauseIcon  = trk.state==='running' ? PAUSE_SVG : PLAY_SVG;
+      ctrls.innerHTML = `
+        <button class="tl-trk-btn play" type="button" title="${pauseLabel}" aria-label="${pauseLabel}">${pauseIcon}</button>
+        <button class="tl-trk-btn reset" type="button" title="重置" aria-label="重置">${STOP_SVG}</button>`;
+      ctrls.querySelector('.play').onclick=(e)=>{e.stopPropagation();trkToggle();};
+      ctrls.querySelector('.reset').onclick=(e)=>{e.stopPropagation();trkResetActive();};
+      it.appendChild(ctrls);
+    }
   });
 
   // --- Now-line always shows on user-selected day ---
@@ -2617,6 +2658,20 @@ function toggleCK(i,on){
 
 // initial render
 if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();renderChecklist();}catch(e){console.error(e);}},100);
+
+// === Language toggle (zh ↔ en) — restore + bind. Persists in localStorage. ===
+(function initLang(){
+  const KEY='jm_lang';
+  const btn=document.getElementById('jmLangToggle');
+  const apply=lang=>{ document.body.setAttribute('data-jm-lang', lang==='en'?'en':'zh'); };
+  let saved=null; try{ saved=localStorage.getItem(KEY); }catch(e){}
+  apply(saved||'zh');
+  if(btn) btn.addEventListener('click', ()=>{
+    const next=document.body.getAttribute('data-jm-lang')==='en'?'zh':'en';
+    apply(next);
+    try{ localStorage.setItem(KEY, next); }catch(e){}
+  });
+})();
 
 // === Init: restore main tab + day from user's last choice (no auto date lock) ===
 (function initState(){

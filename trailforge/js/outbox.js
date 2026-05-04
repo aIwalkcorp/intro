@@ -156,7 +156,7 @@
   });
 
   function showToast(msg) {
-    // Reuse permitToast if present (jademountain page), else permit-pop fallback
+    // Reuse permitToast if present (plan/auth page), else permit-pop fallback
     const t = document.getElementById("permitToast");
     if (t) {
       t.textContent = msg;

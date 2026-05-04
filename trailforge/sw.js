@@ -1,11 +1,11 @@
-// Trailforge / Jade Mountain — Service Worker
+// Trailforge — Service Worker
 // Strategy:
 //   - HTML navigation:  network-first, fall back to cache (so users see updates online)
 //   - Static assets:    stale-while-revalidate (instant load, refresh in background)
 //   - Cross-origin API: passthrough, never cache (auth, /api/*)
 //   - POST / non-GET:   never cache
 
-const CACHE = 'jademountain-v14';
+const CACHE = 'trailforge-v19';  // renamed from jademountain-v* — bump invalidates all old caches
 
 // Same-origin assets we want available offline on first install
 const PRECACHE_LOCAL = [

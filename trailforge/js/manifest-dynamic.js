@@ -53,7 +53,7 @@
         { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
       ],
       // a UID makes the manifest URL stable per-plan when cached by browser/OS
-      id: "/jademountain/?plan=" + encodeURIComponent(planId),
+      id: "/trailforge/?plan=" + encodeURIComponent(planId),
     };
   }
 
