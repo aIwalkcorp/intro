@@ -75,20 +75,34 @@
     .tf-edit-fab svg{width:16px; height:16px}
   }
 
-  /* Save bar (visible while editing) */
+  /* Save bar (visible while editing). Fully hidden + non-interactive when not
+     showing so it can't peek above the viewport edge. */
   .tf-edit-bar{
-    position:fixed; left:50%; transform:translateX(-50%) translateY(100%);
-    bottom:14px; z-index:1500;
+    position:fixed; left:50%; bottom:14px; z-index:1500;
+    transform:translateX(-50%) translateY(calc(100% + 24px));
+    opacity:0; pointer-events:none;
     display:flex; align-items:center; gap:10px;
     padding:10px 14px;
     background:linear-gradient(178deg,#fbf6e8,#ebe1c9);
     color:#1a1a17;
     border:1px solid rgba(42,36,24,0.45);
     box-shadow:0 14px 40px rgba(10,26,6,0.45), inset 0 1px 0 rgba(255,255,255,0.7);
-    transition: transform .3s cubic-bezier(.2,.7,.2,1);
+    transition: transform .3s cubic-bezier(.2,.7,.2,1), opacity .25s ease;
     font-family:"Noto Serif TC",serif;
   }
-  .tf-edit-bar.show{transform:translateX(-50%) translateY(0)}
+  .tf-edit-bar.show{
+    transform:translateX(-50%) translateY(0);
+    opacity:1; pointer-events:auto;
+  }
+  .tf-edit-bar .close-x{
+    appearance:none; background:transparent; border:none; cursor:pointer;
+    width:26px; height:26px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#7a7468; font-family:"JetBrains Mono",monospace; font-size:1.1rem; line-height:1;
+    margin-right:-2px;
+    transition: color .15s, background .15s; border-radius:50%;
+  }
+  .tf-edit-bar .close-x:hover{color:#8b2a1f; background:rgba(139,42,31,0.1)}
   .tf-edit-bar::before{
     content:""; position:absolute; top:0; left:0; right:0; height:3px;
     background:repeating-linear-gradient(90deg,#1f3a23 0 10px,transparent 10px 14px,#a8802c 14px 17px,transparent 17px 26px);
@@ -357,6 +371,7 @@
     <span class="status" id="tfEditStatus">未變更</span>
     <button type="button" class="cancel" id="tfEditCancel">取消</button>
     <button type="button" class="save" id="tfEditSave">儲存</button>
+    <button type="button" class="close-x" id="tfEditClose" aria-label="收起編輯列" title="收起 (Esc)">×</button>
   `;
 
   function attachUI() {
@@ -658,10 +673,17 @@
 
   bar.addEventListener("click", (e) => {
     if (e.target.id === "tfEditSave") save();
-    if (e.target.id === "tfEditCancel") {
+    if (e.target.id === "tfEditCancel" || e.target.id === "tfEditClose") {
       if (dirty && !confirm("放棄所有未儲存的變更？")) return;
       location.reload();
     }
+  });
+  // Esc dismisses the bar (and exits edit mode after confirm-if-dirty)
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!editing) return;
+    if (dirty && !confirm("放棄所有未儲存的變更？")) return;
+    location.reload();
   });
 
   // ---------- Re-decorate if render.js re-renders during edit ----------
