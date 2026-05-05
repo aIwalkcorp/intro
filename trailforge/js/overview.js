@@ -206,9 +206,24 @@
         dayId, dayLabel, dayStart,
         note: dayStart ? `起登 ${dayStart}` : '尚未設定起登時間',
       });
+      // Detect which path holds this day's segments — needed by note editing
+      // so we can mutate the right segment object on input.
+      const ep = day.elevation_profile;
+      const useRoute = !!(ep && ep.route_variants);
+      let activeRouteId = null;
+      if (useRoute) {
+        const dayPanel = document.getElementById('day-' + day.id);
+        const activeTab = dayPanel && dayPanel.querySelector('.r-tab.active');
+        if (activeTab) {
+          const m = (activeTab.getAttribute('onclick') || '').match(/switchRoute\(['"]([^'"]+)['"]\)/);
+          activeRouteId = m && m[1];
+        }
+        if (!activeRouteId) activeRouteId = ep.default_variant || Object.keys(ep.route_variants)[0] || null;
+      }
+
       // Day's segment subtotal accumulators (also drives arrival times)
       let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
-      segs.forEach(s => {
+      segs.forEach((s, segIdx) => {
         const dist = +s.distance_km || 0;
         const baseMin = +s.base_minutes || 0;
         const startKm = cumKm;
@@ -223,6 +238,12 @@
           dayId, dayLabel,
           from: s.from || '',
           to: s.to || '',
+          note: s.note || '',
+          // Path back to this segment's home so the note input can mutate it:
+          //   useRoute=true  → plan.days[id].elevation_profile.route_variants[activeRouteId].shanghe_segments[segIdx]
+          //   useRoute=false → plan.days[id].elevation_profile.shanghe_segments[segIdx]
+          segIdx,
+          variantId: useRoute ? activeRouteId : null,
           distance_km: dist,
           ascent_m: +s.ascent_m || 0,
           descent_m: +s.descent_m || 0,
@@ -479,6 +500,25 @@
       const attrs = focusable
         ? ` data-focusable="true" data-day-id="${escapeHtml(r.dayId)}" data-anchor-lo="${r.anchorLo}" data-anchor-hi="${r.anchorHi}" role="button" tabindex="0" aria-pressed="${isFocused ? 'true' : 'false'}"`
         : '';
+      // Per-segment 備註 row — sits directly below the segment row. Edit
+      // mode shows a clean dotted-underline input; view mode shows muted
+      // italic prose only when there's content. Synthetic 回程 rows skip
+      // the note (no source segment to mutate).
+      const editing = document.body.classList.contains('tf-editing');
+      const canEditNote = !r.isReturn && r.segIdx != null;
+      let noteHtml = '';
+      if (canEditNote && editing) {
+        noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
+          <span class="rp-note-mark" aria-hidden="true">↳</span>
+          <input class="rp-note-input" type="text" value="${escapeHtml(r.note || '')}" placeholder="備註（可選）" aria-label="此段備註">
+        </div>`;
+      } else if (r.note) {
+        noteHtml = `<div class="rp-note-row rp-note-readonly">
+          <span class="rp-note-mark" aria-hidden="true">↳</span>
+          <span class="rp-note-text">${escapeHtml(r.note)}</span>
+        </div>`;
+      }
+
       return `<div class="rp-row"${attrs}>
         ${dayChip}
         <span class="rp-cum">${r.startKm.toFixed(1)}<small>km</small></span>
@@ -498,7 +538,7 @@
         <span class="rp-arrive">${arrival
           ? `<small>抵達</small><b>${arrival}</b>`
           : '<small class="rp-arrive-empty">—</small>'}</span>
-      </div>`;
+      </div>${noteHtml}`;
     }).join('');
 
     // Route-variant pickers — for any day declaring route_variants we
@@ -569,6 +609,31 @@
         }
       });
     }
+
+    // ── Bind per-segment note inputs (edit mode only) ──
+    host.querySelectorAll('.rp-note-input').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const wrap = inp.closest('.rp-note-row');
+        if (!wrap) return;
+        const dayId = wrap.dataset.dayId;
+        const segIdx = +wrap.dataset.segIdx;
+        const variantId = wrap.dataset.variantId || null;
+        const day = (plan.days || []).find(d => d.id === dayId);
+        if (!day || !day.elevation_profile) return;
+        let segArr;
+        if (variantId) {
+          const rv = day.elevation_profile.route_variants;
+          segArr = rv && rv[variantId] && rv[variantId].shanghe_segments;
+        } else {
+          segArr = day.elevation_profile.shanghe_segments;
+        }
+        if (!Array.isArray(segArr) || !segArr[segIdx]) return;
+        segArr[segIdx].note = inp.value;
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        // Don't re-render — would lose typing focus. The note is already in
+        // memory; renderRestPoints reads .note on next refresh.
+      });
+    });
 
     // ── Bind day-start time inputs (edit mode only) ──
     host.querySelectorAll('.rp-day-start-edit').forEach((inp) => {
@@ -1156,10 +1221,11 @@
       data.days.forEach((d) => {
         const m = live.days.find((x) => x.id === d.id);
         if (!m) return;
-        // Mirror start_time
-        if (m.elevation_profile && typeof m.elevation_profile.start_time === 'string') {
-          d.elevation_profile = d.elevation_profile || {};
-          d.elevation_profile.start_time = m.elevation_profile.start_time;
+        // Mirror entire elevation_profile (includes start_time + shanghe_segments
+        // + route_variants — any of which may have been edited via the
+        // rest-points table notes / start time picker).
+        if (m.elevation_profile) {
+          d.elevation_profile = JSON.parse(JSON.stringify(m.elevation_profile));
         }
         // Mirror shifted schedule / routes / key_times — these ride along
         // with start_time edits via shiftDayScheduleByOffset, so without

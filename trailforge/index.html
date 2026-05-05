@@ -2408,6 +2408,50 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   color:var(--ink,#1a1a17);
 }
 .overview-rest-points .rp-row:last-child{border-bottom:none;}
+
+/* ===== Per-segment 備註 row ===== */
+/* Sits directly below the matching .rp-row. Edit mode: dotted-underline
+   inline input — no border box, no chrome, just a thin "↳" mark + text.
+   View mode: muted italic prose, only rendered when there is content. */
+.overview-rest-points .rp-note-row{
+  display:flex; align-items:center; gap:8px;
+  padding:2px 10px 6px 60px;     /* aligned with route column (after chip+km) */
+  border-bottom:1px solid rgba(42,36,24,0.10);
+  background:transparent;
+  font-family:var(--serif);
+}
+.overview-rest-points .rp-note-row .rp-note-mark{
+  font-family:var(--mono); color:var(--gold-deep,#6e5316);
+  font-size:.74rem; opacity:.55; flex:none;
+}
+.overview-rest-points .rp-note-row .rp-note-input{
+  flex:1; min-width:0; padding:3px 0 4px;
+  background:transparent;
+  border:0; border-bottom:1px dotted rgba(168,128,44,.32);
+  border-radius:0;
+  font:inherit;
+  font-family:var(--serif),"Noto Serif TC",serif;
+  font-size:.78rem; color:var(--ink, #1a1a17);
+}
+.overview-rest-points .rp-note-row .rp-note-input::placeholder{
+  color:rgba(42,36,24,.32); font-style:italic;
+}
+.overview-rest-points .rp-note-row .rp-note-input:focus{
+  outline:none; border-bottom:1px solid #a8802c;
+}
+.overview-rest-points .rp-note-row.rp-note-readonly{
+  padding-top:0;
+}
+.overview-rest-points .rp-note-row .rp-note-text{
+  font-style:italic; color:var(--ink-soft,#7a7468); font-size:.78rem;
+  line-height:1.5;
+}
+@media(max-width:560px){
+  .overview-rest-points .rp-note-row{
+    padding-left:48px; padding-right:8px;
+  }
+}
+
 .overview-rest-points .rp-row:nth-child(even):not(.rp-day-header){
   background:rgba(168,128,44,0.04);
 }
