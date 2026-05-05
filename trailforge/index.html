@@ -109,26 +109,75 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
 }
 
 /* On narrow screens, the centred hero title was getting overlapped by the
-   top-right floating chip rail. Left-align + clear right padding for FABs
-   and tighten typography so the title stays inside the safe zone. */
+   top-right floating chip rail. The chips are now stacked vertically along
+   the right edge (see "mobile chip stack" below), so the hero gets MORE
+   vertical room — not less — to host the column comfortably. Title moves
+   to a single left-aligned column on the left, chips run down the right. */
 @media (max-width:520px){
   .hdr{
     text-align:left;
-    padding:14px 14px 12px;
-    padding-left:60px;     /* reserve space for top-left lang chip */
-    padding-right:130px;   /* reserve space for top-right FAB rail */
+    padding:36px 14px 12px;
+    padding-right:96px;          /* tighter right gutter — only permit chip needs clearing now */
+    min-height:160px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    gap:4px;
   }
   .hdr h1{
-    font-size:1.18rem; letter-spacing:.02em;
+    font-size:1.22rem; letter-spacing:.02em;
     display:inline-block;
     max-width:100%;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    margin-top:4px;
   }
   .hdr h1::before,
   .hdr h1::after{display:none;}   /* drop decorative hairlines on mobile */
-  .hdr .sub{font-size:.62rem; letter-spacing:.18em;}
-  .hdr-retreat{margin-top:8px;}
-  .demo-badge{top:10px; left:10px; font-size:.5rem; padding:2px 7px;}
+  .hdr .sub{font-size:.64rem; letter-spacing:.18em;}
+  .hdr-retreat{margin-top:6px; align-self:flex-start; margin-left:120px;}  /* clear mode-toggle column on the left */  /* push retreat pill to bottom of expanded hero */
+  .demo-badge{top:12px; left:12px; font-size:.5rem; padding:2px 7px;}
+}
+
+/* ── Mobile chip stack ─────────────────────────────────────────────────
+   On ≤520px, the floating right-rail chips (permit / mode / lang / save)
+   stop competing for one horizontal strip and stack into a single right-
+   edge column. The hero is enlarged (min-height 184px) so the column has
+   room to breathe — generous vertical rhythm, not a cramped pile.
+
+   Vertical rhythm (top values measured from viewport top, incl. safe-area):
+     row A — permit-chip  →  top  12  (overridden below; default was 10)
+     row B — mode-toggle  →  top  64  (overridden below; default was 48)
+     row C — lang-toggle  →  top 118  (override: was sharing row B)
+     save-chip → sits inline LEFT of mode-toggle on row B when visible. */
+@media (max-width:520px){
+  /* Permit chip: nudge slightly down to align with new hero rhythm. */
+  .permit-chip{
+    top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+  }
+  /* Mode toggle: row B at top 64. */
+  /* Mode toggle: anchored LEFT inline below the date, on the same row
+     as save+lang for a tighter hero. */
+  .jm-mode-toggle{
+    top: calc(env(safe-area-inset-top, 0px) + 110px) !important;
+    left: 14px !important;
+    right: auto !important;
+  }
+  /* Lang toggle: own row C, anchored to the right edge — override JS. */
+  .jm-lang-toggle{
+    top: calc(env(safe-area-inset-top, 0px) + 110px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 14px) !important;
+  }
+  /* Save chip: row B, directly below permit-chip (right-aligned).
+     Only visible when editing+dirty. Keeps hero compact. */
+  .jm-save-chip{
+    top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 14px) !important;
+  }
+  /* Sync chip (PWA-only) sits left of save on row C. */
+  .jm-sync-chip{
+    top: calc(env(safe-area-inset-top, 0px) + 118px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 110px) !important;
+  }
 }
 
 /* Tab bar — brass ticks */
@@ -4454,8 +4503,13 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
     positionLang();
   });
   // Position the lang toggle to the LEFT of the mode toggle, with an 8px gap.
+  // On ≤520px the chip rail stacks vertically — bail so CSS wins.
   function positionLang(){
     if(!btn) return;
+    if(window.matchMedia('(max-width: 520px)').matches){
+      btn.style.right=''; // clear any inline override → CSS rule applies
+      return;
+    }
     const mode=document.getElementById('jmModeToggle');
     if(!mode) return;
     const modeRect=mode.getBoundingClientRect();
@@ -4555,6 +4609,11 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
   });
   function positionSave(){
     if(!lang) return;
+    // ≤520px: chip rail is stacked vertically — let CSS rule win.
+    if(window.matchMedia('(max-width: 520px)').matches){
+      saveChip.style.right='';
+      return;
+    }
     const r=lang.getBoundingClientRect();
     const vw=document.documentElement.clientWidth;
     const langRightOffset=vw-r.right;
