@@ -22,6 +22,14 @@ const PatchSchema = z.object({
   // grows/shrinks the days[] array. Days BEFORE start_date (depart days) are
   // preserved untouched.
   set_duration: z.number().int().min(1).max(30).optional(),
+  // set_nights: number of overnight stays during the trip. Decoupled from
+  // set_duration so a user can express e.g. "2 hike days, 2 nights" — meaning
+  // the night before Day 1 (lodging at trailhead) plus the night between
+  // Day 1 and Day 2. Concretely: when set_nights = set_duration → ensure a
+  // pre-departure day (date = start_date - 1, "Day 0 / 出發"); when set_nights
+  // = set_duration - 1 → remove any pre-departure day. Other values are
+  // accepted but not currently auto-shaped beyond ±1 day either side.
+  set_nights: z.number().int().min(0).max(30).optional(),
   // set_party_size / set_party_label: trip head-count, mirrored to data.meta
   set_party_size: z.number().int().min(1).max(99).optional(),
   set_party_label: z.string().min(1).max(40).optional(),
@@ -53,9 +61,10 @@ router.get("/", async (c) => {
     title: plans.title,
     createdAt: plans.createdAt,
     updatedAt: plans.updatedAt,
-    startDate: sql<string | null>`${plans.data}->'meta'->>'start_date'`,
-    endDate:   sql<string | null>`${plans.data}->'meta'->>'end_date'`,
-    partySize: sql<number | null>`(${plans.data}->'meta'->>'party_size')::int`,
+    startDate:  sql<string | null>`${plans.data}->'meta'->>'start_date'`,
+    endDate:    sql<string | null>`${plans.data}->'meta'->>'end_date'`,
+    departDate: sql<string | null>`${plans.data}->'meta'->>'depart_date'`,
+    partySize:  sql<number | null>`(${plans.data}->'meta'->>'party_size')::int`,
     partyLabel: sql<string | null>`${plans.data}->'meta'->>'party_label'`,
   }).from(plans).where(eq(plans.userId, u.sub)).orderBy(desc(plans.updatedAt));
   return c.json({ plans: rows });
@@ -106,6 +115,7 @@ router.patch("/:id", async (c) => {
   const needsExisting =
     parsed.data.shift_start_date !== undefined ||
     parsed.data.set_duration !== undefined ||
+    parsed.data.set_nights !== undefined ||
     parsed.data.set_party_size !== undefined ||
     parsed.data.set_party_label !== undefined ||
     parsed.data.title !== undefined;
@@ -118,7 +128,11 @@ router.patch("/:id", async (c) => {
     working = JSON.parse(JSON.stringify(existing.data));    // deep clone
   }
 
-  if (parsed.data.shift_start_date || parsed.data.set_duration !== undefined) {
+  if (
+    parsed.data.shift_start_date ||
+    parsed.data.set_duration !== undefined ||
+    parsed.data.set_nights   !== undefined
+  ) {
     const data = working;
     const oldStart = data?.meta?.start_date;
     if (!oldStart) return c.json({ error: "plan_has_no_start_date" }, 400);
@@ -189,6 +203,44 @@ router.patch("/:id", async (c) => {
         resized.push(clone);
       }
       data.days = [...departDays, ...resized];
+    }
+
+    // Step 3: handle set_nights — adds/removes a pre-departure day so the
+    // user can express e.g. 2D2N (玉山-style: trail-head sleep + summit night).
+    if (parsed.data.set_nights !== undefined) {
+      const start = data.meta.start_date as string;
+      const tripDayCount = (data.days || []).filter(
+        (d: any) => d.date && d.date >= start
+      ).length;
+      const wantPreDay = parsed.data.set_nights >= tripDayCount;     // ≥ duration → need depart day
+      const departDate = shiftIso(start, -1);
+      const departIdx = (data.days || []).findIndex(
+        (d: any) => d.date && d.date < start
+      );
+      if (wantPreDay && departIdx === -1) {
+        const departDay = {
+          id: "d0",
+          date: departDate,
+          date_label: fmtDateLabel(departDate),
+          label: "Day 0・出發",
+          tag: null,
+          tag_text: "出發日",
+          section_title: `Day 0 — ${departDate}（出發）`,
+          emergency_card_title: "🚨 Day 0・出發關鍵時間",
+          key_times: [],
+          quick_links: [],
+          schedule: [],
+          details: [],
+          retreat: null,
+        };
+        data.days = [departDay, ...(data.days || [])];
+        data.meta.depart_date = departDate;
+      } else if (!wantPreDay && departIdx !== -1) {
+        data.days = (data.days || []).filter(
+          (d: any) => !(d.date && d.date < start)
+        );
+        delete data.meta.depart_date;
+      }
     }
   }
 

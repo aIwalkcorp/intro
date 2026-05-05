@@ -543,10 +543,16 @@ body{
     const sameMonth = startIso.slice(0, 7) === endIso.slice(0, 7);
     return sameMonth ? `${s}–${endIso.slice(8, 10)}` : `${s} – ${endIso.replace(/-/g, '/')}`;
   }
-  function computeNights(startIso, endIso) {
+  function computeNights(startIso, endIso, departIso) {
     if (!startIso || !endIso) return '';
     const days = Math.round((new Date(endIso + 'T00:00:00Z') - new Date(startIso + 'T00:00:00Z')) / 86400000) + 1;
-    return `${days} 天 ${Math.max(0, days - 1)} 夜`;
+    // If a depart_date precedes start_date, that pre-departure overnight
+    // counts toward nights (e.g. lodge sleep before a 玉山 hike → 2D2N).
+    const baseNights = Math.max(0, days - 1);
+    const nights = departIso && departIso < startIso
+      ? baseNights + Math.round((new Date(startIso + 'T00:00:00Z') - new Date(departIso + 'T00:00:00Z')) / 86400000)
+      : baseNights;
+    return `${days} 天 ${nights} 夜`;
   }
 
   // ---------- Calendar popover ----------
@@ -561,6 +567,8 @@ body{
     viewYear: 0, viewMonth: 0,
     selectedIso: null, originalIso: null,
     duration: 1, originalDuration: 1,
+    nights: 0, originalNights: 0,
+    nightsTouched: false,        // user manually adjusted → don't auto-track duration
     partySize: 1, originalPartySize: 1,
     partyLabel: '', originalPartyLabel: '',
     saving: false,
@@ -637,8 +645,16 @@ body{
         <span class="lbl">天數</span>
         <span class="stepper">
           <button type="button" class="step" data-dur="-1" aria-label="少一天" ${calState.duration <= 1 ? 'disabled' : ''}>−</button>
-          <span class="val">${calState.duration} 天 ${Math.max(0, calState.duration - 1)} 夜</span>
+          <span class="val">${calState.duration} 天</span>
           <button type="button" class="step" data-dur="1" aria-label="多一天" ${calState.duration >= 30 ? 'disabled' : ''}>+</button>
+        </span>
+      </div>
+      <div class="cal-dur">
+        <span class="lbl">夜數</span>
+        <span class="stepper">
+          <button type="button" class="step" data-nights="-1" aria-label="少一夜" ${calState.nights <= Math.max(0, calState.duration - 1) ? 'disabled' : ''}>−</button>
+          <span class="val">${calState.nights} 夜</span>
+          <button type="button" class="step" data-nights="1" aria-label="多一夜" ${calState.nights >= calState.duration ? 'disabled' : ''}>+</button>
         </span>
       </div>
       <div class="cal-dur">
@@ -652,19 +668,27 @@ body{
       <div class="cal-foot">
         <span class="${saving ? 'saving' : ''}">${saving ? '儲存中…' : ''}</span>
         <button type="button" class="cal-cancel">取消</button>
-        <button type="button" class="cal-apply" ${(selectedIso === calState.originalIso && calState.duration === calState.originalDuration && calState.partySize === calState.originalPartySize) || saving ? 'disabled' : ''}>套用</button>
+        <button type="button" class="cal-apply" ${(selectedIso === calState.originalIso && calState.duration === calState.originalDuration && calState.nights === calState.originalNights && calState.partySize === calState.originalPartySize) || saving ? 'disabled' : ''}>套用</button>
       </div>`;
   }
 
-  function openCalendar(triggerEl, planId, currentStart, currentEnd, partySize, partyLabel) {
+  function openCalendar(triggerEl, planId, currentStart, currentEnd, partySize, partyLabel, currentDepart) {
     calState.planId = planId;
     calState.originalIso = currentStart;
     calState.selectedIso = currentStart;
     const dur = currentEnd
       ? Math.round((new Date(currentEnd + 'T00:00:00Z') - new Date(currentStart + 'T00:00:00Z')) / 86400000) + 1
       : 1;
+    // nights = (end - depart) days. depart_date < start_date means there's a
+    // pre-departure overnight. Default = duration - 1 (no pre-day).
+    const nights = currentDepart && currentEnd
+      ? Math.round((new Date(currentEnd + 'T00:00:00Z') - new Date(currentDepart + 'T00:00:00Z')) / 86400000)
+      : Math.max(0, dur - 1);
     calState.originalDuration = dur;
     calState.duration = dur;
+    calState.originalNights = nights;
+    calState.nights = nights;
+    calState.nightsTouched = false;
     calState.originalPartySize = partySize || 1;
     calState.partySize = partySize || 1;
     calState.originalPartyLabel = partyLabel || '';
@@ -713,7 +737,18 @@ body{
     if (stepBtn) {
       if (stepBtn.dataset.dur !== undefined) {
         const delta = Number(stepBtn.dataset.dur);
-        calState.duration = Math.max(1, Math.min(30, calState.duration + delta));
+        const newDur = Math.max(1, Math.min(30, calState.duration + delta));
+        // Auto-track nights = duration - 1 unless user already touched nights.
+        if (!calState.nightsTouched) calState.nights = Math.max(0, newDur - 1);
+        else calState.nights = Math.max(Math.max(0, newDur - 1), Math.min(newDur, calState.nights));
+        calState.duration = newDur;
+      } else if (stepBtn.dataset.nights !== undefined) {
+        const delta = Number(stepBtn.dataset.nights);
+        // Allow nights ∈ [duration-1, duration] for now (玉山-style 2D2N case).
+        const min = Math.max(0, calState.duration - 1);
+        const max = calState.duration;
+        calState.nights = Math.max(min, Math.min(max, calState.nights + delta));
+        calState.nightsTouched = true;
       } else if (stepBtn.dataset.party !== undefined) {
         const delta = Number(stepBtn.dataset.party);
         calState.partySize = Math.max(1, Math.min(99, calState.partySize + delta));
@@ -731,14 +766,16 @@ body{
     if (e.target.closest('.cal-apply')) {
       const startChanged = calState.selectedIso !== calState.originalIso;
       const durChanged = calState.duration !== calState.originalDuration;
+      const nightsChanged = calState.nights !== calState.originalNights;
       const partyChanged = calState.partySize !== calState.originalPartySize;
-      if (!startChanged && !durChanged && !partyChanged) { closeCalendar(); return; }
+      if (!startChanged && !durChanged && !nightsChanged && !partyChanged) { closeCalendar(); return; }
       calState.saving = true;
       renderCal();
       try {
         const body = {};
         if (startChanged) body.shift_start_date = calState.selectedIso;
         if (durChanged) body.set_duration = calState.duration;
+        if (nightsChanged) body.set_nights = calState.nights;
         if (partyChanged) body.set_party_size = calState.partySize;
         const r = await api('/api/plans/' + calState.planId, {
           method: 'PATCH',
@@ -751,6 +788,7 @@ body{
         const parts = [];
         if (startChanged) parts.push('出發日 ' + calState.selectedIso.replace(/-/g, '/'));
         if (durChanged) parts.push(calState.duration + ' 天');
+        if (nightsChanged) parts.push(calState.nights + ' 夜');
         if (partyChanged) parts.push(calState.partySize + ' 人');
         showToast(r.queued ? '離線：' + parts.join('・') + ' 已暫存（按右上「⬆ 上傳」）' : '已更新：' + parts.join('・'));
         closeCalendar();
@@ -777,7 +815,7 @@ body{
     const btn = e.currentTarget;
     const partySize = btn.dataset.party ? parseInt(btn.dataset.party, 10) : 1;
     const partyLabel = btn.dataset.partyLabel || '';
-    openCalendar(btn, btn.dataset.id, btn.dataset.start, btn.dataset.end || null, partySize, partyLabel);
+    openCalendar(btn, btn.dataset.id, btn.dataset.start, btn.dataset.end || null, partySize, partyLabel, btn.dataset.depart || null);
   }
 
   function planLink(id) {
@@ -800,7 +838,7 @@ body{
     const cards = plans.map((p, i) => {
       const partyTxt = p.partyLabel || (p.partySize ? `${p.partySize}人` : '');
       const dateBlock = p.startDate
-        ? `<span class="dates-zh">${fmtRange(p.startDate, p.endDate)}${p.endDate ? ' · ' + computeNights(p.startDate, p.endDate) : ''}${partyTxt ? ' · ' + escapeHtml(partyTxt) : ''}</span>`
+        ? `<span class="dates-zh">${fmtRange(p.startDate, p.endDate)}${p.endDate ? ' · ' + computeNights(p.startDate, p.endDate, p.departDate) : ''}${partyTxt ? ' · ' + escapeHtml(partyTxt) : ''}</span>`
         : (partyTxt ? `<span class="dates-zh">${escapeHtml(partyTxt)}</span>` : '');
       return `
       <div class="card" data-id="${p.id}" data-href="${planLink(p.id)}" tabindex="0" role="link">
@@ -823,7 +861,7 @@ body{
         <div class="meta-row">
           <span class="when">最後修改 <b>${fmtDate(p.updatedAt)}</b>${dateBlock}</span>
           <span class="actions">
-            ${p.startDate ? `<button type="button" class="act-btn primary date" data-id="${p.id}" data-start="${p.startDate}" data-end="${p.endDate || ''}" data-party="${p.partySize || 1}" data-party-label="${escapeAttr(p.partyLabel || '')}">改期 / 人數</button>` : ''}
+            ${p.startDate ? `<button type="button" class="act-btn primary date" data-id="${p.id}" data-start="${p.startDate}" data-end="${p.endDate || ''}" data-depart="${p.departDate || ''}" data-party="${p.partySize || 1}" data-party-label="${escapeAttr(p.partyLabel || '')}">改期 / 人數</button>` : ''}
             <button type="button" class="act-btn danger delete" data-id="${p.id}" data-title="${escapeAttr(p.title)}">刪除</button>
           </span>
         </div>
