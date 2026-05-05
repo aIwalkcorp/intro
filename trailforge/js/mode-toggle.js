@@ -424,6 +424,18 @@
         return next;
       });
 
+      // Surface the day's start clock time (HH:MM) so the overview chart can
+      // annotate each checkpoint with the projected arrival clock. Falls back
+      // to the first scheduled item when elevation_profile.start_time is
+      // missing — same priority order as overview.js's rest-points table.
+      let startTime = (ep && /^\d{1,2}:\d{2}$/.test(String(ep.start_time || ''))) ? ep.start_time : null;
+      if (!startTime) {
+        const sched = (d.schedule || []);
+        for (const it of sched) {
+          if (it && /^\d{1,2}:\d{2}$/.test(String(it.time || ''))) { startTime = it.time; break; }
+        }
+      }
+
       const dayInfo = {
         gpx: track,
         label: d.label || ('Day ' + d.id),
@@ -433,6 +445,7 @@
         routeVariants: ep.route_variants || null,
         activeRouteId,
         dayId: d.id,
+        startTime,
       };
       // For days that declare route_variants, the recorded GPX is one
       // long survey track with both branches stitched together (e.g. d2
@@ -544,7 +557,19 @@
       });
     });
 
-    TF.elevation.drawOverview(canvas, days, { focusRange, decisionAnchors: decisionAnchorsForOverview });
+    // Speed factor for arrival-time annotations on the overview chart.
+    // Mirrors what overview.js's rest-points table uses.
+    let speedFactor = 1;
+    try {
+      const v = parseFloat(localStorage.getItem('jm_overview_speed'));
+      if (Number.isFinite(v) && v >= 0.5 && v <= 2.5) speedFactor = v;
+    } catch (e) {}
+
+    TF.elevation.drawOverview(canvas, days, {
+      focusRange,
+      decisionAnchors: decisionAnchorsForOverview,
+      speedFactor,
+    });
 
     // Minimap (only when card has focus state — saves a render otherwise)
     const mini = document.getElementById('elev-overview-minimap');

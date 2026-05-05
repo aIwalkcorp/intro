@@ -562,12 +562,20 @@
       // cross-day dedupe pass below to avoid drawing e.g. 排雲山莊 twice
       // when it appears as Day N's last stop AND Day N+1's first stop.
       if (Array.isArray(d.segments) && d.segments.length) {
-        const cpMap = new Map(); // idx -> name
+        const cpMap = new Map();      // idx -> name
+        const cumMinByIdx = new Map(); // idx -> cumulative base minutes from day start to this checkpoint
+        let cumMin = 0;
         d.segments.forEach(s => {
           const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
           if (ai.length >= 2) {
             if (s.from && !cpMap.has(ai[0])) cpMap.set(ai[0], s.from);
             if (s.to   && !cpMap.has(ai[1])) cpMap.set(ai[1], s.to);
+            // The "from" anchor of the FIRST segment is at cum=0; subsequent
+            // segments' "to" sit at cum + base_minutes. We don't bother with
+            // mid-segment cum values (no checkpoint there).
+            if (!cumMinByIdx.has(ai[0])) cumMinByIdx.set(ai[0], cumMin);
+            cumMin += (+s.base_minutes || 0);
+            cumMinByIdx.set(ai[1], cumMin);
           }
         });
         const suppress = d._suppressCheckpointNames || new Set();
@@ -578,8 +586,33 @@
           .filter(([, name]) => !suppress.has(name))
           .sort((a, b) => a[0] - b[0]);
 
+        // Parse start time once per day for arrival annotations.
+        const startMin = (function () {
+          const m = /^(\d{1,2}):(\d{2})$/.exec(String(d.startTime || ''));
+          if (!m) return null;
+          const h = +m[1], mm = +m[2];
+          if (h < 0 || h > 47 || mm < 0 || mm > 59) return null;
+          return h * 60 + mm;
+        })();
+        const factor = (typeof opts.speedFactor === 'number' && opts.speedFactor > 0) ? opts.speedFactor : 1;
+        const fmtClock = (mins) => {
+          const t = ((mins % 1440) + 1440) % 1440;
+          return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+        };
+
+        // Track horizontal positions of arrival labels we've drawn already so
+        // we can suppress / stagger ones that would collide.
+        if (!opts._timeLabelPositions) opts._timeLabelPositions = [];
+        const minGap = 32;          // px between time labels on the same row
+
+        // Track last drawn x-position PER ROW so a name only stagger-jumps
+        // when it would actually collide with a previous neighbour on the
+        // same row (stops 3+ close stations from stacking onto one row).
+        if (!opts._nameRowLastX) opts._nameRowLastX = [-Infinity, -Infinity];
+        const nameRowYs = [pad.t + gH + 13, pad.t + gH + 25];
+
         ctx.font = '600 9px "Noto Serif TC", serif';
-        cps.forEach(([idx, name], i) => {
+        cps.forEach(([idx, name]) => {
           const cx = xOf(d, idx);
           const cy = yOf(d, idx);
           // Tick — small dark green dot ringed in cream
@@ -599,13 +632,63 @@
           ctx.lineTo(cx, pad.t + gH);
           ctx.stroke();
           ctx.setLineDash([]);
-          // Label — all labels live on the X-axis (below the chart) so
-          // the elevation profile itself stays clean. Stagger two rows
-          // to reduce collision when checkpoints sit close together.
+          // Name label — below the chart, with collision-aware row pick.
+          // Half-width of this label drives the gap calculation so wide
+          // station names get more breathing room than short ones.
+          ctx.font = '600 9px "Noto Serif TC", serif';
+          const half = ctx.measureText(name).width / 2 + 6;
+          // Pick the row with more space to the previous label on it.
+          const r0Free = cx - half - opts._nameRowLastX[0];
+          const r1Free = cx - half - opts._nameRowLastX[1];
+          let row;
+          if (r0Free >= 0) row = 0;
+          else if (r1Free >= 0) row = 1;
+          else row = (r0Free > r1Free) ? 0 : 1;     // overlap unavoidable, pick least-bad
+          opts._nameRowLastX[row] = cx + half;
           ctx.fillStyle = '#0a1a06';
           ctx.textAlign = 'center';
-          const rowY = (i % 2 === 0) ? (pad.t + gH + 13) : (pad.t + gH + 25);
-          ctx.fillText(name, cx, rowY);
+          ctx.fillText(name, cx, nameRowYs[row]);
+
+          // Arrival-time label — above the dot, between profile and top band.
+          // Only when we have a usable start time AND no nearby earlier label
+          // would collide with this one.
+          if (startMin != null) {
+            const cumBase = cumMinByIdx.get(idx);
+            if (cumBase != null) {
+              const arrival = startMin + Math.round(cumBase * factor);
+              const txt = fmtClock(arrival);
+              // Anti-collision: skip if last drawn label is closer than minGap.
+              const last = opts._timeLabelPositions[opts._timeLabelPositions.length - 1];
+              const drawHere = !last || Math.abs(cx - last) >= minGap;
+              if (drawHere) {
+                ctx.font = '700 10px "JetBrains Mono", monospace';
+                // Pill background so the time stays readable when it sits
+                // over the profile fill.
+                const tw = ctx.measureText(txt).width + 8;
+                const ty = Math.max(pad.t + 8, cy - 14);
+                ctx.fillStyle = 'rgba(253,249,238,0.92)';
+                ctx.strokeStyle = 'rgba(168,128,44,0.55)';
+                ctx.lineWidth = 0.8;
+                const px = cx - tw / 2, py = ty - 9;
+                if (typeof ctx.roundRect === 'function') {
+                  ctx.beginPath();
+                  ctx.roundRect(px, py, tw, 14, 4);
+                  ctx.fill(); ctx.stroke();
+                } else {
+                  ctx.fillRect(px, py, tw, 14);
+                  ctx.strokeRect(px, py, tw, 14);
+                }
+                ctx.fillStyle = '#6e5316';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(txt, cx, ty - 1);
+                ctx.textBaseline = 'alphabetic';
+                opts._timeLabelPositions.push(cx);
+                // Restore default checkpoint label font for the next iteration.
+                ctx.font = '600 9px "Noto Serif TC", serif';
+              }
+            }
+          }
         });
       }
     });
