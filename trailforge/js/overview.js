@@ -163,6 +163,25 @@
     return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
   }
 
+  // Shift every "HH:MM" time string in this day's schedule (and inside any
+  // route variants + key_times) by the given minute delta. Used when the
+  // user edits the day's start_time so the view-mode timeline + 🚨 popup
+  // ride along. Items without a parseable time are left untouched.
+  function shiftDayScheduleByOffset(day, deltaMin) {
+    if (!day || !deltaMin) return;
+    const shiftTimeField = (obj, key) => {
+      if (!obj || typeof obj[key] !== 'string') return;
+      // value field can be a range like "16-17" — only shift if it parses
+      // cleanly as HH:MM. Skip otherwise (the 玉山 demo has these on key_times).
+      const cur = parseHM(obj[key]);
+      if (cur == null) return;
+      obj[key] = fmtHM(cur + deltaMin);
+    };
+    (day.schedule || []).forEach((it) => shiftTimeField(it, 'time'));
+    (day.routes || []).forEach((r) => (r && r.schedule || []).forEach((it) => shiftTimeField(it, 'time')));
+    (day.key_times || []).forEach((kt) => shiftTimeField(kt, 'value'));
+  }
+
   function collectRestPoints(plan) {
     const rows = [];
     let cumKm = 0;
@@ -472,21 +491,44 @@
         const v = inp.value;
         const day = (plan.days || []).find(d => d.id === dayId);
         if (!day) return;
+        // 1) Capture the old "first time" so we can shift the schedule by
+        //    the offset between old and new start. The view-mode timeline
+        //    reads from day.schedule[].time / day.routes[i].schedule[].time
+        //    directly, so unless we shift those too, "改 start 但檢視時間
+        //    沒變" — exactly the bug the user just reported.
+        const oldStart = dayStartTimeFor(day);
         if (!day.elevation_profile) day.elevation_profile = {};
         day.elevation_profile.start_time = /^\d{1,2}:\d{2}$/.test(v) ? v : '';
+        const oldMin = parseHM(oldStart);
+        const newMin = parseHM(v);
+        if (oldMin != null && newMin != null && oldMin !== newMin) {
+          shiftDayScheduleByOffset(day, newMin - oldMin);
+        }
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-        // Re-render the rest-points table AND the overview chart so the new
-        // arrival times propagate everywhere in one keystroke. (Previously
-        // only the table refreshed, leaving stale times above the chart's
-        // dots until the user changed the speed factor.)
+
+        // Refresh:
+        //   • rest-points table (arrival pills)
+        //   • elevation chart (arrival pills above dots)
+        //   • day-panels (so checkpoint mode reflects shifted schedule)
         const cur = document.activeElement;
         renderRestPoints(plan, readSpeed());
         if (TF.modeToggle && TF.modeToggle.refreshAll) {
           requestAnimationFrame(() => TF.modeToggle.refreshAll());
         }
+        if (TF.render) {
+          // Re-render day panels with shifted schedule. Day-bar / hero are
+          // also rebuilt but that's harmless. Defer to next frame so the
+          // browser commits the time-input value before we redraw.
+          requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+        }
+
         if (cur && cur.dataset && cur.dataset.dayId) {
-          const again = host.querySelector(`.rp-day-start-edit[data-day-id="${cur.dataset.dayId}"]`);
-          if (again) again.focus();
+          // After re-render the input is a fresh node — re-focus it so the
+          // user can keep typing in the time picker without click hunting.
+          requestAnimationFrame(() => {
+            const again = host.querySelector(`.rp-day-start-edit[data-day-id="${cur.dataset.dayId}"]`);
+            if (again) again.focus();
+          });
         }
       });
     });
@@ -1019,11 +1061,18 @@
       if (!live || !Array.isArray(live.days) || !Array.isArray(data.days)) return;
       data.days.forEach((d) => {
         const m = live.days.find((x) => x.id === d.id);
-        if (!m || !m.elevation_profile) return;
-        if (typeof m.elevation_profile.start_time === 'string') {
+        if (!m) return;
+        // Mirror start_time
+        if (m.elevation_profile && typeof m.elevation_profile.start_time === 'string') {
           d.elevation_profile = d.elevation_profile || {};
           d.elevation_profile.start_time = m.elevation_profile.start_time;
         }
+        // Mirror shifted schedule / routes / key_times — these ride along
+        // with start_time edits via shiftDayScheduleByOffset, so without
+        // mirroring them the saved plan would still hold the old times.
+        if (Array.isArray(m.schedule))   d.schedule   = JSON.parse(JSON.stringify(m.schedule));
+        if (Array.isArray(m.routes))     d.routes     = JSON.parse(JSON.stringify(m.routes));
+        if (Array.isArray(m.key_times))  d.key_times  = JSON.parse(JSON.stringify(m.key_times));
       });
       // Mutating data in place; nothing to merge.
     });
