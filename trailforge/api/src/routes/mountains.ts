@@ -19,8 +19,9 @@ const router = new Hono();
 const OVERPASS_URLS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.openstreetmap.ru/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
 ];
+const PER_MIRROR_TIMEOUT_MS = 8_000;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MAX_QUERY_LEN = 60;
 const DEFAULT_RADIUS_KM = 5;
@@ -47,29 +48,49 @@ function cacheSet(key: string, data: unknown) {
   }
 }
 
-// Try mirrors in order until one responds with valid JSON. Returns the
-// parsed JSON or throws.
+// Race all mirrors in parallel — first 200/JSON wins. Sequential
+// failover wasted time when the first mirror returned 429/504 quickly
+// (silently retried) AND when a mirror was slow (full timeout window
+// per mirror). Racing collapses both failure modes to the fastest
+// successful response, with a hard cap of PER_MIRROR_TIMEOUT_MS.
+//
+// Each attempt logs its outcome (status + ms) so we can diagnose which
+// mirror is reliable from the deploy region.
 async function callOverpass(query: string): Promise<any> {
-  let lastErr: unknown = null;
-  for (const url of OVERPASS_URLS) {
+  const attempts = OVERPASS_URLS.map(async (url) => {
+    const t0 = Date.now();
     try {
       const r = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: "data=" + encodeURIComponent(query),
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(PER_MIRROR_TIMEOUT_MS),
       });
+      const ms = Date.now() - t0;
       if (!r.ok) {
-        lastErr = new Error(`overpass ${url} → ${r.status}`);
-        continue;
+        log.warn("overpass_mirror_non_ok", { url, status: r.status, ms });
+        throw new Error(`${url} → ${r.status}`);
       }
-      return await r.json();
+      const json = await r.json();
+      log.info("overpass_mirror_ok", { url, ms });
+      return json;
     } catch (e) {
-      lastErr = e;
-      log.warn("overpass_mirror_failed", { url, error: String(e) });
+      const ms = Date.now() - t0;
+      log.warn("overpass_mirror_failed", { url, error: String(e), ms });
+      throw e;
     }
+  });
+  // Promise.any resolves with the first fulfilled — perfect race semantics.
+  // If all reject we throw an AggregateError to propagate every reason.
+  try {
+    return await Promise.any(attempts);
+  } catch (e) {
+    if (e instanceof AggregateError) {
+      const reasons = e.errors.map((er: any) => String(er)).join(" | ");
+      throw new Error(`all_mirrors_failed: ${reasons}`);
+    }
+    throw e;
   }
-  throw lastErr || new Error("overpass_all_mirrors_failed");
 }
 
 // Normalize an Overpass element (node/way/relation) into a NamedLocation.
