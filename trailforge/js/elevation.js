@@ -337,7 +337,9 @@
     const W = r.width, H = r.height;
     const pad = isMinimap
       ? { t: 4, r: 8, b: 4, l: 8 }
-      : { t: 32, r: 18, b: 56, l: 52 };
+      // top: day-band (32px) + label stack header (~36px) for name+pill row
+      // bottom: km axis labels (~14px) — names moved up to above the dots
+      : { t: 68, r: 18, b: 22, l: 52 };
     const gW = W - pad.l - pad.r;
     const gH = H - pad.t - pad.b;
 
@@ -600,18 +602,20 @@
           return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
         };
 
-        // Track horizontal positions of arrival labels we've drawn already so
-        // we can suppress / stagger ones that would collide.
-        if (!opts._timeLabelPositions) opts._timeLabelPositions = [];
-        const minGap = 32;          // px between time labels on the same row
+        // Stack labels (name on top, time pill below) at the top of the
+        // chart with a thin vertical guide down to the dot. Per-checkpoint
+        // anti-collision uses the wider of name vs pill so close stations
+        // either skip or stagger across two rows. The chart's bottom edge
+        // is now reserved for km labels only — no more 排雲山莊 / 主北岔
+        // mash on the x-axis.
+        // Single row of labels just under the day band, with collision-skip
+        // (no staggering — keeps the chart predictable). Dots whose label
+        // would overlap the previous one are drawn without a label, but the
+        // tick + guide line still appear so users can locate the waypoint.
+        if (!opts._stackLastX) opts._stackLastX = -Infinity;
+        const stackBaseY = 36;            // name baseline y (in canvas coords)
+        const minHGap = 6;                // px breathing room between labels
 
-        // Track last drawn x-position PER ROW so a name only stagger-jumps
-        // when it would actually collide with a previous neighbour on the
-        // same row (stops 3+ close stations from stacking onto one row).
-        if (!opts._nameRowLastX) opts._nameRowLastX = [-Infinity, -Infinity];
-        const nameRowYs = [pad.t + gH + 13, pad.t + gH + 25];
-
-        ctx.font = '600 9px "Noto Serif TC", serif';
         cps.forEach(([idx, name]) => {
           const cx = xOf(d, idx);
           const cy = yOf(d, idx);
@@ -623,92 +627,95 @@
           ctx.lineWidth = 1.2;
           ctx.strokeStyle = '#1e3a1a';
           ctx.stroke();
-          // Drop line down to baseline so checkpoint reads as a station
-          ctx.setLineDash([2, 3]);
-          ctx.lineWidth = 0.7;
-          ctx.strokeStyle = 'rgba(30,58,26,0.35)';
-          ctx.beginPath();
-          ctx.moveTo(cx, cy + 4);
-          ctx.lineTo(cx, pad.t + gH);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          // Name label — below the chart, with collision-aware row pick.
-          // Half-width of this label drives the gap calculation so wide
-          // station names get more breathing room than short ones.
-          ctx.font = '600 9px "Noto Serif TC", serif';
-          const half = ctx.measureText(name).width / 2 + 6;
-          // Pick the row with more space to the previous label on it.
-          const r0Free = cx - half - opts._nameRowLastX[0];
-          const r1Free = cx - half - opts._nameRowLastX[1];
-          let row;
-          if (r0Free >= 0) row = 0;
-          else if (r1Free >= 0) row = 1;
-          else row = (r0Free > r1Free) ? 0 : 1;     // overlap unavoidable, pick least-bad
-          opts._nameRowLastX[row] = cx + half;
-          ctx.fillStyle = '#0a1a06';
-          ctx.textAlign = 'center';
-          ctx.fillText(name, cx, nameRowYs[row]);
 
-          // Arrival-time label — above the dot, between profile and top band.
-          // Only when we have a usable start time AND no nearby earlier label
-          // would collide with this one.
+          // ── Build label content ──
+          let arrivalText = '';
           if (startMin != null) {
             const cumBase = cumMinByIdx.get(idx);
             if (cumBase != null) {
-              const arrival = startMin + Math.round(cumBase * factor);
-              const txt = fmtClock(arrival);
-              // Anti-collision: skip if last drawn label is closer than minGap.
-              const last = opts._timeLabelPositions[opts._timeLabelPositions.length - 1];
-              const drawHere = !last || Math.abs(cx - last) >= minGap;
-              if (drawHere) {
-                ctx.font = '700 10px "JetBrains Mono", monospace';
-                // Pill background so the time stays readable when it sits
-                // over the profile fill.
-                const tw = ctx.measureText(txt).width + 8;
-                const ty = Math.max(pad.t + 8, cy - 14);
-                ctx.fillStyle = 'rgba(253,249,238,0.92)';
-                ctx.strokeStyle = 'rgba(168,128,44,0.55)';
-                ctx.lineWidth = 0.8;
-                const px = cx - tw / 2, py = ty - 9;
-                if (typeof ctx.roundRect === 'function') {
-                  ctx.beginPath();
-                  ctx.roundRect(px, py, tw, 14, 4);
-                  ctx.fill(); ctx.stroke();
-                } else {
-                  ctx.fillRect(px, py, tw, 14);
-                  ctx.strokeRect(px, py, tw, 14);
-                }
-                ctx.fillStyle = '#6e5316';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(txt, cx, ty - 1);
-                ctx.textBaseline = 'alphabetic';
-                opts._timeLabelPositions.push(cx);
-                // Restore default checkpoint label font for the next iteration.
-                ctx.font = '600 9px "Noto Serif TC", serif';
-              }
+              arrivalText = fmtClock(startMin + Math.round(cumBase * factor));
             }
+          }
+
+          // Width driven by the wider of (name, time pill).
+          ctx.font = '600 10px "Noto Serif TC", serif';
+          const nameW = ctx.measureText(name).width;
+          ctx.font = '700 10px "JetBrains Mono", monospace';
+          const timeW = arrivalText ? (ctx.measureText(arrivalText).width + 8) : 0;
+          const widest = Math.max(nameW, timeW);
+          const half = widest / 2 + minHGap;
+
+          // Skip the label entirely if it would overlap the previous one.
+          // Tick + guide still drawn so the waypoint position is visible.
+          const drawLabel = (cx - half) >= opts._stackLastX;
+
+          // Vertical guide line from above-the-dot down to the dot itself —
+          // always drawn (even when label is skipped) so users can trace
+          // dots vertically.
+          const guideTop = drawLabel
+            ? stackBaseY + (arrivalText ? 24 : 12)
+            : stackBaseY;
+          ctx.setLineDash([2, 3]);
+          ctx.lineWidth = 0.7;
+          ctx.strokeStyle = drawLabel ? 'rgba(110,83,22,0.45)' : 'rgba(110,83,22,0.18)';
+          ctx.beginPath();
+          ctx.moveTo(cx, guideTop);
+          ctx.lineTo(cx, cy - 5);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          if (!drawLabel) return;
+          opts._stackLastX = cx + half;
+
+          // Draw name (top of stack)
+          ctx.font = '600 10px "Noto Serif TC", serif';
+          ctx.fillStyle = '#0a1a06';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(name, cx, stackBaseY + 9);
+
+          // Draw arrival time pill below name
+          if (arrivalText) {
+            ctx.font = '700 10px "JetBrains Mono", monospace';
+            const tw = timeW;
+            const py = stackBaseY + 12;     // pill top
+            const px = cx - tw / 2;
+            ctx.fillStyle = 'rgba(253,249,238,0.92)';
+            ctx.strokeStyle = 'rgba(168,128,44,0.55)';
+            ctx.lineWidth = 0.8;
+            if (typeof ctx.roundRect === 'function') {
+              ctx.beginPath();
+              ctx.roundRect(px, py, tw, 14, 4);
+              ctx.fill(); ctx.stroke();
+            } else {
+              ctx.fillRect(px, py, tw, 14);
+              ctx.strokeRect(px, py, tw, 14);
+            }
+            ctx.fillStyle = '#6e5316';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(arrivalText, cx, py + 7);
+            ctx.textBaseline = 'alphabetic';
           }
         });
       }
     });
 
-    // Day boundary lines + top labels
+    // Day boundary lines + top label band — kept to a fixed 22px header so
+    // it doesn't occupy the same vertical strip as the per-checkpoint name
+    // + arrival pill stack (which lives at y=27..62 below the band).
+    const bandTop = 2, bandH = 22;
     ctx.font = '700 11px "Fraunces", "Noto Serif TC", serif';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#0a1a06';
-    let cursor = pad.l;
     perDay.forEach((d, k) => {
       const startX = pad.l + (d.offset / totalDist) * gW;
       const endX = pad.l + ((d.offset + d.len) / totalDist) * gW;
-      // top label band
       ctx.fillStyle = (k % 2 === 0) ? 'rgba(30,58,26,0.07)' : 'rgba(168,128,44,0.10)';
-      ctx.fillRect(startX, 2, endX - startX, pad.t - 6);
-      // day label centred
+      ctx.fillRect(startX, bandTop, endX - startX, bandH);
       ctx.fillStyle = '#0a1a06';
       ctx.textAlign = 'center';
-      ctx.fillText(d.label || `Day ${k + 1}`, (startX + endX) / 2, pad.t - 8);
-      // boundary line (skip first day's left edge)
+      ctx.fillText(d.label || `Day ${k + 1}`, (startX + endX) / 2, bandTop + 16);
       if (k > 0) {
         ctx.strokeStyle = 'rgba(110,83,22,0.55)';
         ctx.setLineDash([4, 3]);
@@ -721,14 +728,15 @@
       }
     });
 
-    // X-axis distance scale — sits below the two checkpoint-label rows
-    // (rows are at +13 and +25; km labels live at +40).
+    // X-axis distance scale — sits just below the chart now that names
+    // moved up to the header strip. Bottom padding (pad.b=22) gives ~14px
+    // of clearance for the km labels.
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#7a7468';
     ctx.textAlign = 'left';
-    ctx.fillText('0', pad.l, pad.t + gH + 40);
+    ctx.fillText('0', pad.l, pad.t + gH + 14);
     ctx.textAlign = 'right';
-    ctx.fillText((totalDist / 1000).toFixed(1) + ' km', pad.l + gW, pad.t + gH + 40);
+    ctx.fillText((totalDist / 1000).toFixed(1) + ' km', pad.l + gW, pad.t + gH + 14);
 
     // ── Clickable route-decision markers ──
     // Days that declare route_variants + decision_anchors get a DOM <button>
