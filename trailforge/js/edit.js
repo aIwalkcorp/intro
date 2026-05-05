@@ -313,6 +313,58 @@
   /* Read-only qlinks/exp stay visible in edit mode now that the dedicated
      editor blocks (tf-ql-block / tf-det-block) are no longer injected — the
      display is the only source of truth for those fields. */
+
+  /* Retreat-times editor — sits inside the elevation pane below the rest
+     points block. Visual: ledger of timed warnings + free-form notes. */
+  .tf-rt-block{
+    background:linear-gradient(180deg, rgba(254,226,226,0.55), rgba(252,165,165,0.18));
+    border-color:rgba(220,38,38,0.45);
+  }
+  .tf-rt-block::before{ background:#dc2626 }
+  .tf-rt-title-wrap{margin-bottom:8px}
+  .tf-rt-title{
+    width:100%; padding:7px 10px;
+    background:rgba(255,255,255,0.7); border:1px solid rgba(42,36,24,0.18);
+    border-radius:6px; font-family:"Noto Serif TC",serif; font-weight:700;
+    font-size:.95rem; color:#7c1d1d;
+  }
+  .tf-rt-title:focus{outline:none; border-color:#dc2626; background:#fff}
+  .tf-rt-rows{display:flex; flex-direction:column; gap:6px}
+  .tf-rt-row{
+    display:grid; gap:6px; align-items:center;
+    padding:6px 8px; border-radius:6px;
+    background:rgba(255,255,255,0.65);
+    border:1px solid rgba(42,36,24,0.14);
+    grid-template-columns: 88px 96px 1fr 28px;
+  }
+  .tf-rt-row-note{ grid-template-columns: 50px 1fr 28px; }
+  .tf-rt-row .tf-rt-sev,
+  .tf-rt-row .tf-rt-time,
+  .tf-rt-row .tf-rt-text{
+    background:transparent; border:0; border-bottom:1px dotted rgba(42,36,24,0.25);
+    border-radius:0; padding:5px 4px; font:inherit;
+    font-family:"Noto Serif TC",serif; font-size:.88rem; color:#3b2e14;
+    min-width:0;
+  }
+  .tf-rt-row .tf-rt-sev{font-family:"JetBrains Mono",monospace; font-size:.72rem}
+  .tf-rt-row .tf-rt-time{font-family:"JetBrains Mono",monospace; font-weight:700; color:#7c1d1d}
+  .tf-rt-row input:focus, .tf-rt-row select:focus{outline:none; border-bottom:1px solid #dc2626; background:rgba(255,255,255,0.5)}
+  .tf-rt-row .tf-rt-tag{
+    font-family:"JetBrains Mono",monospace; font-size:.6rem; letter-spacing:.22em;
+    color:#7a5a1a; text-transform:uppercase; font-weight:700; text-align:center;
+  }
+  .tf-rt-foot{margin-top:8px; display:flex; flex-wrap:wrap; gap:8px}
+  .tf-rt-foot .tf-row-add{font-size:.72rem; padding:5px 12px}
+  .tf-rt-hint{
+    margin-top:6px;
+    font-family:"JetBrains Mono",monospace; font-size:.58rem; letter-spacing:.18em;
+    color:#7a7468; text-transform:uppercase;
+  }
+  @media(max-width:520px){
+    .tf-rt-row{grid-template-columns: 64px 80px 1fr 24px; gap:4px; padding:5px 6px}
+    .tf-rt-row-note{grid-template-columns: 40px 1fr 24px}
+    .tf-rt-row .tf-rt-text{font-size:.82rem}
+  }
   `;
   const styleEl = document.createElement("style");
   styleEl.id = "tf-edit-style";
@@ -578,6 +630,127 @@
   // calls below if a future iteration brings the editor UI back.
   function decorate() {
     /* day-level qlinks + details editor blocks intentionally disabled */
+    // Retreat-times editor — sits inside the elevation-mode pane, just below
+    // the rest-points (shanghe) block. Lets the user edit timed warnings
+    // ("⏰ 09:30 未登頂主峰 → 立即折返排雲") + free-form notes per day.
+    (workingData?.days || []).forEach((day) => {
+      const panel = document.getElementById("day-" + day.id);
+      if (panel) decorateDayRetreat(panel, day);
+    });
+  }
+
+  // ---- retreat editor (per day, inside elevation pane) ----
+  // Schema preserved as items_html (matches existing render path). On read we
+  // parse <div class="ret-i" style="background:..."> rows back into rich rows
+  // {kind:'time'|'note', time:'HH:MM', text:'…', severity:'critical'|'warn'|'note'};
+  // on save we regenerate the same HTML so render.js works unchanged.
+  function parseRetreatItems(items_html) {
+    const out = [];
+    (items_html || []).forEach((raw) => {
+      const s = String(raw);
+      // Try to detect "<div class=ret-i ...>...</div>"
+      const m = s.match(/^<div\s+class="ret-i"([^>]*)>([\s\S]*)<\/div>\s*$/i);
+      const inner = m ? m[2] : s;
+      const styleAttr = m ? m[1] : "";
+      let severity = "note";
+      if (/#dc2626|#fee2e2|#fecaca/i.test(styleAttr)) severity = "critical";
+      else if (/#d97706|#fef3c7|#fde68a|#fcd34d/i.test(styleAttr)) severity = "warn";
+      // Try to peel "⏰ HH:MM" + remaining
+      let time = "", text = "";
+      const tm = inner.match(/⏰\s*(\d{1,2}:\d{2})\s*(.*?)(?:<\/b>|$)/i);
+      if (tm) {
+        time = tm[1];
+        text = stripTags(tm[2] + inner.slice(inner.indexOf("</b>") + 4));
+      } else {
+        text = stripTags(inner);
+      }
+      out.push({
+        kind: time ? "time" : "note",
+        time, text: text.trim(), severity,
+      });
+    });
+    return out;
+  }
+  function stripTags(s) {
+    const t = document.createElement("div");
+    t.innerHTML = String(s);
+    return (t.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function buildRetreatItem(row) {
+    const text = (row.text || "").replace(/[<>]/g, (c) => ({ "<": "&lt;", ">": "&gt;" }[c]));
+    if (row.kind === "time" && row.time) {
+      const bg = row.severity === "warn"
+        ? "linear-gradient(180deg,#fef3c7,#fde68a);border-left-color:#d97706;"
+        : "linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;";
+      return `<div class="ret-i" style="background:${bg}"><b>⏰ ${row.time}</b> ${text}</div>`;
+    }
+    return `<div class="ret-i"><b>${text}</b></div>`;
+  }
+
+  function decorateDayRetreat(panel, day) {
+    if (panel.querySelector(".tf-rt-block")) return;
+    // Anchor: shanghe-block if exists, else mode-shell, else first child
+    const anchor = panel.querySelector(".shanghe-block") || panel.querySelector(".mode-shell") || panel.firstChild;
+    if (!anchor) return;
+    const block = document.createElement("div");
+    block.className = "tf-edit-block tf-rt-block";
+    block.dataset.dayId = day.id;
+    const r = day.retreat || {};
+    block.innerHTML = `
+      <div class="blk-head">
+        <span>編輯撤退時間</span>
+        <span class="blk-day">${esc(day.label || day.id)}</span>
+      </div>
+      <div class="tf-rt-title-wrap">
+        <input type="text" class="tf-rt-title" placeholder="撤退方案標題（如：Day 2 撤退方案）" value="${attr(r.title || "")}">
+      </div>
+      <div class="tf-rt-rows"></div>
+      <div class="tf-rt-foot">
+        <button type="button" class="tf-row-add tf-rt-add-time">＋ 新增關鍵時間</button>
+        <button type="button" class="tf-row-add tf-rt-add-note">＋ 新增備註</button>
+      </div>
+      <div class="tf-rt-hint">關鍵時間使用紅色（嚴重）／琥珀色（警告）背景；備註為純文字。</div>
+    `;
+    // Insert after anchor's parent's anchor (so the editor sits BELOW the
+    // shanghe block within the elevation pane).
+    anchor.parentNode.insertBefore(block, anchor.nextSibling);
+
+    const rowsHost = block.querySelector(".tf-rt-rows");
+    parseRetreatItems(r.items_html).forEach((row) => rowsHost.appendChild(makeRetreatRow(row)));
+
+    block.querySelector(".tf-rt-title").addEventListener("input", () => setDirty(true));
+    block.querySelector(".tf-rt-add-time").addEventListener("click", () => {
+      rowsHost.appendChild(makeRetreatRow({ kind: "time", time: "", text: "", severity: "critical" }));
+      setDirty(true);
+    });
+    block.querySelector(".tf-rt-add-note").addEventListener("click", () => {
+      rowsHost.appendChild(makeRetreatRow({ kind: "note", text: "" }));
+      setDirty(true);
+    });
+  }
+
+  function makeRetreatRow(row) {
+    const wrap = document.createElement("div");
+    wrap.className = "tf-rt-row tf-rt-row-" + (row.kind || "time");
+    wrap.dataset.kind = row.kind || "time";
+    if (row.kind === "time") {
+      wrap.innerHTML = `
+        <select class="tf-rt-sev" aria-label="嚴重程度">
+          <option value="critical" ${row.severity !== "warn" ? "selected" : ""}>🔴 嚴重</option>
+          <option value="warn" ${row.severity === "warn" ? "selected" : ""}>🟡 警告</option>
+        </select>
+        <input type="time" class="tf-rt-time" value="${attr(row.time || "")}" required>
+        <input type="text" class="tf-rt-text" placeholder="例：未登頂主峰 → 立即折返排雲" value="${attr(row.text || "")}">
+        <button type="button" class="tf-row-del" aria-label="刪除">×</button>`;
+    } else {
+      wrap.innerHTML = `
+        <span class="tf-rt-tag">備註</span>
+        <input type="text" class="tf-rt-text" placeholder="例：天候惡劣請立即折返" value="${attr(row.text || "")}">
+        <button type="button" class="tf-row-del" aria-label="刪除">×</button>`;
+    }
+    wrap.querySelectorAll("input, select").forEach((i) => i.addEventListener("input", () => setDirty(true)));
+    wrap.querySelector(".tf-row-del").addEventListener("click", () => { wrap.remove(); setDirty(true); });
+    return wrap;
   }
 
   function decorateDayLinks(panel, day) {
@@ -729,6 +902,39 @@
           links.push({ icon: icon || "", text, href, external: !!ext });
         });
         day.quick_links = links;
+      }
+      // retreat times — read from per-day editor block, regenerate items_html
+      const rtBlock = document.querySelector(`.tf-rt-block[data-day-id="${cssEscape(day.id)}"]`);
+      if (rtBlock) {
+        const title = rtBlock.querySelector(".tf-rt-title").value.trim();
+        const items = [];
+        rtBlock.querySelectorAll(".tf-rt-row").forEach((row) => {
+          const kind = row.dataset.kind;
+          const text = (row.querySelector(".tf-rt-text")?.value || "").trim();
+          if (kind === "time") {
+            const time = (row.querySelector(".tf-rt-time")?.value || "").trim();
+            const severity = (row.querySelector(".tf-rt-sev")?.value || "critical");
+            if (!time && !text) return;
+            items.push(buildRetreatItem({ kind, time, text, severity }));
+          } else {
+            if (!text) return;
+            items.push(buildRetreatItem({ kind, text }));
+          }
+        });
+        if (title || items.length) {
+          // Preserve existing title_color/title_border if user left them; else
+          // pick sensible defaults that match the demo.
+          const prev = day.retreat || {};
+          day.retreat = {
+            title: title || prev.title || "撤退方案",
+            title_color: prev.title_color || "#dc2626",
+            title_border: prev.title_border || "#dc2626",
+            items_html: items,
+            raw_html: true,
+          };
+        } else {
+          day.retreat = null;
+        }
       }
       // details
       const detBlock = document.querySelector(`.tf-det-block[data-day-id="${cssEscape(day.id)}"]`);

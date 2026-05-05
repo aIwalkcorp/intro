@@ -128,6 +128,32 @@
   //   - cumKm: running cumulative km for display
   // Synthetic "day-header" rows surface non-hiking days; "subtotal" rows
   // sit after each day's last segment summarising km / ↑ / ↓ / minutes.
+  // Pull a "start of hike" clock time for a day. Priority:
+  //   1. day.elevation_profile.start_time  (explicit, set via the editor)
+  //   2. day.schedule[0].time              (legacy: first scheduled item)
+  //   3. null                              (no start = no arrival column)
+  function dayStartTimeFor(day) {
+    const ep = day && day.elevation_profile;
+    if (ep && /^\d{1,2}:\d{2}$/.test(String(ep.start_time || ''))) return ep.start_time;
+    const sched = (day && day.schedule) || [];
+    for (const item of sched) {
+      if (item && /^\d{1,2}:\d{2}$/.test(String(item.time || ''))) return item.time;
+    }
+    return null;
+  }
+  function parseHM(s) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim());
+    if (!m) return null;
+    const h = +m[1], mm = +m[2];
+    if (h < 0 || h > 47 || mm < 0 || mm > 59) return null;
+    return h * 60 + mm;
+  }
+  function fmtHM(mins) {
+    const m = ((mins % 1440) + 1440) % 1440;     // normalize, keep within day
+    const h = Math.floor(m / 60), mm = m % 60;
+    return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+
   function collectRestPoints(plan) {
     const rows = [];
     let cumKm = 0;
@@ -136,23 +162,34 @@
       const segs = variant ? variant.segments : [];
       const dayId = day.id;
       const dayLabel = day.label || ('Day ' + day.id);
+      const dayStart = dayStartTimeFor(day);
+      const dayStartMin = parseHM(dayStart);
       if (!segs.length) {
         rows.push({
           kind: 'day-header',
-          dayId, dayLabel,
+          dayId, dayLabel, dayStart,
           note: '無步行段（' + (day.section_title || '出發/移動日') + '）',
         });
         return;
       }
-      // Day's segment subtotal accumulators
-      let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0;
+      // Header row first so the user can see/edit start time even before segs
+      rows.push({
+        kind: 'day-header',
+        dayId, dayLabel, dayStart,
+        note: dayStart ? `起登 ${dayStart}` : '尚未設定起登時間',
+      });
+      // Day's segment subtotal accumulators (also drives arrival times)
+      let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
       segs.forEach(s => {
         const dist = +s.distance_km || 0;
+        const baseMin = +s.base_minutes || 0;
         const startKm = cumKm;
         const endKm = cumKm + dist;
         const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
         const anchorLo = ai.length >= 2 ? ai[0] : null;
         const anchorHi = ai.length >= 2 ? ai[1] : null;
+        // Arrival is at the END of this segment: start + cumulative-up-to-end.
+        const cumAfter = cumDayBaseMin + baseMin;
         rows.push({
           kind: 'segment',
           dayId, dayLabel,
@@ -161,15 +198,18 @@
           distance_km: dist,
           ascent_m: +s.ascent_m || 0,
           descent_m: +s.descent_m || 0,
-          base_minutes: +s.base_minutes || 0,
+          base_minutes: baseMin,
+          cumDayBaseMinAfter: cumAfter,    // base minutes from day start through end of THIS segment
+          dayStartMin,                     // null if no start time
           startKm, endKm,
           anchorLo, anchorHi,
         });
         cumKm = endKm;
+        cumDayBaseMin = cumAfter;
         dayKm   += dist;
         dayAsc  += (+s.ascent_m || 0);
         dayDesc += (+s.descent_m || 0);
-        dayMin  += (+s.base_minutes || 0);
+        dayMin  += baseMin;
       });
       // Subtotal row for this day
       rows.push({
@@ -179,6 +219,8 @@
         ascent_m: dayAsc,
         descent_m: dayDesc,
         base_minutes: dayMin,
+        dayStartMin,
+        cumDayBaseMinAfter: cumDayBaseMin,
       });
     });
     return rows;
@@ -267,10 +309,17 @@
       const dayChip = `<span class="rp-chip rp-chip-${escapeHtml(r.dayId)}">${escapeHtml((r.dayId || '').toUpperCase())}</span>`;
 
       if (r.kind === 'day-header') {
+        const editing = document.body.classList.contains('tf-editing');
+        const startCell = editing
+          ? `<input type="time" class="rp-day-start-edit" data-day-id="${escapeHtml(r.dayId)}" value="${escapeHtml(r.dayStart || '')}" aria-label="起登時間">`
+          : (r.dayStart
+              ? `<span class="rp-day-start"><small>起登</small>${escapeHtml(r.dayStart)}</span>`
+              : `<span class="rp-day-start rp-day-start-empty"><small>起登</small>—</span>`);
         return `<div class="rp-row rp-day-header">
           ${dayChip}
           <span class="rp-day-name">${escapeHtml(r.dayLabel)}</span>
           <span class="rp-day-note">${escapeHtml(r.note || '')}</span>
+          ${startCell}
         </div>`;
       }
 
@@ -280,16 +329,22 @@
         if (r.distance_km) elevBits.push(`<span class="rp-km">${r.distance_km.toFixed(1)}<small>km</small></span>`);
         if (r.ascent_m)    elevBits.push(`<span class="rp-asc">↑${r.ascent_m}<small>m</small></span>`);
         if (r.descent_m)   elevBits.push(`<span class="rp-desc">↓${r.descent_m}<small>m</small></span>`);
+        const arrival = r.dayStartMin != null
+          ? fmtHM(r.dayStartMin + Math.round(r.cumDayBaseMinAfter * factor))
+          : null;
         return `<div class="rp-row rp-subtotal">
           <span class="rp-subtotal-l">
             ${dayChip}
             <span class="rp-subtotal-day">${escapeHtml(r.dayLabel)} 小結</span>
           </span>
-          <span class="rp-subtotal-meta">${elevBits.join('')}</span>
-          <span class="rp-subtotal-time">
-            <span class="rp-time-derived">${dayDerived}<small>分</small></span>
+          <span class="rp-cost">
+            <span class="rp-time-derived">${dayDerived}</span><small>分</small>
             <span class="rp-time-base">基準 ${r.base_minutes}分</span>
           </span>
+          <span class="rp-subtotal-meta">${elevBits.join('')}</span>
+          <span class="rp-arrive">${arrival
+            ? `<small>抵達</small><b>${arrival}</b>`
+            : '<small class="rp-arrive-empty">—</small>'}</span>
         </div>`;
       }
 
@@ -299,6 +354,9 @@
       if (r.descent_m) elevBits.push(`<span class="rp-desc">↓${r.descent_m}<small>m</small></span>`);
       if (!elevBits.length) elevBits.push(`<span class="rp-flat">─</span>`);
       const derived = Math.round(r.base_minutes * factor);
+      const arrival = r.dayStartMin != null
+        ? fmtHM(r.dayStartMin + Math.round(r.cumDayBaseMinAfter * factor))
+        : null;
       const focusable = (r.anchorLo != null && r.anchorHi != null);
       const isFocused = focusable
         && r.dayId === focusDayId
@@ -315,14 +373,17 @@
           <span class="rp-arrow">→</span>
           <span class="rp-to">${escapeHtml(r.to)}</span>
         </span>
+        <span class="rp-cost">
+          <span class="rp-time-derived">${derived}</span><small>分</small>
+          <span class="rp-time-base">基準 ${r.base_minutes}分</span>
+        </span>
         <span class="rp-meta">
           <span class="rp-km">${r.distance_km.toFixed(1)}<small>km</small></span>
           ${elevBits.join('')}
         </span>
-        <span class="rp-time">
-          <span class="rp-time-derived">${derived}</span><small>分</small>
-          <span class="rp-time-base">基準 ${r.base_minutes}分</span>
-        </span>
+        <span class="rp-arrive">${arrival
+          ? `<small>抵達</small><b>${arrival}</b>`
+          : '<small class="rp-arrive-empty">—</small>'}</span>
       </div>`;
     }).join('');
 
@@ -385,6 +446,27 @@
         }
       });
     }
+
+    // ── Bind day-start time inputs (edit mode only) ──
+    host.querySelectorAll('.rp-day-start-edit').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const dayId = inp.dataset.dayId;
+        const v = inp.value;
+        const day = (plan.days || []).find(d => d.id === dayId);
+        if (!day) return;
+        if (!day.elevation_profile) day.elevation_profile = {};
+        day.elevation_profile.start_time = /^\d{1,2}:\d{2}$/.test(v) ? v : '';
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        // Re-render so arrival times propagate to all segments + subtotal.
+        // Don't refocus the input — let the user keep typing in the time picker.
+        const cur = document.activeElement;
+        renderRestPoints(plan, readSpeed());
+        if (cur && cur.dataset && cur.dataset.dayId) {
+          const again = host.querySelector(`.rp-day-start-edit[data-day-id="${cur.dataset.dayId}"]`);
+          if (again) again.focus();
+        }
+      });
+    });
 
     // ── Bind row click → focus chart ──
     bindRowFocus(host);
@@ -900,6 +982,34 @@
     buildSyntheticFromWaypoints, applySyntheticFromWaypoints,
     namesMatch, normalizeName,
   };
+
+  // Register a collector so per-day start_time edits made in the rest-points
+  // editor flow back into the saved plan when the user clicks 儲存. We mirror
+  // from window.__PLAN__ (where our input handler wrote) into the cloned save
+  // payload's matching day.elevation_profile.start_time.
+  function registerStartTimeCollector() {
+    if (!window.TF_EDIT || !window.TF_EDIT.registerCollector) return;
+    if (window.__TF_OVERVIEW_COLLECTOR_REGISTERED__) return;
+    window.__TF_OVERVIEW_COLLECTOR_REGISTERED__ = true;
+    window.TF_EDIT.registerCollector((data) => {
+      const live = window.__PLAN__;
+      if (!live || !Array.isArray(live.days) || !Array.isArray(data.days)) return;
+      data.days.forEach((d) => {
+        const m = live.days.find((x) => x.id === d.id);
+        if (!m || !m.elevation_profile) return;
+        if (typeof m.elevation_profile.start_time === 'string') {
+          d.elevation_profile = d.elevation_profile || {};
+          d.elevation_profile.start_time = m.elevation_profile.start_time;
+        }
+      });
+      // Mutating data in place; nothing to merge.
+    });
+  }
+  // Register both immediately (in case TF_EDIT is already up via the early
+  // body stub) and once on the first edit-mode entry (in case edit.js
+  // overwrote TF_EDIT later with the auth-aware version).
+  registerStartTimeCollector();
+  document.addEventListener('tf:edit-enter', registerStartTimeCollector);
 
   // Auto-render once at DOM ready — render.js will re-call after fetch.
   if (document.readyState === 'loading') {
