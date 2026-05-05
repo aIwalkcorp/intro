@@ -479,13 +479,37 @@
       ctx.fillText(Math.round(minE + (eRange * i) / 4) + 'm', pad.l - 4, y + 3);
     }
 
-    // Per-day fills, split into 去程 (ascent) and 回程 (descent) colour zones
-    const ASCENT_COLOR  = '#1e3a1a';            // forest green
-    const ASCENT_FILL   = 'rgba(30,58,26,0.22)';
-    const DESCENT_COLOR = '#a8802c';            // brass
-    const DESCENT_FILL  = 'rgba(168,128,44,0.30)';
+    // Per-day palette — two-tone per day so Day 1 vs Day 2 vs … are
+    // visually distinguishable on the stitched chart. Synthetic 回程 days
+    // inherit their source day's dayId, so they pick the same palette and
+    // read as a continuation rather than a new day.
+    const DAY_PALETTES = [
+      // Day 1 — forest green ascent / brass descent (the existing palette)
+      { asc: '#1e3a1a', ascF: 'rgba(30,58,26,0.24)',  ascF2: 'rgba(30,58,26,0.05)',
+        desc: '#a8802c', descF: 'rgba(168,128,44,0.30)', descF2: 'rgba(168,128,44,0.06)' },
+      // Day 2 — slate blue ascent / sage olive descent
+      { asc: '#1d4e6f', ascF: 'rgba(29,78,111,0.22)', ascF2: 'rgba(29,78,111,0.04)',
+        desc: '#7a8456', descF: 'rgba(122,132,86,0.32)', descF2: 'rgba(122,132,86,0.06)' },
+      // Day 3 — rust ascent / forest descent
+      { asc: '#7a3924', ascF: 'rgba(122,57,36,0.22)', ascF2: 'rgba(122,57,36,0.04)',
+        desc: '#1e3a1a', descF: 'rgba(30,58,26,0.30)', descF2: 'rgba(30,58,26,0.05)' },
+      // Day 4 — eggplant ascent / mustard descent
+      { asc: '#54295c', ascF: 'rgba(84,41,92,0.22)',  ascF2: 'rgba(84,41,92,0.04)',
+        desc: '#b8862c', descF: 'rgba(184,134,44,0.30)', descF2: 'rgba(184,134,44,0.06)' },
+    ];
+    // Stable palette index keyed off dayId (so the synthetic 回程 inherits
+    // its source day's colour) — fall back to position when dayId missing.
+    const dayIdSeen = new Map();
+    let nextPaletteSlot = 0;
+    perDay.forEach((d, k) => {
+      const key = d.dayId != null ? String(d.dayId) : '__pos_' + k;
+      if (!dayIdSeen.has(key)) dayIdSeen.set(key, nextPaletteSlot++);
+      d._paletteIdx = dayIdSeen.get(key);
+    });
+
     // Optional override per-day
     perDay.forEach(d => {
+      const pal = DAY_PALETTES[d._paletteIdx % DAY_PALETTES.length];
       const ascentEnd = (d.direction === 'ascent_only')
         ? (d.gpx.length - 1)
         : Math.max(0, Math.min(d.gpx.length - 1, d.summitIdx ?? (d.gpx.length - 1)));
@@ -497,8 +521,8 @@
       ctx.lineTo(xOf(d, ascentEnd), pad.t + gH);
       ctx.closePath();
       const gA = ctx.createLinearGradient(0, pad.t, 0, pad.t + gH);
-      gA.addColorStop(0, ASCENT_FILL);
-      gA.addColorStop(1, 'rgba(30,58,26,0.05)');
+      gA.addColorStop(0, pal.ascF);
+      gA.addColorStop(1, pal.ascF2);
       ctx.fillStyle = gA;
       ctx.fill();
 
@@ -510,8 +534,8 @@
         ctx.lineTo(xOf(d, d.gpx.length - 1), pad.t + gH);
         ctx.closePath();
         const gD = ctx.createLinearGradient(0, pad.t, 0, pad.t + gH);
-        gD.addColorStop(0, DESCENT_FILL);
-        gD.addColorStop(1, 'rgba(168,128,44,0.06)');
+        gD.addColorStop(0, pal.descF);
+        gD.addColorStop(1, pal.descF2);
         ctx.fillStyle = gD;
         ctx.fill();
       }
@@ -521,13 +545,13 @@
       ctx.beginPath();
       ctx.moveTo(xOf(d, 0), yOf(d, 0));
       for (let i = 1; i <= ascentEnd; i++) ctx.lineTo(xOf(d, i), yOf(d, i));
-      ctx.strokeStyle = ASCENT_COLOR;
+      ctx.strokeStyle = pal.asc;
       ctx.stroke();
       if (ascentEnd < d.gpx.length - 1) {
         ctx.beginPath();
         ctx.moveTo(xOf(d, ascentEnd), yOf(d, ascentEnd));
         for (let i = ascentEnd + 1; i < d.gpx.length; i++) ctx.lineTo(xOf(d, i), yOf(d, i));
-        ctx.strokeStyle = DESCENT_COLOR;
+        ctx.strokeStyle = pal.desc;
         ctx.stroke();
       }
 

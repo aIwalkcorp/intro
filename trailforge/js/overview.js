@@ -774,14 +774,22 @@
           __synthetic_return: true,
         });
       });
+      // Inherit the LAST real day's identity so the synthetic 回程 reads as
+      // "still Day 2" — same dayId for chip + palette index, label keeps the
+      // "Day N·" prefix so the band header makes sense in context. Without
+      // this the chart shows a stand-alone "回程" that looks like a third day.
+      const sourceDayLabel = (last && last.label) || '';
+      const dayPrefix = sourceDayLabel.split('・')[0].split('·')[0] || sourceDayLabel || 'Day';
       days.push({
         gpx: revGpx,
-        label: '回程',
+        label: `${dayPrefix}·回程`,
         summitIdx: 0,           // makes drawOverview render the whole day as descent zone
         summitLabel: null,
         direction: 'descent_only',
         segments: revSegments,
+        dayId: last && last.dayId,
         __synthetic_return: true,
+        __returnFromDayIdx: days.indexOf(last),
       });
       break;
     }
