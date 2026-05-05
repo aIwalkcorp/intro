@@ -76,6 +76,106 @@
     }</div>`;
   }
 
+  // ─── derived-schedule machinery ───────────────────────────────────────
+  // The view-mode timeline is now generated entirely from the rest-points
+  // editor's data: per-day start_time + segments[base_minutes / from / to /
+  // note] × the global speed factor. day.schedule[] is kept only for
+  // first-time MIGRATION (its notes get copied into segment.note before any
+  // render pulls from it), then ignored.
+  function readSpeedFactor() {
+    try {
+      const v = parseFloat(localStorage.getItem('jm_overview_speed'));
+      if (Number.isFinite(v) && v >= 0.5 && v <= 2.5) return v;
+    } catch (e) {}
+    return 1;
+  }
+  function fmtClockMin(totalMin) {
+    const t = ((totalMin % 1440) + 1440) % 1440;
+    return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+  }
+  function buildItemsFromSegments(segs, startMin, factor) {
+    if (!Array.isArray(segs) || !segs.length || startMin == null) return null;
+    const items = [];
+    items.push({
+      time: fmtClockMin(startMin),
+      title: segs[0].from || '起登',
+      note: null,
+      highlight: false,
+    });
+    let cum = 0;
+    segs.forEach((s, i) => {
+      const baseMin = +s.base_minutes || 0;
+      cum += baseMin;
+      items.push({
+        time: fmtClockMin(startMin + Math.round(cum * factor)),
+        title: s.to || '',
+        note: s.note || null,
+        highlight: i === segs.length - 1,
+      });
+    });
+    return items;
+  }
+  // One-shot migration: if a segment has no note but a schedule item with the
+  // same endpoint name has one, copy it. Runs at every render but is a no-op
+  // once segments carry their own notes.
+  function migrateScheduleNotesToSegments(day) {
+    const ep = day && day.elevation_profile;
+    if (!ep) return;
+    const stripHtml = (h) => {
+      const t = document.createElement('div');
+      t.innerHTML = String(h || '');
+      return (t.textContent || '').replace(/\s+/g, ' ').trim();
+    };
+    const matchNote = (sched, name) => {
+      if (!Array.isArray(sched) || !name) return null;
+      const hit = sched.find(it => {
+        const title = String(it.title || '').trim();
+        return title === name || title.indexOf(name) >= 0;
+      });
+      if (!hit) return null;
+      if (hit.note) return hit.note;
+      if (hit.note_html) return stripHtml(hit.note_html);
+      return null;
+    };
+    const fillSegs = (segs, sched) => {
+      (segs || []).forEach(s => {
+        if (s.note) return;
+        const fromName = matchNote(sched, s.to) || matchNote(sched, s.from);
+        if (fromName) s.note = fromName;
+      });
+    };
+    fillSegs(ep.shanghe_segments, day.schedule);
+    if (ep.route_variants && Array.isArray(day.routes)) {
+      day.routes.forEach(r => {
+        const variant = ep.route_variants[r.id];
+        if (variant) fillSegs(variant.shanghe_segments, r.schedule);
+      });
+    }
+  }
+  // Compute derived items for a day (or for a specific route variant).
+  function deriveScheduleForDay(day) {
+    const ep = day && day.elevation_profile;
+    if (!ep) return null;
+    const start = ep.start_time;
+    if (!/^\d{1,2}:\d{2}$/.test(String(start || ''))) return null;
+    const [sh, sm] = start.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+    const factor = readSpeedFactor();
+    return buildItemsFromSegments(ep.shanghe_segments, startMin, factor);
+  }
+  function deriveScheduleForRoute(day, route) {
+    const ep = day && day.elevation_profile;
+    if (!ep || !ep.route_variants) return null;
+    const variant = ep.route_variants[route && route.id];
+    if (!variant) return null;
+    const start = ep.start_time;
+    if (!/^\d{1,2}:\d{2}$/.test(String(start || ''))) return null;
+    const [sh, sm] = start.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+    const factor = readSpeedFactor();
+    return buildItemsFromSegments(variant.shanghe_segments, startMin, factor);
+  }
+
   // ---- timeline ----
   function renderTimelineItem(item) {
     const cls = ['tl-i'];
@@ -107,21 +207,37 @@
   function renderRoutes(day) {
     const routes = day.routes;
     if (!routes || !routes.length) return '';
+    // Try derived schedule per route — use it when start_time + segments
+    // exist; fall back to r.schedule otherwise.
+    const derivedByRoute = {};
+    routes.forEach(r => {
+      const items = deriveScheduleForRoute(day, r);
+      if (items) derivedByRoute[r.id] = items;
+    });
     const tabs = `<div class="route-tabs">${
       routes.map(r =>
         `<div class="r-tab${r.active ? ' active' : ''}" onclick="switchRoute('${attr(r.id)}')">${escapeHtml(r.tab_label)}</div>`
       ).join('')
     }</div>`;
-    const contents = routes.map(r => `
-      <div class="route-content${r.active ? ' active' : ''}" id="route-${attr(r.id)}">
-        ${r.tag_text ? `<span class="day-tag ${attr(r.tag_class || '')}">${escapeHtml(r.tag_text)}</span>` : ''}
-        ${renderTimeline(r.schedule)}
-      </div>`).join('');
+    const contents = routes.map(r => {
+      const items = derivedByRoute[r.id] || r.schedule || [];
+      return `
+        <div class="route-content${r.active ? ' active' : ''}" id="route-${attr(r.id)}">
+          ${r.tag_text ? `<span class="day-tag ${attr(r.tag_class || '')}">${escapeHtml(r.tag_text)}</span>` : ''}
+          ${renderTimeline(items)}
+        </div>`;
+    }).join('');
     return tabs + contents;
   }
 
   // ---- main schedule section ----
   function renderScheduleSection(day) {
+    // Migrate legacy schedule notes into segment.note BEFORE the first
+    // derive — one-shot, idempotent. Lets the demo's "12:00 白木林觀景台
+    // (午餐行動糧 30 分鐘)" surface as the segment's 備註 in both edit and
+    // view modes without the user having to re-type anything.
+    migrateScheduleNotesToSegments(day);
+
     if (day.routes && day.routes.length) {
       return `
         <div class="section">
@@ -134,11 +250,15 @@
       const styleAttr = day.tag_color_override ? ` style="background:${day.tag_color_override};"` : '';
       tag = `<span class="day-tag ${attr(day.tag || 'd1')}"${styleAttr}>${escapeHtml(day.tag_text)}</span>`;
     }
+    // Prefer derived items when start_time + segments exist; legacy
+    // day.schedule[] is fallback only (and after migration, even its notes
+    // have already been pulled into segments).
+    const items = deriveScheduleForDay(day) || day.schedule || [];
     return `
       <div class="section">
         <div class="sec-title">${escapeHtml(day.section_title || '')}</div>
         ${tag}
-        ${renderTimeline(day.schedule)}
+        ${renderTimeline(items)}
       </div>`;
   }
 
