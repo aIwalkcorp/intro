@@ -832,7 +832,7 @@ body{
           <p>從玉山主峰・北峰範本開始你的第一本計劃書，<br>之後可自由編輯隊員、行程與緊急聯絡資訊。</p>
           <button class="new-btn" type="button" id="empty-new"><span class="body"><span class="plus">+</span><span>從玉山範本開始</span></span><span class="stamp">FORGE</span></button>
         </div>`;
-      $('empty-new').addEventListener('click', createPlan);
+      $('empty-new').addEventListener('click', showCreateChooser);
       return;
     }
     const cards = plans.map((p, i) => {
@@ -1053,7 +1053,320 @@ body{
     }
   }
 
-  newBtn.addEventListener('click', createPlan);
+  // ─── GPX-driven plan creation ──────────────────────────────────────
+  // Replace direct createPlan() with a small chooser modal: prompt for a
+  // GPX upload (primary path) or fall back to the玉山 demo template.
+  // GPX path: parse → fetch /api/mountains/around → generate plan.data
+  // (TF.planFromGpx) → POST → redirect.
+  function showCreateChooser() {
+    if (document.getElementById('tf-create-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'tf-create-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,26,6,0.55);display:flex;align-items:center;justify-content:center;animation:tfFadeIn .2s ease-out';
+    modal.innerHTML = `
+      <div style="background:linear-gradient(180deg,#fdf9ee,#f0e7cd);border:1px solid rgba(42,36,24,0.3);border-radius:12px;
+                  padding:24px 28px;width:min(440px,92vw);box-shadow:0 30px 80px -20px rgba(10,26,6,0.5);">
+        <h2 style="margin:0 0 4px;font-family:'Fraunces',serif;font-style:italic;font-weight:700;font-size:1.4rem;color:#0a1a06;">建立新計劃書</h2>
+        <p style="margin:4px 0 18px;font-family:serif;font-size:.86rem;color:#6e5316;font-style:italic;">建議上傳一份登山軌跡 GPX，系統會自動建立含地點、距離、海拔的計劃書骨架</p>
+        <label class="tf-cm-up" style="display:block;cursor:pointer;padding:18px 16px;border:2px dashed #6e5316;border-radius:10px;background:rgba(168,128,44,0.08);text-align:center;transition:all .15s;">
+          <div style="font-family:serif;font-style:italic;font-weight:700;font-size:1.05rem;color:#1e3a1a;">📁 上傳 GPX 檔</div>
+          <div style="margin-top:4px;font-family:monospace;font-size:.7rem;letter-spacing:.1em;color:#7a7468;">.GPX  ·  STRAVA · GAIA · 健行筆記匯出</div>
+          <input type="file" id="tf-cm-file" accept=".gpx,application/gpx+xml,text/xml" style="display:none">
+        </label>
+        <div id="tf-cm-status" style="margin-top:12px;font-size:.82rem;color:#6e5316;font-family:serif;font-style:italic;min-height:20px;"></div>
+        <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <button type="button" id="tf-cm-tpl" style="background:none;border:none;font-family:serif;font-style:italic;font-size:.78rem;color:#7a7468;text-decoration:underline;cursor:pointer;padding:0;">沒有 GPX？從玉山範本開始</button>
+          <button type="button" id="tf-cm-cancel" style="background:#fdfaf0;border:1px solid #6e5316;color:#1e3a1a;font-family:serif;padding:6px 14px;border-radius:6px;cursor:pointer;">取消</button>
+        </div>
+      </div>
+      <style>@keyframes tfFadeIn{from{opacity:0}to{opacity:1}} #tf-create-modal label.tf-cm-up:hover{background:rgba(168,128,44,0.18);border-color:#1e3a1a}</style>
+    `;
+    document.body.appendChild(modal);
+
+    const close = () => modal.remove();
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    document.getElementById('tf-cm-cancel').addEventListener('click', close);
+    document.getElementById('tf-cm-tpl').addEventListener('click', () => { close(); createPlan(); });
+    const fileInput = document.getElementById('tf-cm-file');
+    fileInput.addEventListener('change', async () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      await createFromGpx(f, modal);
+    });
+  }
+
+  async function createFromGpx(file, modal) {
+    const status = document.getElementById('tf-cm-status');
+    const setStatus = (msg, isErr) => { if (status) { status.textContent = msg; status.style.color = isErr ? '#a83d2c' : '#6e5316'; } };
+
+    if (!window.TF || !window.TF.gpxIO || !window.TF.planFromGpx) {
+      setStatus('系統尚未載入完成，請稍候再試', true); return;
+    }
+    setStatus('解析 GPX…');
+    let text;
+    try { text = await file.text(); }
+    catch (e) { setStatus('讀檔失敗：' + e.message, true); return; }
+
+    const parsed = TF.gpxIO.parseFull(text);
+    if (!parsed || !parsed.track.length) {
+      setStatus('GPX 解析失敗或無 trkpt', true); return;
+    }
+    let { track, timestamps, trkName, waypoints } = parsed;
+
+    // Down-sample large tracks. Best-effort timestamp preservation:
+    // resample the timestamps array to the same size as the simplified
+    // track using uniform striding. Loses precise per-point times but
+    // keeps the start/end + rough spacing — that's all detectDayBoundaries
+    // needs (looks for > 4h gaps between consecutive kept points).
+    if (track.length > 800 && TF.gpxIO.simplifyByElevation) {
+      const before = track.length;
+      const beforeTs = timestamps.slice();
+      track = TF.gpxIO.simplifyByElevation(track, 800);
+      if (beforeTs.length === before && track.length > 0) {
+        // Stride-resample timestamps to align with simplified track length.
+        const newTs = [];
+        for (let i = 0; i < track.length; i++) {
+          const srcIdx = Math.min(before - 1, Math.round((i / (track.length - 1 || 1)) * (before - 1)));
+          newTs.push(beforeTs[srcIdx]);
+        }
+        timestamps = newTs;
+      } else {
+        timestamps = [];
+      }
+      console.log(`[plan-wizard] simplified ${before} → ${track.length} pts`);
+    }
+
+    setStatus('搜尋地點 (OpenStreetMap)…');
+    let osm_locations = {};
+    try {
+      // Center the OSM query on the trkpt at the maximum elevation —
+      // that's usually the summit/destination, more interesting than
+      // the trailhead. Falls back to mid-track if elevations all 0.
+      let centerIdx = 0;
+      let maxEle = -Infinity;
+      for (let i = 0; i < track.length; i++) {
+        if ((track[i][2] || 0) > maxEle) { maxEle = track[i][2] || 0; centerIdx = i; }
+      }
+      const lat = track[centerIdx][0];
+      const lon = track[centerIdx][1];
+      // Compute trail span to size the OSM radius
+      const lats = track.map(p => p[0]);
+      const lons = track.map(p => p[1]);
+      const spanLat = Math.max(...lats) - Math.min(...lats);
+      const spanLon = Math.max(...lons) - Math.min(...lons);
+      const spanKm = Math.max(spanLat, spanLon) * 111;
+      const radius = Math.min(15, Math.max(3, spanKm * 0.8 + 1));
+      const r = await api(`/api/mountains/around?lat=${lat}&lon=${lon}&radius_km=${radius}`);
+      if (r.ok) {
+        const j = await r.json();
+        (j.locations || []).forEach(loc => {
+          osm_locations[loc.name] = loc;
+        });
+      } else {
+        console.warn('mountains/around failed', r.status);
+      }
+    } catch (e) {
+      console.warn('OSM fetch error', e);
+      // Continue without OSM — plan will only have GPX wpts (if any)
+    }
+
+    setStatus('產生計劃書骨架…');
+    let result;
+    try {
+      result = TF.planFromGpx.generate({
+        track, timestamps, waypoints,
+        osm_locations,
+        gpxFilename: file.name,
+        trkName,
+      });
+    } catch (e) {
+      setStatus('產生失敗：' + e.message, true); return;
+    }
+
+    // Show preview UI inside the modal — DON'T POST yet.
+    renderPreview(result, modal, file);
+  }
+
+  // ─── Preview rendering ─────────────────────────────────────────────
+  // Replace the chooser modal's contents with a wider preview card that
+  // lets the user verify what will be created before committing. The
+  // user can edit the title, see snapped POIs / per-day breakdown / a
+  // mini elevation chart, then confirm or go back.
+  function renderPreview(result, modal, file) {
+    const data = result.data;
+    const meta = data.meta || {};
+    const days = data.days || [];
+    const gpxRef = result.gpxRef;
+    const track = (data.gpx_tracks || {})[gpxRef] || [];
+    const totalKm = (data.gpx_meta || {})[gpxRef]?.distance_km || 0;
+    const totalAsc = (data.gpx_meta || {})[gpxRef]?.ascent_m || 0;
+    const totalDesc = (data.gpx_meta || {})[gpxRef]?.descent_m || 0;
+    const matchCount = Object.keys(result.snaps || {}).length;
+    const missCount = (result.missing || []).length;
+
+    // Build per-day card markup
+    const dayCardsHtml = days.map(d => {
+      const segCount = d.elevation_profile?.shanghe_segments?.length || 0;
+      const dayKm = d.elevation_profile?.shanghe_segments?.reduce((s, x) => s + (x.distance_km || 0), 0) || 0;
+      const dayAsc = d.elevation_profile?.shanghe_segments?.reduce((s, x) => s + (x.ascent_m || 0), 0) || 0;
+      const summit = d.elevation_profile?.summit_label;
+      const scheduleHtml = (d.schedule || []).map(s => `
+        <li style="display:flex;gap:8px;font-family:serif;font-size:.78rem;line-height:1.5;color:#0a1a06;">
+          <span style="font-family:monospace;font-weight:600;color:#6e5316;min-width:42px;">${escapeHtml(s.time || '')}</span>
+          <span>${escapeHtml(s.title || '')}</span>
+          ${s.elevation ? `<span style="color:#7a7468;font-size:.72rem;">${escapeHtml(s.elevation)}</span>` : ''}
+        </li>
+      `).join('');
+      return `
+        <div style="background:rgba(168,128,44,0.06);border:1px solid rgba(110,83,22,0.25);border-radius:8px;padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <strong style="font-family:'Fraunces',serif;font-style:italic;font-size:1rem;color:#0a1a06;">${escapeHtml(d.label || d.id)}</strong>
+            <span style="font-family:monospace;font-size:.7rem;letter-spacing:.06em;color:#6e5316;">${escapeHtml(d.date_label || '')}</span>
+          </div>
+          <div style="font-family:monospace;font-size:.7rem;color:#7a7468;letter-spacing:.05em;margin-bottom:6px;">
+            ${segCount} 段 · ${dayKm.toFixed(1)}km · ↑${dayAsc}m${summit ? ' · 最高 ' + escapeHtml(summit) : ''}
+          </div>
+          <ul style="list-style:none;margin:0;padding:0;">${scheduleHtml || '<li style="font-style:italic;color:#7a7468;font-size:.75rem;">（無偵測到地點）</li>'}</ul>
+        </div>
+      `;
+    }).join('');
+
+    // Missing locations strip (shows what didn't snap, with distance)
+    const missingHtml = (result.missing || []).length
+      ? `<div style="margin-top:8px;font-family:serif;font-style:italic;font-size:.74rem;color:#a83d2c;">
+           未對到（離軌跡太遠，已略過）：${result.missing.map(m => `${escapeHtml(m.name)} (${m.distance_m}m)`).join('、')}
+         </div>`
+      : '';
+
+    // Replace modal content
+    const card = modal.querySelector(':scope > div');
+    if (!card) return;
+
+    // Make the modal wider for the preview
+    card.style.width = 'min(720px,94vw)';
+    card.style.maxHeight = '92vh';
+    card.style.overflowY = 'auto';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2 style="margin:0;font-family:'Fraunces',serif;font-style:italic;font-weight:700;font-size:1.3rem;color:#0a1a06;">預覽計劃書骨架</h2>
+        <button type="button" id="tf-pv-back" style="background:none;border:none;font-family:serif;font-style:italic;font-size:.8rem;color:#7a7468;text-decoration:underline;cursor:pointer;padding:0;">← 重選 GPX</button>
+      </div>
+      <p style="margin:0 0 14px;font-family:serif;font-style:italic;font-size:.8rem;color:#6e5316;">確認下方內容後再建立。建立後會跳到編輯模式讓你補上備註、連結、撤退方案等。</p>
+
+      <label style="display:block;margin:0 0 14px;">
+        <span style="display:block;font-family:monospace;font-size:.66rem;letter-spacing:.18em;color:#7a7468;text-transform:uppercase;margin-bottom:4px;">計劃書標題</span>
+        <input type="text" id="tf-pv-title" value="${escapeHtml(meta.title || '')}" style="width:100%;font-family:'Fraunces',serif;font-style:italic;font-weight:700;font-size:1.05rem;color:#0a1a06;background:#fdfaf0;border:1px solid rgba(110,83,22,0.4);border-radius:6px;padding:8px 12px;box-sizing:border-box;">
+      </label>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+        <div style="background:rgba(168,128,44,0.08);border:1px solid rgba(110,83,22,0.25);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;color:#0a1a06;">${totalKm.toFixed(1)}<small style="font-size:.65rem;font-family:monospace;color:#7a7468;letter-spacing:.06em;">  KM</small></div>
+          <div style="font-family:monospace;font-size:.6rem;letter-spacing:.18em;color:#7a7468;text-transform:uppercase;">總距離</div>
+        </div>
+        <div style="background:rgba(30,58,26,0.08);border:1px solid rgba(30,58,26,0.25);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;color:#1e3a1a;">↑${totalAsc}<small style="font-size:.65rem;font-family:monospace;color:#7a7468;letter-spacing:.06em;">  M</small></div>
+          <div style="font-family:monospace;font-size:.6rem;letter-spacing:.18em;color:#7a7468;text-transform:uppercase;">爬升</div>
+        </div>
+        <div style="background:rgba(168,128,44,0.08);border:1px solid rgba(110,83,22,0.25);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;color:#a8802c;">↓${totalDesc}<small style="font-size:.65rem;font-family:monospace;color:#7a7468;letter-spacing:.06em;">  M</small></div>
+          <div style="font-family:monospace;font-size:.6rem;letter-spacing:.18em;color:#7a7468;text-transform:uppercase;">下降</div>
+        </div>
+        <div style="background:rgba(30,58,26,0.08);border:1px solid rgba(30,58,26,0.25);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;color:#0a1a06;">${days.length}<small style="font-size:.65rem;font-family:monospace;color:#7a7468;letter-spacing:.06em;">  天</small></div>
+          <div style="font-family:monospace;font-size:.6rem;letter-spacing:.18em;color:#7a7468;text-transform:uppercase;">${matchCount} 個地點</div>
+        </div>
+      </div>
+
+      <div style="background:#fdf9ee;border:1px solid rgba(42,36,24,0.15);border-radius:6px;padding:6px;margin-bottom:12px;">
+        <canvas id="tf-pv-canvas" style="display:block;width:100%;height:140px;"></canvas>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        ${dayCardsHtml || '<div style="font-family:serif;font-style:italic;color:#a83d2c;font-size:.85rem;">無有效行程段（GPX 與 named_locations 未對應到任何地點）</div>'}
+      </div>
+
+      ${missingHtml}
+
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;align-items:center;gap:8px;">
+        <button type="button" id="tf-pv-cancel" style="background:#fdfaf0;border:1px solid #6e5316;color:#1e3a1a;font-family:serif;padding:7px 16px;border-radius:6px;cursor:pointer;">取消</button>
+        <button type="button" id="tf-pv-confirm" style="background:#1e3a1a;border:1px solid #1e3a1a;color:#fdfaf0;font-family:'Fraunces',serif;font-style:italic;font-weight:700;padding:7px 22px;border-radius:6px;cursor:pointer;font-size:.95rem;">建立計劃書 →</button>
+      </div>
+      <div id="tf-pv-status" style="margin-top:8px;font-size:.82rem;color:#6e5316;font-family:serif;font-style:italic;text-align:right;min-height:18px;"></div>
+    `;
+
+    // Draw the mini elevation chart using the existing TF.elevation.draw
+    // helper (same one the per-day chart uses). Anchor markers come from
+    // the snaps so the user can see WHERE in the trace each named point
+    // landed — vertical hairline + brass dot + label.
+    const canvas = document.getElementById('tf-pv-canvas');
+    if (canvas && track.length && window.TF && TF.elevation && TF.elevation.draw) {
+      // Anchor labels: short version (drop common suffixes for readability)
+      const anchors = [];
+      const labels = [];
+      Object.keys(result.snaps || {}).forEach(name => {
+        anchors.push(result.snaps[name]);
+        labels.push(name.length > 6 ? name.slice(0, 6) + '…' : name);
+      });
+      // Defer to next frame so canvas has its layout-computed size
+      requestAnimationFrame(() => {
+        TF.elevation.draw(canvas, track, {
+          color: '#1e3a1a',
+          fill: 'rgba(168,128,44,0.22)',
+          anchorIdx: anchors,
+          anchorLabels: labels,
+        });
+      });
+    }
+
+    // Wire the new buttons
+    document.getElementById('tf-pv-back').addEventListener('click', () => {
+      // Restore the chooser modal
+      modal.remove();
+      showCreateChooser();
+    });
+    document.getElementById('tf-pv-cancel').addEventListener('click', () => modal.remove());
+    document.getElementById('tf-pv-confirm').addEventListener('click', async () => {
+      const titleInput = document.getElementById('tf-pv-title');
+      const newTitle = (titleInput?.value || '').trim() || meta.title || '新計劃書';
+      // Update plan.data with edited title before POST
+      data.meta.title = newTitle;
+      data.meta.page_title = newTitle;
+      data.meta.short_name = newTitle.slice(0, 8);
+
+      const status = document.getElementById('tf-pv-status');
+      const confirm = document.getElementById('tf-pv-confirm');
+      const setStatus = (msg, isErr) => { if (status) { status.textContent = msg; status.style.color = isErr ? '#a83d2c' : '#6e5316'; } };
+      confirm.disabled = true;
+      setStatus('建立中…');
+
+      try {
+        const r = await api('/api/plans', {
+          method: 'POST',
+          body: JSON.stringify({ title: newTitle, data }),
+        });
+        if (r.queued) {
+          setStatus('離線：已暫存。連線後將自動上傳。');
+          confirm.disabled = false;
+          return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const created = await r.json();
+        setStatus('已建立 — 開啟中…');
+        setTimeout(() => { location.href = planLink(created.id); }, 600);
+      } catch (e) {
+        setStatus('建立失敗：' + e.message, true);
+        confirm.disabled = false;
+      }
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  newBtn.addEventListener('click', showCreateChooser);
   $('logout-btn').addEventListener('click', async () => {
     try { await api('/auth/logout', { method: 'POST', keepalive: true }); } catch {}
     localStorage.removeItem(TOKEN_KEY);
@@ -1066,5 +1379,9 @@ body{
 })();
 </script>
 <script src="js/outbox.js"></script>
+<script src="js/elevation.js"></script>
+<script src="js/gpx-snap.js"></script>
+<script src="js/gpx-io.js"></script>
+<script src="js/plan-from-gpx.js"></script>
 </body>
 </html>

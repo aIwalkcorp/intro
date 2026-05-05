@@ -53,6 +53,36 @@
     return pts.length ? pts : null;
   }
 
+  // Extended parse: returns { track, timestamps, trkName, waypoints }.
+  // timestamps[i] = Date|null parallel to track[i]. trkName = first
+  // <trk><name> for default plan title. Used by plan-from-gpx.js.
+  function parseFull(xmlString) {
+    if (!xmlString || typeof xmlString !== 'string') return null;
+    const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
+    if (doc.querySelector('parsererror')) return null;
+    const track = [];
+    const timestamps = [];
+    doc.querySelectorAll('trkpt').forEach(node => {
+      const lat = parseFloat(node.getAttribute('lat'));
+      const lon = parseFloat(node.getAttribute('lon'));
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      const eleNode = node.querySelector('ele');
+      const elev = eleNode ? parseFloat(eleNode.textContent) : 0;
+      const timeNode = node.querySelector('time');
+      let ts = null;
+      if (timeNode && timeNode.textContent) {
+        const d = new Date(timeNode.textContent);
+        if (!isNaN(d.getTime())) ts = d;
+      }
+      track.push([lat, lon, Number.isFinite(elev) ? elev : 0]);
+      timestamps.push(ts);
+    });
+    const trkNameNode = doc.querySelector('trk > name');
+    const trkName = trkNameNode ? (trkNameNode.textContent || '').trim() : '';
+    const waypoints = parseWaypoints(xmlString);
+    return { track, timestamps, trkName, waypoints };
+  }
+
   // Extract <wpt lat lon><name>...</name><ele>...</ele></wpt> from a GPX
   // doc. Each waypoint becomes {lat, lon, ele, name}. Used by the route-
   // variant chart to replace trkpt slicing with named-anchor straight-
@@ -602,6 +632,25 @@
       source: 'upload',
     };
 
+    // Auto-snap named_locations onto the new track. Computed BEFORE
+    // persist so the snaps and the track go up in the same PATCH (avoids
+    // a stale-anchor render between upload and snap completion).
+    const planForSnap = getPlan();
+    const named = (planForSnap && planForSnap.data && planForSnap.data.named_locations) || null;
+    let snapResult = null;
+    if (named && Object.keys(named).length && TF.gpxSnap) {
+      snapResult = TF.gpxSnap.snapAllToTrack(track, named, { maxDistanceM: 500 });
+      if (snapResult && snapResult.snaps) {
+        planForSnap.data = planForSnap.data || {};
+        planForSnap.data.gpx_anchor_idx = planForSnap.data.gpx_anchor_idx || {};
+        planForSnap.data.gpx_anchor_idx[ref] = snapResult.snaps;
+        const matched = Object.keys(snapResult.snaps).length;
+        const total = Object.keys(named).length;
+        console.log(`[gpx-io] snap ${ref}: ${matched}/${total} matched`,
+          snapResult.missing.length ? `(missing: ${snapResult.missing.map(m=>m.name).join(', ')})` : '');
+      }
+    }
+
     setRowStatus(row, '上傳中…');
     const result = await persist(ref, track, meta, waypoints);
 
@@ -674,7 +723,7 @@
     t.__timer = setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  TF.gpxIO = { render, parse, parseWaypoints, encode, analyse, simplifyByElevation };
+  TF.gpxIO = { render, parse, parseFull, parseWaypoints, encode, analyse, simplifyByElevation };
 
   // Rehydrate __JM_GPX__ on boot so any tracks the user uploaded in a
   // previous session override the inline defaults BEFORE elevation/

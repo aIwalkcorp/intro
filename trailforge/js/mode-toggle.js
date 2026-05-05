@@ -364,6 +364,13 @@
     const gpx = window.__JM_GPX__ || {};
     const days = [];
     const dayIds = [];  // parallel array of plan-day ids, so overview.js can map
+    // gpx_anchor_idx[ref][name] is the canonical source of segment anchor
+    // indices when present (computed by gpx-io.js after each upload via
+    // TF.gpxSnap). Falls back to segment.anchor_idx written into plan-data
+    // for the玉山 demo.
+    const anchorOverrides = (plan.data && plan.data.gpx_anchor_idx)
+      || plan.gpx_anchor_idx  // tolerate top-level too (static demo shape)
+      || {};
     plan.days.forEach(d => {
       const ep = d.elevation_profile;
       if (!ep || !ep.gpx_ref) return;
@@ -395,6 +402,28 @@
           if (v.decision_anchors) decisionAnchors = v.decision_anchors;
         }
       }
+      // Apply gpx_anchor_idx overrides: each segment's from/to name is
+      // looked up in anchorOverrides[gpx_ref] → integer trkpt idx that
+      // replaces the segment's plan-data anchor_idx pair. Segments may
+      // also declare their own gpx_ref (segment.gpx_ref) to point at a
+      // different track than the day's default — supports same-day
+      // multi-GPX (e.g. main + 北峰繞道).
+      const refForDay = ep.gpx_ref;
+      segments = segments.map(s => {
+        const segRef = s.gpx_ref || refForDay;
+        const overrideMap = anchorOverrides[segRef];
+        if (!overrideMap) return s;
+        const fromIdx = overrideMap[s.from];
+        const toIdx = overrideMap[s.to];
+        if (fromIdx == null && toIdx == null) return s;
+        const next = Object.assign({}, s);
+        next.anchor_idx = [
+          fromIdx != null ? fromIdx : (Array.isArray(s.anchor_idx) ? s.anchor_idx[0] : 0),
+          toIdx   != null ? toIdx   : (Array.isArray(s.anchor_idx) ? s.anchor_idx[1] : 0),
+        ];
+        return next;
+      });
+
       const dayInfo = {
         gpx: track,
         label: d.label || ('Day ' + d.id),
