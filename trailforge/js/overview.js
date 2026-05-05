@@ -135,11 +135,20 @@
   function dayStartTimeFor(day) {
     const ep = day && day.elevation_profile;
     if (ep && /^\d{1,2}:\d{2}$/.test(String(ep.start_time || ''))) return ep.start_time;
-    const sched = (day && day.schedule) || [];
-    for (const item of sched) {
-      if (item && /^\d{1,2}:\d{2}$/.test(String(item.time || ''))) return item.time;
-    }
-    return null;
+    const pickFirstTime = (sched) => {
+      for (const item of (sched || [])) {
+        if (item && /^\d{1,2}:\d{2}$/.test(String(item.time || ''))) return item.time;
+      }
+      return null;
+    };
+    // 1) day-level schedule (most plans).
+    const a = pickFirstTime(day && day.schedule);
+    if (a) return a;
+    // 2) route-variant schedule — 玉山 Day 2 keeps its 02:00 起床 inside
+    //    routes[active].schedule, NOT at the day level.
+    const routes = (day && day.routes) || [];
+    const active = routes.find(r => r && r.active) || routes[0];
+    return pickFirstTime(active && active.schedule);
   }
   function parseHM(s) {
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim());
@@ -426,6 +435,11 @@
     //    be normalised in onChange before re-render).
     const input = host.querySelector('#overview-speed');
     if (input) {
+      const refreshChart = () => {
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
+      };
       const onChange = () => {
         let f = parseFloat(input.value);
         if (!Number.isFinite(f) || f < 0.5) f = 0.5;
@@ -433,16 +447,20 @@
         input.value = f.toFixed(2);
         writeSpeed(f);
         renderRestPoints(plan, f);
+        refreshChart();
       };
       input.addEventListener('change', onChange);
       // Live update on every keystroke — table is small enough that a full
       // re-render per input event is fine and keeps the focus selection
-      // sticky (we read overview.dataset before re-rendering).
+      // sticky (we read overview.dataset before re-rendering). Also
+      // re-draws the overview chart so arrival pills above the dots track
+      // the new factor.
       input.addEventListener('input', () => {
         const f = parseFloat(input.value);
         if (Number.isFinite(f) && f >= 0.5 && f <= 2.5) {
           writeSpeed(f);
           renderRestPoints(plan, f);
+          refreshChart();
         }
       });
     }
@@ -457,10 +475,15 @@
         if (!day.elevation_profile) day.elevation_profile = {};
         day.elevation_profile.start_time = /^\d{1,2}:\d{2}$/.test(v) ? v : '';
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-        // Re-render so arrival times propagate to all segments + subtotal.
-        // Don't refocus the input — let the user keep typing in the time picker.
+        // Re-render the rest-points table AND the overview chart so the new
+        // arrival times propagate everywhere in one keystroke. (Previously
+        // only the table refreshed, leaving stale times above the chart's
+        // dots until the user changed the speed factor.)
         const cur = document.activeElement;
         renderRestPoints(plan, readSpeed());
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
         if (cur && cur.dataset && cur.dataset.dayId) {
           const again = host.querySelector(`.rp-day-start-edit[data-day-id="${cur.dataset.dayId}"]`);
           if (again) again.focus();

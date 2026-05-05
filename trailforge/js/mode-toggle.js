@@ -425,14 +425,25 @@
       });
 
       // Surface the day's start clock time (HH:MM) so the overview chart can
-      // annotate each checkpoint with the projected arrival clock. Falls back
-      // to the first scheduled item when elevation_profile.start_time is
-      // missing — same priority order as overview.js's rest-points table.
+      // annotate each checkpoint with the projected arrival clock. Priority
+      // matches overview.js's rest-points table:
+      //   1. elevation_profile.start_time (explicit, set in editor)
+      //   2. day.schedule[0].time         (most days)
+      //   3. routes[active].schedule[0].time   (玉山 Day 2 case — schedule
+      //      lives inside the active route variant, not at day level)
       let startTime = (ep && /^\d{1,2}:\d{2}$/.test(String(ep.start_time || ''))) ? ep.start_time : null;
       if (!startTime) {
-        const sched = (d.schedule || []);
-        for (const it of sched) {
-          if (it && /^\d{1,2}:\d{2}$/.test(String(it.time || ''))) { startTime = it.time; break; }
+        const pick = (sched) => {
+          for (const it of (sched || [])) {
+            if (it && /^\d{1,2}:\d{2}$/.test(String(it.time || ''))) return it.time;
+          }
+          return null;
+        };
+        startTime = pick(d.schedule);
+        if (!startTime) {
+          const routes = d.routes || [];
+          const active = routes.find(r => r && r.active) || routes[0];
+          startTime = pick(active && active.schedule);
         }
       }
 
