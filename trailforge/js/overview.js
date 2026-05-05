@@ -251,6 +251,92 @@
         cumDayBaseMinAfter: cumDayBaseMin,
       });
     });
+
+    // ── Synthetic 回程 rows ───────────────────────────────────────────────
+    // Mirrors synthesizeReturnDay's matching logic: when the trip starts and
+    // ends at different named points but contains an ascent_only day going
+    // start→end, we auto-emit the reversed segments as a "Day N·回程" tail
+    // so the rest-points table matches what the chart already shows.
+    const realDays = plan.days || [];
+    const autoReturn = plan.auto_return_descent !== false;
+    if (autoReturn && realDays.length >= 2) {
+      const first = realDays[0];
+      const last = realDays[realDays.length - 1];
+      const fv = activeVariantFor(first);
+      const lv = activeVariantFor(last);
+      const firstSegs = (fv && fv.segments) || [];
+      const lastSegs = (lv && lv.segments) || [];
+      const startName = firstSegs[0] && firstSegs[0].from;
+      const endName = lastSegs.length && lastSegs[lastSegs.length - 1].to;
+      if (startName && endName && startName !== endName) {
+        for (const d of realDays) {
+          const v = activeVariantFor(d);
+          if (!v || v.direction !== 'ascent_only') continue;
+          const segs = v.segments || [];
+          if (!segs.length) continue;
+          if (segs[0].from !== startName) continue;
+          if (segs[segs.length - 1].to !== endName) continue;
+          // Found an ascent_only day going start→end; reverse its segments
+          // and tag them as belonging to the LAST day's 回程.
+          const dayId = last.id;
+          const sourceLabel = last.label || ('Day ' + last.id);
+          const dayPrefix = sourceLabel.split('・')[0].split('·')[0] || sourceLabel;
+          const dayLabel = `${dayPrefix}·回程`;
+          rows.push({
+            kind: 'day-header',
+            dayId, dayLabel,
+            dayStart: null,
+            note: `自動補齊：${endName} → ${startName}`,
+            isReturn: true,
+          });
+          let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
+          const revSegs = segs.slice().reverse();
+          revSegs.forEach((s) => {
+            const dist = +s.distance_km || 0;
+            const baseMin = +s.base_minutes || 0;
+            const startKm = cumKm;
+            const endKm = cumKm + dist;
+            const ascR = +s.descent_m || 0;   // descent of original = ascent of return
+            const descR = +s.ascent_m || 0;
+            const cumAfter = cumDayBaseMin + baseMin;
+            rows.push({
+              kind: 'segment',
+              dayId, dayLabel,
+              from: s.to || '',
+              to: s.from || '',
+              distance_km: dist,
+              ascent_m: ascR,
+              descent_m: descR,
+              base_minutes: baseMin,
+              cumDayBaseMinAfter: cumAfter,
+              dayStartMin: null,           // no start clock for synthetic return
+              startKm, endKm,
+              anchorLo: null, anchorHi: null,   // no chart focus on synth rows
+              isReturn: true,
+            });
+            cumKm = endKm;
+            cumDayBaseMin = cumAfter;
+            dayKm   += dist;
+            dayAsc  += ascR;
+            dayDesc += descR;
+            dayMin  += baseMin;
+          });
+          rows.push({
+            kind: 'subtotal',
+            dayId, dayLabel,
+            distance_km: dayKm,
+            ascent_m: dayAsc,
+            descent_m: dayDesc,
+            base_minutes: dayMin,
+            dayStartMin: null,
+            cumDayBaseMinAfter: cumDayBaseMin,
+            isReturn: true,
+          });
+          break;
+        }
+      }
+    }
+
     return rows;
   }
 
