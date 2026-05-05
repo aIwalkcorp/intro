@@ -94,7 +94,11 @@
     transition: transform .3s cubic-bezier(.2,.7,.2,1), opacity .25s ease;
     font-family:"Noto Serif TC",serif;
   }
-  .tf-edit-bar.show{
+  /* The bar is mounted with .show as soon as edit mode begins, but stays
+     hidden until there are actual changes (body.tf-dirty). Save/cancel
+     have no purpose with no pending edits — keeping the bar off-screen
+     until you've changed something declutters the canvas significantly. */
+  body.tf-dirty .tf-edit-bar.show{
     transform:translateX(-50%) translateY(0);
     opacity:1; pointer-events:auto;
   }
@@ -306,8 +310,9 @@
     color:#7a7468;
   }
 
-  /* Hide read-only renderings of qlinks/details while editing */
-  body.tf-editing .qlinks, body.tf-editing .exp{display:none !important}
+  /* Read-only qlinks/exp stay visible in edit mode now that the dedicated
+     editor blocks (tf-ql-block / tf-det-block) are no longer injected — the
+     display is the only source of truth for those fields. */
   `;
   const styleEl = document.createElement("style");
   styleEl.id = "tf-edit-style";
@@ -564,14 +569,15 @@
   }
 
   // ---------- Decorations ----------
+  // We used to inject "編輯快速連結" / "編輯備註區塊" blocks per-day. The
+  // user found them redundant — the read-only display below already shows
+  // the same content, and adding editor chrome above duplicates the UI.
+  // Decoration is now a no-op for those fields; they remain editable via
+  // collect()'s tolerant "if block exists" check (the blocks just don't
+  // exist any more). Re-enable by re-introducing decorateDayLinks/Details
+  // calls below if a future iteration brings the editor UI back.
   function decorate() {
-    const days = (workingData && workingData.days) || [];
-    days.forEach((day) => {
-      const panel = document.getElementById("day-" + day.id);
-      if (!panel) return;
-      decorateDayLinks(panel, day);
-      decorateDayDetails(panel, day);
-    });
+    /* day-level qlinks + details editor blocks intentionally disabled */
   }
 
   function decorateDayLinks(panel, day) {
