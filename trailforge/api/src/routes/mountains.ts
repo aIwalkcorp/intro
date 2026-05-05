@@ -56,13 +56,22 @@ function cacheSet(key: string, data: unknown) {
 //
 // Each attempt logs its outcome (status + ms) so we can diagnose which
 // mirror is reliable from the deploy region.
+// Overpass demands a User-Agent identifying the caller (some mirrors
+// return 406 for anonymous fetches). The email lets the OSM operators
+// reach us if a query pattern misbehaves.
+const OVERPASS_UA = "Trailforge/1.0 (https://aiwalkcorp.com; chatgpt420240311@gmail.com)";
+
 async function callOverpass(query: string): Promise<any> {
   const attempts = OVERPASS_URLS.map(async (url) => {
     const t0 = Date.now();
     try {
       const r = await fetch(url, {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json",
+          "user-agent": OVERPASS_UA,
+        },
         body: "data=" + encodeURIComponent(query),
         signal: AbortSignal.timeout(PER_MIRROR_TIMEOUT_MS),
       });
@@ -142,6 +151,47 @@ function elementToLocation(e: any): {
   return out;
 }
 
+// Try Nominatim first for /search — it's the dedicated name-search
+// endpoint, faster + more permissive than Overpass for fuzzy name
+// queries. Falls back to Overpass if Nominatim is unreachable.
+async function searchNominatim(q: string) {
+  const url = "https://nominatim.openstreetmap.org/search?" + new URLSearchParams({
+    q, format: "json", limit: String(SEARCH_RESULT_LIMIT),
+    addressdetails: "0", extratags: "1",
+  }).toString();
+  const r = await fetch(url, {
+    headers: {
+      "user-agent": OVERPASS_UA,
+      "accept": "application/json",
+      "accept-language": "zh-TW,zh,en",
+    },
+    signal: AbortSignal.timeout(PER_MIRROR_TIMEOUT_MS),
+  });
+  if (!r.ok) throw new Error(`nominatim → ${r.status}`);
+  const json = (await r.json()) as any[];
+  return json
+    .filter((e) => e.class === "natural" && e.type === "peak")
+    .map((e) => {
+      const tags = e.extratags || {};
+      const eleRaw = parseFloat(tags.ele);
+      let baiyue: number | undefined;
+      const refMatch = (tags.ref || "").match(/百岳#(\d+)/);
+      if (refMatch) baiyue = parseInt(refMatch[1], 10);
+      const out: any = {
+        name: e.display_name?.split(",")[0]?.trim() || e.name || tags.name || "?",
+        lat: parseFloat(e.lat),
+        lon: parseFloat(e.lon),
+        ele: Number.isFinite(eleRaw) ? eleRaw : null,
+        source: "osm",
+        osm_id: `${e.osm_type}/${e.osm_id}`,
+        kind: "peak",
+      };
+      if (baiyue) out["百岳"] = baiyue;
+      if (tags.wikipedia) out.wikipedia = tags.wikipedia;
+      return out;
+    });
+}
+
 router.get("/search", async (c) => {
   const q = (c.req.query("q") || "").trim();
   if (!q) return c.json({ error: "missing_q" }, 400);
@@ -151,50 +201,56 @@ router.get("/search", async (c) => {
   const cached = cacheGet(key);
   if (cached) return c.json(cached);
 
-  // Search globally — prioritize Taiwan bbox first. We split into two
-  // queries because Overpass treats name~ regex globally as expensive;
-  // a Taiwan-first query keeps response time tight for the common case.
-  const escaped = q.replace(/[\\"]/g, "\\$&");
-  const query = `[out:json][timeout:25];
+  // Try Nominatim first (faster + more permissive than Overpass for
+  // fuzzy name lookup). Fall through to Overpass on Nominatim failure.
+  let peaks: any[] = [];
+  let source: string = "nominatim";
+  try {
+    peaks = await searchNominatim(q);
+    log.info("nominatim_search_ok", { q, count: peaks.length });
+  } catch (e) {
+    log.warn("nominatim_search_failed", { q, error: String(e) });
+    source = "overpass_fallback";
+    const escaped = q.replace(/[\\"]/g, "\\$&");
+    const query = `[out:json][timeout:25];
 (
   node["natural"="peak"]["name"~"${escaped}",i](21.0,118.0,26.5,123.0);
   node["natural"="peak"]["name:zh"~"${escaped}",i](21.0,118.0,26.5,123.0);
   node["natural"="peak"]["name"~"${escaped}",i];
 );
 out body ${SEARCH_RESULT_LIMIT};`;
-
-  try {
-    const json = await callOverpass(query);
-    const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
-    // Dedupe by osm_id (Taiwan-first query may overlap with global one).
-    const seen = new Set<string>();
-    const peaks = [];
-    for (const el of elements) {
-      const loc = elementToLocation(el);
-      if (!loc) continue;
-      if (seen.has(loc.osm_id)) continue;
-      seen.add(loc.osm_id);
-      peaks.push(loc);
-      if (peaks.length >= SEARCH_RESULT_LIMIT) break;
+    try {
+      const json = await callOverpass(query);
+      const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
+      const seen = new Set<string>();
+      for (const el of elements) {
+        const loc = elementToLocation(el);
+        if (!loc) continue;
+        if (seen.has(loc.osm_id)) continue;
+        seen.add(loc.osm_id);
+        peaks.push(loc);
+        if (peaks.length >= SEARCH_RESULT_LIMIT) break;
+      }
+    } catch (e2) {
+      log.error("mountains_search_failed", { q, error: String(e2) });
+      return c.json({ error: "search_unavailable" }, 503);
     }
-    // Sort: Taiwan first (rough bbox check), then 百岳 ranked, then by elev desc.
-    peaks.sort((a: any, b: any) => {
-      const aTw = a.lat >= 21 && a.lat <= 26.5 && a.lon >= 118 && a.lon <= 123 ? 1 : 0;
-      const bTw = b.lat >= 21 && b.lat <= 26.5 && b.lon >= 118 && b.lon <= 123 ? 1 : 0;
-      if (aTw !== bTw) return bTw - aTw;
-      const aBy = a["百岳"] ?? 999;
-      const bBy = b["百岳"] ?? 999;
-      if (aBy !== bBy) return aBy - bBy;
-      return (b.ele ?? 0) - (a.ele ?? 0);
-    });
-
-    const result = { q, count: peaks.length, peaks };
-    cacheSet(key, result);
-    return c.json(result);
-  } catch (e) {
-    log.error("mountains_search_failed", { q, error: String(e) });
-    return c.json({ error: "overpass_unavailable" }, 503);
   }
+
+  // Sort: Taiwan first (rough bbox check), then 百岳 ranked, then by elev desc.
+  peaks.sort((a: any, b: any) => {
+    const aTw = a.lat >= 21 && a.lat <= 26.5 && a.lon >= 118 && a.lon <= 123 ? 1 : 0;
+    const bTw = b.lat >= 21 && b.lat <= 26.5 && b.lon >= 118 && b.lon <= 123 ? 1 : 0;
+    if (aTw !== bTw) return bTw - aTw;
+    const aBy = a["百岳"] ?? 999;
+    const bBy = b["百岳"] ?? 999;
+    if (aBy !== bBy) return aBy - bBy;
+    return (b.ele ?? 0) - (a.ele ?? 0);
+  });
+
+  const result = { q, count: peaks.length, source, peaks };
+  cacheSet(key, result);
+  return c.json(result);
 });
 
 router.get("/around", async (c) => {
