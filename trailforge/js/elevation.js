@@ -646,6 +646,42 @@
     ctx.fillText('0', pad.l, pad.t + gH + 40);
     ctx.textAlign = 'right';
     ctx.fillText((totalDist / 1000).toFixed(1) + ' km', pad.l + gW, pad.t + gH + 40);
+
+    // ── Clickable route-decision markers ──
+    // Days that declare route_variants + decision_anchors get a DOM <button>
+    // overlay at the fork point so the user can switch routes from inside
+    // the chart itself. Mode-toggle.js prepares opts.decisionAnchors with
+    // a per-anchor onClick that calls switchRoute(nextVariantId).
+    const wrap = canvas.parentElement;
+    if (wrap && Array.isArray(opts.decisionAnchors) && opts.decisionAnchors.length) {
+      // Clear any previous overview decision markers first so the dataset
+      // stays in sync with each redraw (route-switch / focus / resize).
+      wrap.querySelectorAll('.elev-overview-decision').forEach(el => el.remove());
+      opts.decisionAnchors.forEach(a => {
+        const d = perDay[a.dayIdx];
+        if (!d) return;
+        const idx = a.idx;
+        if (typeof idx !== 'number' || idx < 0 || idx >= d.gpx.length) return;
+        const xRaw = pad.l + ((d.offset + (d.cd[idx] || 0) - focusStartDist) / focusSpan) * gW;
+        // Skip if outside focus window
+        if (xRaw < pad.l - 4 || xRaw > pad.l + gW + 4) return;
+        const yRaw = pad.t + gH - ((d.gpx[idx][2] - minE) / eRange) * gH;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'elev-overview-decision';
+        btn.style.left = xRaw + 'px';
+        btn.style.top = yRaw + 'px';
+        btn.title = a.title || a.label || '決策點 — 點擊切換路線';
+        btn.setAttribute('aria-label', btn.title);
+        btn.innerHTML =
+          `<span class="eod-ring" aria-hidden="true"></span>` +
+          (a.label ? `<span class="eod-label">${a.label}</span>` : '');
+        if (typeof a.onClick === 'function') {
+          btn.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); a.onClick(ev); });
+        }
+        wrap.appendChild(btn);
+      });
+    }
   }
 
   TF.elevation = {

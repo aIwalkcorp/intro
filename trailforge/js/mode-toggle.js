@@ -374,6 +374,8 @@
       let summitLabel = ep.summit_label;
       let direction = ep.direction;
       let segments = ep.shanghe_segments || [];
+      let decisionAnchors = ep.decision_anchors || [];
+      let activeRouteId = null;
       if (ep.route_variants) {
         // Find which route is currently active in DOM
         const dayPanel = document.getElementById('day-' + d.id);
@@ -381,22 +383,56 @@
         if (activeTab) {
           const onclickAttr = activeTab.getAttribute('onclick') || '';
           const m = onclickAttr.match(/switchRoute\(['"]([^'"]+)['"]\)/);
-          const routeId = m && m[1];
-          const v = routeId && ep.route_variants[routeId];
-          if (v) {
-            if (v.summit_idx != null) summitIdx = v.summit_idx;
-            if (v.summit_label) summitLabel = v.summit_label;
-            if (v.direction) direction = v.direction;
-            if (v.shanghe_segments) segments = v.shanghe_segments;
-          }
+          activeRouteId = m && m[1];
+        }
+        if (!activeRouteId) activeRouteId = ep.default_variant || Object.keys(ep.route_variants)[0] || null;
+        const v = activeRouteId && ep.route_variants[activeRouteId];
+        if (v) {
+          if (v.summit_idx != null) summitIdx = v.summit_idx;
+          if (v.summit_label) summitLabel = v.summit_label;
+          if (v.direction) direction = v.direction;
+          if (v.shanghe_segments) segments = v.shanghe_segments;
+          if (v.decision_anchors) decisionAnchors = v.decision_anchors;
         }
       }
-      days.push({
+      const dayInfo = {
         gpx: track,
         label: d.label || ('Day ' + d.id),
         summitIdx, summitLabel, direction,
         segments,
-      });
+        decisionAnchors,
+        routeVariants: ep.route_variants || null,
+        activeRouteId,
+        dayId: d.id,
+      };
+      // For days that declare route_variants, the recorded GPX is one
+      // long survey track with both branches stitched together (e.g. d2
+      // contains both 主峰 and 北峰 detours, walked in survey order).
+      // Strategy:
+      //   1. If named waypoints are available (uploaded GPX wpts or a
+      //      fallback like the demo's checkpointsData) AND every
+      //      segment endpoint resolves, build a faithful synthetic
+      //      track that visits each waypoint in planned order. Loses
+      //      topographic detail but is semantically correct.
+      //   2. Otherwise, fall back to slicing the trkpt stream along
+      //      anchor_idx (applyDerivedTrack). This works when the
+      //      recording matches the planned order; otherwise the chart
+      //      shows confusing detours.
+      if (ep.route_variants && TF.overview) {
+        const wps = lookupWaypoints(ep.gpx_ref, d.id);
+        let usedSynthetic = false;
+        if (wps && wps.length && TF.overview.applySyntheticFromWaypoints) {
+          usedSynthetic = TF.overview.applySyntheticFromWaypoints(dayInfo, wps);
+          if (!usedSynthetic) {
+            console.log('[overview] synthetic-from-waypoints failed for', d.id,
+              '— some segment endpoint name had no matching wpt; falling back to trkpt slice');
+          }
+        }
+        if (!usedSynthetic && TF.overview.applyDerivedTrack) {
+          TF.overview.applyDerivedTrack(dayInfo);
+        }
+      }
+      days.push(dayInfo);
       dayIds.push(d.id);
     });
     if (!days.length) return;
@@ -419,17 +455,67 @@
     }
 
     // Read focus from dataset (set by overview.js row clicks).
+    // Rest-points rows store the segment's ORIGINAL anchor_idx pair —
+    // for days where applyDerivedTrack rewrote the gpx, we need to map
+    // those back to the derived index space so the chart focuses on
+    // the right slice.
     let focusRange = null;
     if (overview.dataset.focusDayId && overview.dataset.focusLo && overview.dataset.focusHi) {
       const dayIdx = dayIds.indexOf(overview.dataset.focusDayId);
-      const lo = parseInt(overview.dataset.focusLo, 10);
-      const hi = parseInt(overview.dataset.focusHi, 10);
-      if (dayIdx >= 0 && Number.isFinite(lo) && Number.isFinite(hi) && hi > lo) {
-        focusRange = { dayIdx, lo, hi };
+      let lo = parseInt(overview.dataset.focusLo, 10);
+      let hi = parseInt(overview.dataset.focusHi, 10);
+      if (dayIdx >= 0 && Number.isFinite(lo) && Number.isFinite(hi)) {
+        const di = days[dayIdx];
+        if (di && Array.isArray(di.__originalSegments) && Array.isArray(di.__segMap)) {
+          for (let i = 0; i < di.__originalSegments.length; i++) {
+            const ai = di.__originalSegments[i] && di.__originalSegments[i].anchor_idx;
+            const m = di.__segMap[i];
+            if (!ai || !m) continue;
+            const aiLo = Math.min(ai[0], ai[1]);
+            const aiHi = Math.max(ai[0], ai[1]);
+            if (aiLo === Math.min(lo, hi) && aiHi === Math.max(lo, hi)) {
+              const ms = Math.min(m.startInOut, m.endInOut);
+              const me = Math.max(m.startInOut, m.endInOut);
+              lo = ms; hi = me;
+              break;
+            }
+          }
+        }
+        if (hi > lo) focusRange = { dayIdx, lo, hi };
       }
     }
 
-    TF.elevation.drawOverview(canvas, days, { focusRange });
+    // Build clickable decision anchors for the overview chart. Each
+    // entry projects to (x,y) on the canvas and, when clicked, switches
+    // to the next sibling route variant (cycling). The active variant
+    // gets a hollow look; the inactive ones are filled to invite click.
+    const decisionAnchorsForOverview = [];
+    days.forEach((day, dayIdx) => {
+      if (!day.routeVariants) return;
+      const anchors = day.decisionAnchors || [];
+      if (!anchors.length) return;
+      const variantIds = Object.keys(day.routeVariants);
+      if (variantIds.length < 2) return;
+      // Pick the next variant in the list (cycling) for the click target.
+      // For the玉山 case (d2a ↔ d2b) this just toggles between the two.
+      const currentIdx = Math.max(0, variantIds.indexOf(day.activeRouteId));
+      const nextRouteId = variantIds[(currentIdx + 1) % variantIds.length];
+      const nextLabel = (day.routeVariants[nextRouteId] && day.routeVariants[nextRouteId].label) || nextRouteId.toUpperCase();
+      const currentLabel = (day.activeRouteId && day.routeVariants[day.activeRouteId] && day.routeVariants[day.activeRouteId].label) || day.activeRouteId;
+      anchors.forEach(a => {
+        if (a.idx == null) return;
+        decisionAnchorsForOverview.push({
+          dayIdx, idx: a.idx,
+          label: a.label || '⇄',
+          title: `目前：${currentLabel || '—'}　|　點擊切換 → ${nextLabel}`,
+          onClick: () => {
+            if (typeof window.switchRoute === 'function') window.switchRoute(nextRouteId);
+          },
+        });
+      });
+    });
+
+    TF.elevation.drawOverview(canvas, days, { focusRange, decisionAnchors: decisionAnchorsForOverview });
 
     // Minimap (only when card has focus state — saves a render otherwise)
     const mini = document.getElementById('elev-overview-minimap');
@@ -459,6 +545,50 @@
     (rootEl || document).querySelectorAll('.day-panel').forEach(panel => {
       if (panel.querySelector('.r-tab')) updateRouteInfo(panel);
     });
+  }
+
+  // ─── Waypoint lookup ─────────────────────────────────────────────────
+  // Returns named waypoints for a given gpx_ref (and optionally day id).
+  // Sources, in priority order:
+  //   1. window.__JM_GPX_WAYPOINTS__[gpx_ref] — uploaded GPX wpts that
+  //      gpx-io.js parsed and persisted/rehydrated.
+  //   2. window.__JM_GPX__.checkpoints filtered by day === dayId — the
+  //      demo's static checkpoint table doubles as a waypoint source so
+  //      the玉山 demo gets faithful Day 2A/2B charts without an upload.
+  //
+  // Returns [] if no waypoints found. Elev parsing handles the demo's
+  // string format ('2,610m', '3.0K', etc.) → number metres.
+  function parseElevString(s) {
+    if (typeof s === 'number') return s;
+    if (s == null || s === '') return null;
+    const str = String(s).replace(/,/g, '').trim();
+    if (/K$/i.test(str)) {
+      const n = parseFloat(str);
+      return Number.isFinite(n) ? n * 1000 : null;
+    }
+    const n = parseFloat(str);
+    return Number.isFinite(n) ? n : null;
+  }
+  function lookupWaypoints(gpxRef, dayId) {
+    if (!gpxRef && !dayId) return [];
+    // (1) Uploaded waypoints (preferred — author/uploader's source of truth)
+    const wpStore = window.__JM_GPX_WAYPOINTS__ || {};
+    const fromUpload = gpxRef ? wpStore[gpxRef] : null;
+    if (Array.isArray(fromUpload) && fromUpload.length) return fromUpload;
+    // (2) Demo checkpoints fallback. We DON'T filter by day here because
+    // segment endpoints often span day boundaries (e.g. 排雲山莊 is the
+    // d1↔d2 handoff, so d2's segments name it but it lives under d1 in
+    // checkpointsData). Returning all demo checkpoints lets name-matching
+    // resolve cross-day endpoints; duplicate names get the first match.
+    const demo = (window.__JM_GPX__ && window.__JM_GPX__.checkpoints) || [];
+    if (!demo.length) return [];
+    return demo
+      .map(c => ({
+        lat: c.lat, lon: c.lon,
+        ele: parseElevString(c.elev),
+        name: c.label,
+      }))
+      .filter(w => Number.isFinite(w.lat) && Number.isFinite(w.lon));
   }
 
   // ─── Auto-return-descent toggle ──────────────────────────────────────

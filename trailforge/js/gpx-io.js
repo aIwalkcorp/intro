@@ -35,9 +35,8 @@
 
   // ─── XML parsing ─────────────────────────────────────────────────────
   // GPX is well-formed XML; DOMParser handles it. We extract every
-  // <trkpt lat lon> with optional <ele> child. <wpt> waypoints and
-  // <rtept> route points are ignored — we only care about recorded
-  // tracks. Returns null on parse failure (caller surfaces a toast).
+  // <trkpt lat lon> with optional <ele> child. <rtept> route points are
+  // ignored. Returns null on parse failure (caller surfaces a toast).
   function parse(xmlString) {
     if (!xmlString || typeof xmlString !== 'string') return null;
     const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
@@ -52,6 +51,31 @@
       pts.push([lat, lon, Number.isFinite(elev) ? elev : 0]);
     });
     return pts.length ? pts : null;
+  }
+
+  // Extract <wpt lat lon><name>...</name><ele>...</ele></wpt> from a GPX
+  // doc. Each waypoint becomes {lat, lon, ele, name}. Used by the route-
+  // variant chart to replace trkpt slicing with named-anchor straight-
+  // line segments — solves the "風口→北峰 went via 主峰" problem when
+  // the GPX recording order doesn't match the planned travel order.
+  // Returns [] if no named waypoints (still safe to call).
+  function parseWaypoints(xmlString) {
+    if (!xmlString || typeof xmlString !== 'string') return [];
+    const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
+    if (doc.querySelector('parsererror')) return [];
+    const out = [];
+    doc.querySelectorAll('wpt').forEach(node => {
+      const lat = parseFloat(node.getAttribute('lat'));
+      const lon = parseFloat(node.getAttribute('lon'));
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      const nameNode = node.querySelector('name');
+      const name = nameNode ? (nameNode.textContent || '').trim() : '';
+      if (!name) return;  // unnamed waypoint can't drive anchor matching
+      const eleNode = node.querySelector('ele');
+      const ele = eleNode ? parseFloat(eleNode.textContent) : NaN;
+      out.push({ lat, lon, name, ele: Number.isFinite(ele) ? ele : null });
+    });
+    return out;
   }
 
   // ─── Douglas-Peucker simplification ──────────────────────────────────
@@ -181,18 +205,22 @@
     return (plan && plan.data && plan.data.gpx_meta && plan.data.gpx_meta[ref]) || null;
   }
 
-  // Collect distinct gpx_refs from plan.days[].elevation_profile (incl.
-  // route_variants which can declare their own gpx_ref in future). For
-  // now we just look at the day-level ref.
+  // Hard cap on total GPX slots per plan. Day-derived refs count toward
+  // this. Beyond it, the "+ 新增" button is hidden.
+  const MAX_REFS = 10;
+
+  // Collect refs to display. Two sources:
+  //   1. Day-derived refs from plan.days[].elevation_profile.gpx_ref —
+  //      these are wired to the elevation chart and cannot be removed.
+  //   2. Custom refs found in plan.data.gpx_tracks (or top-level
+  //      gpx_tracks in static-demo shape) that aren't already covered
+  //      by (1) — user-added slots, removable.
   function collectRefs() {
     const plan = getPlan();
     if (!plan) return [];
-    // Static demo mode has plan.days at the top level; API mode wraps it
-    // in plan.data.days. Accept either shape.
     const days = (plan.data && Array.isArray(plan.data.days))
       ? plan.data.days
-      : (Array.isArray(plan.days) ? plan.days : null);
-    if (!days) return [];
+      : (Array.isArray(plan.days) ? plan.days : []);
     const seen = new Set();
     const refs = [];
     days.forEach(d => {
@@ -203,9 +231,33 @@
         ref: ep.gpx_ref,
         dayId: d.id,
         dayLabel: d.label || ('Day ' + d.id),
+        kind: 'day',
+      });
+    });
+    // Custom (user-added) refs — read from whichever shape stores them
+    const dataRoot = plan.data || plan;
+    const extra = dataRoot.gpx_tracks || {};
+    Object.keys(extra).forEach(key => {
+      if (seen.has(key)) return;
+      seen.add(key);
+      refs.push({
+        ref: key,
+        dayId: '_',
+        dayLabel: '自訂',
+        kind: 'custom',
       });
     });
     return refs;
+  }
+
+  // Generate a unique ref name (extra-1, extra-2, …) for a new slot.
+  function nextCustomRef() {
+    const used = new Set(collectRefs().map(r => r.ref));
+    for (let i = 1; i <= MAX_REFS; i++) {
+      const name = 'extra-' + i;
+      if (!used.has(name)) return name;
+    }
+    return null;
   }
 
   // ─── Local-storage fallback ─────────────────────────────────────────
@@ -223,8 +275,9 @@
   function saveLocal(plan) {
     try {
       const payload = {
-        gpx_tracks: plan.data.gpx_tracks || {},
-        gpx_meta:   plan.data.gpx_meta   || {},
+        gpx_tracks:    plan.data.gpx_tracks    || {},
+        gpx_meta:      plan.data.gpx_meta      || {},
+        gpx_waypoints: plan.data.gpx_waypoints || {},
         saved_at: new Date().toISOString(),
       };
       localStorage.setItem(localKey(), JSON.stringify(payload));
@@ -253,14 +306,24 @@
   //   3. If network fails entirely, outbox already queued it — caller
   //      surfaces "已暫存（離線）" toast.
   // Returns: { ok, persisted, queued, source: 'cloud'|'local'|'none', status, reason }
-  async function persist(ref, track, meta) {
+  async function persist(ref, track, meta, waypoints) {
     const plan = getPlan();
     if (!plan) return { ok: false, reason: 'no-plan' };
     plan.data = plan.data || {};
-    plan.data.gpx_tracks = plan.data.gpx_tracks || {};
-    plan.data.gpx_meta   = plan.data.gpx_meta   || {};
+    plan.data.gpx_tracks    = plan.data.gpx_tracks    || {};
+    plan.data.gpx_meta      = plan.data.gpx_meta      || {};
+    plan.data.gpx_waypoints = plan.data.gpx_waypoints || {};
     plan.data.gpx_tracks[ref] = track;
     plan.data.gpx_meta[ref]   = meta;
+    if (Array.isArray(waypoints) && waypoints.length) {
+      plan.data.gpx_waypoints[ref] = waypoints;
+      window.__JM_GPX_WAYPOINTS__ = window.__JM_GPX_WAYPOINTS__ || {};
+      window.__JM_GPX_WAYPOINTS__[ref] = waypoints;
+    } else if (plan.data.gpx_waypoints[ref]) {
+      // Empty upload — clear any stale waypoints for this ref
+      delete plan.data.gpx_waypoints[ref];
+      if (window.__JM_GPX_WAYPOINTS__) delete window.__JM_GPX_WAYPOINTS__[ref];
+    }
     // Update inline cache so chart redraws immediately read it
     window.__JM_GPX__ = window.__JM_GPX__ || {};
     window.__JM_GPX__[ref] = track;
@@ -329,7 +392,9 @@
     const host = document.getElementById('gpx-io');
     if (!host) return;
     const refs = collectRefs();
-    if (!refs.length) { host.innerHTML = ''; return; }
+    // Always render the strip (even with zero day-derived refs) so the
+    // user can add custom GPX slots from scratch.
+    const canAddMore = refs.length < MAX_REFS;
 
     const rowsHtml = refs.map(r => {
       const { track, source } = effectiveTrack(r.ref);
@@ -362,9 +427,14 @@
              ${ascentOnlyBadge}
            </span>`
         : `<span class="gx-stats gx-stats-empty">尚未上傳</span>`;
-      return `<div class="gx-row" data-ref="${r.ref}">
+      const deleteBtn = r.kind === 'custom'
+        ? `<button type="button" class="gx-btn gx-btn-delete" data-action="delete" data-ref="${r.ref}" title="刪除此 GPX">✕</button>`
+        : '';
+      const dayChipLabel = r.kind === 'custom' ? '＋' : (r.dayId || '').toUpperCase();
+      const dayChipClass = r.kind === 'custom' ? 'gx-day-custom' : `gx-day-${r.dayId}`;
+      return `<div class="gx-row gx-row-${r.kind}" data-ref="${r.ref}">
         <div class="gx-row-l">
-          <span class="gx-day-chip gx-day-${r.dayId}">${(r.dayId||'').toUpperCase()}</span>
+          <span class="gx-day-chip ${dayChipClass}">${dayChipLabel}</span>
           <span class="gx-ref-name">${r.ref}</span>
           ${sourceChip}
           <span class="gx-filename">${filename}</span>
@@ -377,16 +447,27 @@
           <button type="button" class="gx-btn gx-btn-download" data-action="download" data-ref="${r.ref}" ${hasTrack ? '' : 'disabled'}>
             <span class="gx-btn-i">⬇</span> 下載
           </button>
+          ${deleteBtn}
         </div>
       </div>`;
     }).join('');
 
+    const addRowHtml = canAddMore
+      ? `<div class="gx-row gx-row-add">
+           <button type="button" class="gx-btn gx-btn-add" data-action="add-ref">
+             <span class="gx-btn-i">＋</span> 新增 GPX 軌跡（${refs.length}/${MAX_REFS}）
+           </button>
+         </div>`
+      : `<div class="gx-row gx-row-add gx-row-add-full">
+           <span class="gx-add-full-msg">已達上限 ${MAX_REFS} 個軌跡</span>
+         </div>`;
+
     host.innerHTML = `
       <div class="gx-head">
         <div class="gx-title">GPX 軌跡<span class="gx-title-en">TRACKS</span></div>
-        <div class="gx-hint">上傳 .gpx 檔覆蓋預設軌跡；資料儲存於計劃書，會自動同步至雲端</div>
+        <div class="gx-hint">上傳 .gpx 檔覆蓋預設軌跡；資料儲存於計劃書，會自動同步至雲端（最多 ${MAX_REFS} 個）</div>
       </div>
-      <div class="gx-list">${rowsHtml}</div>
+      <div class="gx-list">${rowsHtml}${addRowHtml}</div>
       <input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml,text/xml" style="display:none;">
     `;
 
@@ -410,6 +491,15 @@
         fileInput.click();
       } else if (action === 'download') {
         downloadGpx(ref);
+      } else if (action === 'add-ref') {
+        const newRef = nextCustomRef();
+        if (!newRef) { toast(`已達上限 ${MAX_REFS} 個軌跡`, 'err'); return; }
+        pendingRef = newRef;
+        fileInput.value = '';
+        fileInput.click();
+      } else if (action === 'delete') {
+        if (!confirm(`刪除 GPX「${ref}」？此動作會同步至雲端。`)) return;
+        deleteRef(ref);
       }
     });
 
@@ -419,6 +509,62 @@
       await handleUpload(pendingRef, f);
       pendingRef = null;
     });
+  }
+
+  // Delete a custom (user-added) ref and persist via the same path as
+  // upload. Day-derived refs are never offered a delete button so we
+  // assume `ref` here is custom.
+  async function deleteRef(ref) {
+    const plan = getPlan();
+    if (!plan) return;
+    plan.data = plan.data || {};
+    plan.data.gpx_tracks    = plan.data.gpx_tracks    || {};
+    plan.data.gpx_meta      = plan.data.gpx_meta      || {};
+    plan.data.gpx_waypoints = plan.data.gpx_waypoints || {};
+    delete plan.data.gpx_tracks[ref];
+    delete plan.data.gpx_meta[ref];
+    delete plan.data.gpx_waypoints[ref];
+    if (window.__JM_GPX__) delete window.__JM_GPX__[ref];
+    if (window.__JM_GPX_WAYPOINTS__) delete window.__JM_GPX_WAYPOINTS__[ref];
+
+    const params = new URLSearchParams(location.search);
+    const planId = params.get('plan');
+    const token = localStorage.getItem(TOKEN_KEY);
+
+    if (!planId || !token) {
+      saveLocal(plan);
+      render();
+      if (TF.modeToggle && TF.modeToggle.refreshAll) TF.modeToggle.refreshAll();
+      if (TF.overview && TF.overview.render) TF.overview.render();
+      toast(`已刪除「${ref}」（僅本機，未登入）`);
+      return;
+    }
+
+    const apiBase = (params.get('api') || 'https://trailforge-api.fly.dev').replace(/\/+$/, '');
+    const url = apiBase + '/api/plans/' + encodeURIComponent(planId);
+    const body = JSON.stringify({ data: plan.data });
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    try {
+      let result;
+      if (window.TF_OUTBOX && window.TF_OUTBOX.send) {
+        result = await window.TF_OUTBOX.send(url, { method: 'PATCH', headers, body, label: 'PATCH /api/plans/:id (gpx delete)' });
+      } else {
+        const r = await fetch(url, { method: 'PATCH', headers, body });
+        result = { ok: r.ok, status: r.status, queued: false };
+      }
+      saveLocal(plan);  // mirror in case reload happens before sync settles
+      render();
+      if (TF.modeToggle && TF.modeToggle.refreshAll) TF.modeToggle.refreshAll();
+      if (TF.overview && TF.overview.render) TF.overview.render();
+      if (result.queued) toast(`已刪除「${ref}」（離線暫存，上線後同步）`);
+      else if (result.ok) toast(`已刪除「${ref}」`);
+      else toast(`刪除失敗：HTTP ${result.status}`, 'err');
+    } catch (e) {
+      saveLocal(plan);
+      render();
+      if (TF.modeToggle && TF.modeToggle.refreshAll) TF.modeToggle.refreshAll();
+      toast(`刪除失敗：${e.message}`, 'err');
+    }
   }
 
   async function handleUpload(ref, file) {
@@ -437,6 +583,13 @@
       console.log(`[gpx-io] simplified ${before} → ${track.length} points for ref ${ref}`);
     }
 
+    // Pull any <wpt name="...">s — these become anchor points for
+    // route-variant charts, where they replace error-prone trkpt slicing.
+    const waypoints = parseWaypoints(text);
+    if (waypoints.length) {
+      console.log(`[gpx-io] found ${waypoints.length} named waypoints for ref ${ref}`);
+    }
+
     const stats = analyse(track);
     const meta = {
       filename: file.name,
@@ -445,11 +598,12 @@
       descent_m: stats.descent_m,
       ascent_only: stats.ascent_only,
       point_count: stats.point_count,
+      waypoint_count: waypoints.length,
       source: 'upload',
     };
 
     setRowStatus(row, '上傳中…');
-    const result = await persist(ref, track, meta);
+    const result = await persist(ref, track, meta, waypoints);
 
     // Stamp persistence flag onto plan.data.gpx_meta so the UI chip
     // reflects whether this track is on the server or local-only.
@@ -520,7 +674,7 @@
     t.__timer = setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  TF.gpxIO = { render, parse, encode, analyse, simplifyByElevation };
+  TF.gpxIO = { render, parse, parseWaypoints, encode, analyse, simplifyByElevation };
 
   // Rehydrate __JM_GPX__ on boot so any tracks the user uploaded in a
   // previous session override the inline defaults BEFORE elevation/
@@ -538,8 +692,11 @@
     plan.data = plan.data || {};
 
     // (1) cloud copy — already in plan.data, just mirror to __JM_GPX__
+    //     and __JM_GPX_WAYPOINTS__.
     const cloud = plan.data.gpx_tracks;
+    const cloudWp = plan.data.gpx_waypoints;
     window.__JM_GPX__ = window.__JM_GPX__ || {};
+    window.__JM_GPX_WAYPOINTS__ = window.__JM_GPX_WAYPOINTS__ || {};
     if (cloud) {
       Object.keys(cloud).forEach(ref => {
         if (Array.isArray(cloud[ref]) && cloud[ref].length) {
@@ -547,12 +704,20 @@
         }
       });
     }
+    if (cloudWp) {
+      Object.keys(cloudWp).forEach(ref => {
+        if (Array.isArray(cloudWp[ref]) && cloudWp[ref].length) {
+          window.__JM_GPX_WAYPOINTS__[ref] = cloudWp[ref];
+        }
+      });
+    }
 
     // (2) local fallback — merge any refs not already in cloud
     const local = loadLocal();
     if (local && local.gpx_tracks) {
-      plan.data.gpx_tracks = plan.data.gpx_tracks || {};
-      plan.data.gpx_meta   = plan.data.gpx_meta   || {};
+      plan.data.gpx_tracks    = plan.data.gpx_tracks    || {};
+      plan.data.gpx_meta      = plan.data.gpx_meta      || {};
+      plan.data.gpx_waypoints = plan.data.gpx_waypoints || {};
       Object.keys(local.gpx_tracks).forEach(ref => {
         const arr = local.gpx_tracks[ref];
         if (!Array.isArray(arr) || !arr.length) return;
@@ -566,6 +731,16 @@
           plan.data.gpx_meta[ref] = local.gpx_meta[ref];
         }
       });
+      if (local.gpx_waypoints) {
+        Object.keys(local.gpx_waypoints).forEach(ref => {
+          const wp = local.gpx_waypoints[ref];
+          if (!Array.isArray(wp) || !wp.length) return;
+          if (!plan.data.gpx_waypoints[ref]) {
+            plan.data.gpx_waypoints[ref] = wp;
+            window.__JM_GPX_WAYPOINTS__[ref] = wp;
+          }
+        });
+      }
     }
   }
   // Run rehydrate immediately (synchronously) — gpx-io.js is loaded

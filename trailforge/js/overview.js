@@ -184,6 +184,62 @@
     return rows;
   }
 
+  // ─── route-variant picker (chips per day with variants) ─────────────
+  // Returns HTML for the row of route-switch chips. One chip group per
+  // day that declares route_variants. Each chip is clickable; the active
+  // one is highlighted. Clicking calls window.switchRoute(variantId).
+  function buildVariantPickerHtml(plan) {
+    const groups = [];
+    (plan.days || []).forEach(day => {
+      const ep = day.elevation_profile;
+      if (!ep || !ep.route_variants) return;
+      const variantIds = Object.keys(ep.route_variants);
+      if (variantIds.length < 2) return;
+      // Detect the currently-active variant from the day-panel's r-tab
+      const dayPanel = document.getElementById('day-' + day.id);
+      const activeTab = dayPanel && dayPanel.querySelector('.r-tab.active');
+      let activeId = null;
+      if (activeTab) {
+        const m = (activeTab.getAttribute('onclick') || '').match(/switchRoute\(['"]([^'"]+)['"]\)/);
+        activeId = m && m[1];
+      }
+      if (!activeId) activeId = ep.default_variant || variantIds[0];
+      const chipsHtml = variantIds.map(vid => {
+        const v = ep.route_variants[vid];
+        const label = (v && v.label) || vid.toUpperCase();
+        const isActive = vid === activeId;
+        return `<button type="button"
+          class="rp-rv-chip${isActive ? ' active' : ''}"
+          data-route-id="${escapeHtml(vid)}"
+          aria-pressed="${isActive ? 'true' : 'false'}"
+          ${isActive ? 'disabled' : ''}>${escapeHtml(label)}</button>`;
+      }).join('');
+      groups.push(`<div class="rp-rv-group">
+        <span class="rp-rv-day">${escapeHtml(day.label || ('Day ' + day.id))}</span>
+        <span class="rp-rv-arrow">→</span>
+        <div class="rp-rv-chips">${chipsHtml}</div>
+      </div>`);
+    });
+    if (!groups.length) return '';
+    return `<div class="rp-route-variants" data-section="route-variants">
+      <span class="rp-rv-title">路線方案</span>
+      ${groups.join('')}
+    </div>`;
+  }
+
+  function bindVariantPickers(host) {
+    const root = host.querySelector('.rp-route-variants');
+    if (!root || root.__bound) return;
+    root.__bound = true;
+    root.addEventListener('click', (e) => {
+      const btn = e.target.closest('button.rp-rv-chip');
+      if (!btn || btn.disabled) return;
+      const id = btn.dataset.routeId;
+      if (!id) return;
+      if (typeof window.switchRoute === 'function') window.switchRoute(id);
+    });
+  }
+
   // ─── render everything into #overview-rest-points ───────────────────
   function renderRestPoints(plan, factor) {
     const host = document.getElementById('overview-rest-points');
@@ -270,11 +326,18 @@
       </div>`;
     }).join('');
 
+    // Route-variant pickers — for any day declaring route_variants we
+    // surface a chip strip so the user can flip between them right from
+    // the rest-points table. Clicking a chip calls window.switchRoute,
+    // which triggers a full overview refresh.
+    const variantPickerHtml = buildVariantPickerHtml(plan);
+
     host.innerHTML = `
       <div class="rp-head">
         <div class="rp-title">休息點<span class="rp-title-en">REST POINTS</span></div>
         <div class="rp-source">資料來源：上河圖步程 + 他人健行筆記紀錄綜合</div>
       </div>
+      ${variantPickerHtml}
       <div class="rp-speed-control">
         <label for="overview-speed" class="rp-sc-lbl">上河速度倍率</label>
         <input type="number" class="rp-speed-input"
@@ -325,6 +388,8 @@
 
     // ── Bind row click → focus chart ──
     bindRowFocus(host);
+    // ── Bind route-variant chips → switchRoute ──
+    bindVariantPickers(host);
   }
 
   // ─── click / Enter on a segment row → write focus state and redraw ──
@@ -466,6 +531,15 @@
           return { ...s, anchor_idx: s.anchor_idx.map(x => x + STITCH_STEPS) };
         });
       }
+      // Decision anchors live in the same gpx index space — shift them
+      // too so route-fork markers land on the correct sample after the
+      // prepended boundary-stitch head.
+      if (Array.isArray(b.decisionAnchors)) {
+        b.decisionAnchors = b.decisionAnchors.map(a => {
+          if (a == null || typeof a.idx !== 'number') return a;
+          return { ...a, idx: a.idx + STITCH_STEPS };
+        });
+      }
 
       // Cross-day duplicate checkpoint dedupe: if Day N's last segment ends
       // at the same name Day N+1's first segment starts at (e.g. 排雲山莊
@@ -567,7 +641,265 @@
     return days;
   }
 
-  TF.overview = { render, stitchDayBoundaries, synthesizeReturnDay };
+  // ─── Route-aware GPX derivation ──────────────────────────────────────
+  // gpxDay2 is recorded in the order the survey was walked (often
+  // 排雲→風口→主峰→…→北峰), but a route variant like Day 2A actually
+  // travels 排雲→風口→北峰→風口→主峰→排雲. If we draw the raw GPX
+  // left-to-right by index, the chart's X-axis follows the SURVEY order
+  // (主峰 first, then 北峰) — confusing because it doesn't match the
+  // planned travel sequence.
+  //
+  // This helper takes the raw gpx + the variant's segments and stitches
+  // a new sub-track that walks each segment's anchor_idx in order,
+  // reversing slices where anchor_idx[0] > anchor_idx[1]. It also returns
+  // segMap[i] = { startInOut, endInOut } so callers can remap segment
+  // anchor_idx, summit_idx, and decision_anchors to the new index space.
+  //
+  // Continuity dedupe: if a segment's start matches the previous
+  // segment's end (same original index), we skip pushing the duplicate
+  // sample so the line stays continuous instead of stuttering.
+  function deriveTrackFromSegments(gpx, segments) {
+    if (!Array.isArray(gpx) || !gpx.length) return null;
+    if (!Array.isArray(segments) || !segments.length) return null;
+    const out = [];
+    const segMap = [];
+    let prevEnd = null;  // last anchor_idx[1] of the previous segment, or null
+    for (let i = 0; i < segments.length; i++) {
+      const s = segments[i];
+      const ai = Array.isArray(s && s.anchor_idx) ? s.anchor_idx : null;
+      if (!ai || ai.length !== 2) { segMap.push(null); continue; }
+      const a = ai[0], b = ai[1];
+      if (a < 0 || b < 0 || a >= gpx.length || b >= gpx.length) { segMap.push(null); continue; }
+      const dedupeFirst = (prevEnd === a && out.length > 0);
+      const startInOut = out.length;
+      if (a === b) {
+        if (!dedupeFirst) out.push(gpx[a]);
+      } else if (a < b) {
+        for (let k = (dedupeFirst ? a + 1 : a); k <= b; k++) out.push(gpx[k]);
+      } else {
+        for (let k = (dedupeFirst ? a - 1 : a); k >= b; k--) out.push(gpx[k]);
+      }
+      const endInOut = out.length - 1;
+      segMap.push({ startInOut, endInOut, fromOrig: a, toOrig: b });
+      prevEnd = b;
+    }
+    if (!out.length) return null;
+    return { gpx: out, segMap };
+  }
+
+  // Apply deriveTrackFromSegments to a day's data and remap related
+  // indices (segments, summit, decision anchors). Mutates the passed
+  // day-info object in place. Returns true on success.
+  function applyDerivedTrack(dayInfo) {
+    if (!dayInfo || !Array.isArray(dayInfo.gpx) || !Array.isArray(dayInfo.segments)) return false;
+    const derived = deriveTrackFromSegments(dayInfo.gpx, dayInfo.segments);
+    if (!derived) return false;
+    const { gpx: newGpx, segMap } = derived;
+
+    // Remap segments to derived indices.
+    const newSegments = dayInfo.segments.map((s, i) => {
+      const m = segMap[i];
+      if (!m) return s;
+      return Object.assign({}, s, { anchor_idx: [m.startInOut, m.endInOut] });
+    });
+
+    // Remap summit: prefer the segment whose anchor_idx[1] matches the
+    // original summitIdx (typical pattern); fall back to anchor_idx[0].
+    let newSummit = dayInfo.summitIdx;
+    if (typeof dayInfo.summitIdx === 'number') {
+      let matched = false;
+      for (let i = 0; i < dayInfo.segments.length; i++) {
+        const s = dayInfo.segments[i];
+        const ai = s && s.anchor_idx;
+        const m = segMap[i];
+        if (!ai || !m) continue;
+        if (ai[1] === dayInfo.summitIdx) { newSummit = m.endInOut; matched = true; break; }
+        if (ai[0] === dayInfo.summitIdx) { newSummit = m.startInOut; matched = true; break; }
+      }
+      // If summit didn't match a segment endpoint, scan segments for
+      // a range containing it and interpolate within the slice.
+      if (!matched) {
+        for (let i = 0; i < dayInfo.segments.length; i++) {
+          const s = dayInfo.segments[i];
+          const ai = s && s.anchor_idx;
+          const m = segMap[i];
+          if (!ai || !m) continue;
+          const lo = Math.min(ai[0], ai[1]);
+          const hi = Math.max(ai[0], ai[1]);
+          if (dayInfo.summitIdx < lo || dayInfo.summitIdx > hi) continue;
+          if (ai[0] <= ai[1]) newSummit = m.startInOut + (dayInfo.summitIdx - ai[0]);
+          else                newSummit = m.startInOut + (ai[0] - dayInfo.summitIdx);
+          break;
+        }
+      }
+    }
+
+    // Remap decision anchors to first matching segment endpoint.
+    let newDecisions = dayInfo.decisionAnchors;
+    if (Array.isArray(dayInfo.decisionAnchors) && dayInfo.decisionAnchors.length) {
+      newDecisions = dayInfo.decisionAnchors.map(a => {
+        if (!a || typeof a.idx !== 'number') return a;
+        for (let i = 0; i < dayInfo.segments.length; i++) {
+          const s = dayInfo.segments[i];
+          const ai = s && s.anchor_idx;
+          const m = segMap[i];
+          if (!ai || !m) continue;
+          if (a.idx === ai[0]) return Object.assign({}, a, { idx: m.startInOut });
+          if (a.idx === ai[1]) return Object.assign({}, a, { idx: m.endInOut });
+        }
+        return a;  // unmatched — leave as-is (may render off-screen)
+      });
+    }
+
+    // Stash original segments + segMap so callers (e.g. focus-range
+    // translation in mode-toggle.js) can map a click on a rest-points
+    // row (original anchor_idx) to the right slice of the derived gpx.
+    dayInfo.__originalSegments = dayInfo.segments;
+    dayInfo.__segMap = segMap;
+    dayInfo.gpx = newGpx;
+    dayInfo.segments = newSegments;
+    dayInfo.summitIdx = newSummit;
+    dayInfo.decisionAnchors = newDecisions;
+    return true;
+  }
+
+  // ─── Name matching (waypoint → segment from/to) ─────────────────────
+  // GPX waypoints often label the same place slightly differently than
+  // the plan's segment.from/to (e.g. "主北岔路(風口)" vs "主北岔(風口)",
+  // or "玉山北峰" vs just "北峰"). We normalize away parens, common
+  // street-suffix kana, and whitespace, then accept either exact match
+  // or substring overlap so the matcher is forgiving without being
+  // wildly fuzzy.
+  function normalizeName(s) {
+    if (!s) return '';
+    let r = String(s).replace(/[（(].*?[）)]/g, '').trim();
+    r = r.replace(/[路巷弄段]+$/g, '');  // trailing road-type suffix
+    r = r.replace(/\s+/g, '');
+    return r;
+  }
+  function namesMatch(a, b) {
+    if (!a || !b) return false;
+    const na = normalizeName(a);
+    const nb = normalizeName(b);
+    if (!na || !nb) return false;
+    if (na === nb) return true;
+    if (na.length >= 2 && nb.includes(na)) return true;
+    if (nb.length >= 2 && na.includes(nb)) return true;
+    return false;
+  }
+
+  // ─── Synthesize a route-faithful track from named waypoints ─────────
+  // For days whose route_variants don't match the GPX recording order
+  // (e.g. the recording walked 排雲→風口→主峰→…→北峰, but Day 2A plans
+  // 排雲→風口→北峰→…→主峰), trkpt slicing produces an X-axis that's
+  // confusingly out of order. If we have named waypoints for each
+  // segment endpoint, we can stop relying on trkpt indices entirely:
+  // each segment becomes a straight line from waypoint A to waypoint B
+  // with linearly-interpolated elevation. Loses topographic detail in
+  // exchange for matching the planned travel order exactly.
+  //
+  // Returns { ok: true, gpx, segMap } when every segment endpoint
+  // resolves to a waypoint; otherwise { ok: false, missing: <name> }
+  // so the caller can fall back to trkpt slicing + warn the user.
+  function buildSyntheticFromWaypoints(waypoints, segments, opts) {
+    if (!Array.isArray(waypoints) || !waypoints.length) return { ok: false };
+    if (!Array.isArray(segments) || !segments.length) return { ok: false };
+    opts = opts || {};
+    const STEPS = Math.max(2, opts.stepsPerSegment || 20);
+
+    const find = (name) => waypoints.find(w => namesMatch(w && w.name, name));
+    const resolved = [];
+    for (const s of segments) {
+      const from = find(s && s.from);
+      const to   = find(s && s.to);
+      if (!from || !to) {
+        return { ok: false, missing: from ? s.to : s.from };
+      }
+      resolved.push({ seg: s, from, to });
+    }
+
+    const out = [];
+    const segMap = [];
+    let prevSig = null;
+    resolved.forEach(({ from, to }) => {
+      const fromSig = `${from.lat.toFixed(6)},${from.lon.toFixed(6)}`;
+      const dedupe = (prevSig === fromSig && out.length > 0);
+      const startInOut = out.length;
+      const e1 = (typeof from.ele === 'number') ? from.ele : 0;
+      const e2 = (typeof to.ele   === 'number') ? to.ele   : 0;
+      for (let k = (dedupe ? 1 : 0); k <= STEPS; k++) {
+        const t = k / STEPS;
+        out.push([
+          from.lat + (to.lat - from.lat) * t,
+          from.lon + (to.lon - from.lon) * t,
+          e1 + (e2 - e1) * t,
+        ]);
+      }
+      const endInOut = out.length - 1;
+      segMap.push({ startInOut, endInOut, fromOrig: null, toOrig: null });
+      prevSig = `${to.lat.toFixed(6)},${to.lon.toFixed(6)}`;
+    });
+
+    return { ok: true, gpx: out, segMap };
+  }
+
+  // Apply buildSyntheticFromWaypoints to a dayInfo and remap summit /
+  // decision_anchors to the new index space (same contract as
+  // applyDerivedTrack — mutates dayInfo in place, returns true on success).
+  function applySyntheticFromWaypoints(dayInfo, waypoints, opts) {
+    if (!dayInfo || !Array.isArray(dayInfo.segments)) return false;
+    const result = buildSyntheticFromWaypoints(waypoints, dayInfo.segments, opts);
+    if (!result || !result.ok) return false;
+    const { gpx: newGpx, segMap } = result;
+
+    const origSegments = dayInfo.segments;
+    const newSegments = origSegments.map((s, i) => {
+      const m = segMap[i];
+      return Object.assign({}, s, { anchor_idx: [m.startInOut, m.endInOut] });
+    });
+
+    // Remap summit by matching segment endpoints (same trick as
+    // applyDerivedTrack but starting from anchor_idx in original space).
+    let newSummit = dayInfo.summitIdx;
+    if (typeof dayInfo.summitIdx === 'number') {
+      for (let i = 0; i < origSegments.length; i++) {
+        const ai = origSegments[i] && origSegments[i].anchor_idx;
+        if (!ai) continue;
+        if (ai[1] === dayInfo.summitIdx) { newSummit = segMap[i].endInOut; break; }
+        if (ai[0] === dayInfo.summitIdx) { newSummit = segMap[i].startInOut; break; }
+      }
+    }
+
+    let newDecisions = dayInfo.decisionAnchors;
+    if (Array.isArray(dayInfo.decisionAnchors) && dayInfo.decisionAnchors.length) {
+      newDecisions = dayInfo.decisionAnchors.map(a => {
+        if (!a || typeof a.idx !== 'number') return a;
+        for (let i = 0; i < origSegments.length; i++) {
+          const ai = origSegments[i] && origSegments[i].anchor_idx;
+          if (!ai) continue;
+          if (a.idx === ai[0]) return Object.assign({}, a, { idx: segMap[i].startInOut });
+          if (a.idx === ai[1]) return Object.assign({}, a, { idx: segMap[i].endInOut });
+        }
+        return a;
+      });
+    }
+
+    dayInfo.__originalSegments = origSegments;
+    dayInfo.__segMap = segMap;
+    dayInfo.__synthetic_source = 'waypoints';
+    dayInfo.gpx = newGpx;
+    dayInfo.segments = newSegments;
+    dayInfo.summitIdx = newSummit;
+    dayInfo.decisionAnchors = newDecisions;
+    return true;
+  }
+
+  TF.overview = {
+    render, stitchDayBoundaries, synthesizeReturnDay,
+    deriveTrackFromSegments, applyDerivedTrack,
+    buildSyntheticFromWaypoints, applySyntheticFromWaypoints,
+    namesMatch, normalizeName,
+  };
 
   // Auto-render once at DOM ready — render.js will re-call after fetch.
   if (document.readyState === 'loading') {
