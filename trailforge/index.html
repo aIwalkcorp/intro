@@ -2579,49 +2579,83 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   font-size:.78rem;
 }
 
-/* Day-subtotal row — sits after the last segment of each day, summarises
-   that day's km / ↑ / ↓ / minutes. Lighter than the global total but with
-   a left accent in the day's chip colour. */
+/* Day-subtotal row — closes each day's segment list with a clearly distinct
+   "ledger total" band: deep forest fill, brass top + bottom rules, gold
+   typography. Reads as a closing summary, not just another zebra row. */
 .overview-rest-points .rp-subtotal{
   display:grid;
-  /* Mirror the segment-row 6-col template so subtotal cells align under their
-     corresponding segment cells (cost stacks under cost, arrival under arrival). */
   grid-template-columns: 38px 56px minmax(0, 1fr) 92px 180px 96px;
   gap:8px; align-items:center;
-  padding:6px 10px;
-  background:rgba(168,128,44,0.06);
-  border-top:1px dashed rgba(42,36,24,0.18);
+  padding:10px 12px;
+  margin-top:2px;
+  background:linear-gradient(180deg, #1f3a23 0%, #14281a 100%);
+  border-top:2px solid #a8802c;
+  border-bottom:1px solid rgba(168,128,44,0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255,213,138,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 2px 8px -4px rgba(13,31,10,0.45);
   font-family:var(--mono);
+  color:#f0e0b8;
+}
+/* Override the zebra-stripe background for subtotal rows so the dark fill
+   stays consistent regardless of where the row falls in the iteration. */
+.overview-rest-points .rp-row.rp-subtotal:nth-child(even),
+.overview-rest-points .rp-row.rp-subtotal:nth-child(odd){
+  background:linear-gradient(180deg, #1f3a23 0%, #14281a 100%);
+}
+.overview-rest-points .rp-subtotal .rp-chip{
+  /* Lift the chip's contrast against the dark band */
+  box-shadow: 0 0 0 1px rgba(255,213,138,0.45);
 }
 .overview-rest-points .rp-subtotal-l{
   grid-column:1 / 4;
-  display:flex; align-items:baseline; gap:8px;
-  font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
-  color:var(--gold-deep,#6e5316); font-weight:700;
+  display:flex; align-items:baseline; gap:10px;
+  font-size:.6rem; letter-spacing:.32em; text-transform:uppercase;
+  color:#d99a2a; font-weight:800;
+  position:relative;
+}
+.overview-rest-points .rp-subtotal-l::before{
+  /* "TOTAL" gloss before the day name */
+  content:"TOTAL";
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.56rem; letter-spacing:.32em; font-weight:700;
+  color:#a8802c;
+  padding:1px 6px;
+  border:1px solid rgba(168,128,44,0.45);
+  border-radius:3px;
+  background:rgba(255,213,138,0.08);
 }
 .overview-rest-points .rp-subtotal-l .rp-subtotal-day{
-  font-family:"Fraunces", var(--serif); font-style:italic;
-  font-size:.85rem; letter-spacing:.02em; text-transform:none;
-  color:var(--pri-deep,#0a1a06);
+  font-family:"Fraunces", "Noto Serif TC", serif; font-style:italic;
+  font-size:.95rem; letter-spacing:.02em; text-transform:none;
+  color:#fff8e1; font-weight:700;
+}
+.overview-rest-points .rp-subtotal .rp-cost{
+  border-right:1px dotted rgba(255,213,138,0.32);
+}
+.overview-rest-points .rp-subtotal .rp-cost .rp-time-derived{
+  font-size:1.05rem; font-weight:800; color:#ffd58a;
+}
+.overview-rest-points .rp-subtotal .rp-cost small{ color:#d9c590; opacity:.7; }
+.overview-rest-points .rp-subtotal .rp-cost .rp-time-base{
+  font-family:"Noto Serif TC", serif; font-style:italic;
+  font-size:.62rem; color:#a8927a; font-weight:400;
 }
 .overview-rest-points .rp-subtotal-meta{
-  display:flex; gap:10px; justify-content:flex-end;
-  font-size:.74rem;
+  display:flex; gap:12px; justify-content:flex-end;
+  font-size:.78rem;
 }
-.overview-rest-points .rp-subtotal-meta .rp-km{color:var(--ink,#1a1a17); font-weight:700;}
-.overview-rest-points .rp-subtotal-meta .rp-asc{color:#1e3a1a; font-weight:700;}
-.overview-rest-points .rp-subtotal-meta .rp-desc{color:#a8802c; font-weight:700;}
-.overview-rest-points .rp-subtotal-meta small{font-size:.58rem; opacity:.6; margin-left:1px;}
-.overview-rest-points .rp-subtotal-time{
-  display:flex; flex-direction:column; align-items:flex-end;
-  line-height:1.15;
+.overview-rest-points .rp-subtotal-meta .rp-km{color:#fff8e1; font-weight:800;}
+.overview-rest-points .rp-subtotal-meta .rp-asc{color:#9bc88a; font-weight:800;}
+.overview-rest-points .rp-subtotal-meta .rp-desc{color:#e8c870; font-weight:800;}
+.overview-rest-points .rp-subtotal-meta small{font-size:.6rem; opacity:.7; margin-left:1px; color:#d9c590;}
+.overview-rest-points .rp-subtotal .rp-arrive small{
+  color:#a8927a;
 }
-.overview-rest-points .rp-subtotal-time .rp-time-derived{
-  font-size:.92rem; font-weight:700; color:var(--pri-deep,#0a1a06);
-}
-.overview-rest-points .rp-subtotal-time .rp-time-base{
-  font-family:var(--serif); font-style:italic;
-  font-size:.62rem; color:var(--ink-soft,#7a7468);
+.overview-rest-points .rp-subtotal .rp-arrive b{
+  color:#ffd58a;
+  letter-spacing:.06em;
 }
 
 /* Clickable segment rows — focus the chart on this segment */
