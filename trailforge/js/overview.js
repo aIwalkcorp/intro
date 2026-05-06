@@ -450,12 +450,23 @@
           : (r.dayStart
               ? `<span class="rp-day-start"><small>起登</small>${escapeHtml(r.dayStart)}</span>`
               : `<span class="rp-day-start rp-day-start-empty"><small>起登</small>—</span>`);
-        return `<div class="rp-row rp-day-header">
+
+        // Section title — editable when in edit mode, read-only label otherwise.
+        // Pulled from day.section_title (e.g. "Day 1 — 4/18(六) 塔塔加→排雲山莊").
+        const day = (plan.days || []).find(d => d.id === r.dayId);
+        const secTitle = (day && day.section_title) || '';
+        const titleCell = editing && day && !r.isReturn
+          ? `<input type="text" class="rp-section-title-edit" data-day-id="${escapeHtml(r.dayId)}" value="${escapeHtml(secTitle)}" placeholder="行程標題（如：Day 1 — 塔塔加 → 排雲山莊）" aria-label="行程標題">`
+          : (secTitle
+              ? `<span class="rp-section-title">${escapeHtml(secTitle)}</span>`
+              : '');
+
+        return `<div class="rp-row rp-day-header${r.isReturn ? ' rp-day-header-return' : ''}">
           ${dayChip}
           <span class="rp-day-name">${escapeHtml(r.dayLabel)}</span>
           <span class="rp-day-note">${escapeHtml(r.note || '')}</span>
           ${startCell}
-        </div>`;
+        </div>${titleCell ? `<div class="rp-section-title-row">${titleCell}</div>` : ''}`;
       }
 
       if (r.kind === 'subtotal') {
@@ -501,16 +512,35 @@
         ? ` data-focusable="true" data-day-id="${escapeHtml(r.dayId)}" data-anchor-lo="${r.anchorLo}" data-anchor-hi="${r.anchorHi}" role="button" tabindex="0" aria-pressed="${isFocused ? 'true' : 'false'}"`
         : '';
       // Per-segment 備註 row — sits directly below the segment row. Edit
-      // mode shows a clean dotted-underline input; view mode shows muted
-      // italic prose only when there's content. Synthetic 回程 rows skip
-      // the note (no source segment to mutate).
+      // mode shows a clean dotted-underline input + branch button; view
+      // mode shows muted italic prose only when there's content. Synthetic
+      // 回程 rows skip the note (no source segment to mutate).
       const editing = document.body.classList.contains('tf-editing');
       const canEditNote = !r.isReturn && r.segIdx != null;
       let noteHtml = '';
       if (canEditNote && editing) {
+        // Git-branch SVG: a vertical stem with a fork branching off to the
+        // right — universally recognised as "branch from here". Click opens
+        // an inline split form below.
+        const branchBtn = `<button type="button" class="rp-branch-btn"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-seg-idx="${r.segIdx}"
+            data-variant-id="${escapeHtml(r.variantId || '')}"
+            aria-label="在此段插入分歧點 / 休息點"
+            title="在此段插入新的休息點">
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+            <circle cx="4" cy="3" r="1.6" fill="currentColor"/>
+            <circle cx="4" cy="13" r="1.6" fill="currentColor"/>
+            <circle cx="12" cy="8" r="1.6" fill="currentColor"/>
+            <path d="M4 4.5v7" stroke="currentColor" stroke-width="1.4" fill="none"/>
+            <path d="M4 7.5 q 0 -2 4 -2 t 4 1" stroke="currentColor" stroke-width="1.4" fill="none"/>
+          </svg>
+          <span>分歧</span>
+        </button>`;
         noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
           <span class="rp-note-mark" aria-hidden="true">↳</span>
           <input class="rp-note-input" type="text" value="${escapeHtml(r.note || '')}" placeholder="備註（可選）" aria-label="此段備註">
+          ${branchBtn}
         </div>`;
       } else if (r.note) {
         noteHtml = `<div class="rp-note-row rp-note-readonly">
@@ -610,28 +640,142 @@
       });
     }
 
+    // Helper: resolve the live segments array for a given (dayId, variantId).
+    function resolveSegArr(dayId, variantId) {
+      const day = (plan.days || []).find(d => d.id === dayId);
+      if (!day || !day.elevation_profile) return null;
+      if (variantId) {
+        const rv = day.elevation_profile.route_variants;
+        return rv && rv[variantId] && rv[variantId].shanghe_segments;
+      }
+      return day.elevation_profile.shanghe_segments;
+    }
+
     // ── Bind per-segment note inputs (edit mode only) ──
     host.querySelectorAll('.rp-note-input').forEach((inp) => {
       inp.addEventListener('input', () => {
         const wrap = inp.closest('.rp-note-row');
         if (!wrap) return;
-        const dayId = wrap.dataset.dayId;
+        const segArr = resolveSegArr(wrap.dataset.dayId, wrap.dataset.variantId || null);
         const segIdx = +wrap.dataset.segIdx;
-        const variantId = wrap.dataset.variantId || null;
-        const day = (plan.days || []).find(d => d.id === dayId);
-        if (!day || !day.elevation_profile) return;
-        let segArr;
-        if (variantId) {
-          const rv = day.elevation_profile.route_variants;
-          segArr = rv && rv[variantId] && rv[variantId].shanghe_segments;
-        } else {
-          segArr = day.elevation_profile.shanghe_segments;
-        }
         if (!Array.isArray(segArr) || !segArr[segIdx]) return;
         segArr[segIdx].note = inp.value;
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
         // Don't re-render — would lose typing focus. The note is already in
         // memory; renderRestPoints reads .note on next refresh.
+      });
+    });
+
+    // ── Bind per-segment branch buttons (edit mode only) ──
+    // Click → opens an inline split form below the segment row asking for
+    // a new intermediate waypoint name + how many minutes from the segment
+    // start it sits. On confirm, splits the segment into two proportionally.
+    // Future: wire this to a GPX+OSM rest-point scanner that suggests known
+    // stops between the two anchor points.
+    host.querySelectorAll('.rp-branch-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const wrap = btn.closest('.rp-note-row');
+        if (!wrap) return;
+        const dayId = wrap.dataset.dayId;
+        const variantId = wrap.dataset.variantId || null;
+        const segIdx = +wrap.dataset.segIdx;
+        const segArr = resolveSegArr(dayId, variantId);
+        if (!Array.isArray(segArr) || !segArr[segIdx]) return;
+        const seg = segArr[segIdx];
+        // Toggle inline form
+        let form = wrap.nextElementSibling;
+        if (form && form.classList.contains('rp-branch-form')) {
+          form.remove();
+          return;
+        }
+        const halfMin = Math.max(1, Math.round((+seg.base_minutes || 0) / 2));
+        form = document.createElement('div');
+        form.className = 'rp-branch-form';
+        form.innerHTML = `
+          <div class="rp-branch-head">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <circle cx="4" cy="3" r="1.6" fill="currentColor"/><circle cx="4" cy="13" r="1.6" fill="currentColor"/><circle cx="12" cy="8" r="1.6" fill="currentColor"/>
+              <path d="M4 4.5v7" stroke="currentColor" stroke-width="1.4" fill="none"/>
+              <path d="M4 7.5 q 0 -2 4 -2 t 4 1" stroke="currentColor" stroke-width="1.4" fill="none"/>
+            </svg>
+            在 <b>${escapeHtml(seg.from)}</b> → <b>${escapeHtml(seg.to)}</b> 之間插入新休息點
+          </div>
+          <div class="rp-branch-fields">
+            <label><span>名稱</span><input type="text" class="rp-branch-name" placeholder="例：黑木林觀景台"></label>
+            <label><span>從 ${escapeHtml(seg.from)} 走</span><input type="number" class="rp-branch-min" min="1" max="${(+seg.base_minutes || 1) - 1}" value="${halfMin}"><span class="rp-branch-unit">分</span></label>
+          </div>
+          <div class="rp-branch-actions">
+            <button type="button" class="rp-branch-cancel">取消</button>
+            <button type="button" class="rp-branch-confirm">＋ 插入</button>
+          </div>
+          <p class="rp-branch-hint">插入後會把此段拆成兩段，距離 / 升降按比例平均；之後可手動微調。</p>
+        `;
+        wrap.parentNode.insertBefore(form, wrap.nextSibling);
+        form.querySelector('.rp-branch-name').focus();
+
+        form.querySelector('.rp-branch-cancel').addEventListener('click', () => form.remove());
+        form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
+          const newName = form.querySelector('.rp-branch-name').value.trim();
+          const splitMin = +form.querySelector('.rp-branch-min').value;
+          if (!newName) {
+            form.querySelector('.rp-branch-name').focus();
+            return;
+          }
+          const total = +seg.base_minutes || 0;
+          const m1 = Math.max(1, Math.min(total - 1, splitMin || halfMin));
+          const m2 = Math.max(1, total - m1);
+          // Proportionally split km / ascent / descent.
+          const f = m1 / total;
+          const dKm = +seg.distance_km || 0;
+          const dAsc = +seg.ascent_m || 0;
+          const dDesc = +seg.descent_m || 0;
+          const before = {
+            ...seg,
+            id: (seg.id || 'seg') + '-a',
+            to: newName,
+            base_minutes: m1,
+            distance_km: +(dKm * f).toFixed(2),
+            ascent_m: Math.round(dAsc * f),
+            descent_m: Math.round(dDesc * f),
+            anchor_idx: null,   // user can re-pin via GPX picker later
+            note: seg.note || '',
+          };
+          const after = {
+            ...seg,
+            id: (seg.id || 'seg') + '-b',
+            from: newName,
+            base_minutes: m2,
+            distance_km: +(dKm * (1 - f)).toFixed(2),
+            ascent_m: dAsc - before.ascent_m,
+            descent_m: dDesc - before.descent_m,
+            anchor_idx: null,
+            note: '',
+          };
+          segArr.splice(segIdx, 1, before, after);
+          if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          renderRestPoints(plan, readSpeed());
+          if (TF.modeToggle && TF.modeToggle.refreshAll) {
+            requestAnimationFrame(() => TF.modeToggle.refreshAll());
+          }
+          if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+        });
+      });
+    });
+
+    // ── Bind day section_title inputs (edit mode only) ──
+    host.querySelectorAll('.rp-section-title-edit').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const dayId = inp.dataset.dayId;
+        const day = (plan.days || []).find(d => d.id === dayId);
+        if (!day) return;
+        day.section_title = inp.value;
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        // Refresh day panels so the heading inside the schedule section
+        // (which renders day.section_title) reflects the edit live.
+        if (TF.render) {
+          requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+        }
       });
     });
 

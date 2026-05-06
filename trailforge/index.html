@@ -2452,6 +2452,134 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   }
 }
 
+/* Branch button — small git-branch glyph + label, sits to the right of
+   the note input. Quiet by default, brass on hover. */
+.overview-rest-points .rp-note-row .rp-branch-btn{
+  appearance:none; cursor:pointer; flex:none;
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 8px;
+  background:transparent;
+  border:1px dashed rgba(168,128,44,0.45);
+  border-radius:99px;
+  font-family:var(--mono); font-size:.6rem; font-weight:700; letter-spacing:.16em;
+  color:var(--gold-deep,#6e5316);
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.overview-rest-points .rp-note-row .rp-branch-btn:hover{
+  background:rgba(168,128,44,0.12);
+  border-color:#a8802c; border-style:solid;
+  color:#3b2a0e;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-note-row .rp-branch-btn:active{ transform:scale(.96); }
+.overview-rest-points .rp-note-row .rp-branch-btn svg{ flex:none; }
+
+/* Branch insertion form — slides below the note row when the user clicks
+   the branch button. Compact so it doesn't dominate the table. */
+.overview-rest-points .rp-branch-form{
+  padding:10px 14px 12px 60px;
+  background:rgba(168,128,44,0.06);
+  border-top:1px dashed rgba(168,128,44,0.4);
+  border-bottom:1px dashed rgba(168,128,44,0.4);
+  font-family:var(--serif);
+  animation: rpBranchSlide .25s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes rpBranchSlide{
+  from{ opacity:0; transform: translateY(-4px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+.overview-rest-points .rp-branch-head{
+  display:flex; align-items:center; gap:8px;
+  font-size:.78rem; color:#3b2a0e; margin-bottom:8px;
+}
+.overview-rest-points .rp-branch-head svg{ color:var(--gold-deep,#6e5316); flex:none; }
+.overview-rest-points .rp-branch-head b{ color:var(--pri-deep,#0a1a06); font-weight:700; }
+.overview-rest-points .rp-branch-fields{
+  display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px;
+}
+.overview-rest-points .rp-branch-fields label{
+  display:flex; flex-direction:column; gap:3px;
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.18em;
+  color:var(--ink-soft,#7a7468); text-transform:uppercase;
+}
+.overview-rest-points .rp-branch-fields label > span:first-child{ font-weight:700; }
+.overview-rest-points .rp-branch-fields input{
+  font:inherit; padding:5px 8px;
+  font-family:var(--serif),"Noto Serif TC",serif;
+  font-size:.86rem; color:var(--ink,#1a1a17);
+  background:rgba(255,255,255,0.7);
+  border:1px solid rgba(42,36,24,0.18);
+  border-radius:5px;
+  text-transform:none; letter-spacing:0;
+}
+.overview-rest-points .rp-branch-fields input[type="number"]{ width:80px; font-family:var(--mono); font-weight:700; }
+.overview-rest-points .rp-branch-fields input:focus{ outline:none; border-color:#a8802c; background:#fff; }
+.overview-rest-points .rp-branch-unit{
+  font-family:var(--mono); font-size:.62rem; color:var(--gold-deep,#6e5316);
+  letter-spacing:.16em; align-self:flex-end; padding-bottom:6px;
+}
+.overview-rest-points .rp-branch-actions{
+  display:flex; gap:8px; justify-content:flex-end;
+}
+.overview-rest-points .rp-branch-cancel,
+.overview-rest-points .rp-branch-confirm{
+  appearance:none; cursor:pointer;
+  padding:6px 14px; border-radius:99px;
+  font-family:var(--serif),serif; font-size:.78rem; letter-spacing:.18em;
+  font-weight:700;
+  transition: background .15s, border-color .15s, transform .12s;
+}
+.overview-rest-points .rp-branch-cancel{
+  background:transparent; border:1px solid rgba(42,36,24,0.25);
+  color:var(--ink-soft,#7a7468);
+}
+.overview-rest-points .rp-branch-cancel:hover{ background:rgba(0,0,0,0.04); color:#3b2a0e; }
+.overview-rest-points .rp-branch-confirm{
+  background:radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
+             linear-gradient(180deg, #ffd98a 0%, #d99a2a 100%);
+  border:1px solid #8a6420;
+  color:#1f2014;
+}
+.overview-rest-points .rp-branch-confirm:hover{ transform:translateY(-1px); }
+.overview-rest-points .rp-branch-hint{
+  margin:8px 0 0;
+  font-family:var(--mono); font-size:.58rem; letter-spacing:.16em;
+  color:var(--ink-soft,#7a7468); text-transform:uppercase;
+}
+
+/* Section-title row sits directly under the day-header. Edit mode shows a
+   subtle dotted-underline input; view mode shows italic prose only when
+   non-empty. Same indented column as the note rows. */
+.overview-rest-points .rp-section-title-row{
+  padding:2px 14px 6px 60px;
+  border-bottom:1px solid rgba(42,36,24,0.10);
+  background:rgba(168,128,44,0.04);
+}
+.overview-rest-points .rp-section-title{
+  font-family:var(--serif);
+  font-style:italic; font-size:.84rem;
+  color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-section-title-edit{
+  width:100%; padding:4px 0;
+  background:transparent;
+  border:0; border-bottom:1px dotted rgba(168,128,44,0.4);
+  border-radius:0;
+  font:inherit;
+  font-family:"Fraunces", var(--serif), "Noto Serif TC", serif;
+  font-size:.94rem; font-weight:700; font-style:italic;
+  color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-section-title-edit::placeholder{
+  color:rgba(42,36,24,0.32); font-style:italic; font-weight:400;
+}
+.overview-rest-points .rp-section-title-edit:focus{
+  outline:none; border-bottom:1px solid #a8802c;
+}
+@media(max-width:560px){
+  .overview-rest-points .rp-section-title-row{ padding-left:48px; padding-right:8px; }
+}
+
 .overview-rest-points .rp-row:nth-child(even):not(.rp-day-header){
   background:rgba(168,128,44,0.04);
 }
