@@ -785,50 +785,62 @@
           }
         });
 
-        // Per-segment meta tag — distance + ascent/descent, drawn once
-        // at the midpoint between two checkpoint dots near the chart
-        // bottom. Lets the user read "2.8km ↑140m" without jumping to
-        // the rest-points table. Skipped for is_rest_stop / zero-length
-        // segs. Stagger near baseline so dense ascent regions still
-        // breathe (alternating Y per segment).
-        const baseY = pad.t + gH - 5;
-        ctx.font = '600 9px "JetBrains Mono", monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'alphabetic';
-        let segMetaIdx = 0;
-        d.segments.forEach((s) => {
-          if (s.is_rest_stop) return;
-          const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
-          if (ai.length < 2) return;
-          const lo = Math.min(ai[0], ai[1]);
-          const hi = Math.max(ai[0], ai[1]);
-          if (lo < 0 || hi >= d.gpx.length || lo === hi) return;
-          const dist = +s.distance_km || 0;
-          if (!dist) return;
-          const mx = (xOf(d, lo) + xOf(d, hi)) / 2;
-          const my = baseY - (segMetaIdx++ % 2) * 11;  // stagger 0/-11
-          const distText = dist.toFixed(1) + ' km';
-          const asc = +s.ascent_m || 0;
-          const desc = +s.descent_m || 0;
-          const elevText = asc ? `↑${asc}` : (desc ? `↓${desc}` : '');
-          const text = elevText ? `${distText} ${elevText}` : distText;
-          const w = ctx.measureText(text).width + 8;
-          // Paper-tinted rounded background so the curve doesn't bleed through
-          ctx.fillStyle = 'rgba(253,249,238,0.78)';
-          ctx.strokeStyle = 'rgba(168,128,44,0.32)';
-          ctx.lineWidth = 0.6;
-          if (typeof ctx.roundRect === 'function') {
-            ctx.beginPath();
-            ctx.roundRect(mx - w/2, my - 9, w, 12, 3);
-            ctx.fill(); ctx.stroke();
-          } else {
-            ctx.fillRect(mx - w/2, my - 9, w, 12);
-            ctx.strokeRect(mx - w/2, my - 9, w, 12);
-          }
-          ctx.fillStyle = '#3a3528';
-          ctx.fillText(text, mx, my - 1);
-        });
+        // (Per-segment km/elev tags moved off the canvas — the chart
+        // now shows them only on hover via an HTML tooltip overlay
+        // populated from canvas.__segHitMap, populated below in the
+        // zebra-band pass.)
       }
+    });
+
+    // ── Zebra-stripe segment bands + hit-map for hover tooltip ────────────
+    // Each segment gets a faint vertical band so dense ascent days read
+    // as a series of "chapters" rather than a single uninterrupted curve.
+    // Alternating tints (paper / sage) within the same day; day-band
+    // boundaries already separated by the dashed vertical lines drawn
+    // above. The bands are drawn UNDER the curve (below the elevation
+    // line and dots) so they don't obscure them — this means we render
+    // them by going back to a saved ctx state, then re-drawing the curve
+    // and dots on top. Easier alternative: draw bands here at low alpha,
+    // accept slight curve dimming. We pick the latter (alpha 0.04).
+    const segHitMap = canvas.__segHitMap = [];
+    perDay.forEach((d) => {
+      if (!Array.isArray(d.segments) || !d.segments.length) return;
+      const seenIdx = new Set();
+      let zebra = 0;
+      d.segments.forEach((s) => {
+        const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+        if (ai.length < 2) return;
+        const lo = Math.min(ai[0], ai[1]);
+        const hi = Math.max(ai[0], ai[1]);
+        if (lo < 0 || hi >= d.gpx.length || lo === hi) return;
+        // Out-and-back loops revisit the same anchor pair (e.g. 主北岔↔
+        // 北峰 traversed twice). Hit-map keeps every visit, but zebra
+        // alternation tracks unique segs to avoid same-x stacking issues.
+        const x0 = xOf(d, lo);
+        const x1 = xOf(d, hi);
+        const w = x1 - x0;
+        if (w <= 0) return;
+        const isAlt = (zebra++) % 2 === 1;
+        // Paper / sage alternation at very low alpha — visible enough
+        // to chunk the chart, faint enough not to fight the curve.
+        ctx.fillStyle = isAlt ? 'rgba(120,140,90,0.06)' : 'rgba(168,128,44,0.05)';
+        ctx.fillRect(x0, pad.t, w, gH);
+        const asc = +s.ascent_m || 0;
+        const desc = +s.descent_m || 0;
+        const dist = +s.distance_km || 0;
+        const baseMin = +s.base_minutes || 0;
+        segHitMap.push({
+          x0, x1,
+          from: s.from || '',
+          to: s.to || '',
+          distance_km: dist,
+          ascent_m: asc,
+          descent_m: desc,
+          base_minutes: baseMin,
+          day_label: d.label || '',
+          is_rest_stop: !!s.is_rest_stop,
+        });
+      });
     });
 
     // Day boundary lines + top label band — kept to a fixed 22px header so

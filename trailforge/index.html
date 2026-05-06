@@ -2017,6 +2017,31 @@ body[data-jm-mode="elevation"] .elev-overview{display:block;}
   border-radius:6px; overflow:hidden;
 }
 .elev-overview .eo-canvas-wrap canvas{display:block; width:100%; height:100%;}
+/* Hover tooltip — appears when the mouse enters a segment band on the
+   chart. Paper card with brass border, mono numerics, slight drop
+   shadow so it floats above the curve. */
+.elev-overview .eo-canvas-wrap .elev-seg-tip{
+  position:absolute; pointer-events:none; z-index:5;
+  padding:6px 10px;
+  background:rgba(253,249,238,0.96);
+  border:1px solid rgba(168,128,44,0.55);
+  border-radius:5px;
+  box-shadow:0 4px 10px rgba(42,36,24,0.18);
+  font-family:var(--serif), serif; font-size:.8rem; line-height:1.35;
+  color:var(--ink, #1a1a17);
+  white-space:nowrap;
+}
+.elev-overview .eo-canvas-wrap .elev-seg-tip b{
+  display:block;
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-weight:700; color:var(--pri-deep, #0a1a06);
+  font-size:.84rem; margin-bottom:2px;
+}
+.elev-overview .eo-canvas-wrap .elev-seg-tip-meta{
+  font-family:"JetBrains Mono", monospace; font-size:.72rem;
+  color:var(--gold-deep, #6e5316);
+  letter-spacing:.04em;
+}
 .elev-overview .eo-legend{
   display:flex; flex-wrap:wrap; gap:6px 18px;
   font-family:var(--serif); font-size:.78rem; color:var(--ink,#1a1a17);

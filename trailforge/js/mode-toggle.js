@@ -565,6 +565,52 @@
       speedFactor,
     });
 
+    // Hover tooltip — bind once per canvas. drawOverview populates
+    // canvas.__segHitMap with each segment's pixel x-range + meta;
+    // mousemove maps the cursor x to a hit + positions a paper-tinted
+    // tooltip div over the chart.
+    if (canvas && !canvas.__hoverWired) {
+      canvas.__hoverWired = true;
+      const wrap = canvas.parentElement;
+      if (wrap && getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+      const tip = document.createElement('div');
+      tip.className = 'elev-seg-tip';
+      tip.style.display = 'none';
+      if (wrap) wrap.appendChild(tip);
+      const onMove = (e) => {
+        const hits = canvas.__segHitMap;
+        if (!Array.isArray(hits) || !hits.length) { tip.style.display = 'none'; return; }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width) / (window.devicePixelRatio || 1);
+        const hit = hits.find(h => x >= h.x0 && x <= h.x1);
+        if (!hit || hit.is_rest_stop || (!hit.distance_km && !hit.ascent_m && !hit.descent_m)) {
+          tip.style.display = 'none';
+          return;
+        }
+        const dist = hit.distance_km ? `${hit.distance_km.toFixed(1)} km` : '';
+        const asc  = hit.ascent_m  ? `↑${hit.ascent_m}m` : '';
+        const desc = hit.descent_m ? `↓${hit.descent_m}m` : '';
+        const time = hit.base_minutes ? `${hit.base_minutes}分` : '';
+        tip.innerHTML = `<b>${hit.from} → ${hit.to}</b>` +
+          `<span class="elev-seg-tip-meta">${[dist, asc, desc, time].filter(Boolean).join(' · ')}</span>`;
+        tip.style.display = 'block';
+        // Position relative to the wrap; clamp inside chart.
+        const wrapRect = wrap.getBoundingClientRect();
+        const cx = (e.clientX - wrapRect.left);
+        const cy = (e.clientY - wrapRect.top);
+        const tipW = tip.offsetWidth || 160;
+        const tipH = tip.offsetHeight || 36;
+        let tx = cx + 12, ty = cy - tipH - 8;
+        if (tx + tipW > wrapRect.width - 4) tx = cx - tipW - 12;
+        if (ty < 4) ty = cy + 14;
+        tip.style.left = tx + 'px';
+        tip.style.top = ty + 'px';
+      };
+      canvas.addEventListener('mousemove', onMove);
+      canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    }
+
     // Minimap (only when card has focus state — saves a render otherwise)
     const mini = document.getElementById('elev-overview-minimap');
     if (mini) {
