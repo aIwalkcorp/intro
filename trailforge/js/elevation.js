@@ -606,12 +606,21 @@
           }
         });
         const suppress = d._suppressCheckpointNames || new Set();
-        // Sort so labels render left → right (helps stagger placement)
+        // Sort by idx (left → right), then dedupe by NAME — out-and-back
+        // loops visit 主北岔(風口) / 排雲山莊 etc. multiple times in the
+        // stitched track, but only the first arrival's clock is useful.
+        // The REST POINTS table still shows every visit with its own time.
+        const seenNames = (opts._chartSeenNames = opts._chartSeenNames || new Set());
         const cps = [...cpMap.entries()]
           .filter(([idx]) => idx >= 0 && idx < d.gpx.length)
           .filter(([idx]) => idx !== d.summitIdx)
           .filter(([, name]) => !suppress.has(name))
-          .sort((a, b) => a[0] - b[0]);
+          .sort((a, b) => a[0] - b[0])
+          .filter(([, name]) => {
+            if (seenNames.has(name)) return false;
+            seenNames.add(name);
+            return true;
+          });
 
         const factor = (typeof opts.speedFactor === 'number' && opts.speedFactor > 0) ? opts.speedFactor : 1;
         const parseMin = (s) => {
