@@ -562,9 +562,25 @@
     if (m.start_date && m.end_date) {
       // Hiking days: start_date → end_date (inclusive count).
       const hikingDays = Math.round((new Date(m.end_date) - new Date(m.start_date)) / 86400000) + 1;
-      // Nights: from depart_date if present (counts the pre-trail lodging
-      // night too, so 4/17 出發 + 4/18 山屋 = 2 nights), else hikingDays-1.
-      const nightsFrom = m.depart_date || m.start_date;
+      // Nights: normally count from depart_date so 4/17 出發 + 4/18 山屋
+      // = 2 nights. EXCEPTION: if the depart day's start clock is late
+      // (≥ 16:00), the user is effectively just transferring that
+      // afternoon — the night at e.g. 民宿 doesn't add to the trip's
+      // sleep count. Only the hiking-side nights survive (= hikingDays-1).
+      const PRETRIP_LATE_MIN = 16 * 60;     // 16:00 as minute-of-day
+      const toMin = (s) => {
+        const mm = /^(\d{1,2}):(\d{2})$/.exec(String(s || ''));
+        return mm ? (+mm[1]) * 60 + (+mm[2]) : null;
+      };
+      let nightsFrom = m.depart_date || m.start_date;
+      if (m.depart_date && plan.days && plan.days[0]) {
+        const ep = plan.days[0].elevation_profile || {};
+        const km = (plan.days[0].key_times || []).find(k => k && toMin(k.value) != null);
+        const startMin = toMin(ep.start_time || (km && km.value) || '');
+        if (startMin != null && startMin >= PRETRIP_LATE_MIN) {
+          nightsFrom = m.start_date;
+        }
+      }
       const nights = Math.max(0, Math.round((new Date(m.end_date) - new Date(nightsFrom)) / 86400000));
       dur = m.lang === 'en' ? `${hikingDays}D${nights}N` : `${hikingDays}天${nights}夜`;
     }
