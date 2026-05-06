@@ -17,19 +17,38 @@
 
   const TF = (window.TF = window.TF || {});
 
-  const DOCX_CDN_URL = 'https://unpkg.com/docx@9.0.4/build/index.umd.js';
+  // docx-js 9.x dropped UMD; only 8.x ships a browser-loadable bundle.
+  // Try jsdelivr first (faster + more reliable), unpkg as fallback.
+  const DOCX_CDN_URLS = [
+    'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js',
+    'https://unpkg.com/docx@8.5.0/build/index.umd.js',
+  ];
+
+  function loadOneScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.crossOrigin = 'anonymous';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('script load failed: ' + src));
+      document.head.appendChild(s);
+    });
+  }
 
   function loadDocxLib() {
     if (window.docx) return Promise.resolve(window.docx);
     if (window.__tfDocxLoading) return window.__tfDocxLoading;
-    window.__tfDocxLoading = new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = DOCX_CDN_URL;
-      s.crossOrigin = 'anonymous';
-      s.onload = () => window.docx ? resolve(window.docx) : reject(new Error('docx lib loaded but window.docx is undefined'));
-      s.onerror = () => reject(new Error('failed to load docx-js from CDN'));
-      document.head.appendChild(s);
-    });
+    window.__tfDocxLoading = (async () => {
+      let lastErr = null;
+      for (const url of DOCX_CDN_URLS) {
+        try {
+          await loadOneScript(url);
+          if (window.docx) return window.docx;
+          lastErr = new Error('script ran but window.docx still undefined: ' + url);
+        } catch (e) { lastErr = e; }
+      }
+      throw lastErr || new Error('all docx CDN sources failed');
+    })();
     return window.__tfDocxLoading;
   }
 
