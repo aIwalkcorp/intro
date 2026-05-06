@@ -176,7 +176,10 @@
   // use, applied to the auto-return path.
   function buildReverseSegments(sourceSegs, plan) {
     if (!Array.isArray(sourceSegs)) return [];
-    return sourceSegs.slice().reverse().map((s) => {
+    // In-place rest stops (lunch, water break) don't have a meaningful
+    // "reverse" — drop them. Transport hops reverse naturally (bus
+    // back from 登山口 to 塔塔加 mirrors the morning ride in).
+    return sourceSegs.filter(s => !s.is_rest_stop).slice().reverse().map((s) => {
       const a = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
       const ai0 = a[0], ai1 = a[1];
       const ref = s.gpx_ref || null;
@@ -284,18 +287,26 @@
   //   3. null                              (no start = no arrival column)
   function dayStartTimeFor(day) {
     const ep = day && day.elevation_profile;
-    if (ep && /^\d{1,2}:\d{2}$/.test(String(ep.start_time || ''))) return ep.start_time;
+    const isHM = (s) => /^\d{1,2}:\d{2}$/.test(String(s || ''));
+    // Per-variant start_time wins when route_variants exist — Day 2A
+    // (03:00) and Day 2B (04:00) need different start clocks under the
+    // same elevation_profile. Pick the active route's variant first.
+    if (ep && ep.route_variants) {
+      const routes = (day.routes) || [];
+      const active = routes.find(r => r && r.active) || routes[0];
+      const activeId = (active && active.id) || ep.default_variant;
+      const v = activeId && ep.route_variants[activeId];
+      if (v && isHM(v.start_time)) return v.start_time;
+    }
+    if (ep && isHM(ep.start_time)) return ep.start_time;
     const pickFirstTime = (sched) => {
       for (const item of (sched || [])) {
-        if (item && /^\d{1,2}:\d{2}$/.test(String(item.time || ''))) return item.time;
+        if (item && isHM(item.time)) return item.time;
       }
       return null;
     };
-    // 1) day-level schedule (most plans).
-    const a = pickFirstTime(day && day.schedule);
-    if (a) return a;
-    // 2) route-variant schedule — 玉山 Day 2 keeps its 02:00 起床 inside
-    //    routes[active].schedule, NOT at the day level.
+    const fromDay = pickFirstTime(day && day.schedule);
+    if (fromDay) return fromDay;
     const routes = (day && day.routes) || [];
     const active = routes.find(r => r && r.active) || routes[0];
     return pickFirstTime(active && active.schedule);
