@@ -337,10 +337,10 @@
     const W = r.width, H = r.height;
     const pad = isMinimap
       ? { t: 4, r: 8, b: 4, l: 8 }
-      // top: day-band (32px) + 2-row label stack (~60px) so close-together
-      // checkpoints can stagger without one being suppressed.
+      // top: day-band (32px) + 3-row label stack (~88px) so dense
+      // ascent/descent regions can stagger without overlapping.
       // bottom: km axis labels (~14px) — names moved up to above the dots
-      : { t: 96, r: 18, b: 22, l: 52 };
+      : { t: 124, r: 18, b: 22, l: 52 };
     const gW = W - pad.l - pad.r;
     const gH = H - pad.t - pad.b;
 
@@ -613,27 +613,38 @@
           .filter(([, name]) => !suppress.has(name))
           .sort((a, b) => a[0] - b[0]);
 
-        // Parse start time once per day for arrival annotations.
-        const startMin = (function () {
-          const m = /^(\d{1,2}):(\d{2})$/.exec(String(d.startTime || ''));
+        const factor = (typeof opts.speedFactor === 'number' && opts.speedFactor > 0) ? opts.speedFactor : 1;
+        const parseMin = (s) => {
+          const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || ''));
           if (!m) return null;
           const h = +m[1], mm = +m[2];
           if (h < 0 || h > 47 || mm < 0 || mm > 59) return null;
           return h * 60 + mm;
-        })();
-        const factor = (typeof opts.speedFactor === 'number' && opts.speedFactor > 0) ? opts.speedFactor : 1;
+        };
+        // Synthetic-return days (auto-补齊 descent) have no startTime
+        // of their own — chain off the source day's clock so the
+        // descent's arrival pills continue from where the attack ended.
+        let startMin = parseMin(d.startTime);
+        if (startMin == null && d.__synthetic_return && days[d.__returnFromDayIdx]) {
+          const src = days[d.__returnFromDayIdx];
+          const srcStart = parseMin(src.startTime);
+          if (srcStart != null) {
+            const srcCum = (src.segments || []).reduce(
+              (acc, s) => acc + (+s.base_minutes || 0), 0);
+            startMin = srcStart + Math.round(srcCum * factor);
+          }
+        }
         const fmtClock = (mins) => {
           const t = ((mins % 1440) + 1440) % 1440;
           return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
         };
 
         // Stack labels (name on top, time pill below) at the top of the
-        // chart with a thin vertical guide down to the dot. Two-row
-        // staggering: when a label would collide with the previous one
-        // on the upper row, drop it to the lower row so close-together
-        // checkpoints (e.g. 登山口 / 孟祿亭, 白木林 / 大峭壁) both stay
-        // visible instead of one being silently suppressed.
-        if (!opts._stackLastX) opts._stackLastX = [-Infinity, -Infinity];
+        // chart with a thin vertical guide down to the dot. Three-row
+        // staggering: each label picks the topmost free row. Dense
+        // sequences (D1 ascent + D2 attack + D2 descent ≈ 16 labels) no
+        // longer collapse on the 2-row lane.
+        if (!opts._stackLastX) opts._stackLastX = [-Infinity, -Infinity, -Infinity];
         const stackBaseY = 30;            // upper-row name baseline y
         const rowDelta   = 28;            // y offset between rows
         const minHGap    = 6;             // px breathing room between labels
@@ -667,13 +678,21 @@
           const widest = Math.max(nameW, timeW);
           const half = widest / 2 + minHGap;
 
-          // Pick the upper row by default; drop to the lower row only if
-          // it would collide with the previous upper-row label. Falls
-          // back to "force on whichever row is freer" when both collide.
+          // Pick the topmost row whose previous label ended before this
+          // one's left edge. If all three are still occupied, fall back
+          // to whichever one's right edge is leftmost (least overlap).
           let row = 0;
-          if ((cx - half) < opts._stackLastX[0]) {
-            row = ((cx - half) >= opts._stackLastX[1]) ? 1 :
-                  (opts._stackLastX[0] <= opts._stackLastX[1] ? 0 : 1);
+          for (let rr = 0; rr < 3; rr++) {
+            if ((cx - half) >= opts._stackLastX[rr]) { row = rr; break; }
+            row = rr;
+            if (rr === 2) {
+              // all rows blocked — choose the freest
+              let best = 0;
+              for (let kk = 1; kk < 3; kk++) {
+                if (opts._stackLastX[kk] < opts._stackLastX[best]) best = kk;
+              }
+              row = best;
+            }
           }
           opts._stackLastX[row] = cx + half;
           const rowBaseY = stackBaseY + row * rowDelta;

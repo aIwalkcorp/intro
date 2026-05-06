@@ -874,9 +874,21 @@
           <span class="rp-km">${r.distance_km.toFixed(1)}<small>km</small></span>
           ${elevBits.join('')}
         </span>
-        <span class="rp-arrive">${arrival
-          ? `<small>抵達</small><b>${arrival}</b>`
-          : '<small class="rp-arrive-empty">—</small>'}</span>
+        <span class="rp-arrive">${
+          (canEditMins && editing && arrival)
+            ? `<small>抵達</small><input type="time" class="rp-arrive-edit"
+                data-day-id="${escapeHtml(r.dayId)}"
+                data-seg-idx="${r.segIdx == null ? '' : r.segIdx}"
+                data-variant-id="${escapeHtml(r.variantId || '')}"
+                data-source-day-id="${escapeHtml(r.sourceDayId || '')}"
+                data-source-seg-idx="${r.sourceSegIdx == null ? '' : r.sourceSegIdx}"
+                data-day-start-min="${r.dayStartMin == null ? '' : r.dayStartMin}"
+                data-cum-before="${r.cumDayBaseMinBefore == null ? r.cumDayBaseMinAfter - r.base_minutes : r.cumDayBaseMinBefore}"
+                value="${arrival}" aria-label="抵達時間（編輯回推此段分鐘）">`
+            : (arrival
+                ? `<small>抵達</small><b>${arrival}</b>`
+                : '<small class="rp-arrive-empty">—</small>')
+        }</span>
       </div>${noteHtml}`;
     }).join('');
 
@@ -1014,6 +1026,54 @@
       inp.addEventListener('input', writeBase);
       inp.addEventListener('change', () => {
         writeBase();
+        renderRestPoints(plan, readSpeed() || 1);
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+      });
+    });
+
+    // ── Bind per-segment 抵達時間 inputs ──────────────────────────────
+    // Bidirectional with the 分鐘 input: editing the arrival clock
+    // back-solves base_minutes so the segment ends at the typed time.
+    // Same source-row dispatch as min-edit (return rows write to the
+    // source D1 seg's descent_override_minutes). Cumulative downstream
+    // arrivals shift on rerender, mirroring the user's mental model.
+    host.querySelectorAll('.rp-arrive-edit').forEach((inp) => {
+      const writeFromArrival = () => {
+        const factor = readSpeed() || 1;
+        const m = /^(\d{1,2}):(\d{2})$/.exec(String(inp.value || ''));
+        if (!m) return false;
+        const newArr = (+m[1]) * 60 + (+m[2]);
+        const dayStart = +inp.dataset.dayStartMin;
+        const cumBefore = +inp.dataset.cumBefore;
+        if (!Number.isFinite(dayStart) || !Number.isFinite(cumBefore)) return false;
+        // base_minutes is in raw (un-factored) minutes; the displayed
+        // clock is dayStart + cum*factor. Solve for the new base.
+        const wantCumAfter = (newArr - dayStart) / factor;
+        let newBase = Math.round(wantCumAfter - cumBefore);
+        if (newBase < 0) newBase = 0;
+        const sourceDayId = inp.dataset.sourceDayId || '';
+        const sourceSegIdx = inp.dataset.sourceSegIdx;
+        if (sourceDayId && sourceSegIdx !== '') {
+          const srcArr = resolveSegArr(sourceDayId, null);
+          const sIdx = +sourceSegIdx;
+          if (!Array.isArray(srcArr) || !srcArr[sIdx]) return false;
+          if (srcArr[sIdx].descent_override_minutes === newBase) return false;
+          srcArr[sIdx].descent_override_minutes = newBase;
+        } else {
+          const segArr = resolveSegArr(inp.dataset.dayId, inp.dataset.variantId || null);
+          const segIdx = +inp.dataset.segIdx;
+          if (!Array.isArray(segArr) || !segArr[segIdx]) return false;
+          if (segArr[segIdx].base_minutes === newBase) return false;
+          segArr[segIdx].base_minutes = newBase;
+        }
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        return true;
+      };
+      inp.addEventListener('change', () => {
+        writeFromArrival();
         renderRestPoints(plan, readSpeed() || 1);
         if (TF.modeToggle && TF.modeToggle.refreshAll) {
           requestAnimationFrame(() => TF.modeToggle.refreshAll());
