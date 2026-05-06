@@ -2594,25 +2594,31 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 .overview-rest-points .rp-branch-fields input[type="number"]{ width:80px; font-family:var(--mono); font-weight:700; }
 .overview-rest-points .rp-branch-fields input:focus{ outline:none; border-color:#a8802c; background:#fff; }
 
-/* Auto-generated "Day 2C・" prefix pill — sits left of the suffix
-   input, brass-on-paper, read-only. Communicates that the system owns
-   this part of the label. */
+/* New-variant name row: keeps the auto-generated prefix pill and the
+   user's free-text suffix on the SAME line, sized to roughly fit a
+   short Chinese phrase. Stops the input from sprawling to full width. */
+.overview-rest-points .rp-branch-fields .rp-branch-name-row{
+  display:inline-flex; align-items:stretch; gap:0;
+  max-width:280px;
+}
 .overview-rest-points .rp-branch-fields .rp-branch-prefix{
   display:inline-flex; align-items:center;
   font-family:"Fraunces", var(--serif), serif;
   font-style:italic; font-weight:700;
-  font-size:.92rem; color:var(--gold-deep,#6e5316);
-  padding:6px 10px; margin-right:2px;
+  font-size:.78rem; color:var(--gold-deep,#6e5316);
+  padding:4px 8px;
   background:rgba(168,128,44,0.12);
   border:1px dashed rgba(168,128,44,0.45);
-  border-radius:5px;
+  border-right:none;
+  border-radius:5px 0 0 5px;
   letter-spacing:.02em;
   user-select:none;
   flex:none;
+  white-space:nowrap;
 }
 .overview-rest-points .rp-branch-fields .rp-branch-suffix{
-  flex:1 1 200px;
-  min-width:160px;
+  width:160px; min-width:0;
+  border-radius:0 5px 5px 0;
 }
 .overview-rest-points .rp-branch-unit{
   font-family:var(--mono); font-size:.62rem; color:var(--gold-deep,#6e5316);

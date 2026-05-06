@@ -846,8 +846,10 @@
           </div>
           <div class="rp-branch-fields">
             <label><span>新路線名稱</span>
-              <span class="rp-branch-prefix" aria-label="自動編號">${escapeHtml(prefixInfo.prefix)}</span>
-              <input type="text" class="rp-branch-suffix" placeholder="例如：北峰+主峰 或 僅主峰" autocomplete="off">
+              <span class="rp-branch-name-row">
+                <span class="rp-branch-prefix" aria-label="自動編號">${escapeHtml(prefixInfo.prefix)}</span>
+                <input type="text" class="rp-branch-suffix" placeholder="例如：北峰+主峰 或 僅主峰" autocomplete="off">
+              </span>
             </label>
           </div>
           <div class="rp-branch-actions">
