@@ -727,7 +727,7 @@
             data-to-name="${escapeHtml(r.atName || '休息')}"
             aria-label="刪除此休息" title="刪除此休息">✕</button>` : '';
         const clockSpan = (startClock && endClock)
-          ? `<span class="rp-rest-clock"><b>${startClock}</b><span class="rp-rest-arrow">→</span><b>${endClock}</b></span>`
+          ? `<span class="rp-rest-clock"><b>${startClock}</b><span class="rp-rest-arrow">～</span><b>${endClock}</b></span>`
           : '';
         let noteHtml = '';
         if (canEdit && editing) {
