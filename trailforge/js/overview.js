@@ -629,7 +629,11 @@
       if (r.kind === 'day-header') {
         const editing = document.body.classList.contains('tf-editing');
         const startCell = editing
-          ? `<input type="time" class="rp-day-start-edit" data-day-id="${escapeHtml(r.dayId)}" value="${escapeHtml(r.dayStart || '')}" aria-label="起登時間">`
+          ? `<input type="text" class="rp-day-start-edit" inputmode="numeric"
+                pattern="\\d{1,2}:\\d{2}" maxlength="5"
+                data-day-id="${escapeHtml(r.dayId)}"
+                value="${escapeHtml(r.dayStart || '')}"
+                placeholder="HH:MM" aria-label="起登時間（HH:MM）">`
           : (r.dayStart
               ? `<span class="rp-day-start"><small>起登</small>${escapeHtml(r.dayStart)}</span>`
               : `<span class="rp-day-start rp-day-start-empty"><small>起登</small>—</span>`);
@@ -900,9 +904,21 @@
     // "排雲山莊→主北岔(風口)" and "主北岔→玉山北峰" — exactly where the
     // user makes the decision in real life.
 
+    // Reveal-state for the per-row metadata strip (基準分鐘 / km / ↑↓m).
+    // Persisted on the host element so re-renders preserve it across
+    // speed-factor edits and minute edits. Default: hidden.
+    if (!host.classList.contains('rp-details-shown')) {
+      host.classList.add('rp-details-hidden');
+    }
+    const detailsShown = host.classList.contains('rp-details-shown');
+
     host.innerHTML = `
       <div class="rp-head">
         <div class="rp-title">休息點<span class="rp-title-en">REST POINTS</span></div>
+        <button type="button" class="rp-detail-toggle"
+                aria-pressed="${detailsShown ? 'true' : 'false'}"
+                aria-label="顯示／隱藏每段詳情（基準分鐘・距離・海拔）"
+                title="顯示／隱藏每段詳情">(!)</button>
       </div>
       <div class="rp-speed-control">
         <label for="overview-speed" class="rp-sc-lbl">上河速度倍率</label>
@@ -926,6 +942,17 @@
           <small class="rp-total-base">基準 ${fmtMin(totalBase)}</small>
         </span>
       </div>`;
+
+    // ── Bind details-toggle ── (the "(!)" button in .rp-head)
+    const detailToggle = host.querySelector('.rp-detail-toggle');
+    if (detailToggle) {
+      detailToggle.addEventListener('click', () => {
+        const nowShown = !host.classList.contains('rp-details-shown');
+        host.classList.toggle('rp-details-shown', nowShown);
+        host.classList.toggle('rp-details-hidden', !nowShown);
+        detailToggle.setAttribute('aria-pressed', nowShown ? 'true' : 'false');
+      });
+    }
 
     // ── Bind speed input ── (event delegation not used so input.value can
     //    be normalised in onChange before re-render).
@@ -1701,10 +1728,15 @@
     });
 
     // ── Bind day-start time inputs (edit mode only) ──
+    // 'change' (blur/Enter), not 'input' — text inputs let the user type
+    // partial values ("0" → "08" → "08:" → "08:3" → "08:30") and an input
+    // listener would clear start_time on every partial that fails the
+    // HH:MM regex, which then shifts day.schedule by negative offsets and
+    // destroys data mid-typing. 'change' fires only when committed.
     host.querySelectorAll('.rp-day-start-edit').forEach((inp) => {
-      inp.addEventListener('input', () => {
+      inp.addEventListener('change', () => {
         const dayId = inp.dataset.dayId;
-        const v = inp.value;
+        const v = inp.value.trim();
         const day = (plan.days || []).find(d => d.id === dayId);
         if (!day) return;
         // 1) Capture the old "first time" so we can shift the schedule by

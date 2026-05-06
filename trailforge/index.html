@@ -2306,6 +2306,46 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   letter-spacing:.32em; color:var(--gold-deep,#6e5316);
   margin-left:8px; text-transform:uppercase; font-weight:600;
 }
+/* (!) toggle in rp-head — reveals per-row metadata strip
+   (基準分鐘・距離 km・↑↓海拔). Default state hides the strip so the
+   table reads as a clean route+time list. */
+.overview-rest-points .rp-detail-toggle{
+  margin-left:auto;
+  font-family:var(--mono); font-size:.7rem; font-weight:700;
+  color:var(--ink-soft,#7a7468);
+  background:transparent;
+  border:1px dotted rgba(168,128,44,0.45);
+  border-radius:3px;
+  padding:2px 7px;
+  cursor:pointer;
+  letter-spacing:.04em;
+  transition:color .12s, border-color .12s, background .12s;
+}
+.overview-rest-points .rp-detail-toggle:hover{
+  color:var(--gold-deep,#6e5316);
+  border-color:rgba(168,128,44,0.7);
+  background:rgba(168,128,44,0.06);
+}
+.overview-rest-points .rp-detail-toggle[aria-pressed="true"]{
+  color:#fff;
+  background:var(--gold-deep,#6e5316);
+  border-color:var(--gold-deep,#6e5316);
+  border-style:solid;
+}
+/* Hidden state — collapse the rp-meta + 基準 line so the row reads
+   chip / cum-km / route / cost / arrival only. The grid template
+   keeps the 140px meta track when shown but drops it when hidden. */
+.overview-rest-points.rp-details-hidden .rp-row > .rp-meta,
+.overview-rest-points.rp-details-hidden .rp-cost .rp-time-base{
+  display:none !important;
+}
+.overview-rest-points.rp-details-hidden .rp-row{
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px;
+}
+.overview-rest-points.rp-details-hidden .rp-subtotal{
+  /* subtotal row uses the same grid; collapse its meta cell too */
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px;
+}
 .overview-rest-points .rp-source{
   flex:1; min-width:200px; text-align:right;
   font-family:var(--serif); font-style:italic; font-size:.72rem;
@@ -3021,12 +3061,18 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 .overview-rest-points .rp-day-start-empty{ opacity:.55 }
 .overview-rest-points .rp-day-start-edit{
-  width:100px; padding:4px 6px;
+  /* type="text" + inputmode=numeric — no native time-picker chrome,
+     so the value (HH:MM) sits cleanly in the slot without the
+     "上午 ⏰" overlay that compressed the value to ~2 digits. */
+  width:78px; padding:3px 6px;
   background:rgba(255,255,255,0.65);
   border:1px solid transparent;
   border-bottom:1px dotted rgba(168,128,44,0.55);
   border-radius:4px;
   color:var(--gold-deep,#6e5316);
+  font-family:var(--mono); font-size:.85rem; font-weight:700;
+  text-align:center;
+  font-feature-settings:"tnum" 1, "lnum" 1;
 }
 .overview-rest-points .rp-day-start-edit:focus{
   outline:none; background:#fff;
