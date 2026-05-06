@@ -509,7 +509,7 @@
     });
 
     // Optional override per-day
-    perDay.forEach(d => {
+    perDay.forEach((d, dayK) => {
       const pal = DAY_PALETTES[d._paletteIdx % DAY_PALETTES.length];
       const ascentEnd = (d.direction === 'ascent_only')
         ? (d.gpx.length - 1)
@@ -676,6 +676,19 @@
             const cumBase = cumMinByIdx.get(idx);
             if (cumBase != null) {
               arrivalText = fmtClock(startMin + Math.round(cumBase * factor));
+            }
+          }
+          // If a LATER day's first segment departs from this same
+          // waypoint, fold its start time into the pill as a range —
+          // "15:20～03:00" reads as "arrived 15:20, leaves 03:00 the
+          // next morning" for overnight stays at huts like 排雲山莊.
+          for (let nk = dayK + 1; nk < perDay.length; nk++) {
+            const nx = perDay[nk];
+            const nsegs = nx && nx.segments || [];
+            if (!nsegs.length) continue;
+            if (nsegs[0].from === name && nx.startTime && /^\d{1,2}:\d{2}$/.test(nx.startTime)) {
+              arrivalText = (arrivalText ? arrivalText + '～' : '') + nx.startTime;
+              break;
             }
           }
 
