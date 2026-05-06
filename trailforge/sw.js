@@ -5,7 +5,7 @@
 //   - Cross-origin API: passthrough, never cache (auth, /api/*)
 //   - POST / non-GET:   never cache
 
-const CACHE = 'trailforge-v85';
+const CACHE = 'trailforge-v86';
 
 // Same-origin assets we want available offline on first install
 const PRECACHE_LOCAL = [
