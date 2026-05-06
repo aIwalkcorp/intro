@@ -337,9 +337,10 @@
     const W = r.width, H = r.height;
     const pad = isMinimap
       ? { t: 4, r: 8, b: 4, l: 8 }
-      // top: day-band (32px) + label stack header (~36px) for name+pill row
+      // top: day-band (32px) + 2-row label stack (~60px) so close-together
+      // checkpoints can stagger without one being suppressed.
       // bottom: km axis labels (~14px) — names moved up to above the dots
-      : { t: 68, r: 18, b: 22, l: 52 };
+      : { t: 96, r: 18, b: 22, l: 52 };
     const gW = W - pad.l - pad.r;
     const gH = H - pad.t - pad.b;
 
@@ -627,18 +628,15 @@
         };
 
         // Stack labels (name on top, time pill below) at the top of the
-        // chart with a thin vertical guide down to the dot. Per-checkpoint
-        // anti-collision uses the wider of name vs pill so close stations
-        // either skip or stagger across two rows. The chart's bottom edge
-        // is now reserved for km labels only — no more 排雲山莊 / 主北岔
-        // mash on the x-axis.
-        // Single row of labels just under the day band, with collision-skip
-        // (no staggering — keeps the chart predictable). Dots whose label
-        // would overlap the previous one are drawn without a label, but the
-        // tick + guide line still appear so users can locate the waypoint.
-        if (!opts._stackLastX) opts._stackLastX = -Infinity;
-        const stackBaseY = 36;            // name baseline y (in canvas coords)
-        const minHGap = 6;                // px breathing room between labels
+        // chart with a thin vertical guide down to the dot. Two-row
+        // staggering: when a label would collide with the previous one
+        // on the upper row, drop it to the lower row so close-together
+        // checkpoints (e.g. 登山口 / 孟祿亭, 白木林 / 大峭壁) both stay
+        // visible instead of one being silently suppressed.
+        if (!opts._stackLastX) opts._stackLastX = [-Infinity, -Infinity];
+        const stackBaseY = 30;            // upper-row name baseline y
+        const rowDelta   = 28;            // y offset between rows
+        const minHGap    = 6;             // px breathing room between labels
 
         cps.forEach(([idx, name]) => {
           const cx = xOf(d, idx);
@@ -669,40 +667,40 @@
           const widest = Math.max(nameW, timeW);
           const half = widest / 2 + minHGap;
 
-          // Skip the label entirely if it would overlap the previous one.
-          // Tick + guide still drawn so the waypoint position is visible.
-          const drawLabel = (cx - half) >= opts._stackLastX;
+          // Pick the upper row by default; drop to the lower row only if
+          // it would collide with the previous upper-row label. Falls
+          // back to "force on whichever row is freer" when both collide.
+          let row = 0;
+          if ((cx - half) < opts._stackLastX[0]) {
+            row = ((cx - half) >= opts._stackLastX[1]) ? 1 :
+                  (opts._stackLastX[0] <= opts._stackLastX[1] ? 0 : 1);
+          }
+          opts._stackLastX[row] = cx + half;
+          const rowBaseY = stackBaseY + row * rowDelta;
 
-          // Vertical guide line from above-the-dot down to the dot itself —
-          // always drawn (even when label is skipped) so users can trace
-          // dots vertically.
-          const guideTop = drawLabel
-            ? stackBaseY + (arrivalText ? 24 : 12)
-            : stackBaseY;
+          // Vertical guide line from row baseline down to the dot.
+          const guideTop = rowBaseY + (arrivalText ? 14 : 2);
           ctx.setLineDash([2, 3]);
           ctx.lineWidth = 0.7;
-          ctx.strokeStyle = drawLabel ? 'rgba(110,83,22,0.45)' : 'rgba(110,83,22,0.18)';
+          ctx.strokeStyle = 'rgba(110,83,22,0.45)';
           ctx.beginPath();
           ctx.moveTo(cx, guideTop);
           ctx.lineTo(cx, cy - 5);
           ctx.stroke();
           ctx.setLineDash([]);
 
-          if (!drawLabel) return;
-          opts._stackLastX = cx + half;
-
           // Draw name (top of stack)
           ctx.font = '600 10px "Noto Serif TC", serif';
           ctx.fillStyle = '#0a1a06';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'alphabetic';
-          ctx.fillText(name, cx, stackBaseY + 9);
+          ctx.fillText(name, cx, rowBaseY - 1);
 
           // Draw arrival time pill below name
           if (arrivalText) {
             ctx.font = '700 10px "JetBrains Mono", monospace';
             const tw = timeW;
-            const py = stackBaseY + 12;     // pill top
+            const py = rowBaseY + 2;     // pill top
             const px = cx - tw / 2;
             ctx.fillStyle = 'rgba(253,249,238,0.92)';
             ctx.strokeStyle = 'rgba(168,128,44,0.55)';

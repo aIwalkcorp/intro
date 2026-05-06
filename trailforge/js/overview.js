@@ -1036,8 +1036,12 @@
     });
 
     // ── Bind ✕ delete-segment buttons ─────────────────────────────────
-    // Removes the segment from the active variant's shanghe_segments.
-    // Uses tfConfirm if available so the user has a chance to cancel.
+    // Removes a LANDMARK (the segment's `to` waypoint), healing the
+    // chain: if there's a segment after this one, it's merged into the
+    // current row — combined km / asc / desc, or re-derived from GPX
+    // if both endpoints share a track. This means deleting 白木林 from
+    // 塔塔加→白木林→排雲山莊 yields 塔塔加→排雲山莊 with the elevation
+    // curve unchanged (since the curve is GPX-driven, not segment-sum).
     host.querySelectorAll('.rp-del-btn').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -1052,7 +1056,7 @@
         if (typeof window.tfConfirm === 'function') {
           ok = await window.tfConfirm({
             title: '刪除地標',
-            message: `確定要刪除「${toName}」這段嗎？此操作可在儲存前透過取消編輯還原。`,
+            message: `確定要從路線中移除「${toName}」嗎？兩側路段會自動合併。`,
             confirmText: '刪除',
             cancelText: '取消',
             destructive: true,
@@ -1061,7 +1065,46 @@
           ok = window.confirm(`刪除「${toName}」？`);
         }
         if (!ok) return;
-        segArr.splice(segIdx, 1);
+        const cur  = segArr[segIdx];
+        const next = segArr[segIdx + 1];
+        if (next) {
+          // Heal the chain. Try GPX recompute first; fall back to
+          // straight-sum of the two segments' stats.
+          const fromAnchor = cur.anchor_idx && cur.anchor_idx[0] != null
+            ? { trackRef: cur.gpx_ref || null, idx: cur.anchor_idx[0] }
+            : null;
+          const toAnchor = next.anchor_idx && next.anchor_idx[1] != null
+            ? { trackRef: next.gpx_ref || null, idx: next.anchor_idx[1] }
+            : null;
+          let derived = null;
+          if (fromAnchor && toAnchor) {
+            // Resolve the actual gpx_ref via day-level metadata if the
+            // segments don't carry their own — same fallback rule as
+            // findWaypointTrackIdx.
+            const day = (plan.days || []).find(d => d.id === dayId);
+            const ep = day && day.elevation_profile;
+            const ref = fromAnchor.trackRef || toAnchor.trackRef
+                     || (day && day.gpx_ref) || (ep && ep.gpx_ref) || null;
+            if (ref) derived = gpxStatsBetween(plan, ref, fromAnchor.idx, toAnchor.idx);
+          }
+          const merged = Object.assign({}, next, {
+            from: cur.from,
+            base_minutes: (+cur.base_minutes || 0) + (+next.base_minutes || 0),
+            distance_km: derived ? derived.distance_km : ((+cur.distance_km || 0) + (+next.distance_km || 0)),
+            ascent_m:    derived ? derived.ascent_m    : ((+cur.ascent_m    || 0) + (+next.ascent_m    || 0)),
+            descent_m:   derived ? derived.descent_m   : ((+cur.descent_m   || 0) + (+next.descent_m   || 0)),
+            anchor_idx: (cur.anchor_idx && next.anchor_idx)
+              ? [cur.anchor_idx[0], next.anchor_idx[1]]
+              : (next.anchor_idx || cur.anchor_idx || null),
+            // Drop the deleted segment's note — keep next's so the
+            // user's intent for the surviving leg is preserved.
+            note: next.note || '',
+          });
+          segArr.splice(segIdx, 2, merged);
+        } else {
+          // Last segment — no neighbour to merge with, just drop it.
+          segArr.splice(segIdx, 1);
+        }
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
         renderRestPoints(plan, readSpeed());
         if (TF.modeToggle && TF.modeToggle.refreshAll) {
