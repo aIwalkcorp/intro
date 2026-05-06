@@ -849,6 +849,24 @@
             data-variant-id="${escapeHtml(r.variantId || '')}"
             data-to-name="${escapeHtml(r.atName || '休息')}"
             aria-label="刪除此休息" title="刪除此休息">✕</button>` : '';
+        // 🚨 toggle on rest rows — pushes the dwell into the day's
+        // key_times as a "T1～T2" range entry (vs single arrival clock
+        // for transit rows). Useful when the rest itself is the
+        // critical event, e.g. "排雲山莊吃麵 12:00～13:00".
+        let restOnKeytimes = false;
+        const restRange = (startClock && endClock) ? `${startClock}～${endClock}` : null;
+        if (canEdit && editing && restRange) {
+          const day = (plan.days || []).find(d => d.id === r.dayId);
+          const kts = (day && day.key_times) || [];
+          restOnKeytimes = kts.some(kt => kt && kt.label === r.atName && kt.value === restRange);
+        }
+        const restKeyBtn = (canEdit && editing && restRange) ? `<button type="button"
+            class="rp-keytime-btn rp-sub-keytime-btn${restOnKeytimes ? ' active' : ''}"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-to-name="${escapeHtml(r.atName || '')}"
+            data-arrival="${escapeHtml(restRange)}"
+            aria-pressed="${restOnKeytimes}"
+            title="${restOnKeytimes ? '已加入 🚨（再按一次移除）' : '加入這天的 🚨 關鍵時間'}">🚨</button>` : '';
         const clockText = (startClock && endClock)
           ? `<span class="rp-sub-rest-clock">${startClock}<span class="rp-rest-arrow">～</span>${endClock}</span>`
           : '';
@@ -873,6 +891,7 @@
           <span class="rp-sub-rest-mins">${minsCell}<small>分</small></span>
           ${clockText}
           ${noteCell}
+          ${restKeyBtn}
           ${delBtn}
         </div>`;
       }
