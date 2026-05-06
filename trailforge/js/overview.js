@@ -158,25 +158,41 @@
     if (!plan || plan.auto_return_descent === false) return null;
     const days = plan.days || [];
     if (days.length < 2) return null;
-    let firstSegs = [], lastSegs = [], lastDay = null;
+    // Trip "start" is the first ASCENT_ONLY day's first segment from —
+    // not realDays[0]. The 出發/移動 day (D0) often carries a transport
+    // hop like "集合地點 → 民宿" which would mis-anchor the trailhead.
+    // Same rule the chart uses (mode-toggle filters non-gpx days), but
+    // expressed in terms of segment intent rather than gpx_ref presence.
+    let firstAscentSegs = null;
     for (const d of days) {
-      const segs = (activeVariantFor(d) || {}).segments || [];
-      if (segs.length && !firstSegs.length) firstSegs = segs;
+      const v = activeVariantFor(d);
+      if (!v || v.direction !== 'ascent_only') continue;
+      const segs = v.segments || [];
+      if (segs.length) { firstAscentSegs = segs; break; }
     }
+    let lastSegs = [], lastDay = null;
     for (let i = days.length - 1; i >= 0; i--) {
-      const segs = (activeVariantFor(days[i]) || {}).segments || [];
-      if (segs.length) { lastSegs = segs; lastDay = days[i]; break; }
+      const v = activeVariantFor(days[i]);
+      const segs = (v && v.segments) || [];
+      // Skip pure-rest tail segments when reading the trip's true endpoint —
+      // a 排雲山莊→排雲山莊 dwell at end of D2 would otherwise tell us the
+      // trip ends there, which is fine, but if the LAST day's segments are
+      // ALL rest-stops we keep walking back.
+      const lastNonRest = [...segs].reverse().find(s => !s.is_rest_stop);
+      if (lastNonRest) { lastSegs = segs; lastDay = days[i]; break; }
     }
-    const startName = firstSegs[0] && firstSegs[0].from;
-    const endName = lastSegs.length && lastSegs[lastSegs.length - 1].to;
-    if (!startName || !endName || startName === endName || !lastDay) return null;
+    if (!firstAscentSegs || !lastSegs.length || !lastDay) return null;
+    const startName = firstAscentSegs[0].from;
+    const endName = ([...lastSegs].reverse().find(s => !s.is_rest_stop) || {}).to;
+    if (!startName || !endName || startName === endName) return null;
     for (const d of days) {
       const v = activeVariantFor(d);
       if (!v || v.direction !== 'ascent_only') continue;
       const segs = v.segments || [];
       if (!segs.length) continue;
       if (segs[0].from !== startName) continue;
-      if (segs[segs.length - 1].to !== endName) continue;
+      const lastNonRestTo = ([...segs].reverse().find(s => !s.is_rest_stop) || {}).to;
+      if (lastNonRestTo !== endName) continue;
       return { sourceDay: d, sourceSegs: segs, targetDayId: lastDay.id, startName, endName };
     }
     return null;
