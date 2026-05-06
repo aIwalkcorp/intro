@@ -729,6 +729,15 @@
     plan = plan || loadPlan();
     if (!plan) { console.warn('TF.render: no plan'); return; }
     window.__PLAN__ = plan;
+    // Browser tab title — track the plan's own title so each opened plan
+    // (or 玉山 demo) shows up correctly in tab strips, history, and
+    // bookmarks. The static <title> in index.html is the boot fallback;
+    // overwrite it as soon as we know which plan we're rendering.
+    try {
+      const meta = (plan && plan.meta) || {};
+      const title = meta.page_title || meta.title || meta.short_name || '';
+      if (title && document.title !== title) document.title = title;
+    } catch (e) { /* setting document.title shouldn't ever throw — be safe */ }
     bindQLinkHandlers();
     try { document.dispatchEvent(new CustomEvent('tf:plan-loaded', { detail: { plan } })); } catch(e){}
     // Wrap each render step independently so a partial failure (e.g. a
