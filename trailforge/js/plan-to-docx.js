@@ -70,7 +70,11 @@
 
   // ─── helpers ─────────────────────────────────────────────────────────────
   const BLANK = '____________';
-  const HM_RE = /^\d{1,2}:\d{2}$/;
+  // Capture groups required — dayCheckpoints() reads m[1]/m[2] to compute
+  // startMin. The earlier `/^\d{1,2}:\d{2}$/` form had no parens, so
+  // m[1]+m[2] were undefined → +undefined = NaN → every time printed
+  // as "NaN:NaN" in the 行程/時間 row.
+  const HM_RE = /^(\d{1,2}):(\d{2})$/;
 
   function pad2(n) { return String(n).padStart(2, '0'); }
   function isoToROC(iso) {
