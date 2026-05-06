@@ -185,7 +185,46 @@
   function collectRestPoints(plan) {
     const rows = [];
     let cumKm = 0;
-    (plan.days || []).forEach(day => {
+
+    // ── Pre-compute synthetic 回程 ────────────────────────────────────────
+    // Decide BEFORE the main loop whether the trip needs an auto-return,
+    // and which day's ascent_only segments to reverse. We then attach the
+    // return rows to the LAST real day in the loop itself (just before
+    // that day's subtotal), so the rest-points table reads as a single
+    // Day N block covering both 攻頂 and 回程 — the user's expectation.
+    const realDays = plan.days || [];
+    const autoReturn = plan.auto_return_descent !== false;
+    let returnTargetDayId = null;
+    let returnSourceSegs = null;     // original ascent_only segs to reverse
+    let returnEndName = null;
+    let returnStartName = null;
+    if (autoReturn && realDays.length >= 2) {
+      const first = realDays[0];
+      const last = realDays[realDays.length - 1];
+      const fv = activeVariantFor(first);
+      const lv = activeVariantFor(last);
+      const firstSegs = (fv && fv.segments) || [];
+      const lastSegs = (lv && lv.segments) || [];
+      const startName = firstSegs[0] && firstSegs[0].from;
+      const endName = lastSegs.length && lastSegs[lastSegs.length - 1].to;
+      if (startName && endName && startName !== endName) {
+        for (const d of realDays) {
+          const v = activeVariantFor(d);
+          if (!v || v.direction !== 'ascent_only') continue;
+          const segs = v.segments || [];
+          if (!segs.length) continue;
+          if (segs[0].from !== startName) continue;
+          if (segs[segs.length - 1].to !== endName) continue;
+          returnTargetDayId = last.id;
+          returnSourceSegs = segs;
+          returnStartName = startName;
+          returnEndName = endName;
+          break;
+        }
+      }
+    }
+
+    realDays.forEach(day => {
       const variant = activeVariantFor(day);
       const segs = variant ? variant.segments : [];
       const dayId = day.id;
@@ -304,9 +343,56 @@
           atName: s.to || '',
         });
       });
-      // Subtotal row for this day. The "+" affordance per segment row
-      // already gives the user an end-of-day appender (after the last
-      // segment), so no separate footer row is needed.
+
+      // ── Inline synthetic 回程 rows for the matched day ───────────────────
+      // If THIS day is the auto-return target, reverse the matched
+      // ascent_only segments and emit them as part of THIS day, BEFORE
+      // the subtotal. The single subtotal at the end then covers both
+      // 攻頂 + 回程 (matching the user's "Day 2 整體" mental model).
+      if (returnTargetDayId === dayId && returnSourceSegs) {
+        rows.push({
+          kind: 'return-divider',
+          dayId, dayLabel,
+          fromName: returnEndName,
+          toName: returnStartName,
+        });
+        const revSegs = returnSourceSegs.slice().reverse();
+        revSegs.forEach((s) => {
+          const dist = +s.distance_km || 0;
+          const baseMin = +s.base_minutes || 0;
+          const startKm = cumKm;
+          const endKm = cumKm + dist;
+          const ascR = +s.descent_m || 0;        // descent of original = ascent of return
+          const descR = +s.ascent_m || 0;
+          const cumAfter = cumDayBaseMin + baseMin;
+          rows.push({
+            kind: 'segment',
+            dayId, dayLabel,
+            from: s.to || '',
+            to: s.from || '',
+            distance_km: dist,
+            ascent_m: ascR,
+            descent_m: descR,
+            base_minutes: baseMin,
+            cumDayBaseMinAfter: cumAfter,
+            // Return segments derive arrival from the LAST scheduled
+            // clock the user has set for this day; if absent we leave
+            // arrival blank rather than guessing.
+            dayStartMin,
+            startKm, endKm,
+            anchorLo: null, anchorHi: null,
+            isReturn: true,
+          });
+          cumKm = endKm;
+          cumDayBaseMin = cumAfter;
+          dayKm   += dist;
+          dayAsc  += ascR;
+          dayDesc += descR;
+          dayMin  += baseMin;
+        });
+      }
+
+      // Subtotal row for this day (now covers 攻頂 + 回程 if applicable).
       rows.push({
         kind: 'subtotal',
         dayId, dayLabel,
@@ -319,90 +405,9 @@
       });
     });
 
-    // ── Synthetic 回程 rows ───────────────────────────────────────────────
-    // Mirrors synthesizeReturnDay's matching logic: when the trip starts and
-    // ends at different named points but contains an ascent_only day going
-    // start→end, we auto-emit the reversed segments as a "Day N·回程" tail
-    // so the rest-points table matches what the chart already shows.
-    const realDays = plan.days || [];
-    const autoReturn = plan.auto_return_descent !== false;
-    if (autoReturn && realDays.length >= 2) {
-      const first = realDays[0];
-      const last = realDays[realDays.length - 1];
-      const fv = activeVariantFor(first);
-      const lv = activeVariantFor(last);
-      const firstSegs = (fv && fv.segments) || [];
-      const lastSegs = (lv && lv.segments) || [];
-      const startName = firstSegs[0] && firstSegs[0].from;
-      const endName = lastSegs.length && lastSegs[lastSegs.length - 1].to;
-      if (startName && endName && startName !== endName) {
-        for (const d of realDays) {
-          const v = activeVariantFor(d);
-          if (!v || v.direction !== 'ascent_only') continue;
-          const segs = v.segments || [];
-          if (!segs.length) continue;
-          if (segs[0].from !== startName) continue;
-          if (segs[segs.length - 1].to !== endName) continue;
-          // Found an ascent_only day going start→end; reverse its segments
-          // and tag them as belonging to the LAST day's 回程.
-          const dayId = last.id;
-          const sourceLabel = last.label || ('Day ' + last.id);
-          const dayPrefix = sourceLabel.split('・')[0].split('·')[0] || sourceLabel;
-          const dayLabel = `${dayPrefix}·回程`;
-          rows.push({
-            kind: 'day-header',
-            dayId, dayLabel,
-            dayStart: null,
-            note: `自動補齊：${endName} → ${startName}`,
-            isReturn: true,
-          });
-          let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
-          const revSegs = segs.slice().reverse();
-          revSegs.forEach((s) => {
-            const dist = +s.distance_km || 0;
-            const baseMin = +s.base_minutes || 0;
-            const startKm = cumKm;
-            const endKm = cumKm + dist;
-            const ascR = +s.descent_m || 0;   // descent of original = ascent of return
-            const descR = +s.ascent_m || 0;
-            const cumAfter = cumDayBaseMin + baseMin;
-            rows.push({
-              kind: 'segment',
-              dayId, dayLabel,
-              from: s.to || '',
-              to: s.from || '',
-              distance_km: dist,
-              ascent_m: ascR,
-              descent_m: descR,
-              base_minutes: baseMin,
-              cumDayBaseMinAfter: cumAfter,
-              dayStartMin: null,           // no start clock for synthetic return
-              startKm, endKm,
-              anchorLo: null, anchorHi: null,   // no chart focus on synth rows
-              isReturn: true,
-            });
-            cumKm = endKm;
-            cumDayBaseMin = cumAfter;
-            dayKm   += dist;
-            dayAsc  += ascR;
-            dayDesc += descR;
-            dayMin  += baseMin;
-          });
-          rows.push({
-            kind: 'subtotal',
-            dayId, dayLabel,
-            distance_km: dayKm,
-            ascent_m: dayAsc,
-            descent_m: dayDesc,
-            base_minutes: dayMin,
-            dayStartMin: null,
-            cumDayBaseMinAfter: cumDayBaseMin,
-            isReturn: true,
-          });
-          break;
-        }
-      }
-    }
+    // (Synthetic 回程 rows are now emitted INLINE inside the per-day
+    // loop above so they sit before the day's subtotal — see the
+    // returnTargetDayId block. No separate post-loop synth pass needed.)
 
     return rows;
   }
@@ -515,6 +520,22 @@
           <span class="rp-day-note">${escapeHtml(r.note || '')}</span>
           ${startCell}
         </div>${titleCell ? `<div class="rp-section-title-row">${titleCell}</div>` : ''}`;
+      }
+
+      if (r.kind === 'return-divider') {
+        // Slim banded divider that sits between 攻頂 and 回程 rows of the
+        // same day. Reads "↺ 自動補齊回程：endName → startName" so the
+        // user can see which segments below were derived rather than
+        // hand-entered.
+        return `<div class="rp-row rp-return-divider">
+          <span class="rp-rd-mark" aria-hidden="true">↺</span>
+          <span class="rp-rd-label">自動補齊回程</span>
+          <span class="rp-rd-route">
+            <b>${escapeHtml(r.fromName || '')}</b>
+            <span class="rp-rd-arrow">→</span>
+            <b>${escapeHtml(r.toName || '')}</b>
+          </span>
+        </div>`;
       }
 
       if (r.kind === 'add-segment') {

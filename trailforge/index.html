@@ -2389,6 +2389,45 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .overview-rest-points .rp-fork-row{ padding-left:48px; gap:8px; }
 }
 
+/* Auto-return divider — sits inside a day's segment list between the
+   ascent rows and the synthesised descent rows. Visually quieter than a
+   fork chip; signals "what follows is derived, not edited by you". */
+.overview-rest-points .rp-return-divider{
+  display:flex; align-items:center; gap:10px;
+  padding:6px 14px 6px 60px;
+  background:rgba(168,128,44,0.06);
+  border-top:1px dashed rgba(168,128,44,0.32);
+  border-bottom:1px dashed rgba(168,128,44,0.32);
+  font-family:var(--serif), serif; font-size:.74rem;
+  color:var(--gold-deep,#6e5316);
+}
+.overview-rest-points .rp-return-divider .rp-rd-mark{
+  font-size:1rem; font-weight:700; color:#a8802c;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-return-divider .rp-rd-label{
+  font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; font-size:.62rem;
+  padding:2px 8px;
+  border:1px solid rgba(168,128,44,0.45);
+  border-radius:99px;
+  color:var(--gold-deep,#6e5316);
+  background:rgba(255,255,255,0.4);
+}
+.overview-rest-points .rp-return-divider .rp-rd-route{
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-size:.82rem; color:var(--ink,#1a1d17);
+}
+.overview-rest-points .rp-return-divider .rp-rd-route b{
+  font-style:normal; font-weight:600; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-return-divider .rp-rd-arrow{
+  margin:0 4px; opacity:.55;
+}
+@media(max-width:560px){
+  .overview-rest-points .rp-return-divider{ padding-left:48px; gap:6px; flex-wrap:wrap; }
+}
+
 /* Speed control */
 .overview-rest-points .rp-speed-control{
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;
