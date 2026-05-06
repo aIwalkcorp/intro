@@ -2428,6 +2428,69 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .overview-rest-points .rp-return-divider{ padding-left:48px; gap:6px; flex-wrap:wrap; }
 }
 
+/* Rest-stop block — in-place dwell (lunch / 整裝 / 補眠). Sage tone to
+   match the "+ 休息" creator button. Reads as one cohesive block (single
+   waypoint name + 休息 tag + duration), distinct from transit rows so
+   the 排雲山莊→排雲山莊 form never appears in the table. */
+.overview-rest-points .rp-rest-row{
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+  padding:7px 14px 7px 60px;
+  background:rgba(120,140,90,0.07);
+  border-bottom:1px solid rgba(120,140,90,0.22);
+  font-family:var(--serif), serif;
+}
+.overview-rest-points .rp-rest-row .rp-rest-mark{
+  font-size:1rem;
+}
+.overview-rest-points .rp-rest-row .rp-rest-label{
+  font-family:var(--mono); font-weight:700; letter-spacing:.18em;
+  font-size:.62rem; text-transform:uppercase;
+  padding:2px 8px; border-radius:99px;
+  background:rgba(120,140,90,0.18);
+  border:1px solid rgba(120,140,90,0.45);
+  color:#3a4a22;
+}
+.overview-rest-points .rp-rest-row .rp-rest-place{
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-size:.95rem; font-weight:700; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-rest-row .rp-rest-clock{
+  font-family:var(--mono); font-size:.78rem; font-weight:700;
+  color:#3a4a22; opacity:.85;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.overview-rest-points .rp-rest-row .rp-rest-clock .rp-rest-arrow{
+  opacity:.55; font-weight:400;
+}
+.overview-rest-points .rp-rest-row .rp-rest-mins{
+  margin-left:auto;
+  display:inline-flex; align-items:center; gap:3px;
+  font-family:var(--mono); font-size:.92rem; font-weight:700;
+  color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-rest-row .rp-rest-mins small{
+  font-size:.62rem; opacity:.7; margin-left:1px;
+}
+.overview-rest-points .rp-rest-row .rp-rest-note{
+  flex-basis:100%; padding-left:0;
+  font-style:italic; font-size:.78rem; color:var(--ink-soft,#5a4f3a);
+}
+.overview-rest-points .rp-rest-row .rp-rest-note-edit{ padding-top:3px; }
+.overview-rest-points .rp-rest-row .rp-rest-note-edit .rp-note-input{
+  width:100%; padding:3px 6px;
+  border:1px dashed rgba(120,140,90,0.45);
+  background:rgba(255,255,255,0.6); border-radius:3px;
+  font-family:var(--serif), serif; font-style:italic; font-size:.78rem;
+  color:var(--ink,#1a1d17);
+}
+.overview-rest-points .rp-rest-row .rp-rest-note-edit .rp-note-input:focus{
+  outline:none; border-style:solid; border-color:#5e6e3c;
+  background:#fff;
+}
+@media(max-width:560px){
+  .overview-rest-points .rp-rest-row{ padding-left:48px; gap:6px; }
+}
+
 /* Speed control */
 .overview-rest-points .rp-speed-control{
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;

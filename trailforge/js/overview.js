@@ -466,11 +466,13 @@
         const anchorLo = ai.length >= 2 ? ai[0] : null;
         const anchorHi = ai.length >= 2 ? ai[1] : null;
         const cumAfter = cumDayBaseMin + baseMin;
+        const isRest = !!s.is_rest_stop || (s.from && s.from === s.to);
         rows.push({
-          kind: 'segment',
+          kind: isRest ? 'rest' : 'segment',
           dayId, dayLabel,
           from: s.from || '',
           to: s.to || '',
+          atName: s.from || s.to || '',
           note: s.note || '',
           segIdx: isReturnSeg ? null : segIdx,
           variantId: useRoute ? activeRouteId : null,
@@ -479,6 +481,7 @@
           descent_m: +s.descent_m || 0,
           base_minutes: baseMin,
           cumDayBaseMinAfter: cumAfter,
+          cumDayBaseMinBefore: cumDayBaseMin,
           dayStartMin,
           startKm, endKm,
           anchorLo: isReturnSeg ? null : anchorLo,
@@ -708,6 +711,52 @@
         </div>`;
       }
 
+      if (r.kind === 'rest') {
+        const editing = document.body.classList.contains('tf-editing');
+        const canEdit = !r.isReturn && r.segIdx != null;
+        const derived = Math.round(r.base_minutes * factor);
+        const startClock = r.dayStartMin != null
+          ? fmtHM(r.dayStartMin + Math.round(r.cumDayBaseMinBefore * factor))
+          : null;
+        const endClock = r.dayStartMin != null
+          ? fmtHM(r.dayStartMin + Math.round(r.cumDayBaseMinAfter * factor))
+          : null;
+        const minsCell = (canEdit && editing)
+          ? `<input type="number" class="rp-min-edit"
+                data-day-id="${escapeHtml(r.dayId)}"
+                data-seg-idx="${r.segIdx}"
+                data-variant-id="${escapeHtml(r.variantId || '')}"
+                min="0" step="1" value="${derived}"
+                aria-label="此段休息分鐘">`
+          : `<span class="rp-time-derived">${derived}</span>`;
+        const delBtn = (canEdit && editing) ? `<button type="button" class="rp-del-btn"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-seg-idx="${r.segIdx}"
+            data-variant-id="${escapeHtml(r.variantId || '')}"
+            data-to-name="${escapeHtml(r.atName || '休息')}"
+            aria-label="刪除此休息" title="刪除此休息">✕</button>` : '';
+        const noteHtml = r.note
+          ? `<div class="rp-rest-note">${escapeHtml(r.note)}</div>`
+          : (canEdit && editing
+              ? `<div class="rp-rest-note rp-rest-note-edit"><input class="rp-note-input" type="text"
+                  data-day-id="${escapeHtml(r.dayId)}"
+                  data-seg-idx="${r.segIdx}"
+                  data-variant-id="${escapeHtml(r.variantId || '')}"
+                  value="" placeholder="備註（午餐／補水／拍照…）" aria-label="此段備註"></div>`
+              : '');
+        const clockSpan = (startClock && endClock)
+          ? `<span class="rp-rest-clock"><b>${startClock}</b><span class="rp-rest-arrow">→</span><b>${endClock}</b></span>`
+          : '';
+        return `<div class="rp-row rp-rest-row">
+          <span class="rp-rest-mark" aria-hidden="true">☕</span>
+          <span class="rp-rest-label">休息</span>
+          <span class="rp-rest-place">${escapeHtml(r.atName || '')}</span>
+          ${clockSpan}
+          <span class="rp-rest-mins">${minsCell}<small>分</small>${delBtn}</span>
+          ${noteHtml}
+        </div>`;
+      }
+
       if (r.kind === 'subtotal') {
         const dayDerived = Math.round(r.base_minutes * factor);
         const elevBits = [];
@@ -913,15 +962,15 @@
     // ── Bind per-segment note inputs (edit mode only) ──
     host.querySelectorAll('.rp-note-input').forEach((inp) => {
       inp.addEventListener('input', () => {
-        const wrap = inp.closest('.rp-note-row');
-        if (!wrap) return;
-        const segArr = resolveSegArr(wrap.dataset.dayId, wrap.dataset.variantId || null);
-        const segIdx = +wrap.dataset.segIdx;
+        // Data attributes can sit on the input itself (rest-row's inline
+        // note edit) or on the wrapping .rp-note-row (regular segment).
+        const ds = inp.dataset.segIdx ? inp.dataset : (inp.closest('.rp-note-row') || {}).dataset;
+        if (!ds || ds.segIdx == null) return;
+        const segArr = resolveSegArr(ds.dayId, ds.variantId || null);
+        const segIdx = +ds.segIdx;
         if (!Array.isArray(segArr) || !segArr[segIdx]) return;
         segArr[segIdx].note = inp.value;
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-        // Don't re-render — would lose typing focus. The note is already in
-        // memory; renderRestPoints reads .note on next refresh.
       });
     });
 
