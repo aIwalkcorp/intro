@@ -508,6 +508,17 @@
           dayId, dayLabel, dayStart,
           note: '無步行段（' + (day.section_title || '出發/移動日') + '）',
         });
+        // Empty day still gets an add-segment affordance so freshly-
+        // appended days from "+ 多加一天" / "+ 加在前面" can grow their
+        // first 地標 / 休息 from the rest-points editor without falling
+        // through to a dead-end ("無步行段") row.
+        rows.push({
+          kind: 'add-segment',
+          dayId, dayLabel,
+          variantId: null,
+          afterIdx: -1,         // append at end of empty segs[]
+          atName: '',
+        });
         return;
       }
       // Header row first so the user can see/edit start time even before segs
@@ -1420,10 +1431,17 @@
         // Look up the FROM-anchor once so subsequent name picks can
         // derive distance / asc / desc from GPX point arithmetic.
         const fromAnchor = findWaypointTrackIdx(plan, fromName);
+        // Empty day case (no previous seg to chain off) → "從" becomes
+        // an editable input so the user can name the first segment's
+        // start. Existing days with a prior seg keep the read-only
+        // pill since auto-deriving guarantees chain integrity.
+        const fromCell = fromName
+          ? `<label><span>從</span><span class="rp-add-from">${escapeHtml(fromName)}</span></label>`
+          : `<label><span>從</span><input type="text" class="rp-add-from-edit" list="${datalistId2}" placeholder="起點地標（輸入或從清單選）" autocomplete="off"></label>`;
         form.innerHTML = `
           <div class="rp-branch-head">＋ 新增地標</div>
           <div class="rp-branch-fields">
-            <label><span>從</span><span class="rp-add-from">${escapeHtml(fromName || '起點')}</span></label>
+            ${fromCell}
             <label><span>下一個地標</span>
               <input type="text" class="rp-add-name" list="${datalistId2}" placeholder="輸入或從建議清單選擇" autocomplete="off">
               <datalist id="${datalistId2}">
@@ -1502,18 +1520,23 @@
         form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
           const name = nameInput.value.trim();
           if (!name) { nameInput.focus(); return; }
+          // Empty-day case: read user-typed start name from the editable
+          // .rp-add-from-edit input. Fall back to the (existing) chained
+          // fromName for normal mid-day inserts.
+          const fromEdit = form.querySelector('.rp-add-from-edit');
+          const effectiveFrom = (fromEdit && fromEdit.value.trim()) || fromName || '';
           // Anchor the new segment's from/to to the GPX track if we
-          // resolved both ends — keeps chart focus, tooltips and future
-          // GPX recomputes consistent.
+          // resolved both ends.
+          const fromAnchorEff = effectiveFrom === fromName ? fromAnchor : findWaypointTrackIdx(plan, effectiveFrom);
           const toAnchor = findWaypointTrackIdx(plan, name);
           let anchor_idx = null;
-          if (fromAnchor && toAnchor && fromAnchor.trackRef === toAnchor.trackRef) {
-            anchor_idx = [fromAnchor.idx, toAnchor.idx];
+          if (fromAnchorEff && toAnchor && fromAnchorEff.trackRef === toAnchor.trackRef) {
+            anchor_idx = [fromAnchorEff.idx, toAnchor.idx];
           }
           const insertIdx = afterIdx >= 0 ? afterIdx + 1 : segArr.length;
           segArr.splice(insertIdx, 0, {
             id: 'seg-' + Math.random().toString(36).slice(2, 7),
-            from: fromName,
+            from: effectiveFrom,
             to: name,
             base_minutes: +form.querySelector('.rp-add-min').value || 0,
             distance_km: +kmInput.value || 0,
@@ -2065,17 +2088,24 @@
     });
 
     host.querySelectorAll('.rp-section-title-edit').forEach((inp) => {
-      inp.addEventListener('input', () => {
+      let composing = false;
+      inp.addEventListener('compositionstart', () => { composing = true; });
+      inp.addEventListener('compositionend', () => { composing = false; sync(); });
+      const sync = () => {
         const dayId = inp.dataset.dayId;
         const day = (plan.days || []).find(d => d.id === dayId);
         if (!day) return;
         day.section_title = inp.value;
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-        // Refresh day panels so the heading inside the schedule section
-        // (which renders day.section_title) reflects the edit live.
-        if (TF.render) {
-          requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
-        }
+      };
+      // Mutate in place on every keystroke (won't break IME — we don't
+      // re-render the host). Re-render the day-panel heading only on
+      // blur so each keystroke doesn't tear the input out from under
+      // the IME composition.
+      inp.addEventListener('input', () => { if (!composing) sync(); });
+      inp.addEventListener('change', () => {
+        sync();
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
       });
     });
 
