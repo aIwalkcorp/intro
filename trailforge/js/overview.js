@@ -527,9 +527,9 @@
             data-at-name="${escapeHtml(at)}"`;
         return `<div class="rp-row rp-add-row">
           <button type="button" class="rp-add-seg-btn" ${dataAttrs}
-            title="從此處再走到下一個休息點">＋ 休息點</button>
+            title="從此處再走到下一個地標">＋ 地標</button>
           <button type="button" class="rp-add-rest-btn" ${dataAttrs}
-            title="在此處原地停留（休息／用餐）">＋ 休息</button>
+            title="在此處原地停留（用餐／補水／拍照等請填於備註）">＋ 休息</button>
         </div>`;
       }
 
@@ -875,10 +875,10 @@
         form = document.createElement('div');
         form.className = 'rp-add-seg-form';
         form.innerHTML = `
-          <div class="rp-branch-head">＋ 新增休息點</div>
+          <div class="rp-branch-head">＋ 新增地標</div>
           <div class="rp-branch-fields">
             <label><span>從</span><span class="rp-add-from">${escapeHtml(fromName || '起點')}</span></label>
-            <label><span>下一個休息點</span>
+            <label><span>下一個地標</span>
               <input type="text" class="rp-add-name" list="${datalistId2}" placeholder="輸入或從建議清單選擇" autocomplete="off">
               <datalist id="${datalistId2}">
                 ${sugg.map(n => `<option value="${escapeHtml(n)}"></option>`).join('')}
@@ -950,10 +950,8 @@
         form.innerHTML = `
           <div class="rp-branch-head">＋ 原地休息　<small style="font-weight:400; opacity:.7">於 <b>${escapeHtml(atName || '當前位置')}</b></small></div>
           <div class="rp-branch-fields">
-            <label><span>名稱</span>
-              <input type="text" class="rp-rest-name" placeholder="例如：午餐／茶水／拍照" autocomplete="off">
-            </label>
             <label><span>停留</span><input type="number" class="rp-rest-min" min="1" value="30"><span class="rp-branch-unit">分</span></label>
+            <small class="rp-rest-hint">用餐／補水／拍照等說明請於建立後填入該段備註欄</small>
           </div>
           <div class="rp-branch-actions">
             <button type="button" class="rp-branch-cancel">取消</button>
@@ -961,20 +959,20 @@
           </div>
         `;
         btn.parentElement.parentNode.insertBefore(form, btn.parentElement.nextSibling);
-        form.querySelector('.rp-rest-name').focus();
+        form.querySelector('.rp-rest-min').focus();
+        form.querySelector('.rp-rest-min').select();
         form.querySelector('.rp-branch-cancel').addEventListener('click', () => form.remove());
         form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
-          const restName = form.querySelector('.rp-rest-name').value.trim() || '休息';
           const mins = +form.querySelector('.rp-rest-min').value || 0;
           if (mins <= 0) { form.querySelector('.rp-rest-min').focus(); return; }
-          // Compose label: keep the "to" identical so it stays on-place,
-          // but suffix the rest name in parens for readability.
-          const restLabel = `${atName}・${restName}`;
+          // from === to so the next walking segment's auto-derived "from"
+          // still reads correctly (the next segment didn't move). The
+          // user describes WHY the rest happened in the per-segment 備註.
           const insertIdx = afterIdx >= 0 ? afterIdx + 1 : segArr.length;
           segArr.splice(insertIdx, 0, {
             id: 'rest-' + Math.random().toString(36).slice(2, 7),
             from: atName,
-            to: restLabel,
+            to: atName,
             base_minutes: mins,
             distance_km: 0,
             ascent_m: 0,
