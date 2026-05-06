@@ -4952,14 +4952,21 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
     const r=lang.getBoundingClientRect();
     const vw=document.documentElement.clientWidth;
     const langRightOffset=vw-r.right;
-    saveChip.style.right=(langRightOffset+r.width+8)+'px';
+    // Larger gap when the chip's label is the wider "SAVE" (en mode) so it
+    // doesn't crowd the lang toggle. Default 8px for zh "儲存".
+    const isEn = document.body.getAttribute('data-jm-lang') === 'en';
+    const gap = isEn ? 18 : 8;
+    saveChip.style.right=(langRightOffset+r.width+gap)+'px';
   }
   positionSave();
   window.addEventListener('resize', positionSave);
   setTimeout(positionSave, 200);
   setTimeout(positionSave, 800);
-  // re-position whenever the body class changes (becomes visible)
-  new MutationObserver(positionSave).observe(document.body, { attributes:true, attributeFilter:['class'] });
+  // re-position whenever body class OR data-jm-lang changes (chip rail
+  // visibility AND language switch both need a re-anchor).
+  new MutationObserver(positionSave).observe(document.body, {
+    attributes:true, attributeFilter:['class', 'data-jm-lang']
+  });
 })();
 
 // === Init: restore main tab + day from user's last choice (no auto date lock) ===
