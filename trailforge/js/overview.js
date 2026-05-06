@@ -629,11 +629,7 @@
       if (r.kind === 'day-header') {
         const editing = document.body.classList.contains('tf-editing');
         const startCell = editing
-          ? `<input type="text" class="rp-day-start-edit" inputmode="numeric"
-                pattern="\\d{1,2}:\\d{2}" maxlength="5"
-                data-day-id="${escapeHtml(r.dayId)}"
-                value="${escapeHtml(r.dayStart || '')}"
-                placeholder="HH:MM" aria-label="起登時間（HH:MM）">`
+          ? `<input type="time" class="rp-day-start-edit" data-day-id="${escapeHtml(r.dayId)}" value="${escapeHtml(r.dayStart || '')}" aria-label="起登時間">`
           : (r.dayStart
               ? `<span class="rp-day-start"><small>起登</small>${escapeHtml(r.dayStart)}</span>`
               : `<span class="rp-day-start rp-day-start-empty"><small>起登</small>—</span>`);
@@ -918,7 +914,7 @@
         <button type="button" class="rp-detail-toggle"
                 aria-pressed="${detailsShown ? 'true' : 'false'}"
                 aria-label="顯示／隱藏每段詳情（基準分鐘・距離・海拔）"
-                title="顯示／隱藏每段詳情">(!)</button>
+                title="顯示／隱藏每段詳情"></button>
       </div>
       <div class="rp-speed-control">
         <label for="overview-speed" class="rp-sc-lbl">上河速度倍率</label>
@@ -1728,15 +1724,10 @@
     });
 
     // ── Bind day-start time inputs (edit mode only) ──
-    // 'change' (blur/Enter), not 'input' — text inputs let the user type
-    // partial values ("0" → "08" → "08:" → "08:3" → "08:30") and an input
-    // listener would clear start_time on every partial that fails the
-    // HH:MM regex, which then shifts day.schedule by negative offsets and
-    // destroys data mid-typing. 'change' fires only when committed.
     host.querySelectorAll('.rp-day-start-edit').forEach((inp) => {
-      inp.addEventListener('change', () => {
+      inp.addEventListener('input', () => {
         const dayId = inp.dataset.dayId;
-        const v = inp.value.trim();
+        const v = inp.value;
         const day = (plan.days || []).find(d => d.id === dayId);
         if (!day) return;
         // 1) Capture the old "first time" so we can shift the schedule by

@@ -2308,42 +2308,50 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 /* (!) toggle in rp-head — reveals per-row metadata strip
    (基準分鐘・距離 km・↑↓海拔). Default state hides the strip so the
-   table reads as a clean route+time list. */
+   table reads as a clean route+time list. Sits flush right of the title. */
 .overview-rest-points .rp-detail-toggle{
   margin-left:auto;
-  font-family:var(--mono); font-size:.7rem; font-weight:700;
-  color:var(--ink-soft,#7a7468);
-  background:transparent;
-  border:1px dotted rgba(168,128,44,0.45);
-  border-radius:3px;
-  padding:2px 7px;
-  cursor:pointer;
-  letter-spacing:.04em;
-  transition:color .12s, border-color .12s, background .12s;
-}
-.overview-rest-points .rp-detail-toggle:hover{
+  display:inline-flex; align-items:center; gap:4px;
+  font-family:var(--mono); font-size:.68rem; font-weight:700;
   color:var(--gold-deep,#6e5316);
-  border-color:rgba(168,128,44,0.7);
-  background:rgba(168,128,44,0.06);
+  background:rgba(168,128,44,0.08);
+  border:1px solid rgba(168,128,44,0.45);
+  border-radius:14px;
+  padding:3px 10px;
+  cursor:pointer;
+  letter-spacing:.16em; text-transform:uppercase;
+  transition:color .12s, border-color .12s, background .12s;
+  line-height:1;
+}
+.overview-rest-points .rp-detail-toggle::before{
+  content:"(!)"; font-family:var(--mono); font-size:.78rem;
+  letter-spacing:0; font-weight:800;
+}
+.overview-rest-points .rp-detail-toggle::after{ content:"詳情"; letter-spacing:.18em; }
+.overview-rest-points .rp-detail-toggle:hover{
+  color:#fff;
+  border-color:var(--gold-deep,#6e5316);
+  background:var(--gold-deep,#6e5316);
 }
 .overview-rest-points .rp-detail-toggle[aria-pressed="true"]{
   color:#fff;
   background:var(--gold-deep,#6e5316);
   border-color:var(--gold-deep,#6e5316);
-  border-style:solid;
 }
+.overview-rest-points .rp-detail-toggle[aria-pressed="true"]::after{ content:"收合"; }
 /* Hidden state — collapse the rp-meta + 基準 line so the row reads
    chip / cum-km / route / cost / arrival only. The grid template
    keeps the 140px meta track when shown but drops it when hidden. */
 .overview-rest-points.rp-details-hidden .rp-row > .rp-meta,
-.overview-rest-points.rp-details-hidden .rp-cost .rp-time-base{
+.overview-rest-points.rp-details-hidden .rp-cost .rp-time-base,
+.overview-rest-points.rp-details-hidden .rp-subtotal-meta{
   display:none !important;
 }
 .overview-rest-points.rp-details-hidden .rp-row{
   grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px;
 }
 .overview-rest-points.rp-details-hidden .rp-subtotal{
-  /* subtotal row uses the same grid; collapse its meta cell too */
+  /* subtotal-l keeps grid-column:1/4 → cost lands in col 4, arrive in 5 */
   grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px;
 }
 .overview-rest-points .rp-source{
@@ -3061,17 +3069,15 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 .overview-rest-points .rp-day-start-empty{ opacity:.55 }
 .overview-rest-points .rp-day-start-edit{
-  /* type="text" + inputmode=numeric — no native time-picker chrome,
-     so the value (HH:MM) sits cleanly in the slot without the
-     "上午 ⏰" overlay that compressed the value to ~2 digits. */
-  width:78px; padding:3px 6px;
+  /* Native type="time" picker — Chrome (zh-TW) renders 「上午 08:30 ⏰」
+     inside the input. Needs ~140px so the value isn't truncated. */
+  width:140px; padding:4px 6px;
   background:rgba(255,255,255,0.65);
   border:1px solid transparent;
   border-bottom:1px dotted rgba(168,128,44,0.55);
   border-radius:4px;
   color:var(--gold-deep,#6e5316);
-  font-family:var(--mono); font-size:.85rem; font-weight:700;
-  text-align:center;
+  font-family:var(--mono); font-size:.86rem; font-weight:700;
   font-feature-settings:"tnum" 1, "lnum" 1;
 }
 .overview-rest-points .rp-day-start-edit:focus{
