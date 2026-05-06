@@ -66,14 +66,104 @@
   }
 
   // ---- quick links ----
+  // View mode: clickable icon row at the top of the day panel (📍 maps,
+  // 🌦 weather, 📞 phone, etc). Edit mode: inline editor with three
+  // inputs per row (icon / text / URL) + ✕ delete + ＋ 新增連結 footer.
+  // Event handling is via document-level delegation (bindQLinkHandlers
+  // below, called once on first render).
   function renderQLinks(day) {
+    const editing = typeof document !== 'undefined' && document.body && document.body.classList.contains('tf-editing');
     const links = day.quick_links || [];
-    if (!links.length) return '';
-    return `<div class="qlinks">${
-      links.map(l =>
-        `<a href="${attr(l.href)}"${l.external ? ' target="_blank"' : ''}>${escapeHtml(l.icon || '')} ${escapeHtml(l.text)}</a>`
-      ).join('')
-    }</div>`;
+    if (!editing && !links.length) return '';
+    if (!editing) {
+      return `<div class="qlinks">${
+        links.map(l =>
+          `<a href="${attr(l.href)}"${l.external ? ' target="_blank"' : ''}>${escapeHtml(l.icon || '')} ${escapeHtml(l.text)}</a>`
+        ).join('')
+      }</div>`;
+    }
+    const rows = links.map((l, i) => `
+      <div class="ql-row" data-day-id="${attr(day.id)}" data-i="${i}">
+        <input class="ql-icon" data-k="icon" value="${attr(l.icon || '')}" placeholder="📍" maxlength="3" aria-label="圖示">
+        <input class="ql-text" data-k="text" value="${attr(l.text || '')}" placeholder="顯示文字" aria-label="文字">
+        <input class="ql-href" data-k="href" value="${attr(l.href || '')}" placeholder="https://..." aria-label="網址" type="url">
+        <label class="ql-ext"><input type="checkbox" class="ql-ext-cb" data-k="external"${l.external ? ' checked' : ''} aria-label="新分頁">↗</label>
+        <button type="button" class="ql-del" data-day-id="${attr(day.id)}" data-i="${i}" aria-label="刪除這個連結" title="刪除">✕</button>
+      </div>`).join('');
+    return `<div class="qlinks editing" data-day-id="${attr(day.id)}">
+      ${rows}
+      <button type="button" class="ql-add" data-day-id="${attr(day.id)}">＋ 新增連結</button>
+    </div>`;
+  }
+  // Document-level delegation. Bound once; handles every day's qlinks
+  // editor via data-day-id lookup. setDirty fires on every mutation;
+  // re-render happens on add/delete (which need fresh row indices),
+  // not on per-character input (would lose focus mid-typing).
+  let __qlBound = false;
+  function bindQLinkHandlers() {
+    if (__qlBound) return;
+    __qlBound = true;
+    function findDay(dayId) {
+      const plan = window.__PLAN__;
+      if (!plan) return null;
+      return (plan.days || []).find(d => d.id === dayId) || null;
+    }
+    document.addEventListener('input', (e) => {
+      const t = e.target;
+      if (!t || !t.matches) return;
+      const row = t.closest('.ql-row');
+      if (!row || !t.matches('.ql-icon, .ql-text, .ql-href')) return;
+      const day = findDay(row.dataset.dayId);
+      if (!day) return;
+      day.quick_links = day.quick_links || [];
+      const idx = +row.dataset.i;
+      const link = day.quick_links[idx];
+      if (!link) return;
+      link[t.dataset.k] = t.value;
+      // Auto-flag external when href starts with http(s)://
+      if (t.dataset.k === 'href') link.external = /^https?:/.test(t.value || '');
+      if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+    });
+    document.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!t || !t.matches || !t.matches('.ql-ext-cb')) return;
+      const row = t.closest('.ql-row');
+      const day = findDay(row && row.dataset.dayId);
+      const idx = row && +row.dataset.i;
+      if (!day || !day.quick_links || !day.quick_links[idx]) return;
+      day.quick_links[idx].external = t.checked;
+      if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+    });
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      if (!t || !t.matches) return;
+      if (t.matches('.ql-add')) {
+        const day = findDay(t.dataset.dayId);
+        if (!day) return;
+        day.quick_links = day.quick_links || [];
+        day.quick_links.push({ icon: '🔗', text: '', href: '', external: false });
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        if (TF.render) requestAnimationFrame(() => TF.render(window.__PLAN__));
+        return;
+      }
+      if (t.matches('.ql-del')) {
+        e.preventDefault();
+        const day = findDay(t.dataset.dayId);
+        const idx = +t.dataset.i;
+        if (!day || !Array.isArray(day.quick_links) || !day.quick_links[idx]) return;
+        day.quick_links.splice(idx, 1);
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        if (TF.render) requestAnimationFrame(() => TF.render(window.__PLAN__));
+      }
+    });
+    // Re-render on edit-mode toggle so the inline editor surfaces /
+    // disappears in lockstep with the rest-points table.
+    document.addEventListener('tf:edit-enter', () => {
+      if (TF.render) requestAnimationFrame(() => TF.render(window.__PLAN__));
+    });
+    document.addEventListener('tf:edit-exit', () => {
+      if (TF.render) requestAnimationFrame(() => TF.render(window.__PLAN__));
+    });
   }
 
   // ─── derived-schedule machinery ───────────────────────────────────────
@@ -639,6 +729,7 @@
     plan = plan || loadPlan();
     if (!plan) { console.warn('TF.render: no plan'); return; }
     window.__PLAN__ = plan;
+    bindQLinkHandlers();
     try { document.dispatchEvent(new CustomEvent('tf:plan-loaded', { detail: { plan } })); } catch(e){}
     // Wrap each render step independently so a partial failure (e.g. a
     // schema mismatch in one day) doesn't blank the entire page — users

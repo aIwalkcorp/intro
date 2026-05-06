@@ -262,6 +262,7 @@
     for (let i = sourceSegs.length - 1; i >= 0; i--) {
       const s = sourceSegs[i];
       if (!s || s.is_rest_stop) continue;
+      if (s.descent_skip) continue;  // user removed this leg from the synth descent
       const a = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
       const ai0 = a[0], ai1 = a[1];
       const ref = s.gpx_ref || null;
@@ -968,32 +969,29 @@
           </svg>
           <span>分歧</span>
         </button>` : '';
-      // Delete-segment button — sits beside the branch button. Removes
-      // THIS segment from the active variant's shanghe_segments. The
-      // next segment's "from" auto-derives from collectRestPoints, so
-      // a chain like A→B→C with B deleted reads correctly as A→C iff
-      // the user fixes the next segment's `from` (we leave that as is
-      // for now; the chain may show a visual jump).
-      const deleteBtn = (canEditNote && editing) ? `<button type="button" class="rp-del-btn"
+      // Delete works on transit rows AND descent rows. Transit rows
+      // splice from segArr; descent rows set descent_skip:true on the
+      // SOURCE D1 segment so buildReverseSegments filters that leg
+      // out. Source seg's ascent rendering stays untouched.
+      const deleteBtn = (canEditMins && editing) ? `<button type="button" class="rp-del-btn"
             data-day-id="${escapeHtml(r.dayId)}"
-            data-seg-idx="${r.segIdx}"
+            data-seg-idx="${r.segIdx == null ? '' : r.segIdx}"
             data-variant-id="${escapeHtml(r.variantId || '')}"
+            data-source-day-id="${escapeHtml(r.sourceDayId || '')}"
+            data-source-seg-idx="${r.sourceSegIdx == null ? '' : r.sourceSegIdx}"
             data-to-name="${escapeHtml(r.to || '')}"
-            aria-label="刪除此地標"
-            title="刪除此地標">✕</button>` : '';
-      // 🚨 button — push this row's arrival event into the day's
-      // key_times (the per-day "關鍵時間" list shown in the day header
-      // popup + docx export). Pressed-state when already on the list,
-      // toggles back off on a second click. arrivalClock matches what
-      // the row's pill displays so the key_time stays in sync with
-      // any minute / time edits the user makes afterward.
+            aria-label="${r.isReturn ? '從下山段中移除這段' : '刪除此地標'}"
+            title="${r.isReturn ? '從下山段中移除這段（不影響上山）' : '刪除此地標'}">✕</button>` : '';
+      // 🚨 push the arrival into the day's key_times. Works on both
+      // transit and descent rows — descent rows just need to push the
+      // (label, value) pair, no seg mutation required.
       let isOnKeyTimes = false;
-      if (canEditNote && editing && arrival) {
+      if (canEditMins && editing && arrival) {
         const day = (plan.days || []).find(d => d.id === r.dayId);
         const kts = (day && day.key_times) || [];
         isOnKeyTimes = kts.some(kt => kt && kt.label === r.to && kt.value === arrival);
       }
-      const keyTimeBtn = (canEditNote && editing && arrival) ? `<button type="button"
+      const keyTimeBtn = (canEditMins && editing && arrival) ? `<button type="button"
             class="rp-keytime-btn${isOnKeyTimes ? ' active' : ''}"
             data-day-id="${escapeHtml(r.dayId)}"
             data-to-name="${escapeHtml(r.to || '')}"
@@ -1573,8 +1571,39 @@
         e.stopPropagation();
         const dayId = btn.dataset.dayId;
         const variantId = btn.dataset.variantId || null;
-        const segIdx = +btn.dataset.segIdx;
         const toName = btn.dataset.toName || '此地標';
+        // Descent (auto-补齊) row → flip descent_skip on the SOURCE D1
+        // seg. ascent rendering untouched, just removes this leg from
+        // the reverse output.
+        const sourceDayId = btn.dataset.sourceDayId || '';
+        const sourceSegIdxRaw = btn.dataset.sourceSegIdx;
+        if (sourceDayId && sourceSegIdxRaw !== '') {
+          const srcArr = resolveSegArr(sourceDayId, null);
+          const sIdx = +sourceSegIdxRaw;
+          if (!Array.isArray(srcArr) || !srcArr[sIdx]) return;
+          let ok = true;
+          if (typeof window.tfConfirm === 'function') {
+            ok = await window.tfConfirm({
+              title: '從下山段移除',
+              message: `將「${toName}」這段從下山段中移除（不影響上山方向的同名段）。`,
+              confirmText: '移除',
+              cancelText: '取消',
+              destructive: true,
+            });
+          } else {
+            ok = window.confirm(`從下山段移除「${toName}」？`);
+          }
+          if (!ok) return;
+          srcArr[sIdx].descent_skip = true;
+          if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          renderRestPoints(plan, readSpeed());
+          if (TF.modeToggle && TF.modeToggle.refreshAll) {
+            requestAnimationFrame(() => TF.modeToggle.refreshAll());
+          }
+          if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (err) {} });
+          return;
+        }
+        const segIdx = +btn.dataset.segIdx;
         const segArr = resolveSegArr(dayId, variantId);
         if (!Array.isArray(segArr) || !segArr[segIdx]) return;
         let ok = true;

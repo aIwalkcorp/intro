@@ -1506,6 +1506,94 @@ body[data-jm-mode="elevation"] .day-notes{ display:block; }
 .qlinks a:hover{border-color:var(--acc);color:var(--pri);transform:translateY(-1px);box-shadow:var(--shadow-2);background:#fdf8ea;}
 .qlinks a:active{transform:translateY(0) scale(.97);}
 
+/* Edit-mode quick-links editor — replaces the icon-row pills with a
+   stack of (icon / text / URL / external / ✕) inputs + a + 新增連結
+   footer pill. Brass-dashed aesthetic to echo the rest-points add row. */
+.qlinks.editing{
+  flex-direction:column; align-items:stretch; gap:6px;
+  padding:10px 12px;
+  background:rgba(168,128,44,0.05);
+  border:1px dashed rgba(168,128,44,0.32);
+  border-radius:6px;
+}
+.qlinks.editing .ql-row{
+  display:grid;
+  grid-template-columns: 50px minmax(140px, 1fr) minmax(180px, 1.6fr) auto auto;
+  gap:6px; align-items:center;
+}
+.qlinks.editing .ql-row input[type="text"],
+.qlinks.editing .ql-row input[type="url"],
+.qlinks.editing .ql-icon,
+.qlinks.editing .ql-text,
+.qlinks.editing .ql-href{
+  font:inherit;
+  font-family:var(--serif), serif; font-size:.82rem;
+  padding:4px 8px;
+  background:rgba(255,255,255,0.7);
+  border:1px solid rgba(168,128,44,0.32);
+  border-radius:4px;
+  color:var(--ink, #1a1a17);
+  width:100%; box-sizing:border-box;
+}
+.qlinks.editing .ql-icon{ text-align:center; font-size:.95rem; }
+.qlinks.editing .ql-href{ font-family:var(--mono); font-size:.74rem; }
+.qlinks.editing input:focus{
+  outline:none; border-color:#a8802c; background:#fff;
+}
+.qlinks.editing .ql-ext{
+  display:inline-flex; align-items:center; gap:3px;
+  font-family:var(--mono); font-size:.7rem; color:var(--gold-deep,#6e5316);
+  padding:0 4px;
+  cursor:pointer; user-select:none;
+}
+.qlinks.editing .ql-ext-cb{ width:14px; height:14px; cursor:pointer; }
+.qlinks.editing .ql-del{
+  appearance:none; cursor:pointer;
+  width:22px; height:22px; padding:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:transparent;
+  border:1px dashed rgba(140,46,46,.45);
+  border-radius:50%;
+  font-family:var(--mono); font-size:.64rem; font-weight:700;
+  color:rgba(140,46,46,.85);
+  transition: background .15s, border-color .15s, transform .12s;
+}
+.qlinks.editing .ql-del:hover{
+  background:rgba(140,46,46,.12); border-style:solid; border-color:#8c2e2e;
+  color:#5a1a1a; transform:translateY(-1px);
+}
+.qlinks.editing .ql-add{
+  appearance:none; cursor:pointer;
+  align-self:center; margin-top:4px;
+  padding:4px 14px; border-radius:99px;
+  background:transparent;
+  border:1px dashed rgba(168,128,44,0.55);
+  font-family:var(--serif), serif; font-size:.74rem; letter-spacing:.16em;
+  font-weight:700; color:var(--gold-deep,#6e5316);
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.qlinks.editing .ql-add:hover{
+  background:rgba(168,128,44,0.12);
+  border-style:solid; border-color:#a8802c;
+  color:#3b2a0e;
+  transform:translateY(-1px);
+}
+@media(max-width:560px){
+  .qlinks.editing .ql-row{
+    grid-template-columns: 44px 1fr auto;
+    grid-template-areas:
+      "icon text  del"
+      "href href  href"
+      "ext  ext   ext";
+    row-gap:4px;
+  }
+  .qlinks.editing .ql-icon{ grid-area:icon; }
+  .qlinks.editing .ql-text{ grid-area:text; }
+  .qlinks.editing .ql-href{ grid-area:href; }
+  .qlinks.editing .ql-ext { grid-area:ext;  justify-self:end; }
+  .qlinks.editing .ql-del { grid-area:del;  justify-self:end; }
+}
+
 /* =========================================================================
    Day mode toggle — global floating segmented control (打卡 / 海拔)
    The toggle lives once on the page (right-rail, above .fab-stack) and
