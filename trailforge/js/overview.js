@@ -832,6 +832,7 @@
           if (cur.nodeType === 1) cur.classList.add('rp-faded-out');
           cur = cur.nextSibling;
         }
+        const prefixInfo = nextVariantPrefix(day);
         form = document.createElement('div');
         form.className = 'rp-branch-form';
         form.innerHTML = `
@@ -845,17 +846,18 @@
           </div>
           <div class="rp-branch-fields">
             <label><span>新路線名稱</span>
-              <input type="text" class="rp-branch-label" placeholder="${escapeHtml(suggestNextVariantLabel(day))}" autocomplete="off">
+              <span class="rp-branch-prefix" aria-label="自動編號">${escapeHtml(prefixInfo.prefix)}</span>
+              <input type="text" class="rp-branch-suffix" placeholder="例如：北峰+主峰 或 僅主峰" autocomplete="off">
             </label>
           </div>
           <div class="rp-branch-actions">
             <button type="button" class="rp-branch-cancel">取消</button>
             <button type="button" class="rp-branch-confirm">＋ 建立新路線</button>
           </div>
-          <p class="rp-branch-hint">建立後會以 <b>${escapeHtml(seg.to)}</b> 為分歧點，下方路線會清空，可在此後逐一新增地標建構新路線。</p>
+          <p class="rp-branch-hint">${escapeHtml(prefixInfo.prefix)} 會自動編號；只需描述這條路線的差異即可。建立後以 <b>${escapeHtml(seg.to)}</b> 為分歧點，下方路線會清空。</p>
         `;
         anchor.parentNode.insertBefore(form, anchor.nextSibling);
-        const labelEl = form.querySelector('.rp-branch-label');
+        const labelEl = form.querySelector('.rp-branch-suffix');
         if (labelEl) labelEl.focus();
 
         // Helper: cleanly close the form + restore faded-out rows below.
@@ -867,8 +869,9 @@
 
         form.querySelector('.rp-branch-cancel').addEventListener('click', closeForm);
         form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
-          const labelInput = form.querySelector('.rp-branch-label');
-          const newLabel = (labelInput.value || labelInput.placeholder || '').trim();
+          const suffixInput = form.querySelector('.rp-branch-suffix');
+          const suffix = (suffixInput.value || '').trim() || '新路線';
+          const newLabel = prefixInfo.prefix + suffix;
           const newId = createForkVariant(day, segIdx, variantId, newLabel);
           if (!newId) {
             console.warn('[trailforge] createForkVariant failed');
@@ -1024,19 +1027,41 @@
 
     // ── Helpers shared by branch form / add-seg form ───────────────────
 
-    // Suggest the next variant label for this day, e.g. d2a/d2b → d2c.
-    // Falls back to "新路線 N" if the existing ids don't follow the dN<letter>
-    // convention.
-    function suggestNextVariantLabel(day) {
+    // Compute the auto-generated "Day 2C・" style prefix for the next
+    // variant on this day. The user only ever writes the descriptive
+    // tail (e.g. "北峰+主峰" / "僅主峰"); the system keeps the Day-letter
+    // identity in sync with the variant id, so promoting/renaming
+    // doesn't drift between the two.
+    //   Returns: { prefix, letter, dayNum }
+    function nextVariantPrefix(day) {
       const ep = day && day.elevation_profile;
-      if (!ep || !ep.route_variants) return 'Day ' + (day.id || '').replace(/^d/, '') + 'B';
-      const ids = Object.keys(ep.route_variants);
-      const letters = ids.map(id => /^d\d+([a-z])$/.exec(id) || /^([a-z])$/.exec(id))
-                         .map(m => m && m[1] || '').filter(Boolean);
-      let next = 'a';
-      while (letters.includes(next)) next = String.fromCharCode(next.charCodeAt(0) + 1);
       const dayNum = (day.id || '').replace(/^d/, '');
-      return `Day ${dayNum}${next.toUpperCase()}・新路線`;
+      // First fork → letter B (we'll promote the existing day to "main"
+      // which keeps its own existing label, and the user's branch
+      // becomes Day NB).
+      if (!ep || !ep.route_variants) {
+        return { prefix: `Day ${dayNum}B・`, letter: 'B', dayNum };
+      }
+      const ids = Object.keys(ep.route_variants);
+      const letters = ids
+        .map(id => /^d\d+([a-z])$/.exec(id) || /^([a-z])$/.exec(id))
+        .map(m => m && m[1] || '')
+        .filter(Boolean);
+      // First existing variant is 'main' → it occupies the A slot.
+      let next = 'a';
+      const occupied = new Set(letters);
+      occupied.add('a'); // main = A
+      while (occupied.has(next)) next = String.fromCharCode(next.charCodeAt(0) + 1);
+      return {
+        prefix: `Day ${dayNum}${next.toUpperCase()}・`,
+        letter: next.toUpperCase(),
+        dayNum,
+      };
+    }
+
+    function suggestNextVariantLabel(day) {
+      const p = nextVariantPrefix(day);
+      return p.prefix + '新路線';
     }
 
     // Create a new route variant by forking the current variant at fromSegIdx.
@@ -1233,11 +1258,17 @@
     };
 
     list.addEventListener('click', (e) => {
+      // Ignore clicks that originated on an interactive child (the
+      // branch button, add-seg pill, note input, etc.). Without this
+      // the row-level focus handler triggers a full re-render and
+      // tears down any inline form the user just opened.
+      if (e.target.closest('button, input, select, textarea, label, datalist, .rp-branch-form, .rp-add-seg-form, .rp-add-rest-form')) return;
       const row = e.target.closest('.rp-row[data-focusable="true"]');
       if (row && list.contains(row)) apply(row);
     });
     list.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.target.closest('button, input, select, textarea, label')) return;
       const row = e.target.closest('.rp-row[data-focusable="true"]');
       if (row && list.contains(row)) { e.preventDefault(); apply(row); }
     });
