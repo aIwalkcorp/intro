@@ -2354,14 +2354,13 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 
 /* Sibling info-row — slides in below a row when its info-btn is pressed.
-   Carries 基準分鐘 / km / ↑↓海拔 in a topographic-tag layout. Default
-   collapsed (max-height:0); open state expands. */
+   Carries 基準分鐘 / km / ↑↓海拔 inline. Indented so the row's left edge
+   aligns under the .rp-route cell of the parent (chip 30 + cum 44 + 2*gap6
+   ≈ 86px), then a flex strip of meta items. Default collapsed via
+   max-height; open state expands with a soft slide-in. */
 .overview-rest-points .rp-info-row{
-  display:grid;
-  grid-template-columns:30px 44px minmax(0,1fr);
-  align-items:center;
-  gap:10px;
-  padding:0 8px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:0 8px 0 86px;
   max-height:0; overflow:hidden;
   background:linear-gradient(90deg, rgba(168,128,44,0.04), rgba(120,140,90,0.05));
   border-bottom:1px solid rgba(168,128,44,0.18);
@@ -2370,12 +2369,13 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   transition:max-height .22s ease, padding .22s ease;
 }
 .overview-rest-points .rp-info-row.rp-info-row-open{
-  max-height:38px;
-  padding:5px 8px 6px;
+  max-height:60px;
+  padding:5px 8px 6px 86px;
 }
 .overview-rest-points .rp-info-row .rp-info-stamp{
-  grid-column:1 / 3;
-  justify-self:end;
+  /* order:99 + margin-left:auto pushes the DETAILS pill to the row's
+     right edge while data items (base/km/↑↓m) stack from the left. */
+  order:99; margin-left:auto;
   font-size:.52rem; letter-spacing:.32em; text-transform:uppercase;
   color:var(--gold-deep,#6e5316); font-weight:700;
   padding:1px 6px;
@@ -2383,9 +2383,6 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   border-radius:2px;
   background:rgba(255,255,255,0.45);
   white-space:nowrap;
-}
-.overview-rest-points .rp-info-row > :nth-child(n+3){
-  grid-column:auto;
 }
 .overview-rest-points .rp-info-row .rp-info-base{
   font-size:.7rem; letter-spacing:.04em;
@@ -2498,88 +2495,136 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .overview-rest-points .rp-fork-row{ padding-left:48px; gap:8px; }
 }
 
-/* Rest-stop row — in-place dwell (lunch / 整裝 / 補眠). Inherits the
-   segment row's 6-column grid so chip / cum / route / cost / arrival /
-   info-btn line up across the table. Identity comes from the sage left
-   rule + tint, plus a "REST" mono stamp in the cum slot and an asterism
-   ❋ before the place name. NO bespoke flex layout — that was the source
-   of the "messy" appearance the user flagged. */
-.overview-rest-points .rp-rest-row{
-  background:linear-gradient(90deg, rgba(120,140,90,0.10) 0%, rgba(120,140,90,0.045) 60%, transparent 100%);
-  box-shadow:inset 3px 0 0 rgba(94,110,60,0.65);
-  border-bottom:1px solid rgba(120,140,90,0.22);
+/* Rest sub-row — a thin annotation tucked beneath the prior transit
+   segment ("after arriving at X, dwell N minutes here"). Mirrors the
+   .rp-note-row indentation pattern (44px) but with sage tint, an
+   asterism mark, and inline mins / clock-range / note. NOT a full table
+   row — its place is implicit (= prior segment's `to`). */
+.overview-rest-points .rp-sub-rest{
+  display:flex; align-items:center; gap:10px; flex-wrap:nowrap;
+  padding:3px 10px 3px 44px;
+  background:linear-gradient(90deg, rgba(120,140,90,0.09) 0%, rgba(120,140,90,0.025) 70%, transparent 100%);
+  box-shadow:inset 3px 0 0 rgba(94,110,60,0.55);
+  border-bottom:1px solid rgba(42,36,24,0.06);
+  font-family:"Fraunces", var(--serif), serif;
+  font-size:.74rem;
+  color:#3a4a22;
+  line-height:1.2;
 }
-/* Mute the day-chip a little so the "REST" stamp reads as the row's
-   primary marker, not the chip. */
-.overview-rest-points .rp-rest-row .rp-chip{
-  opacity:.55;
+.overview-rest-points .rp-sub-rest .rp-sub-mark{
+  color:#5e6e3c; opacity:.6; font-family:var(--mono);
+  font-size:.78rem; flex:none;
 }
-.overview-rest-points .rp-rest-row .rp-rest-stamp{
-  display:inline-flex; align-items:center; justify-content:center;
+.overview-rest-points .rp-sub-rest .rp-sub-rest-pill{
+  display:inline-flex; align-items:center; gap:3px;
   font-family:"JetBrains Mono", ui-monospace, monospace;
-  font-size:.54rem; letter-spacing:.32em; font-weight:700;
+  font-size:.54rem; letter-spacing:.28em; font-weight:700;
   text-transform:uppercase;
   color:#3a4a22;
-  padding:2px 4px;
+  padding:2px 8px 2px 6px;
   border:1px solid rgba(94,110,60,0.45);
-  border-radius:2px;
+  border-radius:99px;
   background:rgba(255,255,255,0.55);
-  font-feature-settings:"tnum" 1, "lnum" 1;
-}
-.overview-rest-points .rp-rest-row .rp-rest-route{
-  display:flex; align-items:baseline; gap:8px;
-  font-family:"Fraunces", var(--serif), serif;
-  color:var(--pri-deep,#0a1a06);
-}
-.overview-rest-points .rp-rest-row .rp-rest-mark{
-  font-family:"Fraunces", var(--serif), serif;
-  color:#5e6e3c; opacity:.7;
-  font-size:.95rem; line-height:1;
   flex:none;
 }
-.overview-rest-points .rp-rest-row .rp-rest-place{
-  font-style:italic; font-weight:700;
-  font-size:.88rem;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+.overview-rest-points .rp-sub-rest .rp-sub-rest-glyph{
+  font-family:"Fraunces", var(--serif), serif;
+  font-size:.78rem; line-height:1; letter-spacing:0;
+  color:#5e6e3c; opacity:.85;
 }
-.overview-rest-points .rp-rest-row .rp-rest-arrive{
-  /* Range "12:00～13:00" needs slightly more compact mono so it fits
-     the same 112px slot the segment rows use for "抵達 09:00". */
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins{
+  display:inline-flex; align-items:baseline; gap:2px;
   font-family:var(--mono);
+  flex:none;
 }
-.overview-rest-points .rp-rest-row .rp-rest-arrive small{
-  font-size:.52rem; letter-spacing:.22em; text-transform:uppercase;
-  color:#5e6e3c; font-weight:700;
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins-num{
+  font-size:.92rem; font-weight:800; color:var(--pri-deep,#0a1a06);
+  font-feature-settings:"tnum" 1, "lnum" 1;
 }
-.overview-rest-points .rp-rest-row .rp-rest-arrive b{
-  font-family:var(--mono); font-weight:800; font-size:.92rem;
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins small{
+  font-size:.55rem; opacity:.7; margin-left:1px;
+}
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins .rp-min-edit{
+  width:42px; padding:1px 3px;
+  font-family:var(--mono); font-size:.86rem; font-weight:800;
+  color:var(--pri-deep,#0a1a06);
+  background:rgba(255,255,255,0.65);
+  border:1px dashed rgba(94,110,60,0.45);
+  border-radius:3px;
+  text-align:right;
+  -moz-appearance:textfield;
+}
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins .rp-min-edit::-webkit-outer-spin-button,
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins .rp-min-edit::-webkit-inner-spin-button{
+  -webkit-appearance:none; margin:0;
+}
+.overview-rest-points .rp-sub-rest .rp-sub-rest-mins .rp-min-edit:focus{
+  outline:none; border-style:solid; border-color:#5e6e3c; background:#fff;
+}
+.overview-rest-points .rp-sub-rest .rp-sub-rest-clock{
+  font-family:var(--mono);
+  font-size:.72rem; font-weight:700;
   color:#3a4a22;
   letter-spacing:.02em;
   font-feature-settings:"tnum" 1, "lnum" 1;
-  white-space:nowrap;
+  white-space:nowrap; flex:none;
+  padding:1px 6px;
+  border-radius:2px;
+  background:rgba(255,255,255,0.4);
+  border:1px dotted rgba(94,110,60,0.4);
 }
-.overview-rest-points .rp-rest-row .rp-rest-arrive .rp-rest-arrow{
-  font-weight:400; opacity:.5; margin:0 1px;
+.overview-rest-points .rp-sub-rest .rp-sub-rest-clock .rp-rest-arrow{
+  opacity:.45; font-weight:400; margin:0 1px;
 }
-/* Sage tint cascades to the row's open info-row + note row so the rest
-   block reads as one continuous band even when expanded. */
-.overview-rest-points .rp-rest-row + .rp-info-row{
-  background:linear-gradient(90deg, rgba(120,140,90,0.07), rgba(120,140,90,0.03));
-  border-bottom-color:rgba(120,140,90,0.22);
-  box-shadow:inset 3px 0 0 rgba(94,110,60,0.45);
+.overview-rest-points .rp-sub-rest .rp-sub-rest-note{
+  flex:1 1 auto; min-width:0;
+  font-style:italic;
+  color:var(--ink-soft,#7a7468);
+  font-size:.74rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.overview-rest-points .rp-note-row.rp-note-row-rest{
-  background:rgba(120,140,90,0.04);
-  border-bottom-color:rgba(120,140,90,0.22);
-  box-shadow:inset 3px 0 0 rgba(94,110,60,0.35);
+.overview-rest-points .rp-sub-rest .rp-sub-rest-note-edit{
+  flex:1 1 auto; min-width:80px;
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-size:.74rem;
+  color:var(--ink-soft,#7a7468);
+  background:transparent;
+  border:none;
+  border-bottom:1px dotted rgba(94,110,60,0.4);
+  border-radius:0;
+  padding:1px 2px;
 }
-/* Min-edit input inside rest row — match the green sage palette but
-   keep the same dimensions as segment rows so columns stay aligned. */
-.overview-rest-points .rp-rest-row .rp-cost .rp-min-edit{
-  border-color:rgba(94,110,60,0.45);
+.overview-rest-points .rp-sub-rest .rp-sub-rest-note-edit:focus{
+  outline:none;
+  border-bottom-color:#5e6e3c; border-bottom-style:solid;
+  background:rgba(255,255,255,0.5);
 }
-.overview-rest-points .rp-rest-row .rp-cost .rp-min-edit:focus{
-  border-color:#5e6e3c;
+.overview-rest-points .rp-sub-rest .rp-sub-del-btn{
+  flex:none;
+  width:18px; height:18px; padding:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid rgba(94,110,60,0.35);
+  border-radius:50%;
+  background:transparent;
+  color:#5e6e3c;
+  font-size:.7rem; line-height:1;
+  cursor:pointer;
+  transition:color .12s, background .12s, border-color .12s;
+}
+.overview-rest-points .rp-sub-rest .rp-sub-del-btn:hover{
+  color:#fff; background:#8b2a1f; border-color:#8b2a1f;
+}
+.overview-rest-points .rp-sub-rest-return{
+  font-style:italic; opacity:.78;
+}
+@media(max-width:560px){
+  .overview-rest-points .rp-sub-rest{
+    padding-left:36px; gap:6px; flex-wrap:wrap;
+  }
+  .overview-rest-points .rp-sub-rest .rp-sub-rest-note,
+  .overview-rest-points .rp-sub-rest .rp-sub-rest-note-edit{
+    flex-basis:100%; order:99;
+  }
 }
 
 /* Speed control */
