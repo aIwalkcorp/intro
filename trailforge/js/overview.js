@@ -774,30 +774,39 @@
     host.querySelectorAll('.rp-branch-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const wrap = btn.closest('.rp-note-row');
+        // Button now lives in .rp-cost (next to the derived-minutes
+        // value), not in the note row. Read data straight off the
+        // button and use the parent .rp-row as the anchor for the form.
+        const dayId = btn.dataset.dayId;
+        const variantId = btn.dataset.variantId || null;
+        const segIdx = +btn.dataset.segIdx;
+        const wrap = btn.closest('.rp-row');
         if (!wrap) return;
-        const dayId = wrap.dataset.dayId;
-        const variantId = wrap.dataset.variantId || null;
-        const segIdx = +wrap.dataset.segIdx;
+        const day = (plan.days || []).find(d => d.id === dayId);
+        if (!day) return;
         const segArr = resolveSegArr(dayId, variantId);
         if (!Array.isArray(segArr) || !segArr[segIdx]) return;
         const seg = segArr[segIdx];
         // Toggle inline form
         let form = wrap.nextElementSibling;
+        // Skip the per-segment note row that may sit between rp-row and
+        // the form anchor — it's part of the same logical row.
+        if (form && form.classList.contains('rp-note-row')) form = form.nextElementSibling;
         if (form && form.classList.contains('rp-branch-form')) {
           form.remove();
           return;
         }
-        const halfMin = Math.max(1, Math.round((+seg.base_minutes || 0) / 2));
-        // Collect waypoint suggestions from across the plan + GPX wpts so
-        // the user can pick a known stop instead of typing free-hand.
-        const waypointSuggestions = collectKnownWaypointNames(plan);
-        const datalistId = 'rp-wp-suggestions-' + Math.random().toString(36).slice(2, 8);
         // Fade rows BELOW the current row to communicate "this branch
         // replaces the rest of the path". closeForm() restores them.
         const segListHost = wrap.parentNode;
         segListHost.classList.add('rp-branching');
-        let cur = wrap.nextSibling;
+        // Anchor is either the rp-row or its sibling note row, whichever
+        // sits last for THIS segment.
+        let anchor = wrap;
+        if (anchor.nextElementSibling && anchor.nextElementSibling.classList.contains('rp-note-row')) {
+          anchor = anchor.nextElementSibling;
+        }
+        let cur = anchor.nextSibling;
         while (cur) {
           if (cur.nodeType === 1) cur.classList.add('rp-faded-out');
           cur = cur.nextSibling;
@@ -822,10 +831,11 @@
             <button type="button" class="rp-branch-cancel">取消</button>
             <button type="button" class="rp-branch-confirm">＋ 建立新路線</button>
           </div>
-          <p class="rp-branch-hint">建立後會以 <b>${escapeHtml(seg.to)}</b> 為分歧點，下方路線會清空，可在此後逐一新增休息點建構新路線。</p>
+          <p class="rp-branch-hint">建立後會以 <b>${escapeHtml(seg.to)}</b> 為分歧點，下方路線會清空，可在此後逐一新增地標建構新路線。</p>
         `;
-        wrap.parentNode.insertBefore(form, wrap.nextSibling);
-        form.querySelector('.rp-branch-name').focus();
+        anchor.parentNode.insertBefore(form, anchor.nextSibling);
+        const labelEl = form.querySelector('.rp-branch-label');
+        if (labelEl) labelEl.focus();
 
         // Helper: cleanly close the form + restore faded-out rows below.
         const closeForm = () => {
