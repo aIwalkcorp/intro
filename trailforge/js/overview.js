@@ -701,40 +701,13 @@
     if (!host) return;
     const overview = document.getElementById('elev-overview');
 
-    // Auto-materialise descent on edit-mode entry — once findAutoReturnSource
-    // matches AND we're in edit mode, fold the reverse into real shanghe_segments
-    // on the target day so branch / delete / note edits use the same paths as
-    // ascent rows. plan.auto_return_descent flips to false → next render sees
-    // findAutoReturnSource === null and skips this block.
-    if (document.body.classList.contains('tf-editing') && plan.auto_return_descent !== false) {
-      const ret = findAutoReturnSource(plan);
-      if (ret) {
-        const targetDay = (plan.days || []).find(d => d.id === ret.targetDayId);
-        if (targetDay) {
-          const ep = targetDay.elevation_profile || (targetDay.elevation_profile = {});
-          let segArr = null;
-          if (ep.route_variants) {
-            const ctx = getEffectiveDayContext(plan, targetDay, null);
-            const vid = ctx.variantId || ep.default_variant || Object.keys(ep.route_variants)[0];
-            const v = ep.route_variants[vid];
-            if (v) {
-              v.shanghe_segments = v.shanghe_segments || [];
-              segArr = v.shanghe_segments;
-            }
-          }
-          if (!segArr) {
-            ep.shanghe_segments = ep.shanghe_segments || [];
-            segArr = ep.shanghe_segments;
-          }
-          const newSegs = cloneDescentFromAscent(plan, ret.sourceSegs);
-          if (newSegs.length) {
-            segArr.push(...newSegs);
-            plan.auto_return_descent = false;
-            if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-          }
-        }
-      }
-    }
+    // (Reverted: auto-materialising descent into the target day's
+    // shanghe_segments broke the elevation chart — descent anchor_idx
+    // values point at the SOURCE ascent day's GPX track, but the chart
+    // stitches a day's track from a single gpx_ref, so attacking those
+    // indices against the target day's track produced garbage. Descent
+    // stays runtime-synth; full branch/delete/note on descent rows
+    // needs a non-materialisation design and is deferred.)
 
     const rows = collectRestPoints(plan);
     let totalBase = 0, totalDerived = 0, totalKm = 0, totalAsc = 0, totalDesc = 0;
