@@ -402,14 +402,20 @@
           if (v.decision_anchors) decisionAnchors = v.decision_anchors;
         }
       }
-      // Apply gpx_anchor_idx overrides: each segment's from/to name is
-      // looked up in anchorOverrides[gpx_ref] → integer trkpt idx that
-      // replaces the segment's plan-data anchor_idx pair. Segments may
-      // also declare their own gpx_ref (segment.gpx_ref) to point at a
-      // different track than the day's default — supports same-day
-      // multi-GPX (e.g. main + 北峰繞道).
+      // Apply gpx_anchor_idx overrides ONLY when the segment lacks a
+      // valid anchor_idx pair of its own. The single-snap override map
+      // (gpx_anchor_idx) maps each NAME to ONE idx, so it can't
+      // distinguish multi-visit cases — for D2B seg 主峰→排雲 with
+      // unitized anchor [705, 798], applying the override would rewrite
+      // it to [140, 798] (since 主峰 snap is at idx 140), pulling the
+      // 北峰 detour back into the slice and re-introducing the multiple
+      // 主峰 peaks the user just flagged. gpx-unitize.js writes
+      // accurate anchors via shortest-path through the leg DAG; trust
+      // them and only fall back to the snap when no anchor exists.
       const refForDay = ep.gpx_ref;
       segments = segments.map(s => {
+        const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : null;
+        if (ai && ai.length === 2 && ai[0] != null && ai[1] != null) return s;
         const segRef = s.gpx_ref || refForDay;
         const overrideMap = anchorOverrides[segRef];
         if (!overrideMap) return s;
@@ -418,8 +424,8 @@
         if (fromIdx == null && toIdx == null) return s;
         const next = Object.assign({}, s);
         next.anchor_idx = [
-          fromIdx != null ? fromIdx : (Array.isArray(s.anchor_idx) ? s.anchor_idx[0] : 0),
-          toIdx   != null ? toIdx   : (Array.isArray(s.anchor_idx) ? s.anchor_idx[1] : 0),
+          fromIdx != null ? fromIdx : (ai ? ai[0] : 0),
+          toIdx   != null ? toIdx   : (ai ? ai[1] : 0),
         ];
         return next;
       });
