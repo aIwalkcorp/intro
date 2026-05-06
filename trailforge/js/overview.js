@@ -304,6 +304,13 @@
         dayStartMin,
         cumDayBaseMinAfter: cumDayBaseMin,
       });
+      // "+ 新增休息點" footer row — only in edit mode.
+      rows.push({
+        kind: 'add-segment',
+        dayId, dayLabel,
+        variantId: useRoute ? activeRouteId : null,
+        afterIdx: -1,        // append at end
+      });
     });
 
     // ── Synthetic 回程 rows ───────────────────────────────────────────────
@@ -502,6 +509,17 @@
           <span class="rp-day-note">${escapeHtml(r.note || '')}</span>
           ${startCell}
         </div>${titleCell ? `<div class="rp-section-title-row">${titleCell}</div>` : ''}`;
+      }
+
+      if (r.kind === 'add-segment') {
+        const editing = document.body.classList.contains('tf-editing');
+        if (!editing) return '';   // hide in view mode
+        return `<div class="rp-row rp-add-row">
+          <button type="button" class="rp-add-seg-btn"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-variant-id="${escapeHtml(r.variantId || '')}"
+            data-after-idx="${r.afterIdx}">＋ 新增休息點</button>
+        </div>`;
       }
 
       if (r.kind === 'variant-fork') {
@@ -780,22 +798,18 @@
               <path d="M4 4.5v7" stroke="currentColor" stroke-width="1.4" fill="none"/>
               <path d="M4 7.5 q 0 -2 4 -2 t 4 1" stroke="currentColor" stroke-width="1.4" fill="none"/>
             </svg>
-            從 <b>${escapeHtml(seg.from)}</b> 創建一個新的路線
+            從 <b>${escapeHtml(seg.to)}</b> 創建一個新的路線分歧
           </div>
           <div class="rp-branch-fields">
-            <label><span>下一個休息點</span>
-              <input type="text" class="rp-branch-name" list="${datalistId}" placeholder="輸入或從建議清單選擇" autocomplete="off">
-              <datalist id="${datalistId}">
-                ${waypointSuggestions.map(n => `<option value="${escapeHtml(n)}"></option>`).join('')}
-              </datalist>
+            <label><span>新路線名稱</span>
+              <input type="text" class="rp-branch-label" placeholder="${escapeHtml(suggestNextVariantLabel(day))}" autocomplete="off">
             </label>
-            <label><span>從 ${escapeHtml(seg.from)} 走</span><input type="number" class="rp-branch-min" min="1" max="${(+seg.base_minutes || 1) - 1}" value="${halfMin}"><span class="rp-branch-unit">分</span></label>
           </div>
           <div class="rp-branch-actions">
             <button type="button" class="rp-branch-cancel">取消</button>
             <button type="button" class="rp-branch-confirm">＋ 建立新路線</button>
           </div>
-          <p class="rp-branch-hint">確認後會從此點起為起點，後續路線將由你新建的休息點組成。</p>
+          <p class="rp-branch-hint">建立後會以 <b>${escapeHtml(seg.to)}</b> 為分歧點，下方路線會清空，可在此後逐一新增休息點建構新路線。</p>
         `;
         wrap.parentNode.insertBefore(form, wrap.nextSibling);
         form.querySelector('.rp-branch-name').focus();
@@ -809,47 +823,14 @@
 
         form.querySelector('.rp-branch-cancel').addEventListener('click', closeForm);
         form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
-          const newName = form.querySelector('.rp-branch-name').value.trim();
-          const splitMin = +form.querySelector('.rp-branch-min').value;
-          if (!newName) {
-            form.querySelector('.rp-branch-name').focus();
+          const labelInput = form.querySelector('.rp-branch-label');
+          const newLabel = (labelInput.value || labelInput.placeholder || '').trim();
+          const newId = createForkVariant(day, segIdx, variantId, newLabel);
+          if (!newId) {
+            console.warn('[trailforge] createForkVariant failed');
             return;
           }
-          const total = +seg.base_minutes || 0;
-          const m1 = Math.max(1, Math.min(total - 1, splitMin || halfMin));
-          const m2 = Math.max(1, total - m1);
-          // Proportionally split km / ascent / descent.
-          const f = m1 / total;
-          const dKm = +seg.distance_km || 0;
-          const dAsc = +seg.ascent_m || 0;
-          const dDesc = +seg.descent_m || 0;
-          const before = {
-            ...seg,
-            id: (seg.id || 'seg') + '-a',
-            to: newName,
-            base_minutes: m1,
-            distance_km: +(dKm * f).toFixed(2),
-            ascent_m: Math.round(dAsc * f),
-            descent_m: Math.round(dDesc * f),
-            anchor_idx: null,   // user can re-pin via GPX picker later
-            note: seg.note || '',
-          };
-          const after = {
-            ...seg,
-            id: (seg.id || 'seg') + '-b',
-            from: newName,
-            base_minutes: m2,
-            distance_km: +(dKm * (1 - f)).toFixed(2),
-            ascent_m: dAsc - before.ascent_m,
-            descent_m: dDesc - before.descent_m,
-            anchor_idx: null,
-            note: '',
-          };
-          segArr.splice(segIdx, 1, before, after);
           if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-          // The full re-render below replaces the entire rest-points list,
-          // so the faded-out rows + form get blown away naturally — no
-          // explicit closeForm() needed here.
           renderRestPoints(plan, readSpeed());
           if (TF.modeToggle && TF.modeToggle.refreshAll) {
             requestAnimationFrame(() => TF.modeToggle.refreshAll());
@@ -858,6 +839,165 @@
         });
       });
     });
+
+    // ── Bind "+ 新增休息點" buttons (per-day end of segments OR per-row) ──
+    host.querySelectorAll('.rp-add-seg-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const dayId = btn.dataset.dayId;
+        const variantId = btn.dataset.variantId || null;
+        const afterIdx = btn.dataset.afterIdx === '' ? -1 : +btn.dataset.afterIdx;  // -1 = append at end
+        const segArr = resolveSegArr(dayId, variantId);
+        if (!Array.isArray(segArr)) return;
+        // Toggle inline form below the button
+        let form = btn.parentElement.nextElementSibling;
+        if (form && form.classList.contains('rp-add-seg-form')) {
+          form.remove();
+          return;
+        }
+        const lastSeg = afterIdx >= 0 ? segArr[afterIdx] : segArr[segArr.length - 1];
+        const fromName = lastSeg ? lastSeg.to : '';
+        const datalistId2 = 'rp-wp-add-' + Math.random().toString(36).slice(2, 8);
+        const sugg = collectKnownWaypointNames(plan);
+        form = document.createElement('div');
+        form.className = 'rp-add-seg-form';
+        form.innerHTML = `
+          <div class="rp-branch-head">＋ 新增休息點</div>
+          <div class="rp-branch-fields">
+            <label><span>從</span><span class="rp-add-from">${escapeHtml(fromName || '起點')}</span></label>
+            <label><span>下一個休息點</span>
+              <input type="text" class="rp-add-name" list="${datalistId2}" placeholder="輸入或從建議清單選擇" autocomplete="off">
+              <datalist id="${datalistId2}">
+                ${sugg.map(n => `<option value="${escapeHtml(n)}"></option>`).join('')}
+              </datalist>
+            </label>
+            <label><span>步行</span><input type="number" class="rp-add-min" min="1" value="60"><span class="rp-branch-unit">分</span></label>
+            <label><span>距離</span><input type="number" class="rp-add-km" min="0" step="0.1" value="0"><span class="rp-branch-unit">km</span></label>
+            <label><span>↑</span><input type="number" class="rp-add-asc" min="0" value="0"><span class="rp-branch-unit">m</span></label>
+            <label><span>↓</span><input type="number" class="rp-add-desc" min="0" value="0"><span class="rp-branch-unit">m</span></label>
+          </div>
+          <div class="rp-branch-actions">
+            <button type="button" class="rp-branch-cancel">取消</button>
+            <button type="button" class="rp-branch-confirm">＋ 新增</button>
+          </div>
+        `;
+        btn.parentElement.parentNode.insertBefore(form, btn.parentElement.nextSibling);
+        form.querySelector('.rp-add-name').focus();
+        form.querySelector('.rp-branch-cancel').addEventListener('click', () => form.remove());
+        form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
+          const name = form.querySelector('.rp-add-name').value.trim();
+          if (!name) { form.querySelector('.rp-add-name').focus(); return; }
+          const insertIdx = afterIdx >= 0 ? afterIdx + 1 : segArr.length;
+          segArr.splice(insertIdx, 0, {
+            id: 'seg-' + Math.random().toString(36).slice(2, 7),
+            from: fromName,
+            to: name,
+            base_minutes: +form.querySelector('.rp-add-min').value || 0,
+            distance_km: +form.querySelector('.rp-add-km').value || 0,
+            ascent_m: +form.querySelector('.rp-add-asc').value || 0,
+            descent_m: +form.querySelector('.rp-add-desc').value || 0,
+            anchor_idx: null,
+            note: '',
+          });
+          if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          renderRestPoints(plan, readSpeed());
+          if (TF.modeToggle && TF.modeToggle.refreshAll) {
+            requestAnimationFrame(() => TF.modeToggle.refreshAll());
+          }
+          if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+        });
+      });
+    });
+
+    // ── Helpers shared by branch form / add-seg form ───────────────────
+
+    // Suggest the next variant label for this day, e.g. d2a/d2b → d2c.
+    // Falls back to "新路線 N" if the existing ids don't follow the dN<letter>
+    // convention.
+    function suggestNextVariantLabel(day) {
+      const ep = day && day.elevation_profile;
+      if (!ep || !ep.route_variants) return 'Day ' + (day.id || '').replace(/^d/, '') + 'B';
+      const ids = Object.keys(ep.route_variants);
+      const letters = ids.map(id => /^d\d+([a-z])$/.exec(id) || /^([a-z])$/.exec(id))
+                         .map(m => m && m[1] || '').filter(Boolean);
+      let next = 'a';
+      while (letters.includes(next)) next = String.fromCharCode(next.charCodeAt(0) + 1);
+      const dayNum = (day.id || '').replace(/^d/, '');
+      return `Day ${dayNum}${next.toUpperCase()}・新路線`;
+    }
+
+    // Create a new route variant by forking the current variant at fromSegIdx.
+    // Promotes a non-variant day into route_variants on first fork. Returns
+    // the new variant's id, or null on failure. Also adds an entry to
+    // day.routes (the front-end tab strip) and switches active to the new id.
+    function createForkVariant(day, fromSegIdx, currentVariantId, newLabel) {
+      const ep = day && day.elevation_profile;
+      if (!ep) return null;
+      // 1) Promote to route_variants if needed
+      if (!ep.route_variants) {
+        ep.route_variants = {};
+        const mainSegs = ep.shanghe_segments || [];
+        const mainId = 'main';
+        ep.route_variants[mainId] = {
+          label: day.label || 'Day ' + day.id,
+          shanghe_segments: JSON.parse(JSON.stringify(mainSegs)),
+          summit_idx: ep.summit_idx,
+          summit_label: ep.summit_label,
+          direction: ep.direction || 'ascent_only',
+        };
+        ep.default_variant = mainId;
+        if (!Array.isArray(day.routes)) day.routes = [];
+        if (!day.routes.find(r => r.id === mainId)) {
+          day.routes.unshift({
+            id: mainId,
+            tab_label: day.label || 'Day ' + day.id,
+            tag_class: mainId,
+            tag_text: day.label || 'Day ' + day.id,
+            active: true,
+            schedule: day.schedule || [],
+          });
+        }
+        currentVariantId = currentVariantId || mainId;
+      }
+      // 2) Generate a new id
+      const ids = Object.keys(ep.route_variants);
+      const baseLetter = (ids.map(id => /^d\d+([a-z])$/.exec(id))
+                            .map(m => m && m[1])
+                            .filter(Boolean)
+                            .sort().pop() || 'a');
+      let nextLetter = String.fromCharCode(baseLetter.charCodeAt(0) + 1);
+      const dayNum = (day.id || '').replace(/^d/, '');
+      let newId = `d${dayNum}${nextLetter}`;
+      let safety = 0;
+      while (ep.route_variants[newId] && safety++ < 26) {
+        nextLetter = String.fromCharCode(nextLetter.charCodeAt(0) + 1);
+        newId = `d${dayNum}${nextLetter}`;
+      }
+      if (ep.route_variants[newId]) newId = 'fork-' + Math.random().toString(36).slice(2, 6);
+      // 3) Copy shared prefix segments (up to and including fromSegIdx)
+      const srcSegs = (ep.route_variants[currentVariantId] || {}).shanghe_segments
+                    || ep.shanghe_segments || [];
+      const sharedPrefix = srcSegs.slice(0, fromSegIdx + 1).map(s => Object.assign({}, s, {
+        id: (s.id || 'seg') + '-' + newId,
+      }));
+      ep.route_variants[newId] = {
+        label: newLabel || (`Day ${dayNum}${nextLetter.toUpperCase()}・新路線`),
+        shanghe_segments: sharedPrefix,
+        direction: 'ascent_only',
+      };
+      // 4) Add to day.routes tabs
+      if (!Array.isArray(day.routes)) day.routes = [];
+      day.routes.forEach(r => { r.active = false; });
+      day.routes.push({
+        id: newId,
+        tab_label: newLabel || `Day ${dayNum}${nextLetter.toUpperCase()}`,
+        tag_class: newId,
+        tag_text: newLabel || `Day ${dayNum}${nextLetter.toUpperCase()}`,
+        active: true,
+        schedule: [],
+      });
+      return newId;
+    }
 
     // Helper for the branch form's name autocomplete: union of every
     // segment endpoint across the plan + any GPX waypoint names if loaded.

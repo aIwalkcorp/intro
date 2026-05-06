@@ -2593,6 +2593,45 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   position:relative; z-index:1;
 }
 
+/* "+ 新增休息點" footer row — sits at the end of each day's segments in
+   edit mode, lets the user append a new rest point. Same form mechanics
+   as the branch flow but no fade-out (the user is just appending). */
+.overview-rest-points .rp-add-row{
+  display:flex; justify-content:center;
+  padding:8px 12px;
+  background:rgba(168,128,44,0.04);
+  border-bottom:1px dashed rgba(168,128,44,0.30);
+}
+.overview-rest-points .rp-add-seg-btn{
+  appearance:none; cursor:pointer;
+  padding:6px 18px; border-radius:99px;
+  background:transparent;
+  border:1px dashed rgba(168,128,44,0.55);
+  font-family:var(--serif), serif; font-size:.78rem; letter-spacing:.18em;
+  font-weight:700; color:var(--gold-deep,#6e5316);
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.overview-rest-points .rp-add-seg-btn:hover{
+  background:rgba(168,128,44,0.12);
+  border-style:solid; border-color:#a8802c;
+  color:#3b2a0e;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-add-seg-btn:active{ transform:scale(.97); }
+.overview-rest-points .rp-add-seg-form{
+  padding:10px 14px 12px 60px;
+  background:rgba(168,128,44,0.06);
+  border-top:1px dashed rgba(168,128,44,0.4);
+  border-bottom:1px dashed rgba(168,128,44,0.4);
+  font-family:var(--serif);
+  animation: rpBranchSlide .25s cubic-bezier(.2,.7,.2,1);
+}
+.overview-rest-points .rp-add-seg-form .rp-add-from{
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-weight:700; font-size:.86rem; color:var(--pri-deep,#0a1a06);
+  padding:5px 8px; background:rgba(255,255,255,0.6); border-radius:4px;
+}
+
 /* Section-title row sits directly under the day-header. Edit mode shows a
    subtle dotted-underline input; view mode shows italic prose only when
    non-empty. Same indented column as the note rows. */
