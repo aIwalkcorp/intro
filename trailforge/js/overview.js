@@ -265,6 +265,44 @@
     }
     return out;
   }
+  // Persistable descent generator — used by the "+ 下山段" button to
+  // materialise the auto-补齊 reverse into REAL segments the user can
+  // then branch / delete / annotate independently. Differs from
+  // buildReverseSegments in three ways:
+  //   1. Notes are NOT inherited (descent has its own emergent context;
+  //      "上河左側捷徑" on ascent doesn't apply going down).
+  //   2. Fresh random ids — no "r-" prefix tying back to the source.
+  //   3. No is_auto_return / sourceSegIdx flags — the segs are
+  //      first-class user-owned data after materialisation.
+  function cloneDescentFromAscent(plan, sourceSegs) {
+    if (!Array.isArray(sourceSegs)) return [];
+    const out = [];
+    for (let i = sourceSegs.length - 1; i >= 0; i--) {
+      const s = sourceSegs[i];
+      if (!s || s.is_rest_stop) continue;
+      const a = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+      const ai0 = a[0], ai1 = a[1];
+      const ref = s.gpx_ref || null;
+      let stats = null;
+      if (ref && ai0 != null && ai1 != null) {
+        stats = gpxStatsBetween(plan, ref, ai1, ai0);
+      }
+      const factored = Math.round((+s.base_minutes || 0) * (+s.descent_factor || 0.7));
+      out.push({
+        id: 'd-' + Math.random().toString(36).slice(2, 9),
+        from: s.to || '',
+        to: s.from || '',
+        anchor_idx: (ai0 != null && ai1 != null) ? [ai1, ai0] : null,
+        distance_km: stats ? stats.distance_km : (+s.distance_km || 0),
+        ascent_m:    stats ? stats.ascent_m    : (+s.descent_m   || 0),
+        descent_m:   stats ? stats.descent_m   : (+s.ascent_m    || 0),
+        base_minutes: factored,
+        note: '',
+      });
+    }
+    return out;
+  }
+
   function effectiveSegmentsForVariant(plan, day, variant) {
     const segs = (variant && variant.shanghe_segments) || [];
     const ret = findAutoReturnSource(plan);
@@ -964,6 +1002,7 @@
       ${(document.body.classList.contains('tf-editing')) ? `<div class="rp-day-add-row">
         ${(plan.days || []).some(d => d.id === 'd0') ? '' : `<button type="button" class="rp-day-add-btn" data-add-kind="d0" title="在最前面加一個出發/移動日">＋ 出發日 (D0)</button>`}
         <button type="button" class="rp-day-add-btn" data-add-kind="append" title="在最後面追加一天">＋ 多加一天</button>
+        ${findAutoReturnSource(plan) ? `<button type="button" class="rp-day-add-btn rp-day-add-btn-descent" data-add-kind="descent" title="從上山反向自動產生下山段（可再各自編輯）">＋ 下山段</button>` : ''}
       </div>` : ''}
       <div class="rp-total">
         <span class="rp-total-l">全程總計</span>
@@ -978,27 +1017,31 @@
         </span>
       </div>`;
 
-    // ── Bind per-row info buttons (triangulation-benchmark toggle) ──
-    // Single delegated click handler for all .rp-info-btn — toggles the
-    // row's .rp-row-info-open class + its sibling .rp-info-row's open
-    // state. State persists in host._openInfoRows so re-renders (speed
-    // factor, minute edits) preserve which rows the user expanded.
-    host.addEventListener('click', (e) => {
-      const btn = e.target.closest('.rp-info-btn');
-      if (!btn || !host.contains(btn)) return;
-      e.stopPropagation(); // don't trigger row-focus
-      const key = btn.dataset.infoKey;
-      if (!key) return;
-      const row = btn.closest('.rp-row');
-      const infoRow = row && row.nextElementSibling && row.nextElementSibling.classList.contains('rp-info-row')
-        ? row.nextElementSibling
-        : null;
-      const nowOpen = !host._openInfoRows.has(key);
-      if (nowOpen) host._openInfoRows.add(key); else host._openInfoRows.delete(key);
-      btn.setAttribute('aria-pressed', nowOpen ? 'true' : 'false');
-      if (row) row.classList.toggle('rp-row-info-open', nowOpen);
-      if (infoRow) infoRow.classList.toggle('rp-info-row-open', nowOpen);
-    });
+    // ── Bind per-row info buttons (the "!" detail toggle) ──
+    // Bound ONCE per host. renderRestPoints fires on every speed/minute
+    // edit and host.innerHTML wipes its children, but the host element
+    // itself persists — so addEventListener on every render stacks N
+    // handlers; with N≥2 the toggles cancel each other and clicks look
+    // broken. _infoBtnBound gate fixes this.
+    if (!host._infoBtnBound) {
+      host._infoBtnBound = true;
+      host.addEventListener('click', (e) => {
+        const btn = e.target.closest('.rp-info-btn');
+        if (!btn || !host.contains(btn)) return;
+        e.stopPropagation();
+        const key = btn.dataset.infoKey;
+        if (!key) return;
+        const row = btn.closest('.rp-row');
+        const infoRow = row && row.nextElementSibling && row.nextElementSibling.classList.contains('rp-info-row')
+          ? row.nextElementSibling
+          : null;
+        const nowOpen = !host._openInfoRows.has(key);
+        if (nowOpen) host._openInfoRows.add(key); else host._openInfoRows.delete(key);
+        btn.setAttribute('aria-pressed', nowOpen ? 'true' : 'false');
+        if (row) row.classList.toggle('rp-row-info-open', nowOpen);
+        if (infoRow) infoRow.classList.toggle('rp-info-row-open', nowOpen);
+      });
+    }
 
     // ── Bind speed input ── (event delegation not used so input.value can
     //    be normalised in onChange before re-render).
@@ -1790,6 +1833,39 @@
           };
           days.unshift(d0);
           if (newDate && plan.meta) plan.meta.depart_date = newDate;
+        } else if (kind === 'descent') {
+          // Materialise the auto-补齊 reverse into real segments on the
+          // matched target day. After this:
+          //  - plan.auto_return_descent flips to false (runtime synth off)
+          //  - the descent rows ARE real segments → branch / delete / note
+          //    edits use the same paths as ascent rows
+          //  - the source ascent's notes do NOT carry over (cloneDescent…
+          //    returns clean note:'' on every leg)
+          const ret = findAutoReturnSource(plan);
+          if (!ret) return;
+          const targetDay = days.find(d => d.id === ret.targetDayId);
+          if (!targetDay) return;
+          const ep = targetDay.elevation_profile || (targetDay.elevation_profile = {});
+          // Append to the active variant if route_variants exist; otherwise
+          // to the day's main shanghe_segments.
+          let segArr = null;
+          if (ep.route_variants) {
+            const ctx = getEffectiveDayContext(plan, targetDay, null);
+            const vid = ctx.variantId || ep.default_variant || Object.keys(ep.route_variants)[0];
+            const v = ep.route_variants[vid];
+            if (v) {
+              v.shanghe_segments = v.shanghe_segments || [];
+              segArr = v.shanghe_segments;
+            }
+          }
+          if (!segArr) {
+            ep.shanghe_segments = ep.shanghe_segments || [];
+            segArr = ep.shanghe_segments;
+          }
+          const newSegs = cloneDescentFromAscent(plan, ret.sourceSegs);
+          if (!newSegs.length) return;
+          segArr.push(...newSegs);
+          plan.auto_return_descent = false;
         } else if (kind === 'append') {
           const lastDate = days[days.length - 1] && days[days.length - 1].date;
           const newDate = addDaysIso(lastDate, 1);
@@ -2409,7 +2485,7 @@
     deriveTrackFromSegments, applyDerivedTrack,
     buildSyntheticFromWaypoints, applySyntheticFromWaypoints,
     namesMatch, normalizeName,
-    findAutoReturnSource, buildReverseSegments, effectiveSegmentsForVariant,
+    findAutoReturnSource, buildReverseSegments, cloneDescentFromAscent, effectiveSegmentsForVariant,
     getEffectiveDayContext,
     findWaypointTrackIdx, gpxStatsBetween, gpxStatsBetweenNames,
     computeBaseMinutes,
