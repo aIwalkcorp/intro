@@ -876,7 +876,9 @@
         </span>
         <span class="rp-arrive">${
           (canEditMins && editing && arrival)
-            ? `<small>抵達</small><input type="time" class="rp-arrive-edit"
+            ? `<small>抵達</small><input type="text" class="rp-arrive-edit"
+                inputmode="numeric" maxlength="5"
+                pattern="\\d{1,2}:\\d{2}"
                 data-day-id="${escapeHtml(r.dayId)}"
                 data-seg-idx="${r.segIdx == null ? '' : r.segIdx}"
                 data-variant-id="${escapeHtml(r.variantId || '')}"
@@ -884,7 +886,7 @@
                 data-source-seg-idx="${r.sourceSegIdx == null ? '' : r.sourceSegIdx}"
                 data-day-start-min="${r.dayStartMin == null ? '' : r.dayStartMin}"
                 data-cum-before="${r.cumDayBaseMinBefore == null ? r.cumDayBaseMinAfter - r.base_minutes : r.cumDayBaseMinBefore}"
-                value="${arrival}" aria-label="抵達時間（編輯回推此段分鐘）">`
+                value="${arrival}" aria-label="抵達時間（編輯回推此段分鐘，格式 HH:MM）">`
             : (arrival
                 ? `<small>抵達</small><b>${arrival}</b>`
                 : '<small class="rp-arrive-empty">—</small>')
