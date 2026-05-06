@@ -916,26 +916,32 @@
     // mechanism stays consistent. Live mutate on `input`; full re-render
     // on `change` (blur / Enter) so derived/arrival/chart all refresh.
     host.querySelectorAll('.rp-min-edit').forEach((inp) => {
-      const apply = (rerender) => {
+      const writeBase = () => {
         const segArr = resolveSegArr(inp.dataset.dayId, inp.dataset.variantId || null);
         const segIdx = +inp.dataset.segIdx;
-        if (!Array.isArray(segArr) || !segArr[segIdx]) return;
+        if (!Array.isArray(segArr) || !segArr[segIdx]) return false;
         const factor = readSpeed() || 1;
         const typed = Math.max(0, Math.round(+inp.value || 0));
         const newBase = Math.max(0, Math.round(typed / factor));
-        if (segArr[segIdx].base_minutes === newBase) return;
+        if (segArr[segIdx].base_minutes === newBase) return false;
         segArr[segIdx].base_minutes = newBase;
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
-        if (rerender) {
-          renderRestPoints(plan, factor);
-          if (TF.modeToggle && TF.modeToggle.refreshAll) {
-            requestAnimationFrame(() => TF.modeToggle.refreshAll());
-          }
-          if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
-        }
+        return true;
       };
-      inp.addEventListener('input',  () => apply(false));
-      inp.addEventListener('change', () => apply(true));
+      // Live mutate on input (so the dirty flag flips immediately) but
+      // skip the rerender to keep focus. Rerender unconditionally on
+      // change (blur/Enter) — the per-input writeBase has usually
+      // already updated base_minutes, so the early-return guard inside
+      // it must NOT gate the rerender.
+      inp.addEventListener('input', writeBase);
+      inp.addEventListener('change', () => {
+        writeBase();
+        renderRestPoints(plan, readSpeed() || 1);
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+      });
     });
 
     // ── Bind per-segment branch buttons (edit mode only) ──
