@@ -153,6 +153,14 @@
     }
   }
   // Compute derived items for a day (or for a specific route variant).
+  // Source-of-truth segments (incl. any auto-补齊 descent tail). Both
+  // Edit (rest-points table) and View (timeline cards) read through
+  // this so they cannot drift apart.
+  function effectiveSegments(day, variant) {
+    const fn = window.TF && window.TF.overview && window.TF.overview.effectiveSegmentsForVariant;
+    if (fn) return fn(window.__PLAN__ || (window.TF.loadPlan && window.TF.loadPlan()), day, variant);
+    return (variant && variant.shanghe_segments) || [];
+  }
   function deriveScheduleForDay(day) {
     const ep = day && day.elevation_profile;
     if (!ep) return null;
@@ -161,19 +169,19 @@
     const [sh, sm] = start.split(':').map(Number);
     const startMin = sh * 60 + sm;
     const factor = readSpeedFactor();
-    return buildItemsFromSegments(ep.shanghe_segments, startMin, factor);
+    return buildItemsFromSegments(effectiveSegments(day, ep), startMin, factor);
   }
   function deriveScheduleForRoute(day, route) {
     const ep = day && day.elevation_profile;
     if (!ep || !ep.route_variants) return null;
     const variant = ep.route_variants[route && route.id];
     if (!variant) return null;
-    const start = ep.start_time;
+    const start = variant.start_time || ep.start_time;
     if (!/^\d{1,2}:\d{2}$/.test(String(start || ''))) return null;
     const [sh, sm] = start.split(':').map(Number);
     const startMin = sh * 60 + sm;
     const factor = readSpeedFactor();
-    return buildItemsFromSegments(variant.shanghe_segments, startMin, factor);
+    return buildItemsFromSegments(effectiveSegments(day, variant), startMin, factor);
   }
 
   // ---- timeline ----

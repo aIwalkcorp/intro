@@ -286,7 +286,8 @@
         ],
         "summit_idx": 394,
         "summit_label": "排雲山莊",
-        "direction": "ascent_only"
+        "direction": "ascent_only",
+        "start_time": "08:30"
       }
     },
     {
@@ -341,79 +342,7 @@
           "tag_class": "d2b",
           "tag_text": "Day 2A — 北峰 + 主峰",
           "active": true,
-          "schedule": [
-            {
-              "time": "02:00",
-              "title": "起床、吃早早餐"
-            },
-            {
-              "time": "03:00",
-              "title": "排雲山莊出發（輕裝・頭燈）",
-              "elevation": "3,402m"
-            },
-            {
-              "time": "04:30",
-              "title": "主北岔路口（風口）— 決策點",
-              "note": "風大注意保暖。此處決定走北峰或直上主峰：",
-              "decision": true,
-              "decision_buttons": [
-                {
-                  "text": "繼續北峰 Day2A",
-                  "switch_to": "d2a",
-                  "border": "#ef4444",
-                  "bg": "#fef2f2",
-                  "color": "#dc2626"
-                },
-                {
-                  "text": "切到主峰 Day2B",
-                  "switch_to": "d2b",
-                  "border_var": "--d1",
-                  "bg": "#eff6ff",
-                  "color": "#1d4ed8"
-                }
-              ]
-            },
-            {
-              "time": "06:00",
-              "title": "玉山北峰 / 氣象站",
-              "elevation": "3,858m ｜ 金色主峰日出",
-              "note": "千元大鈔背面經典角度",
-              "highlight": true
-            },
-            {
-              "time": "07:30",
-              "title": "離開北峰，碎石坡陡上",
-              "note": "最大挑戰，抓好鐵鍊"
-            },
-            {
-              "time": "09:00",
-              "title": "回主北岔路口，轉主峰"
-            },
-            {
-              "time": "09:30",
-              "title": "登頂玉山主峰",
-              "elevation": "3,952m ｜ 台灣最高峰！",
-              "highlight": true
-            },
-            {
-              "time": "10:30",
-              "title": "下山回排雲山莊"
-            },
-            {
-              "time": "12:00",
-              "title": "排雲山莊（吃麵・整裝）"
-            },
-            {
-              "time": "13:00",
-              "title": "從排雲下山"
-            },
-            {
-              "time": "16:30",
-              "title": "塔塔加登山口",
-              "elevation": "2,610m ｜ 搭接駁車",
-              "highlight": true
-            }
-          ]
+          "schedule": []
         },
         {
           "id": "d2b",
@@ -421,56 +350,7 @@
           "tag_class": "d2a",
           "tag_text": "Day 2B — 僅主峰",
           "active": false,
-          "schedule": [
-            {
-              "time": "03:00",
-              "title": "起床、吃早餐"
-            },
-            {
-              "time": "04:00",
-              "title": "排雲山莊出發",
-              "elevation": "3,402m"
-            },
-            {
-              "time": "05:30",
-              "title": "主北岔路口（風口）— 決策點",
-              "note": "體力充足可改衝北峰：",
-              "decision": true,
-              "decision_buttons": [
-                {
-                  "text": "切到 Day2A 北峰＋主峰",
-                  "switch_to": "d2a",
-                  "border": "#ef4444",
-                  "bg": "#fef2f2",
-                  "color": "#dc2626"
-                }
-              ]
-            },
-            {
-              "time": "06:20",
-              "title": "登頂玉山主峰（日出）",
-              "elevation": "3,952m",
-              "highlight": true
-            },
-            {
-              "time": "07:30",
-              "title": "拍完照離開主峰"
-            },
-            {
-              "time": "09:00",
-              "title": "回排雲山莊（補眠）"
-            },
-            {
-              "time": "10:30",
-              "title": "排雲下山"
-            },
-            {
-              "time": "14:30",
-              "title": "塔塔加登山口",
-              "elevation": "2,610m",
-              "highlight": true
-            }
-          ]
+          "schedule": []
         }
       ],
       "details": [],
@@ -645,7 +525,8 @@
             ],
             "summit_idx": 380,
             "summit_label": "玉山北峰",
-            "direction": "out_and_back"
+            "direction": "out_and_back",
+            "start_time": "03:00"
           },
           "d2b": {
             "label": "Day 2B・僅主峰",
@@ -699,7 +580,8 @@
             ],
             "summit_idx": 140,
             "summit_label": "玉山主峰",
-            "direction": "out_and_back"
+            "direction": "out_and_back",
+            "start_time": "04:00"
           }
         },
         "default_variant": "d2a",
@@ -719,5 +601,100 @@
       "Pack split tab",
       "Elevation chart canvas"
     ]
+  },
+  "named_locations": {
+    "登山口": {
+      "lat": 23.475727,
+      "lon": 120.899933,
+      "ele": 2610,
+      "source": "curated_inline"
+    },
+    "孟祿亭": {
+      "lat": 23.471448,
+      "lon": 120.911163,
+      "ele": 2700,
+      "source": "curated_inline",
+      "osm_id": "node/1478679906",
+      "kind": "shelter"
+    },
+    "白木林觀景台": {
+      "lat": 23.464638,
+      "lon": 120.931147,
+      "ele": 3000,
+      "source": "curated_inline"
+    },
+    "大峭壁": {
+      "lat": 23.466918,
+      "lon": 120.940657,
+      "ele": 3100,
+      "source": "curated_inline"
+    },
+    "排雲山莊": {
+      "lat": 23.46673,
+      "lon": 120.950243,
+      "ele": 3402,
+      "source": "curated_inline",
+      "osm_id": "way/409205679",
+      "kind": "hut",
+      "wikipedia": "zh:排雲山莊"
+    },
+    "主北岔(風口)": {
+      "lat": 23.469446,
+      "lon": 120.955846,
+      "ele": 3800,
+      "source": "curated_inline"
+    },
+    "玉山北峰": {
+      "lat": 23.48757,
+      "lon": 120.959459,
+      "ele": 3858,
+      "source": "curated_inline",
+      "osm_id": "node/625239452",
+      "kind": "peak",
+      "百岳": 4,
+      "wikipedia": "zh:玉山北峰"
+    },
+    "北峰": {
+      "lat": 23.48757,
+      "lon": 120.959459,
+      "ele": 3858,
+      "source": "curated_inline",
+      "osm_id": "node/625239452",
+      "kind": "peak",
+      "百岳": 4,
+      "wikipedia": "zh:玉山北峰"
+    },
+    "玉山主峰": {
+      "lat": 23.46998,
+      "lon": 120.957252,
+      "ele": 3952,
+      "source": "curated_inline",
+      "osm_id": "node/3428095932",
+      "kind": "peak",
+      "百岳": 1,
+      "wikipedia": "zh:玉山"
+    },
+    "主峰": {
+      "lat": 23.46998,
+      "lon": 120.957252,
+      "ele": 3952,
+      "source": "curated_inline"
+    }
+  },
+  "gpx_anchor_idx": {
+    "d1": {
+      "登山口": 0,
+      "孟祿亭": 83,
+      "白木林觀景台": 240,
+      "大峭壁": 319,
+      "排雲山莊": 394
+    },
+    "d2": {
+      "主北岔(風口)": 94,
+      "玉山北峰": 380,
+      "北峰": 380,
+      "玉山主峰": 140,
+      "主峰": 140
+    }
   }
 }

@@ -57,6 +57,156 @@
   // ─── pick the active route variant for each day ─────────────────────
   // Mirrors the logic in mode-toggle.js' drawOverviewChart so the two
   // panels stay consistent.
+  // ── GPX-derived geometry helpers (module-scoped, reused across the
+  //    add-地標 form, delete-merge, inline 回程 generation, and any
+  //    future GPX-time recompute paths). One implementation, four
+  //    callers — keeps the "compute distance + asc + desc between two
+  //    GPX track points" rule in a single spot.
+  function haversineMeters(a1, o1, a2, o2) {
+    const R = 6371e3;
+    const dL = ((a2 - a1) * Math.PI) / 180;
+    const dO = ((o2 - o1) * Math.PI) / 180;
+    const a = Math.sin(dL / 2) ** 2 +
+              Math.cos((a1 * Math.PI) / 180) * Math.cos((a2 * Math.PI) / 180) *
+              Math.sin(dO / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  function findWaypointTrackIdx(plan, name) {
+    if (!name) return null;
+    const target = String(name).trim();
+    const days = (plan && plan.days) || [];
+    for (const d of days) {
+      const ep = d.elevation_profile;
+      if (!ep) continue;
+      const dayRef = d.gpx_ref || ep.gpx_ref || null;
+      const scan = (segs, vRef) => {
+        for (const s of (segs || [])) {
+          const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : null;
+          if (!ai || ai.length < 2) continue;
+          if (s.from === target) return { trackRef: s.gpx_ref || vRef || dayRef, idx: ai[0] };
+          if (s.to === target)   return { trackRef: s.gpx_ref || vRef || dayRef, idx: ai[1] };
+        }
+        return null;
+      };
+      const fromMain = scan(ep.shanghe_segments, dayRef);
+      if (fromMain) return fromMain;
+      if (ep.route_variants) {
+        for (const vid of Object.keys(ep.route_variants)) {
+          const v = ep.route_variants[vid];
+          const fromV = scan(v && v.shanghe_segments, (v && v.gpx_ref) || dayRef);
+          if (fromV) return fromV;
+        }
+      }
+    }
+    return null;
+  }
+  // Returns null when GPX data is unavailable; the swap-on-reverse rule
+  // ("walking the track backwards turns ascent into descent") lives here
+  // so callers don't have to re-implement it.
+  function gpxStatsBetween(plan, trackRef, idxA, idxB) {
+    if (!trackRef || idxA == null || idxB == null) return null;
+    const tracks = plan && plan.data && plan.data.gpx_tracks;
+    const track = tracks && tracks[trackRef];
+    if (!Array.isArray(track) || track.length < 2) return null;
+    const lo = Math.min(idxA, idxB);
+    const hi = Math.max(idxA, idxB);
+    if (lo === hi || hi >= track.length) return null;
+    let dist = 0, asc = 0, desc = 0;
+    for (let i = lo + 1; i <= hi; i++) {
+      const p0 = track[i - 1];
+      const p1 = track[i];
+      if (!p0 || !p1) continue;
+      dist += haversineMeters(p0[0], p0[1], p1[0], p1[1]);
+      const dE = (p1[2] || 0) - (p0[2] || 0);
+      if (dE > 0) asc += dE;
+      else        desc -= dE;
+    }
+    const reversed = idxA > idxB;
+    return {
+      distance_km: +(dist / 1000).toFixed(2),
+      ascent_m:  Math.round(reversed ? desc : asc),
+      descent_m: Math.round(reversed ? asc  : desc),
+    };
+  }
+  // Convenience: given two waypoint NAMES, look both up and compute
+  // stats. Returns null if either anchor is missing or the two ends sit
+  // on different GPX tracks.
+  function gpxStatsBetweenNames(plan, fromName, toName) {
+    const a = findWaypointTrackIdx(plan, fromName);
+    const b = findWaypointTrackIdx(plan, toName);
+    if (!a || !b || a.trackRef !== b.trackRef) return null;
+    return gpxStatsBetween(plan, a.trackRef, a.idx, b.idx);
+  }
+
+  // ── Auto-return synthesis (shared by Edit + View) ─────────────────────
+  // Locates the ascent_only day whose segments should be reversed onto
+  // the trip's last day. Returns null when the trip starts and ends at
+  // the same place (round-trip), or when no ascent_only day matches.
+  function findAutoReturnSource(plan) {
+    if (!plan || plan.auto_return_descent === false) return null;
+    const days = plan.days || [];
+    if (days.length < 2) return null;
+    let firstSegs = [], lastSegs = [], lastDay = null;
+    for (const d of days) {
+      const segs = (activeVariantFor(d) || {}).segments || [];
+      if (segs.length && !firstSegs.length) firstSegs = segs;
+    }
+    for (let i = days.length - 1; i >= 0; i--) {
+      const segs = (activeVariantFor(days[i]) || {}).segments || [];
+      if (segs.length) { lastSegs = segs; lastDay = days[i]; break; }
+    }
+    const startName = firstSegs[0] && firstSegs[0].from;
+    const endName = lastSegs.length && lastSegs[lastSegs.length - 1].to;
+    if (!startName || !endName || startName === endName || !lastDay) return null;
+    for (const d of days) {
+      const v = activeVariantFor(d);
+      if (!v || v.direction !== 'ascent_only') continue;
+      const segs = v.segments || [];
+      if (!segs.length) continue;
+      if (segs[0].from !== startName) continue;
+      if (segs[segs.length - 1].to !== endName) continue;
+      return { sourceDay: d, sourceSegs: segs, targetDayId: lastDay.id, startName, endName };
+    }
+    return null;
+  }
+  // Reverse a chain of segments. Uses GPX point arithmetic (haversine +
+  // per-step elevation diff) for distance/asc/desc when anchor_idx is
+  // available, falling back to the pre-stored stats with asc/desc
+  // swapped. Same logic that the add-地標 form and delete-merge handler
+  // use, applied to the auto-return path.
+  function buildReverseSegments(sourceSegs, plan) {
+    if (!Array.isArray(sourceSegs)) return [];
+    return sourceSegs.slice().reverse().map((s) => {
+      const a = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+      const ai0 = a[0], ai1 = a[1];
+      const ref = s.gpx_ref || null;
+      let stats = null;
+      if (ref && ai0 != null && ai1 != null) {
+        stats = gpxStatsBetween(plan, ref, ai1, ai0);
+      }
+      return Object.assign({}, s, {
+        id: 'r-' + (s.id || Math.random().toString(36).slice(2, 7)),
+        from: s.to,
+        to: s.from,
+        anchor_idx: (ai0 != null && ai1 != null) ? [ai1, ai0] : null,
+        distance_km: stats ? stats.distance_km : (+s.distance_km || 0),
+        ascent_m:    stats ? stats.ascent_m    : (+s.descent_m   || 0),
+        descent_m:   stats ? stats.descent_m   : (+s.ascent_m    || 0),
+        is_auto_return: true,
+        // Carry the descent multiplier hint (default 0.7 of ascent
+        // base_minutes) so View timeline derivation reflects faster
+        // descent pace. Per-segment override possible via s.descent_factor.
+        base_minutes: Math.round((+s.base_minutes || 0) * (+s.descent_factor || 0.7)),
+      });
+    });
+  }
+  function effectiveSegmentsForVariant(plan, day, variant) {
+    const segs = (variant && variant.shanghe_segments) || [];
+    const ret = findAutoReturnSource(plan);
+    if (!ret || ret.targetDayId !== day.id) return segs;
+    return segs.concat(buildReverseSegments(ret.sourceSegs, plan));
+  }
+
   function activeVariantFor(day) {
     const ep = day.elevation_profile;
     if (!ep) return null;
@@ -185,48 +335,22 @@
   function collectRestPoints(plan) {
     const rows = [];
     let cumKm = 0;
-
-    // ── Pre-compute synthetic 回程 ────────────────────────────────────────
-    // Decide BEFORE the main loop whether the trip needs an auto-return,
-    // and which day's ascent_only segments to reverse. We then attach the
-    // return rows to the LAST real day in the loop itself (just before
-    // that day's subtotal), so the rest-points table reads as a single
-    // Day N block covering both 攻頂 and 回程 — the user's expectation.
     const realDays = plan.days || [];
-    const autoReturn = plan.auto_return_descent !== false;
-    let returnTargetDayId = null;
-    let returnSourceSegs = null;     // original ascent_only segs to reverse
-    let returnEndName = null;
-    let returnStartName = null;
-    if (autoReturn && realDays.length >= 2) {
-      const first = realDays[0];
-      const last = realDays[realDays.length - 1];
-      const fv = activeVariantFor(first);
-      const lv = activeVariantFor(last);
-      const firstSegs = (fv && fv.segments) || [];
-      const lastSegs = (lv && lv.segments) || [];
-      const startName = firstSegs[0] && firstSegs[0].from;
-      const endName = lastSegs.length && lastSegs[lastSegs.length - 1].to;
-      if (startName && endName && startName !== endName) {
-        for (const d of realDays) {
-          const v = activeVariantFor(d);
-          if (!v || v.direction !== 'ascent_only') continue;
-          const segs = v.segments || [];
-          if (!segs.length) continue;
-          if (segs[0].from !== startName) continue;
-          if (segs[segs.length - 1].to !== endName) continue;
-          returnTargetDayId = last.id;
-          returnSourceSegs = segs;
-          returnStartName = startName;
-          returnEndName = endName;
-          break;
-        }
-      }
-    }
+    const ret = findAutoReturnSource(plan);
+    const returnTargetDayId = ret ? ret.targetDayId : null;
 
     realDays.forEach(day => {
       const variant = activeVariantFor(day);
-      const segs = variant ? variant.segments : [];
+      const baseSegs = variant ? variant.segments : [];
+      // For the auto-return target day, append the reversed source
+      // segments so the table reads as one Day N covering both 攻頂 and
+      // 回程. The same segs array also drives View timeline derivation
+      // via TF.overview.effectiveSegmentsForVariant — Edit and View
+      // cannot drift apart.
+      const synthReturn = (ret && ret.targetDayId === day.id)
+        ? buildReverseSegments(ret.sourceSegs, plan)
+        : [];
+      const segs = synthReturn.length ? baseSegs.concat(synthReturn) : baseSegs;
       const dayId = day.id;
       const dayLabel = day.label || ('Day ' + day.id);
       const dayStart = dayStartTimeFor(day);
@@ -282,9 +406,18 @@
         }
       }
 
-      // Day's segment subtotal accumulators (also drives arrival times)
+      const baseSegCount = baseSegs.length;
       let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
       segs.forEach((s, segIdx) => {
+        const isReturnSeg = segIdx >= baseSegCount;
+        if (isReturnSeg && segIdx === baseSegCount) {
+          rows.push({
+            kind: 'return-divider',
+            dayId, dayLabel,
+            fromName: ret && ret.endName,
+            toName: ret && ret.startName,
+          });
+        }
         const dist = +s.distance_km || 0;
         const baseMin = +s.base_minutes || 0;
         const startKm = cumKm;
@@ -292,7 +425,6 @@
         const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
         const anchorLo = ai.length >= 2 ? ai[0] : null;
         const anchorHi = ai.length >= 2 ? ai[1] : null;
-        // Arrival is at the END of this segment: start + cumulative-up-to-end.
         const cumAfter = cumDayBaseMin + baseMin;
         rows.push({
           kind: 'segment',
@@ -300,19 +432,18 @@
           from: s.from || '',
           to: s.to || '',
           note: s.note || '',
-          // Path back to this segment's home so the note input can mutate it:
-          //   useRoute=true  → plan.days[id].elevation_profile.route_variants[activeRouteId].shanghe_segments[segIdx]
-          //   useRoute=false → plan.days[id].elevation_profile.shanghe_segments[segIdx]
-          segIdx,
+          segIdx: isReturnSeg ? null : segIdx,
           variantId: useRoute ? activeRouteId : null,
           distance_km: dist,
           ascent_m: +s.ascent_m || 0,
           descent_m: +s.descent_m || 0,
           base_minutes: baseMin,
-          cumDayBaseMinAfter: cumAfter,    // base minutes from day start through end of THIS segment
-          dayStartMin,                     // null if no start time
+          cumDayBaseMinAfter: cumAfter,
+          dayStartMin,
           startKm, endKm,
-          anchorLo, anchorHi,
+          anchorLo: isReturnSeg ? null : anchorLo,
+          anchorHi: isReturnSeg ? null : anchorHi,
+          isReturn: isReturnSeg,
         });
         cumKm = endKm;
         cumDayBaseMin = cumAfter;
@@ -321,9 +452,6 @@
         dayDesc += (+s.descent_m || 0);
         dayMin  += baseMin;
 
-        // Inject variant picker right after the last shared segment. So
-        // for 玉山 Day 2 the chip strip sits between "排雲山莊→主北岔(風口)"
-        // and "主北岔→玉山北峰" — exactly where the fork happens IRL.
         if (useRoute && sharedPrefix > 0 && segIdx === sharedPrefix - 1) {
           rows.push({
             kind: 'variant-fork',
@@ -332,67 +460,19 @@
           });
         }
 
-        // Per-row "+" affordance — sits BELOW each segment row in edit
-        // mode so the user can append (a new waypoint, or an in-place
-        // rest) at any point in the timeline, not just at the day's end.
-        rows.push({
-          kind: 'add-segment',
-          dayId, dayLabel,
-          variantId: useRoute ? activeRouteId : null,
-          afterIdx: segIdx,
-          atName: s.to || '',
-        });
+        // Per-row "+" affordance — only on real (non-synthesised) rows.
+        if (!isReturnSeg) {
+          rows.push({
+            kind: 'add-segment',
+            dayId, dayLabel,
+            variantId: useRoute ? activeRouteId : null,
+            afterIdx: segIdx,
+            atName: s.to || '',
+          });
+        }
       });
 
-      // ── Inline synthetic 回程 rows for the matched day ───────────────────
-      // If THIS day is the auto-return target, reverse the matched
-      // ascent_only segments and emit them as part of THIS day, BEFORE
-      // the subtotal. The single subtotal at the end then covers both
-      // 攻頂 + 回程 (matching the user's "Day 2 整體" mental model).
-      if (returnTargetDayId === dayId && returnSourceSegs) {
-        rows.push({
-          kind: 'return-divider',
-          dayId, dayLabel,
-          fromName: returnEndName,
-          toName: returnStartName,
-        });
-        const revSegs = returnSourceSegs.slice().reverse();
-        revSegs.forEach((s) => {
-          const dist = +s.distance_km || 0;
-          const baseMin = +s.base_minutes || 0;
-          const startKm = cumKm;
-          const endKm = cumKm + dist;
-          const ascR = +s.descent_m || 0;        // descent of original = ascent of return
-          const descR = +s.ascent_m || 0;
-          const cumAfter = cumDayBaseMin + baseMin;
-          rows.push({
-            kind: 'segment',
-            dayId, dayLabel,
-            from: s.to || '',
-            to: s.from || '',
-            distance_km: dist,
-            ascent_m: ascR,
-            descent_m: descR,
-            base_minutes: baseMin,
-            cumDayBaseMinAfter: cumAfter,
-            // Return segments derive arrival from the LAST scheduled
-            // clock the user has set for this day; if absent we leave
-            // arrival blank rather than guessing.
-            dayStartMin,
-            startKm, endKm,
-            anchorLo: null, anchorHi: null,
-            isReturn: true,
-          });
-          cumKm = endKm;
-          cumDayBaseMin = cumAfter;
-          dayKm   += dist;
-          dayAsc  += ascR;
-          dayDesc += descR;
-          dayMin  += baseMin;
-        });
-      }
-
-      // Subtotal row for this day (now covers 攻頂 + 回程 if applicable).
+      // Subtotal covers 攻頂 + 回程 when the auto-return tail is present.
       rows.push({
         kind: 'subtotal',
         dayId, dayLabel,
@@ -1992,6 +2072,8 @@
     deriveTrackFromSegments, applyDerivedTrack,
     buildSyntheticFromWaypoints, applySyntheticFromWaypoints,
     namesMatch, normalizeName,
+    findAutoReturnSource, buildReverseSegments, effectiveSegmentsForVariant,
+    findWaypointTrackIdx, gpxStatsBetween, gpxStatsBetweenNames,
   };
 
   // Register a collector so per-day start_time edits made in the rest-points
