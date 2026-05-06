@@ -794,20 +794,16 @@
         </span>
         <span class="rp-cost">
           <span class="rp-cost-main">
-            <span class="rp-time-derived">${derived}</span><small>分</small>
-            ${branchBtn}
-            ${deleteBtn}
-          </span>
-          ${(canEditNote && editing) ? `<span class="rp-time-base rp-time-base-edit">
-            <small>基準</small>
-            <input type="number" class="rp-min-edit"
+            ${(canEditNote && editing) ? `<input type="number" class="rp-min-edit"
               data-day-id="${escapeHtml(r.dayId)}"
               data-seg-idx="${r.segIdx}"
               data-variant-id="${escapeHtml(r.variantId || '')}"
-              min="0" step="1" value="${r.base_minutes}"
-              aria-label="此段基準分鐘">
-            <small>分</small>
-          </span>` : `<span class="rp-time-base">基準 ${r.base_minutes}分</span>`}
+              min="0" step="1" value="${derived}"
+              aria-label="此段步行分鐘">` : `<span class="rp-time-derived">${derived}</span>`}<small>分</small>
+            ${branchBtn}
+            ${deleteBtn}
+          </span>
+          <span class="rp-time-base">基準 ${r.base_minutes}分</span>
         </span>
         <span class="rp-meta">
           <span class="rp-km">${r.distance_km.toFixed(1)}<small>km</small></span>
@@ -913,22 +909,25 @@
       });
     });
 
-    // ── Bind per-segment 基準分鐘 inputs ────────────────────────────────
-    // Live edit on `input` mutates segArr[segIdx].base_minutes so the
-    // table's derived/arrival columns update on the next render. Full
-    // re-render fires on `change` (blur / Enter) so we don't tear down
-    // focus while the user is still typing.
+    // ── Bind per-segment 分鐘 inputs ──────────────────────────────────
+    // The input shows the DERIVED minutes (base_minutes × speed factor)
+    // since that's the number the user reads from the table. On edit we
+    // back out base_minutes = round(typed / factor) so the speed-factor
+    // mechanism stays consistent. Live mutate on `input`; full re-render
+    // on `change` (blur / Enter) so derived/arrival/chart all refresh.
     host.querySelectorAll('.rp-min-edit').forEach((inp) => {
       const apply = (rerender) => {
         const segArr = resolveSegArr(inp.dataset.dayId, inp.dataset.variantId || null);
         const segIdx = +inp.dataset.segIdx;
         if (!Array.isArray(segArr) || !segArr[segIdx]) return;
-        const v = Math.max(0, Math.round(+inp.value || 0));
-        if (segArr[segIdx].base_minutes === v) return;
-        segArr[segIdx].base_minutes = v;
+        const factor = readSpeed() || 1;
+        const typed = Math.max(0, Math.round(+inp.value || 0));
+        const newBase = Math.max(0, Math.round(typed / factor));
+        if (segArr[segIdx].base_minutes === newBase) return;
+        segArr[segIdx].base_minutes = newBase;
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
         if (rerender) {
-          renderRestPoints(plan, readSpeed());
+          renderRestPoints(plan, factor);
           if (TF.modeToggle && TF.modeToggle.refreshAll) {
             requestAnimationFrame(() => TF.modeToggle.refreshAll());
           }
