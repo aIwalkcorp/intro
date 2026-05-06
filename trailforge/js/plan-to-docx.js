@@ -180,161 +180,331 @@
       children: [new D.TextRun({ text: '登山活動計劃書', bold: true, size: 36 })],
     }));
 
-    // ── Table 1: 活動概覽 ───────────────────────────────────────────────────
+    // ── Table 1: 活動概覽 (matches 奇萊 template's 7-row layout) ────────────
+    // Differences from old layout:
+    //   • 留守人員 + 留守電話 split onto two rows (not packed into one row)
+    //   • 參加人數 sits next to 留守電話 (not next to 活動地點)
+    //   • 活動地點 is its own full-width row at the bottom (label + value
+    //     spanning 3 cols), matching the 奇萊 template's R6.
     const TBL_W = 9000;
     const COL = TBL_W / 4;
     const leader = membersByRole(plan, '領隊')[0] || {};
     const guide  = membersByRole(plan, '嚮導')[0] || {};
     const standby = (plan.emergency_default && plan.emergency_default.standby) || {};
+    const standbyName = standby.name || (membersByRole(plan, '留守')[0] || {}).name || BLANK;
+    const standbyPhone = standby.phone || (membersByRole(plan, '留守')[0] || {}).phone || BLANK;
     const tbl1Rows = [
       row([labelCell('活動名稱', COL), valueCell(meta.title || BLANK, COL),
            labelCell('活動日期', COL),
-           cell(`自${isoToROC(meta.start_date)}起\n至${isoToROC(meta.end_date)}止\n共計 ${dayCount(meta)} 天`,
-                { width: COL })]),
+           cell(`自${isoToROC(meta.start_date)}起\n至${isoToROC(meta.end_date)}止\n共計 ${dayCount(meta)} 天`, { width: COL })]),
       row([labelCell('領    隊', COL), valueCell(leader.name || BLANK, COL),
            labelCell('嚮    導', COL), valueCell(guide.name || BLANK, COL)]),
       row([labelCell('領隊電話', COL), valueCell(leader.phone || BLANK, COL),
            labelCell('活動費用', COL), valueCell(BLANK, COL)]),
-      row([labelCell('留守人員', COL),
-           valueCell(standby.name || (membersByRole(plan, '留守')[0] || {}).name || BLANK, COL),
-           labelCell('留守電話', COL),
-           valueCell(standby.phone || (membersByRole(plan, '留守')[0] || {}).phone || BLANK, COL)]),
-      row([labelCell('參加人數', COL), valueCell(String(meta.party_size || BLANK), COL),
-           labelCell('活動地點', COL), valueCell(meta.subtitle || BLANK, COL)]),
+      row([labelCell('留守人員', COL), valueCell(standbyName, COL),
+           cell('', { width: COL }), cell('', { width: COL })]),
+      row([labelCell('留守電話', COL), valueCell(standbyPhone, COL),
+           labelCell('參加人數', COL), valueCell(String(meta.party_size || BLANK), COL)]),
       row([labelCell('山難管制時間', COL), valueCell(findEmergencyValue(plan, '山難管制'), COL),
            labelCell('下山通知時間', COL), valueCell(findEmergencyValue(plan, '下山通知'), COL)]),
+      row([labelCell('活動地點', COL),
+           cell(meta.subtitle || meta.title || BLANK, { width: COL * 3, span: 3 })]),
     ];
     sections.push(new D.Table({
       width: { size: TBL_W, type: D.WidthType.DXA },
       columnWidths: [COL, COL, COL, COL],
       rows: tbl1Rows,
     }));
-    sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
+    sections.push(new D.Paragraph({ spacing: { after: 120 }, children: [] }));
 
-    // ── Table 2 (per day): 活動行程表 ───────────────────────────────────────
+    // ── Reference URL paragraphs (離線地圖 / 行程資料 / 路線參考) ───────────
+    // Pulled from quick_links across all days; deduped. The template
+    // had hand-typed reference blocks; we surface plan.days[].quick_links
+    // here so the docx doesn't lose useful URLs the user entered in the
+    // app.
+    const seenLinks = new Set();
+    const linkBlocks = [];
+    for (const d of (plan.days || [])) {
+      for (const ql of (d.quick_links || [])) {
+        if (!ql || !ql.href || seenLinks.has(ql.href)) continue;
+        seenLinks.add(ql.href);
+        linkBlocks.push({ label: ql.text || '參考連結', url: ql.href });
+      }
+    }
+    if (linkBlocks.length) {
+      sections.push(new D.Paragraph({
+        spacing: { before: 80, after: 40 },
+        children: [new D.TextRun({ text: '參考資料：', bold: true })],
+      }));
+      for (const lb of linkBlocks) {
+        sections.push(new D.Paragraph({
+          spacing: { after: 30 },
+          indent: { left: 360 },
+          children: [new D.TextRun({ text: `${lb.label}：${lb.url}`, size: 20 })],
+        }));
+      }
+    }
+
+    // ── Table 2: 活動行程表 (one combined table, all days) ─────────────────
+    // 奇萊 template uses ONE big itinerary table with header rows (trip
+    // info + dates) followed by per-day blocks (行程 / 時間 / detail+
+    // 總計), then 建議休息點 + 備註 + 撤退方案 footer rows. Replaces the
+    // previous "one separate table per day" layout that broke up the
+    // schedule visually.
     sections.push(new D.Paragraph({
       spacing: { before: 200, after: 100 },
       children: [new D.TextRun({ text: '活動行程表', bold: true, size: 28 })],
     }));
+    const itinW = [COL * 0.85, COL * 0.55, COL * 2.6];
+    const itinRows = [];
+    // header — trip info + filler row (matches template R0/R1)
+    itinRows.push(row([
+      labelCell('活動名稱', itinW[0]),
+      cell(meta.title || BLANK, { width: itinW[1] + itinW[2], span: 2 }),
+    ]));
+    itinRows.push(row([
+      labelCell('活動日期', itinW[0]),
+      cell(`${isoToROC(meta.start_date)} 起\n${isoToROC(meta.end_date)} 止`, { width: itinW[1], span: 1 }),
+      cell(`填表人：${leader.name || BLANK}    頁次：1 頁`, { width: itinW[2] }),
+    ]));
+    // per-day blocks
+    let allRetreats = [];
     for (const d of (plan.days || [])) {
       const cps = dayCheckpoints(d);
-      const dateStr = d.date_label || d.date || BLANK;
-      const headRow = row([
-        labelCell(`${d.label || d.id}\n${dateStr}`, COL * 1),
-        labelCell('行程', COL),
-        cell(cps.names.length ? cps.names.join('  →  ') : BLANK, { width: COL * 2 }),
-      ]);
-      const timeRow = row([
-        cell('', { width: COL }),
-        labelCell('時間', COL),
-        cell(cps.times.length ? cps.times.join('  　  ') : BLANK, { width: COL * 2 }),
-      ]);
-      const statRow = row([
-        labelCell('總計', COL),
-        cell(cps.totalMin ? `總時長 ${fmtMin(cps.totalMin)}` : BLANK, { width: COL }),
-        cell(cps.totalKm ? `距離 ${cps.totalKm.toFixed(1)} K` : BLANK, { width: COL }),
-        cell(cps.asc || cps.desc ? `↑${cps.asc}m  ↓${cps.desc}m` : BLANK, { width: COL }),
-      ]);
-      sections.push(new D.Table({
-        width: { size: TBL_W, type: D.WidthType.DXA },
-        columnWidths: [COL, COL, COL, COL],
-        rows: [headRow, timeRow, statRow],
-      }));
-      // 撤退方案
+      const dateStr = (d.date_label || d.date || '').replace(/\s+/g, '');
+      const dayLabelStr = `${d.label || d.id}\n${dateStr}`;
+      itinRows.push(row([
+        labelCell(dayLabelStr, itinW[0]),
+        labelCell('行程', itinW[1]),
+        cell(cps.names.length ? cps.names.join(' → ') : BLANK, { width: itinW[2] }),
+      ]));
+      itinRows.push(row([
+        cell('', { width: itinW[0] }),
+        labelCell('時間', itinW[1]),
+        cell(cps.times.length ? cps.times.join('　') : BLANK, { width: itinW[2] }),
+      ]));
+      const statBits = [];
+      if (cps.totalMin) statBits.push(`總時長 ${fmtMin(cps.totalMin)}`);
+      if (cps.totalKm)  statBits.push(`距離 ${cps.totalKm.toFixed(1)} K`);
+      if (cps.asc)      statBits.push(`上升 ${cps.asc}M`);
+      if (cps.desc)     statBits.push(`下降 ${cps.desc}M`);
+      itinRows.push(row([
+        cell('', { width: itinW[0] }),
+        labelCell('總計', itinW[1]),
+        cell(statBits.length ? statBits.join('　') : BLANK, { width: itinW[2] }),
+      ]));
       if (d.retreat) {
         const items = Array.isArray(d.retreat.items_html) ? d.retreat.items_html.map(htmlToText)
           : Array.isArray(d.retreat.items) ? d.retreat.items
-          : [htmlToText(d.retreat.title || '')];
-        sections.push(new D.Paragraph({
-          spacing: { before: 100, after: 100 },
-          children: [new D.TextRun({ text: `↳ 撤退方案：`, bold: true })],
-        }));
+          : [];
         for (const it of items) {
-          if (!it) continue;
-          sections.push(new D.Paragraph({
-            spacing: { after: 60 },
-            indent: { left: 360 },
-            children: [new D.TextRun({ text: '・' + it })],
-          }));
+          if (it && it.trim()) allRetreats.push(`${d.label || d.id}：${it.trim()}`);
         }
       }
-      sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
     }
+    // Footer rows — 建議休息點 / 備註 / 撤退方案 (template R8-R10)
+    itinRows.push(row([
+      labelCell('建議休息點', itinW[0]),
+      cell('小休點：依現場狀況　大休點：用餐／補水時段', { width: itinW[1] + itinW[2], span: 2 }),
+    ]));
+    itinRows.push(row([
+      labelCell('備　註', itinW[0]),
+      cell('==> 表示乘車　→ 表示重裝　--> 表示輕裝', { width: itinW[1] + itinW[2], span: 2 }),
+    ]));
+    itinRows.push(row([
+      labelCell('撤退方案', itinW[0]),
+      cell(allRetreats.length ? allRetreats.join('\n') : BLANK,
+           { width: itinW[1] + itinW[2], span: 2 }),
+    ]));
+    sections.push(new D.Table({
+      width: { size: TBL_W, type: D.WidthType.DXA },
+      columnWidths: itinW.map(Math.round),
+      rows: itinRows,
+    }));
+    sections.push(new D.Paragraph({ spacing: { after: 100 }, children: [] }));
 
-    // ── Table 4: 分工表 ─────────────────────────────────────────────────────
-    const ROLES = ['領隊', '嚮導', '隊員', '留守', '交通', '裝備', '行政', '回報', '醫療', '天氣', '紀錄', '保險'];
+    // ── Table 3: 注意事項 (single-cell with key_times excerpts) ────────────
+    const keyTimesParts = [];
+    for (const d of (plan.days || [])) {
+      for (const kt of (d.key_times || [])) {
+        if (!kt || !kt.value) continue;
+        keyTimesParts.push(`${d.label || d.id} ${kt.label || ''} ${kt.value}${kt.note ? ' ('+kt.note+')' : ''}`);
+      }
+    }
+    sections.push(new D.Table({
+      width: { size: TBL_W, type: D.WidthType.DXA },
+      columnWidths: [TBL_W],
+      rows: [row([cell('注意事項：' + (keyTimesParts.length ? '\n' + keyTimesParts.join('\n') : BLANK),
+                      { width: TBL_W })])],
+    }));
+    sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
+
+    // ── 工作分配 (2 rows × 5 cols, 1-10 numbered list per template) ────────
     sections.push(new D.Paragraph({
       spacing: { before: 200, after: 100 },
-      children: [new D.TextRun({ text: '分工表', bold: true, size: 28 })],
+      children: [new D.TextRun({ text: '工作分配', bold: true, size: 28 })],
     }));
+    const ROLES_NUM = ['嚮導', '交通', '裝備', '行政', '回報', '醫療', '天氣', '紀錄', '留守', '保險'];
+    const roleW = TBL_W / 5;
     const roleRows = [];
-    for (let i = 0; i < ROLES.length; i += 4) {
+    for (let r = 0; r < 2; r++) {
       const cells = [];
-      for (let j = 0; j < 4 && (i + j) < ROLES.length; j++) {
-        const r = ROLES[i + j];
-        const names = membersByRole(plan, r).map(m => m.name).filter(Boolean).join('、') || BLANK;
-        cells.push(labelCell(r, COL / 2));
-        cells.push(cell(names, { width: COL * 1.5 }));
+      for (let c = 0; c < 5; c++) {
+        const idx = r * 5 + c;
+        const role = ROLES_NUM[idx];
+        const names = role === '留守'
+          ? standbyName
+          : (membersByRole(plan, role).map(m => m.name).filter(Boolean).join('、') || BLANK);
+        cells.push(cell(`${idx + 1}. ${role}：${names}`, { width: roleW }));
       }
       roleRows.push(row(cells));
     }
     sections.push(new D.Table({
       width: { size: TBL_W, type: D.WidthType.DXA },
-      columnWidths: [COL / 2, COL * 1.5, COL / 2, COL * 1.5],
+      columnWidths: [roleW, roleW, roleW, roleW, roleW].map(Math.round),
       rows: roleRows,
     }));
-    sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
+    sections.push(new D.Paragraph({ spacing: { after: 120 }, children: [] }));
 
-    // ── Table 5: 隊員名冊 ───────────────────────────────────────────────────
+    // ── Standard intro paragraphs (留守 / 領隊 / 通訊 / 編制) ──────────────
+    const introBlocks = [
+      ['留守人員注意事項：', [
+        '隊伍出發後，注意隊伍回報並作記錄，即使無收到消息也要寫留守紀錄。',
+        '隊伍出隊前到下山期間須保持聯繫。',
+        '過了山難管制時間仍無消息時，通知留守、安全中心召集人。',
+      ]],
+      ['領隊注意事項：', [
+        '請定期回報隊伍行進狀況。',
+        '隊伍歸來後，請領隊於下山通知時間內通知留守人解除留守。',
+      ]],
+      ['通訊內容：', [
+        '人員狀況（身體、心理）',
+        '路徑狀況',
+        '天氣',
+        '幾點到哪裡，休多久（當日最後紮營處）',
+        '未來計畫',
+      ]],
+      ['隊伍編制：', [
+        '兩個嚮導，一個前嚮一個後嚮，整隊速度會以最慢的那位為基準。',
+      ]],
+    ];
+    for (const [title, lines] of introBlocks) {
+      sections.push(new D.Paragraph({
+        spacing: { before: 100, after: 40 },
+        children: [new D.TextRun({ text: title, bold: true })],
+      }));
+      for (const line of lines) {
+        sections.push(new D.Paragraph({
+          spacing: { after: 20 },
+          indent: { left: 360 },
+          children: [new D.TextRun({ text: line, size: 20 })],
+        }));
+      }
+    }
+
+    // ── 人員名單 ────────────────────────────────────────────────────────────
     sections.push(new D.Paragraph({
-      spacing: { before: 200, after: 100 },
-      children: [new D.TextRun({ text: '隊員名冊', bold: true, size: 28 })],
+      spacing: { before: 200, after: 80 },
+      children: [new D.TextRun({ text: '人員名單', bold: true, size: 28 })],
     }));
-    const headerW = [COL * 0.6, COL * 0.7, COL * 0.9, COL * 0.7, COL * 0.6, COL * 0.5];
+    const memberW = [COL * 0.55, COL * 0.65, COL * 0.85, COL * 0.7, COL * 0.65, COL * 0.6];
     const memberRows = [
       row([
-        labelCell('職稱', headerW[0]), labelCell('姓名', headerW[1]),
-        labelCell('身分證字號', headerW[2]), labelCell('連絡電話', headerW[3]),
-        labelCell('緊急聯絡人', headerW[4]), labelCell('緊急電話', headerW[5]),
+        labelCell('職稱', memberW[0]), labelCell('姓名', memberW[1]),
+        labelCell('身分證字號', memberW[2]), labelCell('連絡電話', memberW[3]),
+        labelCell('緊急聯絡人', memberW[4]), labelCell('緊急連絡人電話', memberW[5]),
       ]),
     ];
     const members = (plan.contacts && plan.contacts.members) || [];
     for (const m of members) {
       memberRows.push(row([
-        valueCell(m.role || BLANK, headerW[0]),
-        valueCell(m.name || BLANK, headerW[1]),
-        valueCell(m.id_no || BLANK, headerW[2]),
-        valueCell(m.phone || BLANK, headerW[3]),
-        valueCell(m.ec_name || BLANK, headerW[4]),
-        valueCell(m.ec_phone || BLANK, headerW[5]),
+        valueCell(m.role || BLANK, memberW[0]),
+        valueCell(m.name || BLANK, memberW[1]),
+        valueCell(m.id_no || BLANK, memberW[2]),
+        valueCell(m.phone || BLANK, memberW[3]),
+        valueCell(m.ec_name || BLANK, memberW[4]),
+        valueCell(m.ec_phone || BLANK, memberW[5]),
       ]));
     }
-    if (members.length === 0) memberRows.push(row(headerW.map(w => valueCell(BLANK, w))));
+    if (members.length === 0) memberRows.push(row(memberW.map(w => valueCell(BLANK, w))));
     sections.push(new D.Table({
-      width: { size: headerW.reduce((a,b)=>a+b,0), type: D.WidthType.DXA },
-      columnWidths: headerW.map(w => Math.round(w)),
+      width: { size: memberW.reduce((a,b)=>a+b,0), type: D.WidthType.DXA },
+      columnWidths: memberW.map(Math.round),
       rows: memberRows,
     }));
     sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
 
-    // ── Table 7: 活動經費預算 (placeholder — schema TBD) ────────────────────
+    // ── 個人裝備 (gear checklist) — render in 2 cols x N rows from plan ────
     sections.push(new D.Paragraph({
-      spacing: { before: 200, after: 100 },
-      children: [new D.TextRun({ text: '活動經費預算', bold: true, size: 28 })],
+      spacing: { before: 200, after: 60 },
+      children: [new D.TextRun({ text: '個人裝備', bold: true, size: 28 })],
     }));
-    const budgetW = [COL * 1.4, COL * 0.7, COL * 0.5, COL * 0.7, COL * 0.7];
-    const budgetRows = [
+    sections.push(new D.Paragraph({
+      spacing: { after: 80 },
+      children: [new D.TextRun({ text: '（◎ 必帶　○ 可帶可不帶）', size: 20 })],
+    }));
+    const gearItems = (plan.gear && Array.isArray(plan.gear.checklist)) ? plan.gear.checklist : [];
+    // Lay out as a 4-col table: name | ✓, name | ✓.
+    const gearW = [COL * 1.4, COL * 0.4, COL * 1.4, COL * 0.4];
+    const gearRows = [
       row([
-        labelCell('項目', budgetW[0]), labelCell('單價(元/人)', budgetW[1]),
-        labelCell('數量', budgetW[2]), labelCell('總價(元)', budgetW[3]),
-        labelCell('說明', budgetW[4]),
+        labelCell('品名', gearW[0]), labelCell('帶／未帶', gearW[1]),
+        labelCell('品名', gearW[2]), labelCell('帶／未帶', gearW[3]),
       ]),
     ];
+    if (gearItems.length === 0) {
+      // 8 blank rows so user can fill in by hand
+      for (let i = 0; i < 8; i++) {
+        gearRows.push(row([
+          valueCell(BLANK, gearW[0]), valueCell('', gearW[1]),
+          valueCell(BLANK, gearW[2]), valueCell('', gearW[3]),
+        ]));
+      }
+    } else {
+      for (let i = 0; i < gearItems.length; i += 2) {
+        const left = gearItems[i] || '';
+        const right = gearItems[i + 1] || '';
+        gearRows.push(row([
+          valueCell(left || BLANK, gearW[0]), valueCell('', gearW[1]),
+          valueCell(right || BLANK, gearW[2]), valueCell('', gearW[3]),
+        ]));
+      }
+    }
+    sections.push(new D.Table({
+      width: { size: TBL_W, type: D.WidthType.DXA },
+      columnWidths: gearW.map(Math.round),
+      rows: gearRows,
+    }));
+    sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
+
+    // ── 活動經費預算 (budget) ──────────────────────────────────────────────
+    sections.push(new D.Paragraph({
+      spacing: { before: 200, after: 80 },
+      children: [new D.TextRun({ text: '活動經費預算', bold: true, size: 28 })],
+    }));
+    const budgetW = [COL * 1.3, COL * 0.6, COL * 0.5, COL * 0.7, COL * 0.9];
+    const budgetRows = [];
+    // Top header (matches 奇萊 R0/R1): trip info above the 支出 columns.
+    budgetRows.push(row([
+      labelCell('活動名稱', budgetW[0]),
+      cell(meta.title || BLANK, { width: budgetW[1] + budgetW[2], span: 2 }),
+      labelCell('活動人數', budgetW[3]),
+      cell(`共 ${meta.party_size || BLANK} 人`, { width: budgetW[4] }),
+    ]));
+    budgetRows.push(row([
+      labelCell('活動日期', budgetW[0]),
+      cell(`${isoToROC(meta.start_date)} 起 ~ ${isoToROC(meta.end_date)} 止`,
+           { width: budgetW[1] + budgetW[2] + budgetW[3] + budgetW[4], span: 4 }),
+    ]));
+    budgetRows.push(row([
+      labelCell('項目', budgetW[0]), labelCell('單價(元/人)', budgetW[1]),
+      labelCell('數量', budgetW[2]), labelCell('總價(元)', budgetW[3]),
+      labelCell('說明', budgetW[4]),
+    ]));
     const budget = plan.budget || { items: [] };
     const items = Array.isArray(budget.items) ? budget.items : [];
     if (items.length === 0) {
-      // 5 blank rows so user can fill manually
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 6; i++) {
         budgetRows.push(row(budgetW.map(w => valueCell(BLANK, w))));
       }
     } else {
@@ -348,11 +518,46 @@
         ]));
       }
     }
+    // Subtotal row
+    budgetRows.push(row([
+      labelCell('小計(元)', budgetW[0]),
+      cell('', { width: budgetW[1] + budgetW[2] + budgetW[3] + budgetW[4], span: 4 }),
+    ]));
+    // Footnote row
+    budgetRows.push(row([
+      cell('☆：詳列活動預算時應包含：(1)交通費；(2)保險費；(3)食材；(4)門票／入山證；(5)雜項。',
+           { width: TBL_W, span: 5 }),
+    ]));
     sections.push(new D.Table({
-      width: { size: budgetW.reduce((a,b)=>a+b,0), type: D.WidthType.DXA },
-      columnWidths: budgetW.map(w => Math.round(w)),
+      width: { size: TBL_W, type: D.WidthType.DXA },
+      columnWidths: budgetW.map(Math.round),
       rows: budgetRows,
     }));
+    sections.push(new D.Paragraph({ spacing: { after: 200 }, children: [] }));
+
+    // ── 緊急聯絡單位 (national emergency phones — fixed list) ──────────────
+    sections.push(new D.Paragraph({
+      spacing: { before: 200, after: 80 },
+      children: [new D.TextRun({ text: '緊急聯絡單位', bold: true, size: 28 })],
+    }));
+    sections.push(new D.Paragraph({
+      spacing: { after: 30 },
+      children: [new D.TextRun({ text: '警消、救護單位', bold: true, size: 22 })],
+    }));
+    const emergencyLines = [
+      '行政院國家搜救中心：02-89114119',
+      '中華搜救總隊專線：03-3772272',
+      '內政部空中勤務總隊：02-25472110',
+      '免付費直升機救難中心：0800-077795',
+      '全國山難緊急救助：119／112',
+    ];
+    for (const line of emergencyLines) {
+      sections.push(new D.Paragraph({
+        spacing: { after: 20 },
+        indent: { left: 360 },
+        children: [new D.TextRun({ text: line, size: 20 })],
+      }));
+    }
 
     // ── Document ──────────────────────────────────────────────────────────
     return new D.Document({
