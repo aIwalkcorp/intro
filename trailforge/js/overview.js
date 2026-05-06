@@ -599,23 +599,21 @@
         ? ` data-focusable="true" data-day-id="${escapeHtml(r.dayId)}" data-anchor-lo="${r.anchorLo}" data-anchor-hi="${r.anchorHi}" role="button" tabindex="0" aria-pressed="${isFocused ? 'true' : 'false'}"`
         : '';
       // Per-segment 備註 row — sits directly below the segment row. Edit
-      // mode shows a clean dotted-underline input + branch button; view
-      // mode shows muted italic prose only when there's content. Synthetic
-      // 回程 rows skip the note (no source segment to mutate).
+      // mode shows a clean dotted-underline input; the branch button now
+      // lives next to the minutes cell (rp-cost) so it sits right where
+      // the user is "spending time" — visually closer to the decision
+      // point than dangling off the end of the note row.
       const editing = document.body.classList.contains('tf-editing');
       const canEditNote = !r.isReturn && r.segIdx != null;
-      let noteHtml = '';
-      if (canEditNote && editing) {
-        // Git-branch SVG: a vertical stem with a fork branching off to the
-        // right — universally recognised as "branch from here". Click opens
-        // an inline split form below.
-        const branchBtn = `<button type="button" class="rp-branch-btn"
+      // Git-branch SVG: vertical stem with a fork branching off to the
+      // right. Click opens the inline new-variant form below.
+      const branchBtn = (canEditNote && editing) ? `<button type="button" class="rp-branch-btn"
             data-day-id="${escapeHtml(r.dayId)}"
             data-seg-idx="${r.segIdx}"
             data-variant-id="${escapeHtml(r.variantId || '')}"
-            aria-label="在此段插入分歧點 / 休息點"
-            title="在此段插入新的休息點">
-          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+            aria-label="從此處創建新路線分歧"
+            title="從此處創建新路線分歧">
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
             <circle cx="4" cy="3" r="1.6" fill="currentColor"/>
             <circle cx="4" cy="13" r="1.6" fill="currentColor"/>
             <circle cx="12" cy="8" r="1.6" fill="currentColor"/>
@@ -623,11 +621,12 @@
             <path d="M4 7.5 q 0 -2 4 -2 t 4 1" stroke="currentColor" stroke-width="1.4" fill="none"/>
           </svg>
           <span>分歧</span>
-        </button>`;
+        </button>` : '';
+      let noteHtml = '';
+      if (canEditNote && editing) {
         noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
           <span class="rp-note-mark" aria-hidden="true">↳</span>
           <input class="rp-note-input" type="text" value="${escapeHtml(r.note || '')}" placeholder="備註（可選）" aria-label="此段備註">
-          ${branchBtn}
         </div>`;
       } else if (r.note) {
         noteHtml = `<div class="rp-note-row rp-note-readonly">
@@ -645,7 +644,10 @@
           <span class="rp-to">${escapeHtml(r.to)}</span>
         </span>
         <span class="rp-cost">
-          <span class="rp-time-derived">${derived}</span><small>分</small>
+          <span class="rp-cost-main">
+            <span class="rp-time-derived">${derived}</span><small>分</small>
+            ${branchBtn}
+          </span>
           <span class="rp-time-base">基準 ${r.base_minutes}分</span>
         </span>
         <span class="rp-meta">

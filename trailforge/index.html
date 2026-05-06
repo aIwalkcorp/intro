@@ -2484,27 +2484,35 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   }
 }
 
-/* Branch button — small git-branch glyph + label, sits to the right of
-   the note input. Quiet by default, brass on hover. */
-.overview-rest-points .rp-note-row .rp-branch-btn{
+/* Branch button — small git-branch glyph + label, now sits inline next
+   to the derived-minutes value in the rp-cost cell so the user can fork
+   from the segment they're "spending time on" without their eye having
+   to travel to the note row. Quiet by default, brass on hover. */
+.overview-rest-points .rp-cost .rp-cost-main{
+  display:inline-flex; align-items:baseline; gap:4px;
+  flex-wrap:nowrap;
+}
+.overview-rest-points .rp-branch-btn{
   appearance:none; cursor:pointer; flex:none;
-  display:inline-flex; align-items:center; gap:4px;
-  padding:3px 8px;
+  display:inline-flex; align-items:center; gap:3px;
+  margin-left:6px;
+  padding:2px 7px;
   background:transparent;
   border:1px dashed rgba(168,128,44,0.45);
   border-radius:99px;
-  font-family:var(--mono); font-size:.6rem; font-weight:700; letter-spacing:.16em;
+  font-family:var(--mono); font-size:.55rem; font-weight:700; letter-spacing:.14em;
   color:var(--gold-deep,#6e5316);
   transition: background .15s, border-color .15s, color .15s, transform .12s;
+  align-self:center;
 }
-.overview-rest-points .rp-note-row .rp-branch-btn:hover{
+.overview-rest-points .rp-branch-btn:hover{
   background:rgba(168,128,44,0.12);
   border-color:#a8802c; border-style:solid;
   color:#3b2a0e;
   transform:translateY(-1px);
 }
-.overview-rest-points .rp-note-row .rp-branch-btn:active{ transform:scale(.96); }
-.overview-rest-points .rp-note-row .rp-branch-btn svg{ flex:none; }
+.overview-rest-points .rp-branch-btn:active{ transform:scale(.96); }
+.overview-rest-points .rp-branch-btn svg{ flex:none; }
 
 /* Branch insertion form — slides below the note row when the user clicks
    the branch button. Compact so it doesn't dominate the table. */
