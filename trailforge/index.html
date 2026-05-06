@@ -2467,12 +2467,30 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   display:inline-flex; align-items:center; gap:3px;
   font-family:var(--mono); font-size:.92rem; font-weight:700;
   color:var(--pri-deep,#0a1a06);
+  flex:none;
+}
+.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit{
+  width:42px; padding:1px 3px;
+  font-family:var(--mono); font-size:.92rem; font-weight:700;
+  color:var(--pri-deep,#0a1a06);
+  background:rgba(255,255,255,0.65);
+  border:1px dashed rgba(120,140,90,0.45);
+  border-radius:3px;
+  text-align:right;
+  -moz-appearance:textfield;
+}
+.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit::-webkit-outer-spin-button,
+.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit::-webkit-inner-spin-button{
+  -webkit-appearance:none; margin:0;
+}
+.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit:focus{
+  outline:none; border-style:solid; border-color:#5e6e3c; background:#fff;
 }
 .overview-rest-points .rp-rest-row .rp-rest-mins small{
   font-size:.62rem; opacity:.7; margin-left:1px;
 }
 .overview-rest-points .rp-rest-row .rp-rest-note{
-  flex-basis:100%; padding-left:0;
+  width:100%; flex:0 0 100%; padding-left:0; margin-top:2px;
   font-style:italic; font-size:.78rem; color:var(--ink-soft,#5a4f3a);
 }
 .overview-rest-points .rp-rest-row .rp-rest-note-edit{ padding-top:3px; }
