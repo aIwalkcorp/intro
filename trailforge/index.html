@@ -2901,6 +2901,34 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   font-family:var(--serif); font-style:italic;
   font-size:.62rem; color:var(--ink-soft,#7a7468); font-weight:400;
 }
+/* Editable variant of the 基準 cell — sits in edit mode only. The
+   number input is sized just enough for 3-digit 分鐘 so the cost cell
+   stays narrow. Looks like part of the row, not a generic <input>. */
+.overview-rest-points .rp-cost .rp-time-base-edit{
+  display:inline-flex; align-items:baseline; gap:3px;
+  font-style:normal;
+}
+.overview-rest-points .rp-cost .rp-time-base-edit small{
+  font-style:italic; opacity:.7;
+}
+.overview-rest-points .rp-cost .rp-min-edit{
+  width:36px; padding:1px 3px;
+  font-family:var(--mono); font-size:.7rem; font-weight:700;
+  color:var(--pri-deep,#0a1a06);
+  background:rgba(255,255,255,0.65);
+  border:1px dashed rgba(168,128,44,0.45);
+  border-radius:3px;
+  text-align:right;
+  -moz-appearance:textfield;
+}
+.overview-rest-points .rp-cost .rp-min-edit::-webkit-outer-spin-button,
+.overview-rest-points .rp-cost .rp-min-edit::-webkit-inner-spin-button{
+  -webkit-appearance:none; margin:0;
+}
+.overview-rest-points .rp-cost .rp-min-edit:focus{
+  outline:none; border-style:solid; border-color:#a8802c;
+  background:#fff;
+}
 
 /* Arrival cell — clock time at the end of THIS segment (right edge / red box
    in the design spec). Numeric typography reads as a milestone, distinct
