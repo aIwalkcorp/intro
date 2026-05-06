@@ -200,6 +200,17 @@ router.patch("/:id", async (c) => {
         clone.details = [];
         clone.routes = undefined;
         clone.retreat = null;
+        // Reset elevation_profile so cloned days don't inherit the
+        // predecessor's segments / route_variants (= ghost hike rows
+        // appearing on a brand-new blank day). gpx_ref is kept iff
+        // explicitly set on the template, otherwise null.
+        const epRef = clone.elevation_profile?.gpx_ref ?? null;
+        clone.elevation_profile = {
+          shanghe_segments: [],
+          route_variants: undefined,
+          start_time: null,
+          gpx_ref: epRef,
+        };
         resized.push(clone);
       }
       data.days = [...departDays, ...resized];

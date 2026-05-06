@@ -248,11 +248,17 @@
     // Items come from getEffectiveDayContext (segments + start_time). No
     // day.schedule[] fallback — if Edit shows nothing, View shows nothing.
     const items = deriveScheduleForDay(day) || [];
+    const isEditing = typeof document !== 'undefined' && document.body && document.body.classList.contains('tf-editing');
+    const body = items.length
+      ? renderTimeline(items)
+      : (isEditing
+          ? renderTimeline(items)
+          : `<div class="tl-empty-day"><span class="tl-empty-mark">∅</span><span class="tl-empty-text">尚未規劃 — 進入編輯模式 ＋ 地標 開始排程</span></div>`);
     return `
       <div class="section">
         <div class="sec-title">${escapeHtml(day.section_title || '')}</div>
         ${tag}
-        ${renderTimeline(items)}
+        ${body}
       </div>`;
   }
 

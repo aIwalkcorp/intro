@@ -599,6 +599,21 @@ body .tf-row-add:focus-visible{
 .day-tag.d2b{background:linear-gradient(135deg,#7c2d12,#b91c1c);}
 .tl{position:relative;padding-left:28px;}
 .tl::before{content:"";position:absolute;left:9px;top:4px;bottom:4px;width:2px;background:repeating-linear-gradient(180deg,var(--acc) 0 4px,transparent 4px 8px);}
+/* Empty-day placeholder — shown in view mode when a day has zero
+   segments (newly-added day waiting for the user to drop in 地標). */
+.tl-empty-day{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px;
+  background:rgba(168,128,44,0.06);
+  border:1px dashed rgba(168,128,44,0.4);
+  border-radius:6px;
+  font-family:var(--serif), serif; font-style:italic;
+  font-size:.86rem; color:var(--ink-soft, #7a7468);
+}
+.tl-empty-day .tl-empty-mark{
+  font-family:var(--mono); font-size:1.2rem; color:var(--gold-deep, #6e5316);
+  opacity:.7;
+}
 .tl-i{
   position:relative;margin-bottom:12px;padding:12px 16px;
   background:var(--card);border:1px solid var(--bdr);border-radius:10px;
@@ -2591,6 +2606,32 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   border-radius:5px; overflow:hidden;
   background:#fdfaf0;
 }
+
+/* Add-day footer — slim row of two pills sitting between the rest-points
+   table and the global subtotal. Only rendered in edit mode. Brass dashed
+   to echo the per-segment "+ 地標" affordance. */
+.overview-rest-points .rp-day-add-row{
+  display:flex; gap:8px; justify-content:center; align-items:center;
+  padding:6px 10px;
+  margin-top:6px;
+}
+.overview-rest-points .rp-day-add-btn{
+  appearance:none; cursor:pointer;
+  padding:4px 14px; border-radius:99px;
+  background:transparent;
+  border:1px dashed rgba(168,128,44,0.55);
+  font-family:var(--serif), serif; font-size:.7rem; letter-spacing:.16em;
+  font-weight:700; color:var(--gold-deep,#6e5316);
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.overview-rest-points .rp-day-add-btn:hover{
+  background:rgba(168,128,44,0.12);
+  border-style:solid; border-color:#a8802c;
+  color:#3b2a0e;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-day-add-btn:active{ transform:scale(.97); }
+
 .overview-rest-points .rp-row{
   display:grid;
   /* chip | cum-km | route | cost | arrival | info-btn
