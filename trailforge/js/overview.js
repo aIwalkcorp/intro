@@ -149,6 +149,31 @@
     const asc   = (+ascent_m   || 0) / 10;
     return Math.max(0, Math.round(horiz + asc));
   }
+  // ISO date arithmetic (YYYY-MM-DD ± delta days). Handles month/year
+  // rollover via the Date object; returns null for unparseable inputs.
+  function addDaysIso(iso, delta) {
+    if (!iso) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
+    if (!m) return null;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    if (isNaN(d.getTime())) return null;
+    d.setUTCDate(d.getUTCDate() + (delta || 0));
+    const yy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  function nextDayId(days) {
+    let max = 0;
+    let nonNumericSeen = false;
+    for (const d of (days || [])) {
+      const m = /^d(\d+)$/.exec(d && d.id || '');
+      if (m) max = Math.max(max, +m[1]);
+      else nonNumericSeen = true;
+    }
+    if (max > 0) return 'd' + (max + 1);
+    return 'd' + ((days || []).length + (nonNumericSeen ? 1 : 1));
+  }
 
   // ── Auto-return synthesis (shared by Edit + View) ─────────────────────
   // Locates the ascent_only day whose segments should be reversed onto
@@ -857,11 +882,9 @@
             aria-pressed="${infoOpen ? 'true' : 'false'}"
             aria-label="顯示／隱藏此段詳情"
             title="顯示／隱藏此段詳情">
-          <svg viewBox="0 0 18 18" width="13" height="13" aria-hidden="true">
-            <circle cx="9" cy="4.2" r="1.65"/>
-            <circle cx="4.2" cy="13" r="1.65"/>
-            <circle cx="13.8" cy="13" r="1.65"/>
-            <path class="rp-info-tri" d="M9 4.2 L4.2 13 L13.8 13 Z" fill="none" stroke="currentColor" stroke-width="0.9"/>
+          <svg viewBox="0 0 18 18" width="14" height="14" aria-hidden="true">
+            <path d="M9 3.6 v6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/>
+            <circle cx="9" cy="13.5" r="1.15" fill="currentColor"/>
           </svg>
         </button>`;
 
@@ -938,6 +961,10 @@
         <span class="rp-sc-hint">1.0 = 上河基準｜&gt;1 較慢｜&lt;1 較快｜點選列以聚焦該段</span>
       </div>
       <div class="rp-list">${rowsHtml}</div>
+      ${(document.body.classList.contains('tf-editing')) ? `<div class="rp-day-add-row">
+        ${(plan.days || []).some(d => d.id === 'd0') ? '' : `<button type="button" class="rp-day-add-btn" data-add-kind="d0" title="在最前面加一個出發/移動日">＋ 出發日 (D0)</button>`}
+        <button type="button" class="rp-day-add-btn" data-add-kind="append" title="在最後面追加一天">＋ 多加一天</button>
+      </div>` : ''}
       <div class="rp-total">
         <span class="rp-total-l">全程總計</span>
         <span class="rp-total-meta">
@@ -1731,6 +1758,66 @@
     }
 
     // ── Bind day section_title inputs (edit mode only) ──
+    // ── Bind add-day buttons (edit mode only) ────────────────────────
+    // "+ 出發日 (D0)" prepends a transport/lodging day; "+ 多加一天"
+    // appends a blank trailing day. Both produce empty elevation_profile
+    // so future + 地標 / + 休息 actions start from a clean slate. setDirty
+    // + refresh chart + render so day-bar / chart pick up the new day.
+    host.querySelectorAll('.rp-day-add-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const kind = btn.dataset.addKind;
+        const days = plan.days || (plan.days = []);
+        const blankEp = () => ({ shanghe_segments: [], gpx_ref: null, start_time: null });
+        if (kind === 'd0') {
+          if (days.some(d => d.id === 'd0')) return;
+          const firstDate = days[0] && days[0].date;
+          const newDate = addDaysIso(firstDate, -1);
+          const d0 = {
+            id: 'd0',
+            date: newDate,
+            label: 'Day 0・出發',
+            tag_text: '出發日',
+            tag_color_override: 'linear-gradient(135deg,#4b5563,#6b7280)',
+            section_title: '',
+            elevation_profile: blankEp(),
+            schedule: [],
+            routes: undefined,
+            key_times: [],
+            quick_links: [],
+            details: [],
+            retreat: null,
+          };
+          days.unshift(d0);
+          if (newDate && plan.meta) plan.meta.depart_date = newDate;
+        } else if (kind === 'append') {
+          const lastDate = days[days.length - 1] && days[days.length - 1].date;
+          const newDate = addDaysIso(lastDate, 1);
+          const newId = nextDayId(days);
+          const num = newId.replace(/^d/, '');
+          days.push({
+            id: newId,
+            date: newDate,
+            label: `Day ${num}・(待命名)`,
+            section_title: '',
+            elevation_profile: blankEp(),
+            schedule: [],
+            routes: undefined,
+            key_times: [],
+            quick_links: [],
+            details: [],
+            retreat: null,
+          });
+        }
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        renderRestPoints(plan, readSpeed());
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (err) {} });
+      });
+    });
+
     host.querySelectorAll('.rp-section-title-edit').forEach((inp) => {
       inp.addEventListener('input', () => {
         const dayId = inp.dataset.dayId;

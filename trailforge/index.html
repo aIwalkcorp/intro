@@ -2326,23 +2326,16 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   display:block;
   fill:currentColor;
 }
-.overview-rest-points .rp-info-btn .rp-info-tri{
-  opacity:0; stroke:currentColor; transition:opacity .18s;
-}
 .overview-rest-points .rp-info-btn:hover{
   color:var(--pri-deep,#0a1a06);
   border-color:rgba(168,128,44,0.7);
   background:rgba(253,249,238,0.7);
   transform:scale(1.06);
 }
-.overview-rest-points .rp-info-btn:hover .rp-info-tri{ opacity:.55; }
 .overview-rest-points .rp-info-btn[aria-pressed="true"]{
   color:#fdf9ee;
   background:var(--gold-deep,#6e5316);
   border-color:var(--gold-deep,#6e5316);
-}
-.overview-rest-points .rp-info-btn[aria-pressed="true"] .rp-info-tri{
-  opacity:1; stroke:#fdf9ee;
 }
 
 /* Sibling info-row — slides in below a row when its info-btn is pressed.
@@ -2602,8 +2595,9 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   display:grid;
   /* chip | cum-km | route | cost | arrival | info-btn
      km/elev meta now lives in the per-row .rp-info-row sibling, opened
-     by the triangulation-benchmark icon button at the row's edge. */
-  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px 26px;
+     by the "!" icon button at the row's edge. Arrival is 112px so the
+     "抵達 09:00" / editable HH:MM input doesn't get clipped. */
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 112px 26px;
   gap:6px; align-items:center;
   padding:4px 8px;
   border-bottom:1px solid rgba(42,36,24,0.08);
@@ -3090,7 +3084,7 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   color:var(--ink-soft,#7a7468); font-size:.85rem; font-style:italic; opacity:.6;
 }
 .overview-rest-points .rp-arrive-edit{
-  width:50px; padding:1px 3px;
+  width:60px; padding:2px 4px;
   font-family:var(--mono); font-size:.92rem; font-weight:800;
   color:var(--gold-deep,#6e5316);
   background:rgba(255,255,255,0.65);
@@ -3186,7 +3180,7 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
      final 26px slot mirrors the segment row's info-btn column so the
      right edges of subtotal and segment rows line up. km/asc/desc moved
      into .rp-subtotal-l (col 1/4) since the meta column is gone. */
-  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px 26px;
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 112px 26px;
   gap:6px; align-items:center;
   padding:5px 8px;
   background:rgba(168,128,44,0.10);
