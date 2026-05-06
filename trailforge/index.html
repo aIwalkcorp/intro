@@ -4410,17 +4410,20 @@ window.tfConfirm = function (opts) {
     if (params.get('demo') === '1') return;
     var token = localStorage.getItem('tf_access_token');
     if (!token) return;
-    // PWA standalone escape: a logged-in user launching the installed
-    // app at bare /trailforge/ would otherwise mint a NEW clone every
-    // launch (because the app shortcut points at the bare URL). Send
-    // them to dashboard instead so they can pick which plan to open.
+    // PWA standalone escape: per-plan PWAs install with start_url
+    // `?plan=<id>` (see js/manifest-dynamic.js) so each plan becomes
+    // its own home-screen app — those launches hit the early `if
+    // (params.get('plan'))` guard above and never come here. ONLY a
+    // user who installed the PWA from the BARE /trailforge/ URL lands
+    // on this branch in standalone mode. We must NOT auto-clone (that
+    // would mint a new "玉山(我的副本)" plan every launch) AND we must
+    // NOT redirect to dashboard (that would override the user's
+    // expectation of a "玉山範本 sample app"). Just render the demo
+    // read-only — they can sign in and use the dashboard via the
+    // permit chip when they want their personal plans.
     var standalone = window.matchMedia &&
       (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true);
-    if (standalone) {
-      var apiQS_pwa = params.get('api') ? '?api=' + encodeURIComponent(params.get('api')) : '';
-      location.replace('dashboard.html' + apiQS_pwa);
-      return;
-    }
+    if (standalone) return;
     // Show a parchment-tinted "preparing your copy…" overlay so the
     // page doesn't flash the demo content before the clone redirect.
     var ov = document.createElement('div');
