@@ -444,25 +444,32 @@
       // For days that declare route_variants, the recorded GPX is one
       // long survey track with both branches stitched together (e.g. d2
       // contains both 主峰 and 北峰 detours, walked in survey order).
-      // Strategy: PREFER applySyntheticFromWaypoints (straight lines
-      // between waypoints with linearly-interpolated elev) for the
-      // chart. Stats — km / ↑ / ↓ — already come from gpx-unitize.js
-      // (cumulative, accurate) and live in the rest-points table.
-      // applyDerivedTrack's faithful trkpt slicing introduced a per-
-      // segment artefact: when seg 3 (北峰→主北岔) physically transits
-      // 主峰 in the recording, its slice pulls the 主峰 peak into the
-      // chart, producing 3-4 visible 主峰 spikes between the labelled
-      // 玉山主峰 and 排雲山莊. The user explicitly asked: "直接回到
-      // 分岔點吧" — the chart should depict the planned route, not
-      // every GPS wiggle. Synthetic gives that.
+      // Strategy: hybrid trkpt slicing.
+      //   • WITHIN each segment slice: real GPX trkpts → real elevation
+      //     curve (user wants "真正的海拔變化圖", not synthetic lines).
+      //   • Around named-loc visits NOT on this segment's endpoints:
+      //     smooth elevation by linear interp so the unwanted spike
+      //     (e.g. 主峰 in seg 3's 北峰→主北岔 slice) disappears, while
+      //     the surrounding ridge geometry stays. Net effect: "between
+      //     rest points it goes directly, but each segment shows real
+      //     terrain" — exactly what the user asked for.
       if (ep.route_variants && TF.overview) {
-        let usedSynthetic = false;
-        const wps = lookupWaypoints(ep.gpx_ref, d.id);
-        if (wps && wps.length && TF.overview.applySyntheticFromWaypoints) {
-          usedSynthetic = TF.overview.applySyntheticFromWaypoints(dayInfo, wps);
+        let visits = null, canonFn = null;
+        if (TF.gpxUnitize && plan.data && plan.data.named_locations && track) {
+          const named = plan.data.named_locations;
+          const canonMap = TF.gpxUnitize.buildCanon(named);
+          canonFn = (n) => TF.gpxUnitize.canonName(n, canonMap);
+          visits = TF.gpxUnitize.detectVisits(track, named, { canonMap });
         }
-        if (!usedSynthetic && TF.overview.applyDerivedTrack) {
-          TF.overview.applyDerivedTrack(dayInfo);
+        let usedDerived = false;
+        if (TF.overview.applyDerivedTrack) {
+          usedDerived = TF.overview.applyDerivedTrack(dayInfo, { visits, canonName: canonFn });
+        }
+        if (!usedDerived) {
+          const wps = lookupWaypoints(ep.gpx_ref, d.id);
+          if (wps && wps.length && TF.overview.applySyntheticFromWaypoints) {
+            TF.overview.applySyntheticFromWaypoints(dayInfo, wps);
+          }
         }
       }
       days.push(dayInfo);

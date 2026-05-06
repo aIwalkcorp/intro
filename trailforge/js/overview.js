@@ -2319,26 +2319,83 @@
   // Continuity dedupe: if a segment's start matches the previous
   // segment's end (same original index), we skip pushing the duplicate
   // sample so the line stays continuous instead of stuttering.
-  function deriveTrackFromSegments(gpx, segments) {
+  function deriveTrackFromSegments(gpx, segments, opts) {
     if (!Array.isArray(gpx) || !gpx.length) return null;
     if (!Array.isArray(segments) || !segments.length) return null;
+    opts = opts || {};
+    // visits: optional [[idx, canonName], ...] from gpx-unitize.detectVisits.
+    // When provided, each segment's slice gets HYBRID synthesis: real
+    // trkpts everywhere EXCEPT where the slice physically transits a
+    // named location not on the segment's leg-path. Those trkpts'
+    // elevations get smoothed (linear interp) so the wiggle doesn't
+    // appear in the chart, while real terrain is preserved elsewhere.
+    // Without visits, the function falls back to faithful trkpt slicing.
+    const visits = Array.isArray(opts.visits) ? opts.visits : [];
+    const canon = opts.canonName || ((n) => n);
+    const skipRadius = opts.skipRadius || 12;  // ± trkpts around an unwanted visit
+
     const out = [];
     const segMap = [];
-    let prevEnd = null;  // last anchor_idx[1] of the previous segment, or null
+    let prevEnd = null;
     for (let i = 0; i < segments.length; i++) {
       const s = segments[i];
       const ai = Array.isArray(s && s.anchor_idx) ? s.anchor_idx : null;
       if (!ai || ai.length !== 2) { segMap.push(null); continue; }
       const a = ai[0], b = ai[1];
       if (a < 0 || b < 0 || a >= gpx.length || b >= gpx.length) { segMap.push(null); continue; }
+      const lo = Math.min(a, b), hi = Math.max(a, b);
+
+      // Build skip-set for this segment. A trkpt is skipped (elevation
+      // smoothed) if it's within skipRadius of an unwanted visit — a
+      // named-loc visit in the slice that ISN'T this segment's from
+      // or to (canon-compared). Endpoints are protected (visits at
+      // exactly lo or hi are always on-path).
+      const fromCanon = canon(s.from || '');
+      const toCanon   = canon(s.to   || '');
+      const skipSet = new Set();
+      if (visits.length) {
+        for (const v of visits) {
+          const vIdx = v[0], vName = v[1];
+          if (vIdx <= lo || vIdx >= hi) continue;
+          if (vName === fromCanon || vName === toCanon) continue;
+          // Also protect intermediate visits that ARE part of the
+          // planned chain — but we don't have that info here, so
+          // we conservatively only skip visits whose anchor is in the
+          // strict interior. Endpoint visits handled by lo/hi check.
+          for (let k = Math.max(lo + 1, vIdx - skipRadius); k <= Math.min(hi - 1, vIdx + skipRadius); k++) {
+            skipSet.add(k);
+          }
+        }
+      }
+
       const dedupeFirst = (prevEnd === a && out.length > 0);
       const startInOut = out.length;
+      const pushSmoothed = (k) => {
+        if (!skipSet.has(k)) { out.push(gpx[k]); return; }
+        // Find boundary trkpts before and after this skip run for
+        // linear elevation interp. Walk back/forward until non-skip.
+        let bIdx = k - 1;
+        while (bIdx >= lo && skipSet.has(bIdx)) bIdx--;
+        let aIdx = k + 1;
+        while (aIdx <= hi && skipSet.has(aIdx)) aIdx++;
+        const eB = (bIdx >= lo ? gpx[bIdx][2] : gpx[k][2]) || 0;
+        const eA = (aIdx <= hi ? gpx[aIdx][2] : gpx[k][2]) || 0;
+        const span = aIdx - bIdx;
+        const t = (k - bIdx) / (span || 1);
+        const eSmooth = eB + (eA - eB) * t;
+        // Keep lat/lon (so cumulative km still tracks real distance);
+        // only smooth the elevation. The chart's X-axis is cumulative
+        // km, Y is elevation — smoothing Y removes the wiggle without
+        // shrinking the segment.
+        out.push([gpx[k][0], gpx[k][1], eSmooth]);
+      };
+
       if (a === b) {
         if (!dedupeFirst) out.push(gpx[a]);
       } else if (a < b) {
-        for (let k = (dedupeFirst ? a + 1 : a); k <= b; k++) out.push(gpx[k]);
+        for (let k = (dedupeFirst ? a + 1 : a); k <= b; k++) pushSmoothed(k);
       } else {
-        for (let k = (dedupeFirst ? a - 1 : a); k >= b; k--) out.push(gpx[k]);
+        for (let k = (dedupeFirst ? a - 1 : a); k >= b; k--) pushSmoothed(k);
       }
       const endInOut = out.length - 1;
       segMap.push({ startInOut, endInOut, fromOrig: a, toOrig: b });
@@ -2351,9 +2408,12 @@
   // Apply deriveTrackFromSegments to a day's data and remap related
   // indices (segments, summit, decision anchors). Mutates the passed
   // day-info object in place. Returns true on success.
-  function applyDerivedTrack(dayInfo) {
+  function applyDerivedTrack(dayInfo, opts) {
     if (!dayInfo || !Array.isArray(dayInfo.gpx) || !Array.isArray(dayInfo.segments)) return false;
-    const derived = deriveTrackFromSegments(dayInfo.gpx, dayInfo.segments);
+    // Pass through optional visits + canonName so the slicer can smooth
+    // elevation around named-loc visits that aren't segment endpoints
+    // (the "no spurious 主峰 spike inside seg 3 北峰→主北岔" case).
+    const derived = deriveTrackFromSegments(dayInfo.gpx, dayInfo.segments, opts || {});
     if (!derived) return false;
     const { gpx: newGpx, segMap } = derived;
 
