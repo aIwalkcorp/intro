@@ -651,6 +651,31 @@
       }
     }
 
+    // Unitize: slice the new track into atomic legs at every named-
+    // waypoint visit, then re-derive each segment's km/↑/↓/anchor_idx
+    // by finding its shortest leg path through the catalogue. This
+    // replaces hand-written endpoint deltas with cumulative GPX numbers
+    // and untangles cases where the recording's traversal order differs
+    // from the planned route (D2A vs D2B in the玉山 demo).
+    if (TF.gpxUnitize && planForSnap && planForSnap.data) {
+      // gpx_tracks must hold the new track at this ref so the unitizer
+      // can read it (persist() is asynchronous; do it inline first).
+      planForSnap.data.gpx_tracks = planForSnap.data.gpx_tracks || {};
+      planForSnap.data.gpx_tracks[ref] = track;
+      const unitized = TF.gpxUnitize.recomputeSegmentStats(planForSnap, ref);
+      if (unitized && unitized.updated && unitized.updated.length) {
+        console.log(`[gpx-io] unitize ${ref}: ${unitized.updated.length} segments updated, ${unitized.skipped.length} skipped`);
+        unitized.updated.forEach(u => {
+          console.log(`  ${u.where} ${u.from}→${u.to}  km ${u.oldKm}→${u.newKm}  ↑${u.oldAsc}→${u.newAsc}  ↓${u.oldDesc}→${u.newDesc}  ${u.reversed?'rev':'fwd'} (${u.legs}legs)`);
+        });
+      }
+      if (unitized && unitized.skipped && unitized.skipped.length) {
+        unitized.skipped.forEach(s => {
+          console.log(`[gpx-io] unitize skip: ${s.where} ${s.from}→${s.to} (no leg path — likely transport/non-GPX seg)`);
+        });
+      }
+    }
+
     setRowStatus(row, '上傳中…');
     const result = await persist(ref, track, meta, waypoints);
 
