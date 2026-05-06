@@ -903,7 +903,6 @@
     host.innerHTML = `
       <div class="rp-head">
         <div class="rp-title">休息點<span class="rp-title-en">REST POINTS</span></div>
-        <div class="rp-source">資料來源：上河圖步程 + 他人健行筆記紀錄綜合</div>
       </div>
       <div class="rp-speed-control">
         <label for="overview-speed" class="rp-sc-lbl">上河速度倍率</label>
@@ -947,19 +946,10 @@
         refreshChart();
       };
       input.addEventListener('change', onChange);
-      // Live update on every keystroke — table is small enough that a full
-      // re-render per input event is fine and keeps the focus selection
-      // sticky (we read overview.dataset before re-rendering). Also
-      // re-draws the overview chart so arrival pills above the dots track
-      // the new factor.
-      input.addEventListener('input', () => {
-        const f = parseFloat(input.value);
-        if (Number.isFinite(f) && f >= 0.5 && f <= 2.5) {
-          writeSpeed(f);
-          renderRestPoints(plan, f);
-          refreshChart();
-        }
-      });
+      // No `input` listener — every keystroke would re-render the host's
+      // innerHTML and destroy the very <input> the user is typing in,
+      // making the speed factor essentially uneditable. Re-render only
+      // on `change` (blur / Enter) which preserves focus during typing.
     }
 
     // Helper: resolve the live segments array for a given (dayId, variantId).
