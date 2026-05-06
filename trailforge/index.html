@@ -2389,89 +2389,52 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .overview-rest-points .rp-fork-row{ padding-left:48px; gap:8px; }
 }
 
-/* Auto-return divider — sits inside a day's segment list between the
-   ascent rows and the synthesised descent rows. Visually quieter than a
-   fork chip; signals "what follows is derived, not edited by you". */
-.overview-rest-points .rp-return-divider{
-  display:flex; align-items:center; gap:10px;
-  padding:6px 14px 6px 60px;
-  background:rgba(168,128,44,0.06);
-  border-top:1px dashed rgba(168,128,44,0.32);
-  border-bottom:1px dashed rgba(168,128,44,0.32);
-  font-family:var(--serif), serif; font-size:.74rem;
-  color:var(--gold-deep,#6e5316);
-}
-.overview-rest-points .rp-return-divider .rp-rd-mark{
-  font-size:1rem; font-weight:700; color:#a8802c;
-  transform:translateY(-1px);
-}
-.overview-rest-points .rp-return-divider .rp-rd-label{
-  font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; font-size:.62rem;
-  padding:2px 8px;
-  border:1px solid rgba(168,128,44,0.45);
-  border-radius:99px;
-  color:var(--gold-deep,#6e5316);
-  background:rgba(255,255,255,0.4);
-}
-.overview-rest-points .rp-return-divider .rp-rd-route{
-  font-family:"Fraunces", var(--serif), serif; font-style:italic;
-  font-size:.82rem; color:var(--ink,#1a1d17);
-}
-.overview-rest-points .rp-return-divider .rp-rd-route b{
-  font-style:normal; font-weight:600; color:var(--pri-deep,#0a1a06);
-}
-.overview-rest-points .rp-return-divider .rp-rd-arrow{
-  margin:0 4px; opacity:.55;
-}
-@media(max-width:560px){
-  .overview-rest-points .rp-return-divider{ padding-left:48px; gap:6px; flex-wrap:wrap; }
-}
-
-/* Rest-stop block — in-place dwell (lunch / 整裝 / 補眠). Sage tone to
-   match the "+ 休息" creator button. Reads as one cohesive block (single
-   waypoint name + 休息 tag + duration), distinct from transit rows so
-   the 排雲山莊→排雲山莊 form never appears in the table. */
+/* Rest-stop block — in-place dwell (lunch / 整裝 / 補眠). Same vertical
+   rhythm as transit rows; sage tint distinguishes it. Note flows below
+   in a standard .rp-note-row so all rows share one comment style. */
 .overview-rest-points .rp-rest-row{
-  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
-  padding:7px 14px 7px 60px;
-  background:rgba(120,140,90,0.07);
-  border-bottom:1px solid rgba(120,140,90,0.22);
-  font-family:var(--serif), serif;
+  display:flex; align-items:center; gap:8px;
+  padding:4px 8px 4px 44px;
+  background:rgba(120,140,90,0.055);
+  border-bottom:1px solid rgba(120,140,90,0.18);
+  font-family:var(--serif), serif; font-size:.8rem;
+  line-height:1.25;
 }
 .overview-rest-points .rp-rest-row .rp-rest-mark{
-  font-size:1rem;
+  font-size:.92rem; flex:none;
 }
 .overview-rest-points .rp-rest-row .rp-rest-label{
-  font-family:var(--mono); font-weight:700; letter-spacing:.18em;
-  font-size:.62rem; text-transform:uppercase;
-  padding:2px 8px; border-radius:99px;
+  font-family:var(--mono); font-weight:700; letter-spacing:.14em;
+  font-size:.56rem; text-transform:uppercase;
+  padding:1px 6px; border-radius:99px;
   background:rgba(120,140,90,0.18);
-  border:1px solid rgba(120,140,90,0.45);
-  color:#3a4a22;
+  border:1px solid rgba(120,140,90,0.4);
+  color:#3a4a22; flex:none;
 }
 .overview-rest-points .rp-rest-row .rp-rest-place{
   font-family:"Fraunces", var(--serif), serif; font-style:italic;
-  font-size:.95rem; font-weight:700; color:var(--pri-deep,#0a1a06);
+  font-size:.86rem; font-weight:700; color:var(--pri-deep,#0a1a06);
+  white-space:nowrap;
 }
 .overview-rest-points .rp-rest-row .rp-rest-clock{
-  font-family:var(--mono); font-size:.78rem; font-weight:700;
-  color:#3a4a22; opacity:.85;
-  display:inline-flex; align-items:center; gap:5px;
+  font-family:var(--mono); font-size:.72rem; font-weight:700;
+  color:#3a4a22; opacity:.8;
+  display:inline-flex; align-items:center; gap:4px;
+  flex:none;
 }
 .overview-rest-points .rp-rest-row .rp-rest-clock .rp-rest-arrow{
-  opacity:.55; font-weight:400;
+  opacity:.5; font-weight:400;
 }
 .overview-rest-points .rp-rest-row .rp-rest-mins{
   margin-left:auto;
   display:inline-flex; align-items:center; gap:3px;
-  font-family:var(--mono); font-size:.92rem; font-weight:700;
+  font-family:var(--mono); font-size:.86rem; font-weight:700;
   color:var(--pri-deep,#0a1a06);
   flex:none;
 }
 .overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit{
-  width:42px; padding:1px 3px;
-  font-family:var(--mono); font-size:.92rem; font-weight:700;
+  width:40px; padding:1px 3px;
+  font-family:var(--mono); font-size:.86rem; font-weight:700;
   color:var(--pri-deep,#0a1a06);
   background:rgba(255,255,255,0.65);
   border:1px dashed rgba(120,140,90,0.45);
@@ -2487,26 +2450,11 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   outline:none; border-style:solid; border-color:#5e6e3c; background:#fff;
 }
 .overview-rest-points .rp-rest-row .rp-rest-mins small{
-  font-size:.62rem; opacity:.7; margin-left:1px;
-}
-.overview-rest-points .rp-rest-row .rp-rest-note{
-  width:100%; flex:0 0 100%; padding-left:0; margin-top:2px;
-  font-style:italic; font-size:.78rem; color:var(--ink-soft,#5a4f3a);
-}
-.overview-rest-points .rp-rest-row .rp-rest-note-edit{ padding-top:3px; }
-.overview-rest-points .rp-rest-row .rp-rest-note-edit .rp-note-input{
-  width:100%; padding:3px 6px;
-  border:1px dashed rgba(120,140,90,0.45);
-  background:rgba(255,255,255,0.6); border-radius:3px;
-  font-family:var(--serif), serif; font-style:italic; font-size:.78rem;
-  color:var(--ink,#1a1d17);
-}
-.overview-rest-points .rp-rest-row .rp-rest-note-edit .rp-note-input:focus{
-  outline:none; border-style:solid; border-color:#5e6e3c;
-  background:#fff;
+  font-size:.58rem; opacity:.7; margin-left:1px;
 }
 @media(max-width:560px){
-  .overview-rest-points .rp-rest-row{ padding-left:48px; gap:6px; }
+  .overview-rest-points .rp-rest-row{ padding-left:36px; gap:6px; flex-wrap:wrap; }
+  .overview-rest-points .rp-rest-row .rp-rest-clock{ font-size:.68rem; }
 }
 
 /* Speed control */
@@ -2551,39 +2499,50 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 .overview-rest-points .rp-row{
   display:grid;
-  /* chip | cumulative km | route | COST (mins) | km/elev meta | ARRIVAL (clock) */
-  grid-template-columns: 38px 56px minmax(0, 1fr) 92px 180px 96px;
-  gap:8px; align-items:center;
-  padding:7px 10px;
-  border-bottom:1px solid rgba(42,36,24,0.10);
-  font-family:var(--serif); font-size:.84rem;
+  /* chip | cum-km | route | cost | km/elev meta | arrival */
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 152px 80px;
+  gap:6px; align-items:center;
+  padding:4px 8px;
+  border-bottom:1px solid rgba(42,36,24,0.08);
+  font-family:var(--serif); font-size:.8rem;
   color:var(--ink,#1a1a17);
+  line-height:1.25;
 }
 .overview-rest-points .rp-row:last-child{border-bottom:none;}
+/* Auto-补齊 descent rows — paper-tinted left rule + italic route reads
+   "derived, not edited", replacing the removed ↺ banner divider. */
+.overview-rest-points .rp-row.rp-row-return{
+  background:rgba(120,140,90,0.045);
+  box-shadow:inset 2px 0 0 rgba(120,140,90,0.45);
+}
+.overview-rest-points .rp-row.rp-row-return .rp-from,
+.overview-rest-points .rp-row.rp-row-return .rp-to{
+  font-style:italic;
+}
 
 /* ===== Per-segment 備註 row ===== */
 /* Sits directly below the matching .rp-row. Edit mode: dotted-underline
    inline input — no border box, no chrome, just a thin "↳" mark + text.
    View mode: muted italic prose, only rendered when there is content. */
 .overview-rest-points .rp-note-row{
-  display:flex; align-items:center; gap:8px;
-  padding:2px 10px 6px 60px;     /* aligned with route column (after chip+km) */
-  border-bottom:1px solid rgba(42,36,24,0.10);
+  display:flex; align-items:center; gap:6px;
+  padding:0 8px 3px 44px;
+  border-bottom:1px solid rgba(42,36,24,0.08);
   background:transparent;
   font-family:var(--serif);
 }
 .overview-rest-points .rp-note-row .rp-note-mark{
   font-family:var(--mono); color:var(--gold-deep,#6e5316);
-  font-size:.74rem; opacity:.55; flex:none;
+  font-size:.7rem; opacity:.5; flex:none;
 }
 .overview-rest-points .rp-note-row .rp-note-input{
-  flex:1; min-width:0; padding:3px 0 4px;
+  flex:1; min-width:0; padding:1px 0 2px;
   background:transparent;
-  border:0; border-bottom:1px dotted rgba(168,128,44,.32);
+  border:0; border-bottom:1px dotted rgba(168,128,44,.3);
   border-radius:0;
   font:inherit;
   font-family:var(--serif),"Noto Serif TC",serif;
-  font-size:.78rem; color:var(--ink, #1a1a17);
+  font-size:.74rem; color:var(--ink, #1a1a17);
 }
 .overview-rest-points .rp-note-row .rp-note-input::placeholder{
   color:rgba(42,36,24,.32); font-style:italic;
@@ -3074,21 +3033,20 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .overview-rest-points .rp-row > .rp-arrive{ grid-area: arrive;}
 }
 
-/* Day-header row — non-hiking day pill, full-width text. Use grid-column
-   span so it overrides the row template (5 cols → 1 spanning row). */
+/* Day-header row — slim banded label that opens each day. */
 .overview-rest-points .rp-day-header{
-  display:flex; align-items:center; gap:10px;
-  background:rgba(122,116,104,0.08);
+  display:flex; align-items:center; gap:8px;
+  background:rgba(122,116,104,0.07);
   font-family:var(--serif); font-style:italic;
   color:var(--ink-soft,#7a7468);
-  padding:6px 10px;
+  padding:3px 8px;
+  font-size:.74rem;
 }
 .overview-rest-points .rp-day-header .rp-day-name{
-  font-style:normal; font-weight:600; color:var(--pri-deep,#0a1a06);
+  font-style:normal; font-weight:700; color:var(--pri-deep,#0a1a06);
+  font-size:.82rem;
 }
-.overview-rest-points .rp-day-header .rp-day-note{
-  font-size:.78rem;
-}
+.overview-rest-points .rp-day-header .rp-day-note{ font-size:.72rem; }
 
 /* Day-subtotal row — same paper background as the rest of the table, but
    marked off with a brass top rule + a "TOTAL" mono pill so it reads as a
@@ -3096,9 +3054,9 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
    matches the segment rows; only the values get a slight weight bump. */
 .overview-rest-points .rp-subtotal{
   display:grid;
-  grid-template-columns: 38px 56px minmax(0, 1fr) 92px 180px 96px;
-  gap:8px; align-items:center;
-  padding:8px 10px;
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 152px 80px;
+  gap:6px; align-items:center;
+  padding:5px 8px;
   background:rgba(168,128,44,0.10);
   border-top:1.5px solid rgba(168,128,44,0.55);
   border-bottom:1px solid rgba(168,128,44,0.22);

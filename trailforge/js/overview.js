@@ -204,10 +204,14 @@
   // use, applied to the auto-return path.
   function buildReverseSegments(sourceSegs, plan) {
     if (!Array.isArray(sourceSegs)) return [];
-    // In-place rest stops (lunch, water break) don't have a meaningful
-    // "reverse" — drop them. Transport hops reverse naturally (bus
-    // back from 登山口 to 塔塔加 mirrors the morning ride in).
-    return sourceSegs.filter(s => !s.is_rest_stop).slice().reverse().map((s) => {
+    const out = [];
+    // Walk source in REVERSE; for each non-rest-stop seg, push a
+    // mirrored copy and remember which source index it came from
+    // (sourceSegIdx) so the Edit table can write a descent override
+    // back to the right place when the user types a new minute count.
+    for (let i = sourceSegs.length - 1; i >= 0; i--) {
+      const s = sourceSegs[i];
+      if (!s || s.is_rest_stop) continue;
       const a = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
       const ai0 = a[0], ai1 = a[1];
       const ref = s.gpx_ref || null;
@@ -215,7 +219,13 @@
       if (ref && ai0 != null && ai1 != null) {
         stats = gpxStatsBetween(plan, ref, ai1, ai0);
       }
-      return Object.assign({}, s, {
+      // Per-source override wins; otherwise apply the default 0.7
+      // descent factor (or s.descent_factor if explicitly set).
+      const override = (s.descent_override_minutes != null)
+        ? Math.max(0, Math.round(+s.descent_override_minutes || 0))
+        : null;
+      const factored = Math.round((+s.base_minutes || 0) * (+s.descent_factor || 0.7));
+      out.push(Object.assign({}, s, {
         id: 'r-' + (s.id || Math.random().toString(36).slice(2, 7)),
         from: s.to,
         to: s.from,
@@ -224,12 +234,11 @@
         ascent_m:    stats ? stats.ascent_m    : (+s.descent_m   || 0),
         descent_m:   stats ? stats.descent_m   : (+s.ascent_m    || 0),
         is_auto_return: true,
-        // Carry the descent multiplier hint (default 0.7 of ascent
-        // base_minutes) so View timeline derivation reflects faster
-        // descent pace. Per-segment override possible via s.descent_factor.
-        base_minutes: Math.round((+s.base_minutes || 0) * (+s.descent_factor || 0.7)),
-      });
-    });
+        sourceSegIdx: i,
+        base_minutes: override != null ? override : factored,
+      }));
+    }
+    return out;
   }
   function effectiveSegmentsForVariant(plan, day, variant) {
     const segs = (variant && variant.shanghe_segments) || [];
@@ -450,14 +459,6 @@
       let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
       segs.forEach((s, segIdx) => {
         const isReturnSeg = segIdx >= baseSegCount;
-        if (isReturnSeg && segIdx === baseSegCount) {
-          rows.push({
-            kind: 'return-divider',
-            dayId, dayLabel,
-            fromName: ret && ret.endName,
-            toName: ret && ret.startName,
-          });
-        }
         const dist = +s.distance_km || 0;
         const baseMin = +s.base_minutes || 0;
         const startKm = cumKm;
@@ -467,6 +468,11 @@
         const anchorHi = ai.length >= 2 ? ai[1] : null;
         const cumAfter = cumDayBaseMin + baseMin;
         const isRest = !!s.is_rest_stop || (s.from && s.from === s.to);
+        // Return rows store source-day pointers so the minute editor can
+        // write back to D1's seg.descent_override_minutes; transit rows
+        // edit themselves via segIdx + variantId.
+        const sourceDayId = isReturnSeg && ret ? ret.sourceDay.id : null;
+        const sourceSegIdx = isReturnSeg ? (s.sourceSegIdx != null ? s.sourceSegIdx : null) : null;
         rows.push({
           kind: isRest ? 'rest' : 'segment',
           dayId, dayLabel,
@@ -476,6 +482,7 @@
           note: s.note || '',
           segIdx: isReturnSeg ? null : segIdx,
           variantId: useRoute ? activeRouteId : null,
+          sourceDayId, sourceSegIdx,
           distance_km: dist,
           ascent_m: +s.ascent_m || 0,
           descent_m: +s.descent_m || 0,
@@ -645,22 +652,6 @@
         </div>${titleCell ? `<div class="rp-section-title-row">${titleCell}</div>` : ''}`;
       }
 
-      if (r.kind === 'return-divider') {
-        // Slim banded divider that sits between 攻頂 and 回程 rows of the
-        // same day. Reads "↺ 自動補齊回程：endName → startName" so the
-        // user can see which segments below were derived rather than
-        // hand-entered.
-        return `<div class="rp-row rp-return-divider">
-          <span class="rp-rd-mark" aria-hidden="true">↺</span>
-          <span class="rp-rd-label">自動補齊回程</span>
-          <span class="rp-rd-route">
-            <b>${escapeHtml(r.fromName || '')}</b>
-            <span class="rp-rd-arrow">→</span>
-            <b>${escapeHtml(r.toName || '')}</b>
-          </span>
-        </div>`;
-      }
-
       if (r.kind === 'add-segment') {
         const editing = document.body.classList.contains('tf-editing');
         if (!editing) return '';   // hide in view mode
@@ -735,26 +726,28 @@
             data-variant-id="${escapeHtml(r.variantId || '')}"
             data-to-name="${escapeHtml(r.atName || '休息')}"
             aria-label="刪除此休息" title="刪除此休息">✕</button>` : '';
-        const noteHtml = r.note
-          ? `<div class="rp-rest-note">${escapeHtml(r.note)}</div>`
-          : (canEdit && editing
-              ? `<div class="rp-rest-note rp-rest-note-edit"><input class="rp-note-input" type="text"
-                  data-day-id="${escapeHtml(r.dayId)}"
-                  data-seg-idx="${r.segIdx}"
-                  data-variant-id="${escapeHtml(r.variantId || '')}"
-                  value="" placeholder="備註（午餐／補水／拍照…）" aria-label="此段備註"></div>`
-              : '');
         const clockSpan = (startClock && endClock)
           ? `<span class="rp-rest-clock"><b>${startClock}</b><span class="rp-rest-arrow">→</span><b>${endClock}</b></span>`
           : '';
-        return `<div class="rp-row rp-rest-row">
+        let noteHtml = '';
+        if (canEdit && editing) {
+          noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
+            <span class="rp-note-mark" aria-hidden="true">↳</span>
+            <input class="rp-note-input" type="text" value="${escapeHtml(r.note || '')}" placeholder="備註（午餐／補水／拍照…）" aria-label="此段備註">
+          </div>`;
+        } else if (r.note) {
+          noteHtml = `<div class="rp-note-row rp-note-readonly">
+            <span class="rp-note-mark" aria-hidden="true">↳</span>
+            <span class="rp-note-text">${escapeHtml(r.note)}</span>
+          </div>`;
+        }
+        return `<div class="rp-row rp-rest-row${r.isReturn ? ' rp-row-return' : ''}">
           <span class="rp-rest-mark" aria-hidden="true">☕</span>
           <span class="rp-rest-label">休息</span>
           <span class="rp-rest-place">${escapeHtml(r.atName || '')}</span>
           ${clockSpan}
           <span class="rp-rest-mins">${minsCell}<small>分</small>${delBtn}</span>
-          ${noteHtml}
-        </div>`;
+        </div>${noteHtml}`;
       }
 
       if (r.kind === 'subtotal') {
@@ -799,6 +792,7 @@
       const attrs = focusable
         ? ` data-focusable="true" data-day-id="${escapeHtml(r.dayId)}" data-anchor-lo="${r.anchorLo}" data-anchor-hi="${r.anchorHi}" role="button" tabindex="0" aria-pressed="${isFocused ? 'true' : 'false'}"`
         : '';
+      const rowExtraClass = r.isReturn ? ' rp-row-return' : '';
       // Per-segment 備註 row — sits directly below the segment row. Edit
       // mode shows a clean dotted-underline input; the branch button now
       // lives next to the minutes cell (rp-cost) so it sits right where
@@ -806,6 +800,10 @@
       // point than dangling off the end of the note row.
       const editing = document.body.classList.contains('tf-editing');
       const canEditNote = !r.isReturn && r.segIdx != null;
+      // Return rows can edit MINUTES (writes to source D1 seg's
+      // descent_override_minutes via sourceDayId + sourceSegIdx) but
+      // not branch/delete/notes — the descent geometry is derived.
+      const canEditMins = canEditNote || (r.isReturn && r.sourceDayId != null && r.sourceSegIdx != null);
       // Git-branch SVG: vertical stem with a fork branching off to the
       // right. Click opens the inline new-variant form below.
       const branchBtn = (canEditNote && editing) ? `<button type="button" class="rp-branch-btn"
@@ -849,7 +847,7 @@
         </div>`;
       }
 
-      return `<div class="rp-row"${attrs}>
+      return `<div class="rp-row${rowExtraClass}"${attrs}>
         ${dayChip}
         <span class="rp-cum">${r.startKm.toFixed(1)}<small>km</small></span>
         <span class="rp-route">
@@ -859,12 +857,14 @@
         </span>
         <span class="rp-cost">
           <span class="rp-cost-main">
-            ${(canEditNote && editing) ? `<input type="number" class="rp-min-edit"
+            ${(canEditMins && editing) ? `<input type="number" class="rp-min-edit"
               data-day-id="${escapeHtml(r.dayId)}"
-              data-seg-idx="${r.segIdx}"
+              data-seg-idx="${r.segIdx == null ? '' : r.segIdx}"
               data-variant-id="${escapeHtml(r.variantId || '')}"
+              data-source-day-id="${escapeHtml(r.sourceDayId || '')}"
+              data-source-seg-idx="${r.sourceSegIdx == null ? '' : r.sourceSegIdx}"
               min="0" step="1" value="${derived}"
-              aria-label="此段步行分鐘">` : `<span class="rp-time-derived">${derived}</span>`}<small>分</small>
+              aria-label="${r.isReturn ? '下山段分鐘（覆寫源段）' : '此段步行分鐘'}">` : `<span class="rp-time-derived">${derived}</span>`}<small>分</small>
             ${branchBtn}
             ${deleteBtn}
           </span>
@@ -982,12 +982,25 @@
     // on `change` (blur / Enter) so derived/arrival/chart all refresh.
     host.querySelectorAll('.rp-min-edit').forEach((inp) => {
       const writeBase = () => {
-        const segArr = resolveSegArr(inp.dataset.dayId, inp.dataset.variantId || null);
-        const segIdx = +inp.dataset.segIdx;
-        if (!Array.isArray(segArr) || !segArr[segIdx]) return false;
         const factor = readSpeed() || 1;
         const typed = Math.max(0, Math.round(+inp.value || 0));
         const newBase = Math.max(0, Math.round(typed / factor));
+        // Return-row writes go to the SOURCE day's seg.descent_override_minutes
+        // (buildReverseSegments reads override-first, factor as fallback).
+        const sourceDayId = inp.dataset.sourceDayId || '';
+        const sourceSegIdx = inp.dataset.sourceSegIdx;
+        if (sourceDayId && sourceSegIdx !== '') {
+          const srcArr = resolveSegArr(sourceDayId, null);
+          const sIdx = +sourceSegIdx;
+          if (!Array.isArray(srcArr) || !srcArr[sIdx]) return false;
+          if (srcArr[sIdx].descent_override_minutes === newBase) return false;
+          srcArr[sIdx].descent_override_minutes = newBase;
+          if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          return true;
+        }
+        const segArr = resolveSegArr(inp.dataset.dayId, inp.dataset.variantId || null);
+        const segIdx = +inp.dataset.segIdx;
+        if (!Array.isArray(segArr) || !segArr[segIdx]) return false;
         if (segArr[segIdx].base_minutes === newBase) return false;
         segArr[segIdx].base_minutes = newBase;
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
