@@ -140,6 +140,15 @@
     if (!a || !b || a.trackRef !== b.trackRef) return null;
     return gpxStatsBetween(plan, a.trackRef, a.idx, b.idx);
   }
+  // Naismith baseline: 5 km/h flat + 1 hour per 600 m of climb. Used as
+  // a default when GPX gives us geometry but no minute count is known
+  // (add-地標 form, delete-merge geometry recompute, future automation).
+  // Existing user-set base_minutes is never overwritten — callers gate.
+  function computeBaseMinutes(distance_km, ascent_m /*, descent_m */) {
+    const horiz = (+distance_km || 0) * 12;
+    const asc   = (+ascent_m   || 0) / 10;
+    return Math.max(0, Math.round(horiz + asc));
+  }
 
   // ── Auto-return synthesis (shared by Edit + View) ─────────────────────
   // Locates the ascent_only day whose segments should be reversed onto
@@ -1083,14 +1092,16 @@
         const kmInput   = form.querySelector('.rp-add-km');
         const ascInput  = form.querySelector('.rp-add-asc');
         const descInput = form.querySelector('.rp-add-desc');
+        const minInput  = form.querySelector('.rp-add-min');
         const status    = form.querySelector('.rp-add-gpx-status');
         // Track which numeric fields the user has typed in by hand —
         // we won't overwrite those from GPX. Manual edits set a marker.
-        const manual = { km: false, asc: false, desc: false };
+        const manual = { km: false, asc: false, desc: false, min: false };
         const markManual = (key) => () => { manual[key] = true; };
         kmInput.addEventListener('input', markManual('km'));
         ascInput.addEventListener('input', markManual('asc'));
         descInput.addEventListener('input', markManual('desc'));
+        minInput.addEventListener('input', markManual('min'));
         // On name change (datalist pick or blur), if both endpoints
         // resolve to the same GPX track, auto-fill numeric fields with
         // straight-line GPX-derived stats. Skip fields the user already
@@ -1124,9 +1135,11 @@
           if (!manual.km)   kmInput.value   = stats.distance_km;
           if (!manual.asc)  ascInput.value  = stats.ascent_m;
           if (!manual.desc) descInput.value = stats.descent_m;
+          const naismith = computeBaseMinutes(stats.distance_km, stats.ascent_m, stats.descent_m);
+          if (!manual.min)  minInput.value  = naismith;
           status.hidden = false;
           status.className = 'rp-add-gpx-status rp-gpx-hit';
-          status.textContent = `已由 GPX 估算：${stats.distance_km} km　↑${stats.ascent_m}m　↓${stats.descent_m}m（可手動覆寫）`;
+          status.textContent = `已由 GPX 估算：${stats.distance_km} km　↑${stats.ascent_m}m　↓${stats.descent_m}m　≈ ${naismith} 分（Naismith；可手動覆寫）`;
         };
         nameInput.addEventListener('change', tryAutofill);
         nameInput.addEventListener('blur',   tryAutofill);
@@ -1217,17 +1230,23 @@
                      || (day && day.gpx_ref) || (ep && ep.gpx_ref) || null;
             if (ref) derived = gpxStatsBetween(plan, ref, fromAnchor.idx, toAnchor.idx);
           }
+          // When GPX gave us a fresh distance/ascent for the merged leg,
+          // re-derive base_minutes from Naismith too — straight summing
+          // the two old base_minutes values would over-count if the
+          // detour through the deleted landmark added time the direct
+          // route doesn't need.
+          const mergedMinutes = derived
+            ? computeBaseMinutes(derived.distance_km, derived.ascent_m, derived.descent_m)
+            : (+cur.base_minutes || 0) + (+next.base_minutes || 0);
           const merged = Object.assign({}, next, {
             from: cur.from,
-            base_minutes: (+cur.base_minutes || 0) + (+next.base_minutes || 0),
+            base_minutes: mergedMinutes,
             distance_km: derived ? derived.distance_km : ((+cur.distance_km || 0) + (+next.distance_km || 0)),
             ascent_m:    derived ? derived.ascent_m    : ((+cur.ascent_m    || 0) + (+next.ascent_m    || 0)),
             descent_m:   derived ? derived.descent_m   : ((+cur.descent_m   || 0) + (+next.descent_m   || 0)),
             anchor_idx: (cur.anchor_idx && next.anchor_idx)
               ? [cur.anchor_idx[0], next.anchor_idx[1]]
               : (next.anchor_idx || cur.anchor_idx || null),
-            // Drop the deleted segment's note — keep next's so the
-            // user's intent for the surviving leg is preserved.
             note: next.note || '',
           });
           segArr.splice(segIdx, 2, merged);
@@ -2125,6 +2144,7 @@
     findAutoReturnSource, buildReverseSegments, effectiveSegmentsForVariant,
     getEffectiveDayContext,
     findWaypointTrackIdx, gpxStatsBetween, gpxStatsBetweenNames,
+    computeBaseMinutes,
   };
 
   // Register a collector so per-day start_time edits made in the rest-points
