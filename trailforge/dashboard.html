@@ -99,6 +99,90 @@ body{
   margin-bottom:32px;
   text-decoration:none;
 }
+/* Two-button row: linear FORGE slab on the left, vermillion wax-seal
+   on the right. Wraps on mobile. */
+.btn-row{
+  display:flex; align-items:center; gap:28px; flex-wrap:wrap;
+  margin-bottom:32px;
+}
+.btn-row .new-btn{ margin-bottom:0; }
+
+/* 玉山範本 wax-seal stamp button — vermillion lacquer, tilted, hand-pressed.
+   One-click clone of the official 玉山主峰・北峰 plan template (no chooser
+   modal — bypasses showCreateChooser, calls createPlan() directly). */
+.tpl-stamp-btn{
+  appearance:none; cursor:pointer; border:none; background:none; padding:0;
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  width:96px; height:96px; flex:none;
+  transform:rotate(-5deg);
+  transition: transform .35s cubic-bezier(.2,.85,.25,1),
+              filter .25s cubic-bezier(.2,.7,.2,1);
+  filter: drop-shadow(0 5px 10px rgba(139,42,31,0.32));
+  isolation:isolate;
+}
+.tpl-stamp-btn::before{
+  /* outer wax disc */
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:
+    radial-gradient(circle at 30% 26%, #de574a 0%, #b03828 38%, #7a1f15 78%, #4a0f08 100%);
+  box-shadow:
+    inset 0 -4px 10px rgba(0,0,0,0.4),
+    inset 0 2px 5px rgba(255,255,255,0.22),
+    0 1px 0 rgba(255,255,255,0.18);
+}
+.tpl-stamp-btn::after{
+  /* inner dashed ring — old-permit detail */
+  content:""; position:absolute; inset:9px; border-radius:50%;
+  border:1px dashed rgba(252,230,198,0.52);
+  pointer-events:none;
+}
+.tpl-stamp-btn .ts-inner{
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  color:#fce6c6;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.45), 0 0 8px rgba(255,224,180,0.18);
+  line-height:1; gap:2px;
+}
+.tpl-stamp-btn .ts-peak{
+  font-size:.66rem; opacity:.78; line-height:1;
+  margin-bottom:2px;
+}
+.tpl-stamp-btn .ts-zh{
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-weight:900; font-size:1.34rem;
+  letter-spacing:.04em;
+}
+.tpl-stamp-btn .ts-en{
+  font-family:var(--mono);
+  font-size:.46rem; font-weight:700;
+  letter-spacing:.32em;
+  margin-top:3px; opacity:.76;
+  text-transform:uppercase;
+}
+.tpl-stamp-btn:hover{
+  transform: rotate(0deg) scale(1.05);
+  filter: drop-shadow(0 9px 18px rgba(139,42,31,0.5));
+}
+.tpl-stamp-btn:hover::before{
+  background:
+    radial-gradient(circle at 32% 26%, #e85a4a 0%, #b8392a 36%, #7e2117 78%, #4a0f08 100%);
+}
+.tpl-stamp-btn:active{
+  transform: rotate(-3deg) scale(.97) translateY(1px);
+  filter: drop-shadow(0 2px 4px rgba(139,42,31,0.32));
+  transition-duration:.08s;
+}
+.tpl-stamp-btn:disabled{ opacity:.45; cursor:wait; }
+/* Subtle "press" pulse on first paint so the user notices it. */
+@keyframes ts-settle{
+  0%   { transform: rotate(-12deg) scale(.6); opacity:0; filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+  50%  { transform: rotate(-2deg) scale(1.08); opacity:1; }
+  100% { transform: rotate(-5deg) scale(1); opacity:1; filter: drop-shadow(0 5px 10px rgba(139,42,31,0.32)); }
+}
+.tpl-stamp-btn{ animation: ts-settle .7s cubic-bezier(.2,.85,.25,1) both; animation-delay:.3s; }
+@media (prefers-reduced-motion: reduce){
+  .tpl-stamp-btn{ animation:none; }
+}
 .new-btn .body{
   background:var(--pri-deep); color:var(--paper);
   padding:14px 22px;
@@ -457,10 +541,21 @@ body{
     </div>
   </div>
 
-  <button class="new-btn" id="new-btn" type="button">
-    <span class="body"><span class="plus">+</span><span>新增計劃書</span></span>
-    <span class="stamp">FORGE</span>
-  </button>
+  <div class="btn-row">
+    <button class="new-btn" id="new-btn" type="button">
+      <span class="body"><span class="plus">+</span><span>新增計劃書</span></span>
+      <span class="stamp">FORGE</span>
+    </button>
+    <button class="tpl-stamp-btn" id="tpl-stamp-btn" type="button"
+            aria-label="從玉山主峰・北峰範本建立計劃書"
+            title="從玉山主峰・北峰範本建立計劃書">
+      <span class="ts-inner">
+        <span class="ts-peak" aria-hidden="true">▲</span>
+        <span class="ts-zh">玉山</span>
+        <span class="ts-en">Yushan Tpl</span>
+      </span>
+    </button>
+  </div>
 
   <div id="content">
     <div class="status-line" id="status">載入中…</div>
@@ -907,6 +1002,7 @@ body{
   async function createPlan() {
     newBtn.disabled = true;
     const allEmpty = $('empty-new'); if (allEmpty) allEmpty.disabled = true;
+    const tplStamp = $('tpl-stamp-btn'); if (tplStamp) tplStamp.disabled = true;
     try {
       // Pull plan.json from same origin (it's the static demo template)
       const tplRes = await fetch('plan.json');
@@ -921,6 +1017,7 @@ body{
         showToast('離線：新增已暫存。請連上網後按「⬆ 上傳」。');
         newBtn.disabled = false;
         const allEmptyQ = $('empty-new'); if (allEmptyQ) allEmptyQ.disabled = false;
+        const tplStampQ = $('tpl-stamp-btn'); if (tplStampQ) tplStampQ.disabled = false;
         return;
       }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -931,6 +1028,7 @@ body{
       showToast('建立失敗：' + e.message);
       newBtn.disabled = false;
       const allEmpty2 = $('empty-new'); if (allEmpty2) allEmpty2.disabled = false;
+      const tplStamp2 = $('tpl-stamp-btn'); if (tplStamp2) tplStamp2.disabled = false;
     }
   }
 
@@ -1406,6 +1504,10 @@ body{
   }
 
   newBtn.addEventListener('click', showCreateChooser);
+  // 玉山 wax-seal stamp — one-click clone of the official template
+  // (skips the GPX/template chooser modal that newBtn opens).
+  const tplStampBtn = $('tpl-stamp-btn');
+  if (tplStampBtn) tplStampBtn.addEventListener('click', createPlan);
   $('logout-btn').addEventListener('click', async () => {
     try { await api('/auth/logout', { method: 'POST', keepalive: true }); } catch {}
     localStorage.removeItem(TOKEN_KEY);
