@@ -2579,6 +2579,20 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   color:var(--ink-soft,#7a7468); text-transform:uppercase;
 }
 
+/* When the branch form is open, dim every row below it so the new path
+   visually replaces the rest of the day. Restored on cancel; on confirm
+   the full re-render rebuilds the list with the new structure. */
+.overview-rest-points .rp-list .rp-faded-out{
+  opacity:.28;
+  pointer-events:none;
+  filter: grayscale(.4);
+  transition: opacity .25s ease;
+}
+.overview-rest-points .rp-list.rp-branching .rp-branch-form{
+  /* Lift form above the faded rows */
+  position:relative; z-index:1;
+}
+
 /* Section-title row sits directly under the day-header. Edit mode shows a
    subtle dotted-underline input; view mode shows italic prose only when
    non-empty. Same indented column as the note rows. */

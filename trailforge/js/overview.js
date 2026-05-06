@@ -758,6 +758,19 @@
           return;
         }
         const halfMin = Math.max(1, Math.round((+seg.base_minutes || 0) / 2));
+        // Collect waypoint suggestions from across the plan + GPX wpts so
+        // the user can pick a known stop instead of typing free-hand.
+        const waypointSuggestions = collectKnownWaypointNames(plan);
+        const datalistId = 'rp-wp-suggestions-' + Math.random().toString(36).slice(2, 8);
+        // Fade rows BELOW the current row to communicate "this branch
+        // replaces the rest of the path". closeForm() restores them.
+        const segListHost = wrap.parentNode;
+        segListHost.classList.add('rp-branching');
+        let cur = wrap.nextSibling;
+        while (cur) {
+          if (cur.nodeType === 1) cur.classList.add('rp-faded-out');
+          cur = cur.nextSibling;
+        }
         form = document.createElement('div');
         form.className = 'rp-branch-form';
         form.innerHTML = `
@@ -767,22 +780,34 @@
               <path d="M4 4.5v7" stroke="currentColor" stroke-width="1.4" fill="none"/>
               <path d="M4 7.5 q 0 -2 4 -2 t 4 1" stroke="currentColor" stroke-width="1.4" fill="none"/>
             </svg>
-            在 <b>${escapeHtml(seg.from)}</b> → <b>${escapeHtml(seg.to)}</b> 之間插入新休息點
+            從 <b>${escapeHtml(seg.from)}</b> 創建一個新的路線
           </div>
           <div class="rp-branch-fields">
-            <label><span>名稱</span><input type="text" class="rp-branch-name" placeholder="例：黑木林觀景台"></label>
+            <label><span>下一個休息點</span>
+              <input type="text" class="rp-branch-name" list="${datalistId}" placeholder="輸入或從建議清單選擇" autocomplete="off">
+              <datalist id="${datalistId}">
+                ${waypointSuggestions.map(n => `<option value="${escapeHtml(n)}"></option>`).join('')}
+              </datalist>
+            </label>
             <label><span>從 ${escapeHtml(seg.from)} 走</span><input type="number" class="rp-branch-min" min="1" max="${(+seg.base_minutes || 1) - 1}" value="${halfMin}"><span class="rp-branch-unit">分</span></label>
           </div>
           <div class="rp-branch-actions">
             <button type="button" class="rp-branch-cancel">取消</button>
-            <button type="button" class="rp-branch-confirm">＋ 插入</button>
+            <button type="button" class="rp-branch-confirm">＋ 建立新路線</button>
           </div>
-          <p class="rp-branch-hint">插入後會把此段拆成兩段，距離 / 升降按比例平均；之後可手動微調。</p>
+          <p class="rp-branch-hint">確認後會從此點起為起點，後續路線將由你新建的休息點組成。</p>
         `;
         wrap.parentNode.insertBefore(form, wrap.nextSibling);
         form.querySelector('.rp-branch-name').focus();
 
-        form.querySelector('.rp-branch-cancel').addEventListener('click', () => form.remove());
+        // Helper: cleanly close the form + restore faded-out rows below.
+        const closeForm = () => {
+          form.remove();
+          segListHost.classList.remove('rp-branching');
+          segListHost.querySelectorAll('.rp-faded-out').forEach(el => el.classList.remove('rp-faded-out'));
+        };
+
+        form.querySelector('.rp-branch-cancel').addEventListener('click', closeForm);
         form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
           const newName = form.querySelector('.rp-branch-name').value.trim();
           const splitMin = +form.querySelector('.rp-branch-min').value;
@@ -822,6 +847,9 @@
           };
           segArr.splice(segIdx, 1, before, after);
           if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          // The full re-render below replaces the entire rest-points list,
+          // so the faded-out rows + form get blown away naturally — no
+          // explicit closeForm() needed here.
           renderRestPoints(plan, readSpeed());
           if (TF.modeToggle && TF.modeToggle.refreshAll) {
             requestAnimationFrame(() => TF.modeToggle.refreshAll());
@@ -830,6 +858,28 @@
         });
       });
     });
+
+    // Helper for the branch form's name autocomplete: union of every
+    // segment endpoint across the plan + any GPX waypoint names if loaded.
+    function collectKnownWaypointNames(plan) {
+      const set = new Set();
+      const add = (n) => { const s = String(n || '').trim(); if (s) set.add(s); };
+      (plan.days || []).forEach(d => {
+        const ep = d.elevation_profile;
+        if (!ep) return;
+        (ep.shanghe_segments || []).forEach(s => { add(s.from); add(s.to); });
+        if (ep.route_variants) {
+          Object.values(ep.route_variants).forEach(v => {
+            (v.shanghe_segments || []).forEach(s => { add(s.from); add(s.to); });
+          });
+        }
+        if (ep.summit_label) add(ep.summit_label);
+      });
+      // GPX waypoints (uploaded via gpx-io). Names live on each <wpt>'s name.
+      const wpts = (window.__JM_GPX_WPTS__) || (window.__JM_GPX__ && window.__JM_GPX__.__wpts) || [];
+      if (Array.isArray(wpts)) wpts.forEach(w => add(w && w.name));
+      return [...set].sort();
+    }
 
     // ── Bind day section_title inputs (edit mode only) ──
     host.querySelectorAll('.rp-section-title-edit').forEach((inp) => {
