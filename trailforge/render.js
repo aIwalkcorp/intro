@@ -678,6 +678,10 @@
   }
   TF.render = render;
   TF.loadPlan = loadPlan;
+  // Expose the schedule→segment-note migration helper so the legacy
+  // plan upgrader (TF.migrate.upgradeLegacyPlan) can run it BEFORE
+  // clearing day.schedule[] / route.schedule[] arrays.
+  TF.render.__migrateNotes = migrateScheduleNotesToSegments;
   // (TF was bound to window.TF up top — no reassignment here.)
 
   // PWA standalone mode = "frozen offline app per plan". Once the plan has
