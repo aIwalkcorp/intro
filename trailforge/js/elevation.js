@@ -821,10 +821,22 @@
         const w = x1 - x0;
         if (w <= 0) return;
         const isAlt = (zebra++) % 2 === 1;
-        // Paper / sage alternation at very low alpha — visible enough
-        // to chunk the chart, faint enough not to fight the curve.
-        ctx.fillStyle = isAlt ? 'rgba(120,140,90,0.06)' : 'rgba(168,128,44,0.05)';
-        ctx.fillRect(x0, pad.t, w, gH);
+        // Visible zebra: alternate filled (sage tint) / empty so bands
+        // read as discrete chapters. Boundary dashed line on every
+        // segment edge anchors the eye even when the band is "empty".
+        if (isAlt) {
+          ctx.fillStyle = 'rgba(120,140,90,0.13)';
+          ctx.fillRect(x0, pad.t, w, gH);
+        }
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = 'rgba(110,83,22,0.32)';
+        ctx.beginPath();
+        ctx.moveTo(x1, pad.t + 24);     // start below the day-band header
+        ctx.lineTo(x1, pad.t + gH);
+        ctx.stroke();
+        ctx.restore();
         const asc = +s.ascent_m || 0;
         const desc = +s.descent_m || 0;
         const dist = +s.distance_km || 0;
