@@ -18,17 +18,26 @@
   const TF = (window.TF = window.TF || {});
 
   // docx-js 9.x dropped UMD; only 8.x ships a browser-loadable bundle.
-  // Try jsdelivr first (faster + more reliable), unpkg as fallback.
+  // Bundled locally (./js/vendor/docx-8.5.0.umd.js) so the export works
+  // offline / inside PWA / on networks that block jsdelivr & unpkg —
+  // the previous "CDN-only" loader broke for users behind firewalls
+  // and inside the standalone PWA shell where cross-origin script
+  // imports don't go through the SW. CDN URLs kept as last-resort
+  // fallbacks in case the local bundle is missing for some reason.
+  const DOCX_LOCAL = './js/vendor/docx-8.5.0.umd.js';
   const DOCX_CDN_URLS = [
     'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js',
     'https://unpkg.com/docx@8.5.0/build/index.umd.js',
   ];
 
-  function loadOneScript(src) {
+  function loadOneScript(src, opts) {
+    opts = opts || {};
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = src;
-      s.crossOrigin = 'anonymous';
+      // Same-origin scripts: leave crossOrigin unset so the SW can
+      // intercept normally. CDN fallbacks need anonymous CORS.
+      if (opts.crossOrigin) s.crossOrigin = opts.crossOrigin;
       s.onload = () => resolve();
       s.onerror = () => reject(new Error('script load failed: ' + src));
       document.head.appendChild(s);
@@ -40,14 +49,21 @@
     if (window.__tfDocxLoading) return window.__tfDocxLoading;
     window.__tfDocxLoading = (async () => {
       let lastErr = null;
+      // 1) Local bundle first — works offline + PWA + corporate networks.
+      try {
+        await loadOneScript(DOCX_LOCAL);
+        if (window.docx) return window.docx;
+        lastErr = new Error('local bundle ran but window.docx undefined');
+      } catch (e) { lastErr = e; }
+      // 2) CDN fallbacks (only reached if the local bundle is missing).
       for (const url of DOCX_CDN_URLS) {
         try {
-          await loadOneScript(url);
+          await loadOneScript(url, { crossOrigin: 'anonymous' });
           if (window.docx) return window.docx;
           lastErr = new Error('script ran but window.docx still undefined: ' + url);
         } catch (e) { lastErr = e; }
       }
-      throw lastErr || new Error('all docx CDN sources failed');
+      throw lastErr || new Error('all docx sources failed');
     })();
     return window.__tfDocxLoading;
   }

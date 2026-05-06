@@ -4410,6 +4410,17 @@ window.tfConfirm = function (opts) {
     if (params.get('demo') === '1') return;
     var token = localStorage.getItem('tf_access_token');
     if (!token) return;
+    // PWA standalone escape: a logged-in user launching the installed
+    // app at bare /trailforge/ would otherwise mint a NEW clone every
+    // launch (because the app shortcut points at the bare URL). Send
+    // them to dashboard instead so they can pick which plan to open.
+    var standalone = window.matchMedia &&
+      (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true);
+    if (standalone) {
+      var apiQS_pwa = params.get('api') ? '?api=' + encodeURIComponent(params.get('api')) : '';
+      location.replace('dashboard.html' + apiQS_pwa);
+      return;
+    }
     // Show a parchment-tinted "preparing your copy…" overlay so the
     // page doesn't flash the demo content before the clone redirect.
     var ov = document.createElement('div');
