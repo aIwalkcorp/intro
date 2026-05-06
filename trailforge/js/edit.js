@@ -79,29 +79,13 @@
     .tf-edit-fab svg{width:16px; height:16px}
   }
 
-  /* Save bar (visible while editing). Fully hidden + non-interactive when not
-     showing so it can't peek above the viewport edge. */
-  .tf-edit-bar{
-    position:fixed; left:50%; bottom:14px; z-index:1500;
-    transform:translateX(-50%) translateY(calc(100% + 24px));
-    opacity:0; pointer-events:none;
-    display:flex; align-items:center; gap:10px;
-    padding:10px 14px;
-    background:linear-gradient(178deg,#fbf6e8,#ebe1c9);
-    color:#1a1a17;
-    border:1px solid rgba(42,36,24,0.45);
-    box-shadow:0 14px 40px rgba(10,26,6,0.45), inset 0 1px 0 rgba(255,255,255,0.7);
-    transition: transform .3s cubic-bezier(.2,.7,.2,1), opacity .25s ease;
-    font-family:"Noto Serif TC",serif;
-  }
-  /* The bar is mounted with .show as soon as edit mode begins, but stays
-     hidden until there are actual changes (body.tf-dirty). Save/cancel
-     have no purpose with no pending edits — keeping the bar off-screen
-     until you've changed something declutters the canvas significantly. */
-  body.tf-dirty .tf-edit-bar.show{
-    transform:translateX(-50%) translateY(0);
-    opacity:1; pointer-events:auto;
-  }
+  /* Save bar — DOM-only now. The top-right #jmSaveChip is the primary
+     save affordance; this bottom bar was redundant and overlapped the
+     stats footer in mobile widths. Hidden visually but #tfEditSave /
+     #tfEditCancel are still in the DOM because index.html's save chip
+     delegates clicks to them. */
+  .tf-edit-bar{ display:none !important; }
+  body.tf-dirty .tf-edit-bar.show{ display:none !important; }
   .tf-edit-bar .close-x{
     appearance:none; background:transparent; border:none; cursor:pointer;
     width:26px; height:26px; padding:0;
@@ -395,24 +379,33 @@
   }
 
   // ---------- API helper ----------
-  // Mutating calls (PATCH plans etc.) ALWAYS queue locally — they only push
-  // to the backend when the user explicitly taps the 上傳 pill. This makes
-  // upload purely manual; the user controls when their edits go online.
-  // GETs (e.g. fetching a plan to enter edit mode) still hit the network
-  // directly so the user sees the latest copy when they start editing.
+  // Online: PATCH/POST go straight to the backend through the outbox
+  // wrapper, which auto-queues ONLY on real network errors (TypeError
+  // from fetch). Returns a fetch-like Response so callers can branch on
+  // r.ok / r.status / r.json().
+  // Offline (navigator.onLine === false): skip the doomed fetch attempt
+  // and queue immediately — the upload pill takes over and the user
+  // drains it manually when they're back online. The two-step "save
+  // then upload" is PWA-only behavior; online users see save → reload.
   async function api(path, opts = {}) {
     const method = (opts.method || "GET").toUpperCase();
     const headers = { Authorization: "Bearer " + token, ...(opts.headers || {}) };
     if (opts.body && !headers["content-type"]) headers["content-type"] = "application/json";
 
     if (method !== "GET" && window.TF_OUTBOX) {
-      const r = await window.TF_OUTBOX.send(apiBase + path, {
+      const offline = (typeof navigator !== "undefined" && navigator.onLine === false);
+      const sendOpts = {
         method, headers, body: opts.body, label: method + " " + path,
-        queueOnly: true,    // never auto-push; user drains via the upload pill
-      });
-      // queueOnly always returns { queued: true } — surface as "queued" so
-      // save() can show the right toast.
-      return { ok: true, status: 202, queued: true, json: async () => ({}) };
+      };
+      if (offline) sendOpts.queueOnly = true;
+      const r = await window.TF_OUTBOX.send(apiBase + path, sendOpts);
+      if (r.queued) {
+        return { ok: true, status: 202, queued: true, json: async () => (r.body || {}) };
+      }
+      return {
+        ok: r.ok, status: r.status, queued: false,
+        json: async () => (r.body || {}),
+      };
     }
     return fetch(apiBase + path, { ...opts, headers });
   }
