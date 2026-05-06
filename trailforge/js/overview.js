@@ -2693,6 +2693,23 @@
   registerStartTimeCollector();
   document.addEventListener('tf:edit-enter', registerStartTimeCollector);
 
+  // Re-render the rest-points table on edit mode transitions so the
+  // edit-only buttons (+ 加在前面 / + 多加一天 / day-header ✕ / per-row
+  // 🚨 / branch / delete) appear and disappear when the user toggles
+  // edit mode. Without this the buttons only show up if the user
+  // happened to be in edit mode AT the initial render — which is
+  // never the case for plans loaded via ?plan=<id>, only for the
+  // inline-data demo where edit mode can be entered before the first
+  // render happens via the early stash-restore path.
+  function rerenderOnEditChange() {
+    const plan = window.__PLAN__ || (TF.loadPlan && TF.loadPlan());
+    if (plan && plan.days) {
+      try { renderRestPoints(plan, readSpeed()); } catch (e) {}
+    }
+  }
+  document.addEventListener('tf:edit-enter', rerenderOnEditChange);
+  document.addEventListener('tf:edit-exit',  rerenderOnEditChange);
+
   // Auto-render once at DOM ready — render.js will re-call after fetch.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', render);
