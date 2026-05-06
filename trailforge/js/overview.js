@@ -292,8 +292,21 @@
             forkAt: s.to || '',
           });
         }
+
+        // Per-row "+" affordance — sits BELOW each segment row in edit
+        // mode so the user can append (a new waypoint, or an in-place
+        // rest) at any point in the timeline, not just at the day's end.
+        rows.push({
+          kind: 'add-segment',
+          dayId, dayLabel,
+          variantId: useRoute ? activeRouteId : null,
+          afterIdx: segIdx,
+          atName: s.to || '',
+        });
       });
-      // Subtotal row for this day
+      // Subtotal row for this day. The "+" affordance per segment row
+      // already gives the user an end-of-day appender (after the last
+      // segment), so no separate footer row is needed.
       rows.push({
         kind: 'subtotal',
         dayId, dayLabel,
@@ -303,13 +316,6 @@
         base_minutes: dayMin,
         dayStartMin,
         cumDayBaseMinAfter: cumDayBaseMin,
-      });
-      // "+ 新增休息點" footer row — only in edit mode.
-      rows.push({
-        kind: 'add-segment',
-        dayId, dayLabel,
-        variantId: useRoute ? activeRouteId : null,
-        afterIdx: -1,        // append at end
       });
     });
 
@@ -514,11 +520,16 @@
       if (r.kind === 'add-segment') {
         const editing = document.body.classList.contains('tf-editing');
         if (!editing) return '';   // hide in view mode
-        return `<div class="rp-row rp-add-row">
-          <button type="button" class="rp-add-seg-btn"
-            data-day-id="${escapeHtml(r.dayId)}"
+        const at = r.atName || '';
+        const dataAttrs = `data-day-id="${escapeHtml(r.dayId)}"
             data-variant-id="${escapeHtml(r.variantId || '')}"
-            data-after-idx="${r.afterIdx}">＋ 新增休息點</button>
+            data-after-idx="${r.afterIdx}"
+            data-at-name="${escapeHtml(at)}"`;
+        return `<div class="rp-row rp-add-row">
+          <button type="button" class="rp-add-seg-btn" ${dataAttrs}
+            title="從此處再走到下一個休息點">＋ 休息點</button>
+          <button type="button" class="rp-add-rest-btn" ${dataAttrs}
+            title="在此處原地停留（休息／用餐）">＋ 休息</button>
         </div>`;
       }
 
@@ -900,6 +911,77 @@
             descent_m: +form.querySelector('.rp-add-desc').value || 0,
             anchor_idx: null,
             note: '',
+          });
+          if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          renderRestPoints(plan, readSpeed());
+          if (TF.modeToggle && TF.modeToggle.refreshAll) {
+            requestAnimationFrame(() => TF.modeToggle.refreshAll());
+          }
+          if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
+        });
+      });
+    });
+
+    // ── Bind "+ 休息" buttons (in-place rest stop, no movement) ────────
+    // Inserts a synthetic segment with from===to, distance/asc/desc=0,
+    // base_minutes = user input. Optional name (e.g. "午餐", "茶水")
+    // becomes the segment's "to" so the row reads "排雲山莊→排雲山莊・午餐".
+    host.querySelectorAll('.rp-add-rest-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const dayId = btn.dataset.dayId;
+        const variantId = btn.dataset.variantId || null;
+        const afterIdx = btn.dataset.afterIdx === '' ? -1 : +btn.dataset.afterIdx;
+        const atName = btn.dataset.atName || '';
+        const segArr = resolveSegArr(dayId, variantId);
+        if (!Array.isArray(segArr)) return;
+        // Toggle inline form below the button row
+        let form = btn.parentElement.nextElementSibling;
+        if (form && form.classList.contains('rp-add-rest-form')) {
+          form.remove();
+          return;
+        }
+        // Remove any other open form on this row
+        if (form && (form.classList.contains('rp-add-seg-form') || form.classList.contains('rp-add-rest-form'))) {
+          form.remove();
+        }
+        form = document.createElement('div');
+        form.className = 'rp-add-rest-form';
+        form.innerHTML = `
+          <div class="rp-branch-head">＋ 原地休息　<small style="font-weight:400; opacity:.7">於 <b>${escapeHtml(atName || '當前位置')}</b></small></div>
+          <div class="rp-branch-fields">
+            <label><span>名稱</span>
+              <input type="text" class="rp-rest-name" placeholder="例如：午餐／茶水／拍照" autocomplete="off">
+            </label>
+            <label><span>停留</span><input type="number" class="rp-rest-min" min="1" value="30"><span class="rp-branch-unit">分</span></label>
+          </div>
+          <div class="rp-branch-actions">
+            <button type="button" class="rp-branch-cancel">取消</button>
+            <button type="button" class="rp-branch-confirm">＋ 新增</button>
+          </div>
+        `;
+        btn.parentElement.parentNode.insertBefore(form, btn.parentElement.nextSibling);
+        form.querySelector('.rp-rest-name').focus();
+        form.querySelector('.rp-branch-cancel').addEventListener('click', () => form.remove());
+        form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
+          const restName = form.querySelector('.rp-rest-name').value.trim() || '休息';
+          const mins = +form.querySelector('.rp-rest-min').value || 0;
+          if (mins <= 0) { form.querySelector('.rp-rest-min').focus(); return; }
+          // Compose label: keep the "to" identical so it stays on-place,
+          // but suffix the rest name in parens for readability.
+          const restLabel = `${atName}・${restName}`;
+          const insertIdx = afterIdx >= 0 ? afterIdx + 1 : segArr.length;
+          segArr.splice(insertIdx, 0, {
+            id: 'rest-' + Math.random().toString(36).slice(2, 7),
+            from: atName,
+            to: restLabel,
+            base_minutes: mins,
+            distance_km: 0,
+            ascent_m: 0,
+            descent_m: 0,
+            anchor_idx: null,
+            note: '',
+            is_rest_stop: true,
           });
           if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
           renderRestPoints(plan, readSpeed());
