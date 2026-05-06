@@ -608,7 +608,21 @@
       dur = m.lang === 'en' ? `${hikingDays}D${nights}N` : `${hikingDays}天${nights}夜`;
     }
     const parts = [range, dur, m.party_label].filter(Boolean);
+    // Party-size sanity: warn when the declared party_size doesn't
+    // match the number of members entered in the contacts tab. Helps
+    // catch "我說 7 人但只填了 5 個聯絡資料" cases before the user
+    // exports the docx.
+    const declared = +m.party_size || 0;
+    const filled = (plan.contacts && Array.isArray(plan.contacts.members))
+      ? plan.contacts.members.length : 0;
     sub.textContent = parts.join(' ｜ ');
+    if (declared > 0 && filled > 0 && declared !== filled) {
+      const warn = document.createElement('span');
+      warn.className = 'sub-warn';
+      warn.title = `已填 ${filled} 人聯絡資料，與宣告的 ${declared} 人不符`;
+      warn.textContent = ` ⚠ ${filled}/${declared}`;
+      sub.appendChild(warn);
+    }
   }
   TF.renderHeader = renderHeader;
 

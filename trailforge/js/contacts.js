@@ -28,7 +28,17 @@
     ],
   };
 
+  // Roles match the docx 分工表 + 隊員名冊 schema (領隊 / 嚮導 / 隊員 /
+  // 留守 / 交通 / 裝備 / 行政 / 回報 / 醫療 / 天氣 / 紀錄 / 保險). Used
+  // by the docx exporter to fill both the leader/guide summary cells
+  // and the per-row 職稱 column.
+  const ROLE_OPTIONS = [
+    "隊員", "領隊", "嚮導", "留守", "交通", "裝備", "行政", "回報",
+    "醫療", "天氣", "紀錄", "保險",
+  ];
+
   const FIELDS = [
+    { key: "role",        label: "職稱", type: "select", options: ROLE_OPTIONS },
     { key: "name",        label: "姓名" },
     { key: "dob",         label: "生日" },
     { key: "id_no",       label: "身分證字號" },
@@ -185,6 +195,14 @@
           render();
         });
       });
+      host.querySelectorAll(".mc-crit").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = +btn.dataset.i;
+          data.members[i].is_emergency = !data.members[i].is_emergency;
+          markDirty();
+          render();
+        });
+      });
     } else {
       // Add the read-only hint after the cards.
       const p = document.createElement("p");
@@ -199,9 +217,19 @@
     const rows = FIELDS.map((f) => {
       const cls = "mc-pair" + (f.wide ? " mc-pair-wide" : "");
       if (editing) {
+        const cur = m[f.key] || "";
+        if (f.type === "select" && Array.isArray(f.options)) {
+          const opts = ['<option value=""></option>']
+            .concat(f.options.map(o => `<option value="${esc(o)}"${o === cur ? ' selected' : ''}>${esc(o)}</option>`))
+            .join("");
+          return `<div class="${cls}">
+            <dt>${esc(f.label)}</dt>
+            <dd><select class="mc-input mc-input-select" data-i="${i}" data-k="${f.key}">${opts}</select></dd>
+          </div>`;
+        }
         return `<div class="${cls}">
           <dt>${esc(f.label)}</dt>
-          <dd><input class="mc-input" type="text" data-i="${i}" data-k="${f.key}" value="${esc(m[f.key] || "")}" placeholder="${esc(f.label)}"></dd>
+          <dd><input class="mc-input" type="text" data-i="${i}" data-k="${f.key}" value="${esc(cur)}" placeholder="${esc(f.label)}"></dd>
         </div>`;
       }
       const v = m[f.key];
@@ -212,15 +240,28 @@
       </div>`;
     }).join("");
 
+    // 🚨 toggle — marks the member as a critical/emergency contact so
+    // the docx export's 緊急聯絡 row (and the in-app 🚨 popup) lists
+    // them. Active state shows the icon at full saturation; inactive
+    // gets dropped to 50% grayscale to read as "off".
+    const isCritical = !!m.is_emergency;
+    const critBtn = editing
+      ? `<button type="button" class="mc-crit${isCritical ? ' active' : ''}" data-i="${i}"
+            aria-pressed="${isCritical}"
+            title="${isCritical ? '從緊急聯絡名單移除' : '標記為緊急聯絡人'}">🚨</button>`
+      : '';
+
     const head = editing
       ? `<header class="mc-head">
           <span class="mc-num">${num}</span>
           <h3 class="mc-name" data-name-display="${i}">${esc(m.name || "（未命名）")}</h3>
+          ${critBtn}
           <button type="button" class="tf-row-del mc-del" data-i="${i}" aria-label="刪除這位隊員" title="刪除這位隊員">×</button>
         </header>`
       : `<header class="mc-head">
           <span class="mc-num">${num}</span>
           <h3 class="mc-name" data-name-display="${i}">${esc(m.name || "（未命名）")}</h3>
+          ${isCritical ? '<span class="mc-crit-flag" title="緊急聯絡人">🚨</span>' : ''}
         </header>`;
 
     return `<article class="member-card${editing ? " editing" : ""}">

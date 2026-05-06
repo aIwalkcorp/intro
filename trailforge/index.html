@@ -107,6 +107,13 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
   font-family:var(--mono);font-size:.72rem;letter-spacing:.28em;
   color:var(--acc-soft);margin-top:4px;text-transform:uppercase;opacity:.9;
 }
+.hdr .sub .sub-warn{
+  margin-left:8px; padding:1px 6px;
+  background:rgba(220,82,40,0.18); color:#dc5228;
+  border:1px solid rgba(220,82,40,0.45); border-radius:3px;
+  font-weight:700; letter-spacing:.04em;
+  cursor:help;
+}
 
 /* On narrow screens, the centred hero title was getting overlapped by the
    top-right floating chip rail. The chips are now stacked vertically along
@@ -501,6 +508,40 @@ body .tf-row-add:focus-visible{
 }
 .member-card.editing .mc-del:hover{
   background:#8b2a1f; color:#fff; border-color:#8b2a1f;
+}
+/* 🚨 toggle on the member-card head — sits left of the ✕ delete.
+   Inactive: greyed out icon + dashed rust border. Active: bright icon
+   + solid rust ring. View mode shows a tiny non-clickable flag span. */
+.member-card.editing .mc-crit{
+  appearance:none; cursor:pointer; flex:none;
+  width:26px; height:26px; padding:0; margin-right:6px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:transparent;
+  border:1px dashed rgba(220,82,40,0.45); border-radius:50%;
+  font-size:.86rem; line-height:1;
+  filter:grayscale(60%); opacity:.6;
+  transition: background .15s, border-color .15s, transform .12s, filter .15s, opacity .15s;
+}
+.member-card.editing .mc-crit:hover{
+  filter:none; opacity:1;
+  border-style:solid; border-color:#dc5228;
+  background:rgba(220,82,40,0.08);
+  transform:translateY(-1px);
+}
+.member-card.editing .mc-crit.active{
+  filter:none; opacity:1;
+  border-style:solid; border-color:#dc5228;
+  background:rgba(220,82,40,0.16);
+  box-shadow:inset 0 0 0 1px rgba(220,82,40,0.35);
+}
+.mc-crit-flag{
+  margin-left:6px; font-size:.82rem;
+  filter:none; opacity:1;
+}
+.member-card.editing .mc-input.mc-input-select{
+  border-bottom:1px dotted rgba(42,36,24,.3);
+  background:transparent; cursor:pointer;
+  padding:4px 0 5px;
 }
 .member-card.editing .mc-input{
   width:100%; box-sizing:border-box;
@@ -2839,6 +2880,36 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   transform:translateY(-1px);
 }
 .overview-rest-points .rp-del-btn:active{ transform:scale(.92); }
+
+/* 🚨 key-time toggle — same shape as the ✕ del button (18px circle)
+   but rust-on-paper for inactive, filled rust for active. Sits between
+   ⎇ and ✕ so the row's three "actions" cluster together. */
+.overview-rest-points .rp-keytime-btn{
+  appearance:none; cursor:pointer; flex:none;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; margin-left:3px;
+  padding:0; line-height:1;
+  background:transparent;
+  border:1px dashed rgba(220,82,40,0.45);
+  border-radius:50%;
+  font-size:.74rem;
+  filter:grayscale(50%);
+  align-self:center;
+  transition: background .15s, border-color .15s, transform .12s, filter .15s;
+}
+.overview-rest-points .rp-keytime-btn:hover{
+  background:rgba(220,82,40,0.12);
+  border-style:solid; border-color:#dc5228;
+  filter:none;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-keytime-btn.active{
+  background:rgba(220,82,40,0.18);
+  border-style:solid; border-color:#dc5228;
+  filter:none;
+  box-shadow:inset 0 0 0 1px rgba(220,82,40,0.35);
+}
+.overview-rest-points .rp-keytime-btn:active{ transform:scale(.92); }
 
 /* GPX-derived autofill hint inside the add-地標 form. Two states:
    .rp-gpx-hit (sage, success) and .rp-gpx-miss (rust, advisory). */

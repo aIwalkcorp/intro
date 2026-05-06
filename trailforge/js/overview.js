@@ -962,6 +962,26 @@
             data-to-name="${escapeHtml(r.to || '')}"
             aria-label="刪除此地標"
             title="刪除此地標">✕</button>` : '';
+      // 🚨 button — push this row's arrival event into the day's
+      // key_times (the per-day "關鍵時間" list shown in the day header
+      // popup + docx export). Pressed-state when already on the list,
+      // toggles back off on a second click. arrivalClock matches what
+      // the row's pill displays so the key_time stays in sync with
+      // any minute / time edits the user makes afterward.
+      let isOnKeyTimes = false;
+      if (canEditNote && editing && arrival) {
+        const day = (plan.days || []).find(d => d.id === r.dayId);
+        const kts = (day && day.key_times) || [];
+        isOnKeyTimes = kts.some(kt => kt && kt.label === r.to && kt.value === arrival);
+      }
+      const keyTimeBtn = (canEditNote && editing && arrival) ? `<button type="button"
+            class="rp-keytime-btn${isOnKeyTimes ? ' active' : ''}"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-to-name="${escapeHtml(r.to || '')}"
+            data-arrival="${escapeHtml(arrival)}"
+            aria-label="${isOnKeyTimes ? '從 🚨 移除' : '加入 🚨 關鍵時間'}"
+            aria-pressed="${isOnKeyTimes}"
+            title="${isOnKeyTimes ? '已加入 🚨（再按一次移除）' : '加入這天的 🚨 關鍵時間'}">🚨</button>` : '';
       let noteHtml = '';
       if (canEditNote && editing) {
         noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
@@ -1009,6 +1029,7 @@
               min="0" step="1" value="${derived}"
               aria-label="${r.isReturn ? '下山段分鐘（覆寫源段）' : '此段步行分鐘'}">` : `<span class="rp-time-derived">${derived}</span>`}<small>分</small>
             ${branchBtn}
+            ${keyTimeBtn}
             ${deleteBtn}
           </span>
         </span>
@@ -1501,6 +1522,32 @@
     // if both endpoints share a track. This means deleting 白木林 from
     // 塔塔加→白木林→排雲山莊 yields 塔塔加→排雲山莊 with the elevation
     // curve unchanged (since the curve is GPX-driven, not segment-sum).
+    // ── Bind 🚨 key-time toggle buttons ───────────────────────────────
+    // Click adds the row's (to-name, arrival-clock) to the day's
+    // key_times[]; second click removes. Per-day list — different days
+    // each maintain their own 🚨 set, so 自主分天 works.
+    host.querySelectorAll('.rp-keytime-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dayId  = btn.dataset.dayId;
+        const label  = btn.dataset.toName || '';
+        const value  = btn.dataset.arrival || '';
+        const day = (plan.days || []).find(d => d.id === dayId);
+        if (!day || !label || !value) return;
+        day.key_times = day.key_times || [];
+        const matchIdx = day.key_times.findIndex(kt => kt && kt.label === label && kt.value === value);
+        if (matchIdx >= 0) {
+          day.key_times.splice(matchIdx, 1);
+        } else {
+          day.key_times.push({ label, value, note: '' });
+        }
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        renderRestPoints(plan, readSpeed());
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (err) {} });
+      });
+    });
+
     host.querySelectorAll('.rp-del-btn').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault();
