@@ -3598,6 +3598,85 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 .pwa-install-btn:hover { background: linear-gradient(135deg, #3a5644, #283530); }
 .pwa-install-btn:active { transform: translateY(1px); }
 .pwa-install-btn svg { width: 16px; height: 16px; }
+
+/* ==== Download chooser modal — opens on PWA-button click. Two big
+   tiles let the user pick between PWA install and .docx export. */
+.dl-modal{
+  position:fixed; inset:0; z-index:9000;
+  display:none;
+  align-items:center; justify-content:center;
+  background:rgba(20,18,12,0.55);
+  backdrop-filter:blur(2px);
+  padding:20px;
+  animation:dlFadeIn .18s ease;
+}
+.dl-modal.show{ display:flex; }
+@keyframes dlFadeIn{ from{opacity:0} to{opacity:1} }
+.dl-modal-card{
+  position:relative;
+  max-width:480px; width:100%;
+  background:#fdf9ee;
+  border:1px solid rgba(168,128,44,0.4);
+  border-radius:8px;
+  padding:28px 26px 24px;
+  box-shadow:0 18px 40px rgba(20,18,12,0.35);
+  animation:dlPopIn .22s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes dlPopIn{ from{transform:translateY(8px) scale(.98); opacity:0} to{transform:none; opacity:1} }
+.dl-modal-close{
+  appearance:none; cursor:pointer;
+  position:absolute; top:8px; right:10px;
+  width:30px; height:30px;
+  background:transparent; border:0; border-radius:50%;
+  font-size:1.4rem; color:rgba(42,36,24,.55);
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s, color .15s;
+}
+.dl-modal-close:hover{ background:rgba(42,36,24,.08); color:#1a1a17; }
+.dl-modal-title{
+  font-family:"Fraunces", "Noto Serif TC", serif;
+  font-size:1.34rem; font-weight:700; font-style:italic;
+  color:var(--pri-deep, #0a1a06);
+  margin:0 0 4px;
+}
+.dl-modal-sub{
+  font-family:var(--serif), serif;
+  color:var(--ink-soft, #5a4f3a);
+  font-size:.86rem; margin:0 0 18px;
+}
+.dl-modal-options{
+  display:flex; flex-direction:column; gap:10px;
+}
+.dl-opt{
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:14px;
+  padding:14px 16px; text-align:left;
+  background:rgba(168,128,44,0.06);
+  border:1px solid rgba(168,128,44,0.35);
+  border-radius:6px;
+  font:inherit; color:var(--ink, #1a1a17);
+  transition:background .15s, border-color .15s, transform .12s;
+}
+.dl-opt:hover:not(:disabled){
+  background:rgba(168,128,44,0.13);
+  border-color:#a8802c;
+  transform:translateY(-1px);
+}
+.dl-opt:disabled{
+  opacity:.5; cursor:not-allowed;
+}
+.dl-opt-icon{ font-size:1.6rem; flex:none; }
+.dl-opt-body{ display:flex; flex-direction:column; gap:2px; }
+.dl-opt-title{
+  font-family:"Fraunces", "Noto Serif TC", serif;
+  font-style:italic; font-weight:700;
+  font-size:1rem; color:var(--pri-deep, #0a1a06);
+}
+.dl-opt-desc{
+  font-family:var(--serif), serif;
+  font-size:.78rem; color:var(--ink-soft, #5a4f3a);
+}
+
 /* ==== Language toggle (zh ↔ en) — sits to the LEFT of the mode toggle
    (檢視 / 編輯) on the same row. Minimal: two letters + thin divider, no
    chip background — reads as a quiet inline switch beside the mode pill. */
@@ -4392,45 +4471,114 @@ window.tfConfirm = function (opts) {
 })();
 </script>
 
-<button class="pwa-install-btn" id="pwaInstallBtn" type="button" aria-label="安裝 App">
+<button class="pwa-install-btn show" id="pwaInstallBtn" type="button" aria-label="下載這份計劃書">
   <span class="pwa-dot" aria-hidden="true"></span>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
-  <span>一鍵安裝</span>
+  <span>下載</span>
 </button>
+
+<!-- Download chooser modal: 安裝為 App / 下載 Word 檔 -->
+<div class="dl-modal" id="dlModal" role="dialog" aria-labelledby="dlModalTitle" aria-hidden="true">
+  <div class="dl-modal-card">
+    <button type="button" class="dl-modal-close" id="dlModalClose" aria-label="關閉">×</button>
+    <h2 class="dl-modal-title" id="dlModalTitle">下載這份計劃書</h2>
+    <p class="dl-modal-sub">兩種格式，看你要在哪裡用：</p>
+    <div class="dl-modal-options">
+      <button type="button" class="dl-opt" id="dlOptPwa">
+        <span class="dl-opt-icon">📱</span>
+        <span class="dl-opt-body">
+          <span class="dl-opt-title">安裝為應用程式</span>
+          <span class="dl-opt-desc">加到主畫面，離線可用，永遠是最新版本</span>
+        </span>
+      </button>
+      <button type="button" class="dl-opt" id="dlOptDocx">
+        <span class="dl-opt-icon">📄</span>
+        <span class="dl-opt-body">
+          <span class="dl-opt-title">下載 Word 檔</span>
+          <span class="dl-opt-desc">登山計劃書 .docx 範本，可印可寄可繳交</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
-  var deferred = null;
-  var btn = null;
-  function ensureBtn(){
-    btn = btn || document.getElementById('pwaInstallBtn');
-    return btn;
-  }
-  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
+  var deferredPrompt = null;
+  var installBtn = document.getElementById('pwaInstallBtn');
+  var modal = document.getElementById('dlModal');
+  var closeBtn = document.getElementById('dlModalClose');
+  var optPwa = document.getElementById('dlOptPwa');
+  var optDocx = document.getElementById('dlOptDocx');
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
   window.addEventListener('beforeinstallprompt', function(e){
     e.preventDefault();
-    deferred = e;
-    var b = ensureBtn();
-    if (b) b.classList.add('show');
+    deferredPrompt = e;
   });
-  document.addEventListener('DOMContentLoaded', function(){
-    var b = ensureBtn();
-    if (!b) return;
-    b.addEventListener('click', async function(){
-      if (!deferred) return;
-      b.classList.remove('show');
-      deferred.prompt();
-      try {
-        var r = await deferred.userChoice;
-        if (r && r.outcome !== 'accepted') {
-          // user dismissed; show again next visit but not this session
-        }
-      } catch(e){}
-      deferred = null;
-    });
+
+  function openModal(){
+    if (!modal) return;
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('show');
+    // Disable PWA option if already installed or no deferred prompt available.
+    if (optPwa) {
+      var canInstall = !!deferredPrompt && !standalone;
+      optPwa.disabled = !canInstall;
+      optPwa.title = canInstall ? '' : (standalone ? '已安裝為應用程式' : '此瀏覽器目前不支援一鍵安裝（iOS Safari 請用「加到主畫面」）');
+    }
+  }
+  function closeModal(){
+    if (!modal) return;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.classList.remove('show');
+  }
+
+  if (installBtn) installBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (modal) modal.addEventListener('click', function(e){ if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && modal && modal.classList.contains('show')) closeModal();
   });
+
+  if (optPwa) optPwa.addEventListener('click', async function(){
+    if (!deferredPrompt) { closeModal(); return; }
+    closeModal();
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch(e){}
+    deferredPrompt = null;
+  });
+
+  if (optDocx) optDocx.addEventListener('click', async function(){
+    optDocx.disabled = true;
+    optDocx.querySelector('.dl-opt-title').textContent = '產生中…';
+    try {
+      // Lazy-load the exporter module; it pulls docx-js from CDN on demand.
+      if (!window.TF || !window.TF.docx) {
+        await new Promise(function(resolve, reject){
+          var s = document.createElement('script');
+          s.src = './js/plan-to-docx.js';
+          s.onload = resolve;
+          s.onerror = function(){ reject(new Error('plan-to-docx.js load failed')); };
+          document.head.appendChild(s);
+        });
+      }
+      var plan = window.__PLAN__ || (window.TF && window.TF.loadPlan && window.TF.loadPlan());
+      if (!plan) throw new Error('no plan loaded');
+      await window.TF.docx.exportPlan(plan);
+      closeModal();
+    } catch (err) {
+      console.error('docx export failed:', err);
+      alert('Word 檔下載失敗：' + (err.message || err));
+    } finally {
+      optDocx.disabled = false;
+      optDocx.querySelector('.dl-opt-title').textContent = '下載 Word 檔';
+    }
+  });
+
   window.addEventListener('appinstalled', function(){
-    var b = ensureBtn();
-    if (b) b.classList.remove('show');
+    deferredPrompt = null;
+    standalone = true;
   });
 })();
 </script>
