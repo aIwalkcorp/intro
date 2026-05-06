@@ -221,6 +221,28 @@
         if (!activeRouteId) activeRouteId = ep.default_variant || Object.keys(ep.route_variants)[0] || null;
       }
 
+      // For days with route_variants, find how many leading segments are
+      // shared across all variants. The fork happens AFTER that index, so
+      // we'll inject a variant-picker pseudo-row right at the fork point —
+      // exactly where the user makes the decision in real life.
+      let sharedPrefix = 0;
+      if (useRoute && day.elevation_profile.route_variants) {
+        const ids = Object.keys(day.elevation_profile.route_variants);
+        if (ids.length >= 2) {
+          const segArrays = ids.map(id => day.elevation_profile.route_variants[id].shanghe_segments || []);
+          const minLen = Math.min.apply(null, segArrays.map(arr => arr.length));
+          for (let i = 0; i < minLen; i++) {
+            const refFrom = segArrays[0][i].from, refTo = segArrays[0][i].to;
+            let allEqual = true;
+            for (let j = 1; j < segArrays.length; j++) {
+              if (segArrays[j][i].from !== refFrom || segArrays[j][i].to !== refTo) { allEqual = false; break; }
+            }
+            if (!allEqual) { sharedPrefix = i; break; }
+            sharedPrefix = i + 1;
+          }
+        }
+      }
+
       // Day's segment subtotal accumulators (also drives arrival times)
       let dayKm = 0, dayAsc = 0, dayDesc = 0, dayMin = 0, cumDayBaseMin = 0;
       segs.forEach((s, segIdx) => {
@@ -259,6 +281,17 @@
         dayAsc  += (+s.ascent_m || 0);
         dayDesc += (+s.descent_m || 0);
         dayMin  += baseMin;
+
+        // Inject variant picker right after the last shared segment. So
+        // for 玉山 Day 2 the chip strip sits between "排雲山莊→主北岔(風口)"
+        // and "主北岔→玉山北峰" — exactly where the fork happens IRL.
+        if (useRoute && sharedPrefix > 0 && segIdx === sharedPrefix - 1) {
+          rows.push({
+            kind: 'variant-fork',
+            dayId, dayLabel,
+            forkAt: s.to || '',
+          });
+        }
       });
       // Subtotal row for this day
       rows.push({
@@ -405,10 +438,12 @@
   }
 
   function bindVariantPickers(host) {
-    const root = host.querySelector('.rp-route-variants');
-    if (!root || root.__bound) return;
-    root.__bound = true;
-    root.addEventListener('click', (e) => {
+    if (host.__rvBound) return;
+    host.__rvBound = true;
+    // Single delegated listener — catches both the legacy top-of-table
+    // strip (.rp-route-variants) AND the new inline fork rows
+    // (.rp-fork-row .rp-rv-chips). Either button has class .rp-rv-chip.
+    host.addEventListener('click', (e) => {
       const btn = e.target.closest('button.rp-rv-chip');
       if (!btn || btn.disabled) return;
       const id = btn.dataset.routeId;
@@ -467,6 +502,40 @@
           <span class="rp-day-note">${escapeHtml(r.note || '')}</span>
           ${startCell}
         </div>${titleCell ? `<div class="rp-section-title-row">${titleCell}</div>` : ''}`;
+      }
+
+      if (r.kind === 'variant-fork') {
+        // Build per-day variant picker chips inline.
+        const day = (plan.days || []).find(d => d.id === r.dayId);
+        if (!day) return '';
+        const ep = day.elevation_profile;
+        if (!ep || !ep.route_variants) return '';
+        const variantIds = Object.keys(ep.route_variants);
+        if (variantIds.length < 2) return '';
+        // active variant detection — same logic as activeVariantFor
+        const dayPanel = document.getElementById('day-' + day.id);
+        const activeTab = dayPanel && dayPanel.querySelector('.r-tab.active');
+        let activeId = null;
+        if (activeTab) {
+          const m = (activeTab.getAttribute('onclick') || '').match(/switchRoute\(['"]([^'"]+)['"]\)/);
+          activeId = m && m[1];
+        }
+        if (!activeId) activeId = ep.default_variant || variantIds[0];
+        const chipsHtml = variantIds.map(vid => {
+          const v = ep.route_variants[vid];
+          const label = (v && v.label) || vid.toUpperCase();
+          const isActive = vid === activeId;
+          return `<button type="button"
+            class="rp-rv-chip${isActive ? ' active' : ''}"
+            data-route-id="${escapeHtml(vid)}"
+            aria-pressed="${isActive ? 'true' : 'false'}"
+            ${isActive ? 'disabled' : ''}>${escapeHtml(label)}</button>`;
+        }).join('');
+        return `<div class="rp-row rp-fork-row">
+          <span class="rp-fork-mark" aria-hidden="true">⇄</span>
+          <span class="rp-fork-label"><b>${escapeHtml(r.forkAt)}</b> 分歧</span>
+          <div class="rp-rv-chips">${chipsHtml}</div>
+        </div>`;
       }
 
       if (r.kind === 'subtotal') {
@@ -571,18 +640,17 @@
       </div>${noteHtml}`;
     }).join('');
 
-    // Route-variant pickers — for any day declaring route_variants we
-    // surface a chip strip so the user can flip between them right from
-    // the rest-points table. Clicking a chip calls window.switchRoute,
-    // which triggers a full overview refresh.
-    const variantPickerHtml = buildVariantPickerHtml(plan);
+    // Route-variant pickers — moved INLINE into the segment list right at
+    // the fork point (kind:'variant-fork' rows in collectRestPoints). The
+    // separate top-of-table chip strip is gone; the chips now sit between
+    // "排雲山莊→主北岔(風口)" and "主北岔→玉山北峰" — exactly where the
+    // user makes the decision in real life.
 
     host.innerHTML = `
       <div class="rp-head">
         <div class="rp-title">休息點<span class="rp-title-en">REST POINTS</span></div>
         <div class="rp-source">資料來源：上河圖步程 + 他人健行筆記紀錄綜合</div>
       </div>
-      ${variantPickerHtml}
       <div class="rp-speed-control">
         <label for="overview-speed" class="rp-sc-lbl">上河速度倍率</label>
         <input type="number" class="rp-speed-input"

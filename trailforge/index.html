@@ -2357,6 +2357,38 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   cursor:default;
 }
 
+/* Inline variant fork row — sits between the last shared segment and the
+   first divergent one in the rest-points list. Visually a "switch tracks"
+   strip with chips for each variant. Replaces the old top-of-table strip. */
+.overview-rest-points .rp-fork-row{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:10px 14px 10px 60px;
+  background:linear-gradient(90deg, rgba(220,38,38,0.05) 0%, rgba(168,128,44,0.10) 100%);
+  border-top:1px solid rgba(168,128,44,0.45);
+  border-bottom:1px solid rgba(168,128,44,0.45);
+  font-family:var(--serif);
+}
+.overview-rest-points .rp-fork-row .rp-fork-mark{
+  font-family:var(--mono); font-size:1.1rem; font-weight:800;
+  color:#7f1d1d;
+  width:22px; height:22px; border-radius:50%;
+  border:1.5px solid #7f1d1d;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:#fdfaf0;
+}
+.overview-rest-points .rp-fork-row .rp-fork-label{
+  font-size:.84rem; color:#3b2a0e; letter-spacing:.04em;
+  flex:1; min-width:0;
+}
+.overview-rest-points .rp-fork-row .rp-fork-label b{
+  font-family:"Fraunces", "Noto Serif TC", serif; font-style:italic;
+  font-weight:800; color:var(--pri-deep,#0a1a06);
+}
+.overview-rest-points .rp-fork-row .rp-rv-chips{ flex:none; }
+@media(max-width:560px){
+  .overview-rest-points .rp-fork-row{ padding-left:48px; gap:8px; }
+}
+
 /* Speed control */
 .overview-rest-points .rp-speed-control{
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;
