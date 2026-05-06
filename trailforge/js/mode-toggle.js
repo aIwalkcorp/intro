@@ -454,16 +454,26 @@
       //     rest points it goes directly, but each segment shows real
       //     terrain" — exactly what the user asked for.
       if (ep.route_variants && TF.overview) {
-        let visits = null, canonFn = null;
-        if (TF.gpxUnitize && plan.data && plan.data.named_locations && track) {
+        let canonFn = null, getElevFn = null;
+        if (TF.gpxUnitize && plan.data && plan.data.named_locations) {
           const named = plan.data.named_locations;
           const canonMap = TF.gpxUnitize.buildCanon(named);
           canonFn = (n) => TF.gpxUnitize.canonName(n, canonMap);
-          visits = TF.gpxUnitize.detectVisits(track, named, { canonMap });
+          getElevFn = (canonName) => {
+            // Named_locations is keyed by ANY name that maps to canon —
+            // search both the canonical name AND aliases that map to it.
+            for (const [k, loc] of Object.entries(named)) {
+              if (canonFn(k) === canonName && loc && typeof loc.ele === 'number') return loc.ele;
+            }
+            return null;
+          };
         }
         let usedDerived = false;
         if (TF.overview.applyDerivedTrack) {
-          usedDerived = TF.overview.applyDerivedTrack(dayInfo, { visits, canonName: canonFn });
+          usedDerived = TF.overview.applyDerivedTrack(dayInfo, {
+            canonName: canonFn,
+            getElev: getElevFn,
+          });
         }
         if (!usedDerived) {
           const wps = lookupWaypoints(ep.gpx_ref, d.id);
