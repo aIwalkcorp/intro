@@ -277,6 +277,51 @@
       finalNamed[name] = namedLocations[name];
     });
 
+    // ── Alias collapse ──────────────────────────────────────────────────
+    // When two waypoint names (e.g. "玉山北峰" + "北峰", or OSM "Mt
+    // Yushan North" + 上河-style "玉山北峰") snap to the SAME trkpt
+    // index, they refer to the same geographic point. The chart then
+    // draws two labels for one peak. Group the snap map by index and
+    // keep one canonical name per group; the others land on
+    // canonical.aliases so future search/render code can resolve them.
+    // Snap indices within `aliasIdxTolerance` are also collapsed
+    // (consecutive trkpts at <2m apart are effectively the same place).
+    const aliasIdxTolerance = 1;
+    const groups = [];   // [{ idx, names: [...] }]
+    Object.keys(snap.snaps).forEach(name => {
+      const idx = snap.snaps[name];
+      const g = groups.find(gr => Math.abs(gr.idx - idx) <= aliasIdxTolerance);
+      if (g) g.names.push(name);
+      else groups.push({ idx, names: [name] });
+    });
+    // Pick canonical: prefer OSM-sourced, then the LONGEST name (most
+    // specific, e.g. "玉山北峰" over "北峰"), tiebreak by alphabetical.
+    const pickCanonical = (names) => {
+      const scored = names.map(n => {
+        const loc = namedLocations[n] || {};
+        const osmBonus = loc.source === 'osm' ? 100 : 0;
+        return { n, score: osmBonus + n.length };
+      });
+      scored.sort((a, b) => b.score - a.score || a.n.localeCompare(b.n));
+      return scored[0].n;
+    };
+    const canonicalByName = {};   // any-alias → canonical
+    const canonicalSnaps = {};    // canonical → idx (used downstream)
+    const collapsedNamed = {};
+    groups.forEach(g => {
+      const canonical = pickCanonical(g.names);
+      canonicalSnaps[canonical] = snap.snaps[canonical];
+      const aliases = g.names.filter(n => n !== canonical);
+      collapsedNamed[canonical] = Object.assign({}, finalNamed[canonical] || namedLocations[canonical]);
+      if (aliases.length) collapsedNamed[canonical].aliases = aliases;
+      g.names.forEach(n => { canonicalByName[n] = canonical; });
+    });
+    // Replace finalNamed + snap.snaps with the collapsed versions so
+    // downstream day building only ever sees canonical names.
+    Object.keys(finalNamed).forEach(k => delete finalNamed[k]);
+    Object.assign(finalNamed, collapsedNamed);
+    snap.snaps = canonicalSnaps;
+
     // Day boundaries
     const dayBoundaries = detectDayBoundaries(timestamps, track.length);
 
