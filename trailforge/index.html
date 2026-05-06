@@ -3271,6 +3271,25 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   font-size:.82rem;
 }
 .overview-rest-points .rp-day-header .rp-day-note{ font-size:.72rem; }
+.overview-rest-points .rp-day-header .rp-day-del-btn{
+  margin-left:auto;
+  appearance:none; cursor:pointer;
+  width:18px; height:18px; padding:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:transparent;
+  border:1px dashed rgba(140,46,46,0.45);
+  border-radius:50%;
+  font-family:var(--mono); font-size:.62rem; font-weight:700;
+  color:rgba(140,46,46,.85);
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.overview-rest-points .rp-day-header .rp-day-del-btn:hover{
+  background:rgba(140,46,46,0.12);
+  border-style:solid; border-color:#8c2e2e;
+  color:#5a1a1a;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-day-header .rp-day-del-btn:active{ transform:scale(.92); }
 
 /* Day-subtotal row — same paper background as the rest of the table, but
    marked off with a brass top rule + a "TOTAL" mono pill so it reads as a

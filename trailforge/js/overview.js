@@ -774,11 +774,25 @@
               ? `<span class="rp-section-title">${escapeHtml(secTitle)}</span>`
               : '');
 
+        // Delete-day button — sits at the right of the day-header in
+        // edit mode (skipped on synthesised return-day headers since
+        // those are derived, not stored). Removes the entire day from
+        // plan.days; the rest-points table + day-bar + chart all
+        // re-render off the mutation.
+        const delDayBtn = (editing && day && !r.isReturn)
+          ? `<button type="button" class="rp-day-del-btn"
+              data-day-id="${escapeHtml(r.dayId)}"
+              data-day-label="${escapeHtml(r.dayLabel || r.dayId)}"
+              aria-label="刪除此日"
+              title="刪除此日">✕</button>`
+          : '';
+
         return `<div class="rp-row rp-day-header${r.isReturn ? ' rp-day-header-return' : ''}">
           ${dayChip}
           <span class="rp-day-name">${escapeHtml(r.dayLabel)}</span>
           <span class="rp-day-note">${escapeHtml(r.note || '')}</span>
           ${startCell}
+          ${delDayBtn}
         </div>${titleCell ? `<div class="rp-section-title-row">${titleCell}</div>` : ''}`;
       }
 
@@ -1884,6 +1898,42 @@
     // appends a blank trailing day. Both produce empty elevation_profile
     // so future + 地標 / + 休息 actions start from a clean slate. setDirty
     // + refresh chart + render so day-bar / chart pick up the new day.
+    // ── Bind delete-day buttons (edit mode only) ────────────────────
+    // ✕ on the day-header. Confirm via tfConfirm; on accept, splice
+    // the day out of plan.days, refresh meta dates, and re-render.
+    host.querySelectorAll('.rp-day-del-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dayId = btn.dataset.dayId;
+        const label = btn.dataset.dayLabel || dayId;
+        const days = plan.days || [];
+        const idx = days.findIndex(d => d.id === dayId);
+        if (idx < 0) return;
+        let ok = true;
+        if (typeof window.tfConfirm === 'function') {
+          ok = await window.tfConfirm({
+            title: '刪除此日',
+            message: `確定要刪除「${label}」整天嗎？此天的所有地標、休息、備註都會一併移除。`,
+            confirmText: '刪除',
+            cancelText: '取消',
+            destructive: true,
+          });
+        } else {
+          ok = window.confirm(`刪除「${label}」整天？`);
+        }
+        if (!ok) return;
+        days.splice(idx, 1);
+        refreshMetaDates(plan);
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        renderRestPoints(plan, readSpeed());
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (err) {} });
+      });
+    });
+
     host.querySelectorAll('.rp-day-add-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
