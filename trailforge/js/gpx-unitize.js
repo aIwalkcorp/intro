@@ -70,6 +70,42 @@
     return (canonMap && canonMap[name]) || name;
   }
 
+  // Resolver for elevation-clipping callers: returns
+  //   { canonName(n) → string, getElev(canonName) → number|null }
+  // Both backed by Maps built once and cached on the named_locations
+  // object via WeakMap, so chart redraws don't re-walk Object.entries
+  // on every speed-factor / route-flip / edit-toggle. Cache invalidates
+  // automatically when plan.data.named_locations is replaced (e.g. on
+  // GPX upload) since the WeakMap key drops out.
+  const _resolverCache = (typeof WeakMap === 'function') ? new WeakMap() : null;
+  function buildResolver(named) {
+    if (_resolverCache && named && _resolverCache.has(named)) return _resolverCache.get(named);
+    const canonMap = buildCanon(named);
+    // canon → ele lookup. Walk named once; for each entry pick the
+    // ele under its canonical key (entries that DO map to a canon take
+    // precedence over the canon's own ele only if the canon entry
+    // doesn't carry one — preserves the "OSM curated wins" rule).
+    const eleByCanon = new Map();
+    if (named) {
+      for (const [k, loc] of Object.entries(named)) {
+        const c = canonMap[k] || k;
+        const ele = (loc && typeof loc.ele === 'number') ? loc.ele : null;
+        if (ele == null) continue;
+        // Prefer the canonical entry's own ele; fall back to alias's
+        // ele only when canon hasn't been seen yet.
+        if (k === c || !eleByCanon.has(c)) eleByCanon.set(c, ele);
+      }
+    }
+    const resolver = {
+      canonName: (n) => canonName(n, canonMap),
+      getElev: (canonName_) => eleByCanon.has(canonName_) ? eleByCanon.get(canonName_) : null,
+      _canonMap: canonMap,
+      _eleByCanon: eleByCanon,
+    };
+    if (_resolverCache && named) _resolverCache.set(named, resolver);
+    return resolver;
+  }
+
   // ─── Geometry ──────────────────────────────────────────────────
   function haversineMeters(a1, o1, a2, o2) {
     const R = 6371000;
@@ -315,6 +351,6 @@
 
   TF.gpxUnitize = {
     detectVisits, buildLegs, findPath, recomputeSegmentStats,
-    buildCanon, canonName, haversineMeters,
+    buildCanon, canonName, buildResolver, haversineMeters,
   };
 })();
