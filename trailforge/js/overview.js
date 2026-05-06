@@ -763,15 +763,16 @@
           <span class="rp-subtotal-l">
             ${dayChip}
             <span class="rp-subtotal-day">${escapeHtml(r.dayLabel)} 小結</span>
+            <span class="rp-subtotal-meta">${elevBits.join('')}</span>
           </span>
           <span class="rp-cost">
             <span class="rp-time-derived">${dayDerived}</span><small>分</small>
             <span class="rp-time-base">基準 ${r.base_minutes}分</span>
           </span>
-          <span class="rp-subtotal-meta">${elevBits.join('')}</span>
           <span class="rp-arrive">${arrival
             ? `<small>抵達</small><b>${arrival}</b>`
             : '<small class="rp-arrive-empty">—</small>'}</span>
+          <span class="rp-row-spacer" aria-hidden="true"></span>
         </div>`;
       }
 
@@ -847,7 +848,24 @@
         </div>`;
       }
 
-      return `<div class="rp-row${rowExtraClass}"${attrs}>
+      // Per-row info-key (for the triangulation-benchmark toggle). Lives
+      // on host._openInfoRows Set so re-renders preserve open state.
+      const infoKey = `${r.dayId}|${r.variantId || ''}|${r.segIdx == null ? '_'+idx : r.segIdx}|${r.isReturn ? 'R' : 'F'}`;
+      const infoOpen = host && host._openInfoRows && host._openInfoRows.has(infoKey);
+      const infoBtn = `<button type="button" class="rp-info-btn"
+            data-info-key="${escapeHtml(infoKey)}"
+            aria-pressed="${infoOpen ? 'true' : 'false'}"
+            aria-label="顯示／隱藏此段詳情"
+            title="顯示／隱藏此段詳情">
+          <svg viewBox="0 0 18 18" width="13" height="13" aria-hidden="true">
+            <circle cx="9" cy="4.2" r="1.65"/>
+            <circle cx="4.2" cy="13" r="1.65"/>
+            <circle cx="13.8" cy="13" r="1.65"/>
+            <path class="rp-info-tri" d="M9 4.2 L4.2 13 L13.8 13 Z" fill="none" stroke="currentColor" stroke-width="0.9"/>
+          </svg>
+        </button>`;
+
+      return `<div class="rp-row${rowExtraClass}${infoOpen ? ' rp-row-info-open' : ''}"${attrs}>
         ${dayChip}
         <span class="rp-cum">${r.startKm.toFixed(1)}<small>km</small></span>
         <span class="rp-route">
@@ -868,11 +886,6 @@
             ${branchBtn}
             ${deleteBtn}
           </span>
-          <span class="rp-time-base">基準 ${r.base_minutes}分</span>
-        </span>
-        <span class="rp-meta">
-          <span class="rp-km">${r.distance_km.toFixed(1)}<small>km</small></span>
-          ${elevBits.join('')}
         </span>
         <span class="rp-arrive">${
           (canEditMins && editing && arrival)
@@ -891,6 +904,12 @@
                 ? `<small>抵達</small><b>${arrival}</b>`
                 : '<small class="rp-arrive-empty">—</small>')
         }</span>
+        ${infoBtn}
+      </div><div class="rp-info-row${infoOpen ? ' rp-info-row-open' : ''}" data-info-key="${escapeHtml(infoKey)}">
+        <span class="rp-info-stamp">▲ DETAILS</span>
+        <span class="rp-info-base">基準 <b>${r.base_minutes}</b><small>分</small></span>
+        <span class="rp-info-km">${r.distance_km.toFixed(1)}<small>km</small></span>
+        ${elevBits.join('')}
       </div>${noteHtml}`;
     }).join('');
 
@@ -900,21 +919,14 @@
     // "排雲山莊→主北岔(風口)" and "主北岔→玉山北峰" — exactly where the
     // user makes the decision in real life.
 
-    // Reveal-state for the per-row metadata strip (基準分鐘 / km / ↑↓m).
-    // Persisted on the host element so re-renders preserve it across
-    // speed-factor edits and minute edits. Default: hidden.
-    if (!host.classList.contains('rp-details-shown')) {
-      host.classList.add('rp-details-hidden');
-    }
-    const detailsShown = host.classList.contains('rp-details-shown');
+    // Per-row open state for the triangulation-benchmark toggle. Lives on
+    // host so re-renders (speed factor, minute edit, etc) preserve which
+    // rows the user expanded. Set keys: dayId|variantId|segIdx|F-or-R.
+    if (!host._openInfoRows) host._openInfoRows = new Set();
 
     host.innerHTML = `
       <div class="rp-head">
         <div class="rp-title">休息點<span class="rp-title-en">REST POINTS</span></div>
-        <button type="button" class="rp-detail-toggle"
-                aria-pressed="${detailsShown ? 'true' : 'false'}"
-                aria-label="顯示／隱藏每段詳情（基準分鐘・距離・海拔）"
-                title="顯示／隱藏每段詳情"></button>
       </div>
       <div class="rp-speed-control">
         <label for="overview-speed" class="rp-sc-lbl">上河速度倍率</label>
@@ -939,16 +951,27 @@
         </span>
       </div>`;
 
-    // ── Bind details-toggle ── (the "(!)" button in .rp-head)
-    const detailToggle = host.querySelector('.rp-detail-toggle');
-    if (detailToggle) {
-      detailToggle.addEventListener('click', () => {
-        const nowShown = !host.classList.contains('rp-details-shown');
-        host.classList.toggle('rp-details-shown', nowShown);
-        host.classList.toggle('rp-details-hidden', !nowShown);
-        detailToggle.setAttribute('aria-pressed', nowShown ? 'true' : 'false');
-      });
-    }
+    // ── Bind per-row info buttons (triangulation-benchmark toggle) ──
+    // Single delegated click handler for all .rp-info-btn — toggles the
+    // row's .rp-row-info-open class + its sibling .rp-info-row's open
+    // state. State persists in host._openInfoRows so re-renders (speed
+    // factor, minute edits) preserve which rows the user expanded.
+    host.addEventListener('click', (e) => {
+      const btn = e.target.closest('.rp-info-btn');
+      if (!btn || !host.contains(btn)) return;
+      e.stopPropagation(); // don't trigger row-focus
+      const key = btn.dataset.infoKey;
+      if (!key) return;
+      const row = btn.closest('.rp-row');
+      const infoRow = row && row.nextElementSibling && row.nextElementSibling.classList.contains('rp-info-row')
+        ? row.nextElementSibling
+        : null;
+      const nowOpen = !host._openInfoRows.has(key);
+      if (nowOpen) host._openInfoRows.add(key); else host._openInfoRows.delete(key);
+      btn.setAttribute('aria-pressed', nowOpen ? 'true' : 'false');
+      if (row) row.classList.toggle('rp-row-info-open', nowOpen);
+      if (infoRow) infoRow.classList.toggle('rp-info-row-open', nowOpen);
+    });
 
     // ── Bind speed input ── (event delegation not used so input.value can
     //    be normalised in onChange before re-render).

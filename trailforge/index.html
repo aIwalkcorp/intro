@@ -2306,53 +2306,106 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   letter-spacing:.32em; color:var(--gold-deep,#6e5316);
   margin-left:8px; text-transform:uppercase; font-weight:600;
 }
-/* (!) toggle in rp-head — reveals per-row metadata strip
-   (基準分鐘・距離 km・↑↓海拔). Default state hides the strip so the
-   table reads as a clean route+time list. Sits flush right of the title. */
-.overview-rest-points .rp-detail-toggle{
-  margin-left:auto;
-  display:inline-flex; align-items:center; gap:4px;
-  font-family:var(--mono); font-size:.68rem; font-weight:700;
+/* Per-row info button — triangulation-benchmark mark (3 dots forming a
+   triangle, like a survey monument on topo maps). Sits in the row's
+   rightmost slot. Click toggles the sibling .rp-info-row.
+   Default state: paper-tinted brass dots, hover/open: filled triangle. */
+.overview-rest-points .rp-info-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px;
+  padding:0;
+  margin:0 auto;
+  background:transparent;
+  border:1px solid rgba(168,128,44,0.32);
+  border-radius:50%;
   color:var(--gold-deep,#6e5316);
-  background:rgba(168,128,44,0.08);
-  border:1px solid rgba(168,128,44,0.45);
-  border-radius:14px;
-  padding:3px 10px;
   cursor:pointer;
-  letter-spacing:.16em; text-transform:uppercase;
-  transition:color .12s, border-color .12s, background .12s;
-  line-height:1;
+  transition:color .14s, border-color .14s, background .14s, transform .14s;
 }
-.overview-rest-points .rp-detail-toggle::before{
-  content:"(!)"; font-family:var(--mono); font-size:.78rem;
-  letter-spacing:0; font-weight:800;
+.overview-rest-points .rp-info-btn svg{
+  display:block;
+  fill:currentColor;
 }
-.overview-rest-points .rp-detail-toggle::after{ content:"詳情"; letter-spacing:.18em; }
-.overview-rest-points .rp-detail-toggle:hover{
-  color:#fff;
-  border-color:var(--gold-deep,#6e5316);
+.overview-rest-points .rp-info-btn .rp-info-tri{
+  opacity:0; stroke:currentColor; transition:opacity .18s;
+}
+.overview-rest-points .rp-info-btn:hover{
+  color:var(--pri-deep,#0a1a06);
+  border-color:rgba(168,128,44,0.7);
+  background:rgba(253,249,238,0.7);
+  transform:scale(1.06);
+}
+.overview-rest-points .rp-info-btn:hover .rp-info-tri{ opacity:.55; }
+.overview-rest-points .rp-info-btn[aria-pressed="true"]{
+  color:#fdf9ee;
   background:var(--gold-deep,#6e5316);
-}
-.overview-rest-points .rp-detail-toggle[aria-pressed="true"]{
-  color:#fff;
-  background:var(--gold-deep,#6e5316);
   border-color:var(--gold-deep,#6e5316);
 }
-.overview-rest-points .rp-detail-toggle[aria-pressed="true"]::after{ content:"收合"; }
-/* Hidden state — collapse the rp-meta + 基準 line so the row reads
-   chip / cum-km / route / cost / arrival only. The grid template
-   keeps the 140px meta track when shown but drops it when hidden. */
-.overview-rest-points.rp-details-hidden .rp-row > .rp-meta,
-.overview-rest-points.rp-details-hidden .rp-cost .rp-time-base,
-.overview-rest-points.rp-details-hidden .rp-subtotal-meta{
-  display:none !important;
+.overview-rest-points .rp-info-btn[aria-pressed="true"] .rp-info-tri{
+  opacity:1; stroke:#fdf9ee;
 }
-.overview-rest-points.rp-details-hidden .rp-row{
-  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px;
+
+/* Sibling info-row — slides in below a row when its info-btn is pressed.
+   Carries 基準分鐘 / km / ↑↓海拔 in a topographic-tag layout. Default
+   collapsed (max-height:0); open state expands. */
+.overview-rest-points .rp-info-row{
+  display:grid;
+  grid-template-columns:30px 44px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  padding:0 8px;
+  max-height:0; overflow:hidden;
+  background:linear-gradient(90deg, rgba(168,128,44,0.04), rgba(120,140,90,0.05));
+  border-bottom:1px solid rgba(168,128,44,0.18);
+  font-family:var(--mono);
+  color:var(--ink-soft,#7a7468);
+  transition:max-height .22s ease, padding .22s ease;
 }
-.overview-rest-points.rp-details-hidden .rp-subtotal{
-  /* subtotal-l keeps grid-column:1/4 → cost lands in col 4, arrive in 5 */
-  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px;
+.overview-rest-points .rp-info-row.rp-info-row-open{
+  max-height:38px;
+  padding:5px 8px 6px;
+}
+.overview-rest-points .rp-info-row .rp-info-stamp{
+  grid-column:1 / 3;
+  justify-self:end;
+  font-size:.52rem; letter-spacing:.32em; text-transform:uppercase;
+  color:var(--gold-deep,#6e5316); font-weight:700;
+  padding:1px 6px;
+  border:1px dotted rgba(168,128,44,0.55);
+  border-radius:2px;
+  background:rgba(255,255,255,0.45);
+  white-space:nowrap;
+}
+.overview-rest-points .rp-info-row > :nth-child(n+3){
+  grid-column:auto;
+}
+.overview-rest-points .rp-info-row .rp-info-base{
+  font-size:.7rem; letter-spacing:.04em;
+  font-style:italic; font-family:"Fraunces", var(--serif);
+}
+.overview-rest-points .rp-info-row .rp-info-base b{
+  color:var(--pri-deep,#0a1a06); font-weight:700; font-family:var(--mono);
+  font-style:normal; margin:0 1px;
+}
+.overview-rest-points .rp-info-row .rp-info-base small{
+  font-size:.55rem; opacity:.6; margin-left:1px;
+}
+.overview-rest-points .rp-info-row .rp-info-km{
+  font-size:.72rem; color:var(--ink,#1a1a17); font-weight:700;
+}
+.overview-rest-points .rp-info-row .rp-info-km small{
+  font-size:.55rem; opacity:.6; margin-left:1px;
+}
+.overview-rest-points .rp-info-row .rp-asc{
+  font-size:.72rem; color:#1e3a1a; font-weight:700;
+}
+.overview-rest-points .rp-info-row .rp-desc{
+  font-size:.72rem; color:#a8802c; font-weight:700;
+}
+.overview-rest-points .rp-info-row .rp-flat{ display:none; }
+.overview-rest-points .rp-info-row .rp-asc small,
+.overview-rest-points .rp-info-row .rp-desc small{
+  font-size:.55rem; opacity:.6; margin-left:1px;
 }
 .overview-rest-points .rp-source{
   flex:1; min-width:200px; text-align:right;
@@ -2547,8 +2600,10 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 .overview-rest-points .rp-row{
   display:grid;
-  /* chip | cum-km | route | cost | km/elev meta | arrival */
-  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 140px 96px;
+  /* chip | cum-km | route | cost | arrival | info-btn
+     km/elev meta now lives in the per-row .rp-info-row sibling, opened
+     by the triangulation-benchmark icon button at the row's edge. */
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px 26px;
   gap:6px; align-items:center;
   padding:4px 8px;
   border-bottom:1px solid rgba(42,36,24,0.08);
@@ -3087,20 +3142,22 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 }
 
 /* Mobile collapses to a 3-row layout per segment: chip+cum+route on top,
-   cost+meta on second, arrival on third (right-aligned). */
+   cost+arrival on second, info-btn anchored top-right.  Metadata moved
+   to the per-row .rp-info-row sibling — opened via the triangulation
+   benchmark in the upper-right slot. */
 @media(max-width:560px){
   .overview-rest-points .rp-row{
-    grid-template-columns: 38px 56px minmax(0,1fr) auto;
+    grid-template-columns: 38px 56px minmax(0,1fr) 26px;
     grid-template-areas:
-      "chip cum route route"
-      "cost cost meta arrive";
+      "chip cum   route info"
+      "cost cost  arrive arrive";
     row-gap:4px;
   }
   .overview-rest-points .rp-row > .rp-chip { grid-area: chip; }
   .overview-rest-points .rp-row > .rp-cum  { grid-area: cum;  }
   .overview-rest-points .rp-row > .rp-route{ grid-area: route;}
+  .overview-rest-points .rp-row > .rp-info-btn { grid-area: info; align-self:start; }
   .overview-rest-points .rp-row > .rp-cost { grid-area: cost; align-items:flex-start; border-right:0; padding-left:0;}
-  .overview-rest-points .rp-row > .rp-meta { grid-area: meta; }
   .overview-rest-points .rp-row > .rp-arrive{ grid-area: arrive;}
 }
 
@@ -3125,7 +3182,11 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
    matches the segment rows; only the values get a slight weight bump. */
 .overview-rest-points .rp-subtotal{
   display:grid;
-  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 140px 96px;
+  /* Aligns column 4 / 5 with the segment row's cost / arrival cells. The
+     final 26px slot mirrors the segment row's info-btn column so the
+     right edges of subtotal and segment rows line up. km/asc/desc moved
+     into .rp-subtotal-l (col 1/4) since the meta column is gone. */
+  grid-template-columns: 30px 44px minmax(0, 1fr) 78px 96px 26px;
   gap:6px; align-items:center;
   padding:5px 8px;
   background:rgba(168,128,44,0.10);
@@ -3143,6 +3204,7 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 .overview-rest-points .rp-subtotal-l{
   grid-column:1 / 4;
   display:flex; align-items:baseline; gap:10px;
+  flex-wrap:wrap;
   font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
   color:var(--gold-deep,#6e5316); font-weight:700;
 }
@@ -3166,7 +3228,8 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   font-size:1rem; font-weight:800; color:var(--pri-deep, #0a1a06);
 }
 .overview-rest-points .rp-subtotal-meta{
-  display:flex; gap:10px; justify-content:flex-end;
+  display:inline-flex; align-items:baseline; gap:10px;
+  margin-left:6px;
   font-size:.74rem;
 }
 .overview-rest-points .rp-subtotal-meta .rp-km{color:var(--ink, #1a1a17); font-weight:800;}
