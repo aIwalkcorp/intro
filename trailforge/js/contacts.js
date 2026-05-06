@@ -195,14 +195,6 @@
           render();
         });
       });
-      host.querySelectorAll(".mc-crit").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = +btn.dataset.i;
-          data.members[i].is_emergency = !data.members[i].is_emergency;
-          markDirty();
-          render();
-        });
-      });
     } else {
       // Add the read-only hint after the cards.
       const p = document.createElement("p");
@@ -240,28 +232,19 @@
       </div>`;
     }).join("");
 
-    // 🚨 toggle — marks the member as a critical/emergency contact so
-    // the docx export's 緊急聯絡 row (and the in-app 🚨 popup) lists
-    // them. Active state shows the icon at full saturation; inactive
-    // gets dropped to 50% grayscale to read as "off".
-    const isCritical = !!m.is_emergency;
-    const critBtn = editing
-      ? `<button type="button" class="mc-crit${isCritical ? ' active' : ''}" data-i="${i}"
-            aria-pressed="${isCritical}"
-            title="${isCritical ? '從緊急聯絡名單移除' : '標記為緊急聯絡人'}">🚨</button>`
-      : '';
-
+    // 🚨 marker on member cards was moved out — the 緊急通報聯絡
+    // (contacts.emergency) section is the canonical 🚨 list. Personal
+    // data cards are just roster info and don't need a critical-flag
+    // toggle.
     const head = editing
       ? `<header class="mc-head">
           <span class="mc-num">${num}</span>
           <h3 class="mc-name" data-name-display="${i}">${esc(m.name || "（未命名）")}</h3>
-          ${critBtn}
           <button type="button" class="tf-row-del mc-del" data-i="${i}" aria-label="刪除這位隊員" title="刪除這位隊員">×</button>
         </header>`
       : `<header class="mc-head">
           <span class="mc-num">${num}</span>
           <h3 class="mc-name" data-name-display="${i}">${esc(m.name || "（未命名）")}</h3>
-          ${isCritical ? '<span class="mc-crit-flag" title="緊急聯絡人">🚨</span>' : ''}
         </header>`;
 
     return `<article class="member-card${editing ? " editing" : ""}">
