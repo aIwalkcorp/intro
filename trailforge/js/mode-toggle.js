@@ -444,27 +444,25 @@
       // For days that declare route_variants, the recorded GPX is one
       // long survey track with both branches stitched together (e.g. d2
       // contains both 主峰 and 北峰 detours, walked in survey order).
-      // Strategy (post-unitization):
-      //   1. PREFER trkpt slicing (applyDerivedTrack). Now that
-      //      gpx-unitize.js rewrites every segment's anchor_idx to the
-      //      shortest leg path through the catalogue, the slice for
-      //      e.g. 主北岔→北峰 follows the real ridge undulation instead
-      //      of a flat synthetic line.
-      //   2. Fall back to synthetic-from-waypoints (straight lines
-      //      with linearly-interpolated elev) only when trkpt slicing
-      //      can't produce a coherent track — e.g. anchor_idx missing
-      //      on every segment. Loses topo detail but stays semantic.
+      // Strategy: PREFER applySyntheticFromWaypoints (straight lines
+      // between waypoints with linearly-interpolated elev) for the
+      // chart. Stats — km / ↑ / ↓ — already come from gpx-unitize.js
+      // (cumulative, accurate) and live in the rest-points table.
+      // applyDerivedTrack's faithful trkpt slicing introduced a per-
+      // segment artefact: when seg 3 (北峰→主北岔) physically transits
+      // 主峰 in the recording, its slice pulls the 主峰 peak into the
+      // chart, producing 3-4 visible 主峰 spikes between the labelled
+      // 玉山主峰 and 排雲山莊. The user explicitly asked: "直接回到
+      // 分岔點吧" — the chart should depict the planned route, not
+      // every GPS wiggle. Synthetic gives that.
       if (ep.route_variants && TF.overview) {
-        let usedDerived = false;
-        if (TF.overview.applyDerivedTrack) {
-          usedDerived = TF.overview.applyDerivedTrack(dayInfo);
+        let usedSynthetic = false;
+        const wps = lookupWaypoints(ep.gpx_ref, d.id);
+        if (wps && wps.length && TF.overview.applySyntheticFromWaypoints) {
+          usedSynthetic = TF.overview.applySyntheticFromWaypoints(dayInfo, wps);
         }
-        if (!usedDerived) {
-          const wps = lookupWaypoints(ep.gpx_ref, d.id);
-          if (wps && wps.length && TF.overview.applySyntheticFromWaypoints) {
-            const ok = TF.overview.applySyntheticFromWaypoints(dayInfo, wps);
-            if (!ok) console.log('[overview] both derived + synthetic failed for', d.id);
-          }
+        if (!usedSynthetic && TF.overview.applyDerivedTrack) {
+          TF.overview.applyDerivedTrack(dayInfo);
         }
       }
       days.push(dayInfo);
