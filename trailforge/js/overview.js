@@ -42,6 +42,9 @@
   function writeSpeed(f) {
     try { localStorage.setItem(SPEED_KEY, String(f)); } catch (e) {}
   }
+  function getPlan() {
+    return window.__PLAN__ || (TF.loadPlan && TF.loadPlan()) || null;
+  }
   function fmtMin(min) {
     const m = Math.max(0, Math.round(min));
     if (m < 60) return m + 'm';
@@ -210,6 +213,44 @@
     return segs.concat(buildReverseSegments(ret.sourceSegs, plan));
   }
 
+  // Single source of truth for "what does Day N look like right now?"
+  // Both Edit (rest-points table + start_time picker) and View (timeline
+  // derivation) read through this. No legacy day.schedule[] fallbacks —
+  // missing start_time means no times rendered, same as Edit's behavior.
+  function getEffectiveDayContext(plan, day, variantId) {
+    const ep = (day && day.elevation_profile) || null;
+    const isHM = (s) => /^\d{1,2}:\d{2}$/.test(String(s || ''));
+
+    let resolvedId = variantId || null;
+    if (ep && ep.route_variants) {
+      if (!resolvedId) {
+        const dayPanel = day && document.getElementById('day-' + day.id);
+        const activeTab = dayPanel && dayPanel.querySelector('.r-tab.active');
+        const m = activeTab && (activeTab.getAttribute('onclick') || '').match(/switchRoute\(['"]([^'"]+)['"]\)/);
+        if (m) resolvedId = m[1];
+      }
+      if (!resolvedId) resolvedId = ep.default_variant || Object.keys(ep.route_variants)[0] || null;
+    }
+    const variant = (ep && ep.route_variants && resolvedId) ? ep.route_variants[resolvedId] : null;
+
+    let startStr = null;
+    if (variant && isHM(variant.start_time)) startStr = variant.start_time;
+    else if (ep && isHM(ep.start_time))      startStr = ep.start_time;
+    const startMin = startStr ? parseHM(startStr) : null;
+
+    const segments = (variant && variant.shanghe_segments && variant.shanghe_segments.length)
+      ? variant.shanghe_segments
+      : ((ep && ep.shanghe_segments) || []);
+
+    const ret = findAutoReturnSource(plan);
+    const tail = (ret && day && ret.targetDayId === day.id)
+      ? buildReverseSegments(ret.sourceSegs, plan)
+      : [];
+    const segmentsWithReturn = tail.length ? segments.concat(tail) : segments;
+
+    return { variantId: resolvedId, startStr, startMin, segments, segmentsWithReturn };
+  }
+
   function activeVariantFor(day) {
     const ep = day.elevation_profile;
     if (!ep) return null;
@@ -281,35 +322,12 @@
   //   - cumKm: running cumulative km for display
   // Synthetic "day-header" rows surface non-hiking days; "subtotal" rows
   // sit after each day's last segment summarising km / ↑ / ↓ / minutes.
-  // Pull a "start of hike" clock time for a day. Priority:
-  //   1. day.elevation_profile.start_time  (explicit, set via the editor)
-  //   2. day.schedule[0].time              (legacy: first scheduled item)
-  //   3. null                              (no start = no arrival column)
+  // "Start of hike" clock time for a day. Delegates to the unified
+  // getEffectiveDayContext — variant.start_time wins when route_variants
+  // exist (active variant resolved via DOM tab → ep.default_variant), else
+  // ep.start_time. No legacy day.schedule[0].time fallback.
   function dayStartTimeFor(day) {
-    const ep = day && day.elevation_profile;
-    const isHM = (s) => /^\d{1,2}:\d{2}$/.test(String(s || ''));
-    // Per-variant start_time wins when route_variants exist — Day 2A
-    // (03:00) and Day 2B (04:00) need different start clocks under the
-    // same elevation_profile. Pick the active route's variant first.
-    if (ep && ep.route_variants) {
-      const routes = (day.routes) || [];
-      const active = routes.find(r => r && r.active) || routes[0];
-      const activeId = (active && active.id) || ep.default_variant;
-      const v = activeId && ep.route_variants[activeId];
-      if (v && isHM(v.start_time)) return v.start_time;
-    }
-    if (ep && isHM(ep.start_time)) return ep.start_time;
-    const pickFirstTime = (sched) => {
-      for (const item of (sched || [])) {
-        if (item && isHM(item.time)) return item.time;
-      }
-      return null;
-    };
-    const fromDay = pickFirstTime(day && day.schedule);
-    if (fromDay) return fromDay;
-    const routes = (day && day.routes) || [];
-    const active = routes.find(r => r && r.active) || routes[0];
-    return pickFirstTime(active && active.schedule);
+    return getEffectiveDayContext(getPlan(), day, null).startStr;
   }
   function parseHM(s) {
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim());
@@ -351,21 +369,16 @@
     const returnTargetDayId = ret ? ret.targetDayId : null;
 
     realDays.forEach(day => {
-      const variant = activeVariantFor(day);
-      const baseSegs = variant ? variant.segments : [];
-      // For the auto-return target day, append the reversed source
-      // segments so the table reads as one Day N covering both 攻頂 and
-      // 回程. The same segs array also drives View timeline derivation
-      // via TF.overview.effectiveSegmentsForVariant — Edit and View
-      // cannot drift apart.
-      const synthReturn = (ret && ret.targetDayId === day.id)
-        ? buildReverseSegments(ret.sourceSegs, plan)
-        : [];
-      const segs = synthReturn.length ? baseSegs.concat(synthReturn) : baseSegs;
+      // Single source of truth for segments + start_time. Variant resolution,
+      // auto-return tail, and start_time precedence all live inside the
+      // function — Edit and View cannot drift apart.
+      const ctx = getEffectiveDayContext(plan, day, null);
+      const baseSegs = ctx.segments;
+      const segs = ctx.segmentsWithReturn;
       const dayId = day.id;
       const dayLabel = day.label || ('Day ' + day.id);
-      const dayStart = dayStartTimeFor(day);
-      const dayStartMin = parseHM(dayStart);
+      const dayStart = ctx.startStr;
+      const dayStartMin = ctx.startMin;
       if (!segs.length) {
         rows.push({
           kind: 'day-header',
@@ -380,20 +393,11 @@
         dayId, dayLabel, dayStart,
         note: dayStart ? `起登 ${dayStart}` : '尚未設定起登時間',
       });
-      // Detect which path holds this day's segments — needed by note editing
-      // so we can mutate the right segment object on input.
+      // Active variant id (resolved by getEffectiveDayContext) — needed by
+      // note editing so we can mutate the right segment object on input.
       const ep = day.elevation_profile;
       const useRoute = !!(ep && ep.route_variants);
-      let activeRouteId = null;
-      if (useRoute) {
-        const dayPanel = document.getElementById('day-' + day.id);
-        const activeTab = dayPanel && dayPanel.querySelector('.r-tab.active');
-        if (activeTab) {
-          const m = (activeTab.getAttribute('onclick') || '').match(/switchRoute\(['"]([^'"]+)['"]\)/);
-          activeRouteId = m && m[1];
-        }
-        if (!activeRouteId) activeRouteId = ep.default_variant || Object.keys(ep.route_variants)[0] || null;
-      }
+      const activeRouteId = useRoute ? ctx.variantId : null;
 
       // For days with route_variants, find how many leading segments are
       // shared across all variants. The fork happens AFTER that index, so
@@ -2084,6 +2088,7 @@
     buildSyntheticFromWaypoints, applySyntheticFromWaypoints,
     namesMatch, normalizeName,
     findAutoReturnSource, buildReverseSegments, effectiveSegmentsForVariant,
+    getEffectiveDayContext,
     findWaypointTrackIdx, gpxStatsBetween, gpxStatsBetweenNames,
   };
 

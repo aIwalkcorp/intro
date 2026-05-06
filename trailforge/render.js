@@ -152,36 +152,23 @@
       });
     }
   }
-  // Compute derived items for a day (or for a specific route variant).
-  // Source-of-truth segments (incl. any auto-补齊 descent tail). Both
-  // Edit (rest-points table) and View (timeline cards) read through
-  // this so they cannot drift apart.
-  function effectiveSegments(day, variant) {
-    const fn = window.TF && window.TF.overview && window.TF.overview.effectiveSegmentsForVariant;
-    if (fn) return fn(window.__PLAN__ || (window.TF.loadPlan && window.TF.loadPlan()), day, variant);
-    return (variant && variant.shanghe_segments) || [];
+  // Both Edit (rest-points table) and View (timeline cards) read through
+  // TF.overview.getEffectiveDayContext — single source of truth for
+  // segments + start_time. No legacy day.schedule[] fallback.
+  function getDayCtx(day, variantId) {
+    const fn = window.TF && window.TF.overview && window.TF.overview.getEffectiveDayContext;
+    if (!fn) return null;
+    return fn(window.__PLAN__ || (window.TF.loadPlan && window.TF.loadPlan()), day, variantId || null);
   }
   function deriveScheduleForDay(day) {
-    const ep = day && day.elevation_profile;
-    if (!ep) return null;
-    const start = ep.start_time;
-    if (!/^\d{1,2}:\d{2}$/.test(String(start || ''))) return null;
-    const [sh, sm] = start.split(':').map(Number);
-    const startMin = sh * 60 + sm;
-    const factor = readSpeedFactor();
-    return buildItemsFromSegments(effectiveSegments(day, ep), startMin, factor);
+    const ctx = getDayCtx(day, null);
+    if (!ctx || ctx.startMin == null) return null;
+    return buildItemsFromSegments(ctx.segmentsWithReturn, ctx.startMin, readSpeedFactor());
   }
   function deriveScheduleForRoute(day, route) {
-    const ep = day && day.elevation_profile;
-    if (!ep || !ep.route_variants) return null;
-    const variant = ep.route_variants[route && route.id];
-    if (!variant) return null;
-    const start = variant.start_time || ep.start_time;
-    if (!/^\d{1,2}:\d{2}$/.test(String(start || ''))) return null;
-    const [sh, sm] = start.split(':').map(Number);
-    const startMin = sh * 60 + sm;
-    const factor = readSpeedFactor();
-    return buildItemsFromSegments(effectiveSegments(day, variant), startMin, factor);
+    const ctx = getDayCtx(day, route && route.id);
+    if (!ctx || ctx.startMin == null) return null;
+    return buildItemsFromSegments(ctx.segmentsWithReturn, ctx.startMin, readSpeedFactor());
   }
 
   // ---- timeline ----
@@ -215,8 +202,8 @@
   function renderRoutes(day) {
     const routes = day.routes;
     if (!routes || !routes.length) return '';
-    // Try derived schedule per route — use it when start_time + segments
-    // exist; fall back to r.schedule otherwise.
+    // Per-route derived items (segments + variant.start_time). When the
+    // variant has no start_time + segments, the route's timeline is empty.
     const derivedByRoute = {};
     routes.forEach(r => {
       const items = deriveScheduleForRoute(day, r);
@@ -228,7 +215,7 @@
       ).join('')
     }</div>`;
     const contents = routes.map(r => {
-      const items = derivedByRoute[r.id] || r.schedule || [];
+      const items = derivedByRoute[r.id] || [];
       return `
         <div class="route-content${r.active ? ' active' : ''}" id="route-${attr(r.id)}">
           ${r.tag_text ? `<span class="day-tag ${attr(r.tag_class || '')}">${escapeHtml(r.tag_text)}</span>` : ''}
@@ -258,10 +245,9 @@
       const styleAttr = day.tag_color_override ? ` style="background:${day.tag_color_override};"` : '';
       tag = `<span class="day-tag ${attr(day.tag || 'd1')}"${styleAttr}>${escapeHtml(day.tag_text)}</span>`;
     }
-    // Prefer derived items when start_time + segments exist; legacy
-    // day.schedule[] is fallback only (and after migration, even its notes
-    // have already been pulled into segments).
-    const items = deriveScheduleForDay(day) || day.schedule || [];
+    // Items come from getEffectiveDayContext (segments + start_time). No
+    // day.schedule[] fallback — if Edit shows nothing, View shows nothing.
+    const items = deriveScheduleForDay(day) || [];
     return `
       <div class="section">
         <div class="sec-title">${escapeHtml(day.section_title || '')}</div>
