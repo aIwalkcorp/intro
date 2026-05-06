@@ -669,6 +669,41 @@
     if (!host) return;
     const overview = document.getElementById('elev-overview');
 
+    // Auto-materialise descent on edit-mode entry — once findAutoReturnSource
+    // matches AND we're in edit mode, fold the reverse into real shanghe_segments
+    // on the target day so branch / delete / note edits use the same paths as
+    // ascent rows. plan.auto_return_descent flips to false → next render sees
+    // findAutoReturnSource === null and skips this block.
+    if (document.body.classList.contains('tf-editing') && plan.auto_return_descent !== false) {
+      const ret = findAutoReturnSource(plan);
+      if (ret) {
+        const targetDay = (plan.days || []).find(d => d.id === ret.targetDayId);
+        if (targetDay) {
+          const ep = targetDay.elevation_profile || (targetDay.elevation_profile = {});
+          let segArr = null;
+          if (ep.route_variants) {
+            const ctx = getEffectiveDayContext(plan, targetDay, null);
+            const vid = ctx.variantId || ep.default_variant || Object.keys(ep.route_variants)[0];
+            const v = ep.route_variants[vid];
+            if (v) {
+              v.shanghe_segments = v.shanghe_segments || [];
+              segArr = v.shanghe_segments;
+            }
+          }
+          if (!segArr) {
+            ep.shanghe_segments = ep.shanghe_segments || [];
+            segArr = ep.shanghe_segments;
+          }
+          const newSegs = cloneDescentFromAscent(plan, ret.sourceSegs);
+          if (newSegs.length) {
+            segArr.push(...newSegs);
+            plan.auto_return_descent = false;
+            if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+          }
+        }
+      }
+    }
+
     const rows = collectRestPoints(plan);
     let totalBase = 0, totalDerived = 0, totalKm = 0, totalAsc = 0, totalDesc = 0;
     rows.forEach(r => {
@@ -1028,7 +1063,6 @@
       ${(document.body.classList.contains('tf-editing')) ? `<div class="rp-day-add-row">
         ${(plan.days || []).some(d => d.id === 'd0') ? '' : `<button type="button" class="rp-day-add-btn" data-add-kind="d0" title="在最前面加一個出發/移動日">＋ 出發日 (D0)</button>`}
         <button type="button" class="rp-day-add-btn" data-add-kind="append" title="在最後面追加一天">＋ 多加一天</button>
-        ${findAutoReturnSource(plan) ? `<button type="button" class="rp-day-add-btn rp-day-add-btn-descent" data-add-kind="descent" title="從上山反向自動產生下山段（可再各自編輯）">＋ 下山段</button>` : ''}
       </div>` : ''}
       <div class="rp-total">
         <span class="rp-total-l">全程總計</span>
@@ -1859,39 +1893,6 @@
           };
           days.unshift(d0);
           if (newDate && plan.meta) plan.meta.depart_date = newDate;
-        } else if (kind === 'descent') {
-          // Materialise the auto-补齊 reverse into real segments on the
-          // matched target day. After this:
-          //  - plan.auto_return_descent flips to false (runtime synth off)
-          //  - the descent rows ARE real segments → branch / delete / note
-          //    edits use the same paths as ascent rows
-          //  - the source ascent's notes do NOT carry over (cloneDescent…
-          //    returns clean note:'' on every leg)
-          const ret = findAutoReturnSource(plan);
-          if (!ret) return;
-          const targetDay = days.find(d => d.id === ret.targetDayId);
-          if (!targetDay) return;
-          const ep = targetDay.elevation_profile || (targetDay.elevation_profile = {});
-          // Append to the active variant if route_variants exist; otherwise
-          // to the day's main shanghe_segments.
-          let segArr = null;
-          if (ep.route_variants) {
-            const ctx = getEffectiveDayContext(plan, targetDay, null);
-            const vid = ctx.variantId || ep.default_variant || Object.keys(ep.route_variants)[0];
-            const v = ep.route_variants[vid];
-            if (v) {
-              v.shanghe_segments = v.shanghe_segments || [];
-              segArr = v.shanghe_segments;
-            }
-          }
-          if (!segArr) {
-            ep.shanghe_segments = ep.shanghe_segments || [];
-            segArr = ep.shanghe_segments;
-          }
-          const newSegs = cloneDescentFromAscent(plan, ret.sourceSegs);
-          if (!newSegs.length) return;
-          segArr.push(...newSegs);
-          plan.auto_return_descent = false;
         } else if (kind === 'append') {
           const lastDate = days[days.length - 1] && days[days.length - 1].date;
           const newDate = addDaysIso(lastDate, 1);
