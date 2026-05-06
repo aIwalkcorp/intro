@@ -105,13 +105,36 @@
     let cum = 0;
     segs.forEach((s, i) => {
       const baseMin = +s.base_minutes || 0;
+      const isRest = !!s.is_rest_stop || (s.from && s.from === s.to);
+      const isLast = i === segs.length - 1;
+      const arrivalMin = startMin + Math.round((cum + baseMin) * factor);
+      const arrival = fmtClockMin(arrivalMin);
+      const last = items[items.length - 1];
+      // Rest dwells (from===to) and immediately-consecutive same-name
+      // arrivals (e.g. arrive at 排雲 then rest at 排雲) collapse into
+      // ONE item showing the dwell as a clock range — so View matches
+      // the Edit table's "compact rest block" presentation. Without
+      // this, View displayed 排雲山莊 12:00 and 排雲山莊 13:00 as two
+      // separate cards even though Edit shows one row + sub-rest.
+      if (last && (isRest || last.title === (s.to || ''))) {
+        // Extend the previous item's time to a "T1～T2" range. Note
+        // gets the rest's note appended if present and not already there.
+        const startClock = String(last.time || '').split('～')[0];
+        last.time = startClock + '～' + arrival;
+        if (s.note && !last.note) last.note = s.note;
+        else if (s.note && last.note && last.note.indexOf(s.note) < 0) {
+          last.note = last.note + '；' + s.note;
+        }
+        if (isLast) last.highlight = true;
+      } else {
+        items.push({
+          time: arrival,
+          title: s.to || '',
+          note: s.note || null,
+          highlight: isLast,
+        });
+      }
       cum += baseMin;
-      items.push({
-        time: fmtClockMin(startMin + Math.round(cum * factor)),
-        title: s.to || '',
-        note: s.note || null,
-        highlight: i === segs.length - 1,
-      });
     });
     return items;
   }
