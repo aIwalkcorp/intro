@@ -125,7 +125,7 @@
             "id": "d0-intro",
             "from": "集合地點",
             "to": "示範民宿",
-            "base_minutes": 0,
+            "base_minutes": 210,
             "distance_km": 0,
             "ascent_m": 0,
             "descent_m": 0,
@@ -197,73 +197,73 @@
         "color": "#1e3a1a",
         "fill": "rgba(30,58,26,0.20)",
         "label": "上河文化步程基準",
+        "start_time": "08:30",
         "shanghe_segments": [
           {
-            "id": "d1-intro",
+            "id": "d1-s-shuttle",
             "from": "塔塔加接駁站",
             "to": "登山口",
             "base_minutes": 30,
-            "distance_km": 0,
-            "ascent_m": 0,
-            "descent_m": 0,
+            "distance_km": 2.8,
+            "ascent_m": 50,
             "anchor_idx": null,
-            "note": "搭接駁車至登山口 $100/趟 或步行 2.8km 約 40 分鐘",
-            "is_transport": true
+            "descent_m": 0,
+            "note": "搭接駁車 $100/趟 或步行 ~40 分鐘"
           },
           {
             "id": "d1-s0",
             "from": "登山口",
             "to": "孟祿亭",
-            "base_minutes": 50,
-            "distance_km": 1.7,
-            "ascent_m": 140,
+            "base_minutes": 90,
+            "distance_km": 1.69,
+            "ascent_m": 277,
             "anchor_idx": [
               0,
               83
             ],
-            "descent_m": 0,
+            "descent_m": 137,
             "note": "小休 10 分鐘"
           },
           {
             "id": "d1-s1",
             "from": "孟祿亭",
             "to": "白木林觀景台",
-            "base_minutes": 120,
-            "distance_km": 3.3,
-            "ascent_m": 290,
+            "base_minutes": 100,
+            "distance_km": 3.31,
+            "ascent_m": 414,
             "anchor_idx": [
               83,
               240
             ],
-            "descent_m": 0,
+            "descent_m": 122,
             "note": "午餐行動糧 30 分鐘"
           },
           {
             "id": "d1-s2",
             "from": "白木林觀景台",
             "to": "大峭壁",
-            "base_minutes": 40,
+            "base_minutes": 100,
             "distance_km": 1.7,
-            "ascent_m": 110,
+            "ascent_m": 165,
             "anchor_idx": [
               240,
               319
             ],
-            "descent_m": 0,
+            "descent_m": 57,
             "note": "拍照留念"
           },
           {
             "id": "d1-s3",
             "from": "大峭壁",
             "to": "排雲山莊",
-            "base_minutes": 50,
-            "distance_km": 1.8,
-            "ascent_m": 160,
+            "base_minutes": 100,
+            "distance_km": 1.62,
+            "ascent_m": 204,
             "anchor_idx": [
               319,
               394
             ],
-            "descent_m": 0
+            "descent_m": 99
           },
           {
             "id": "d1-evening",
@@ -280,8 +280,7 @@
         ],
         "summit_idx": 394,
         "summit_label": "排雲山莊",
-        "direction": "ascent_only",
-        "start_time": "08:30"
+        "direction": "ascent_only"
       }
     },
     {
@@ -372,65 +371,68 @@
             "from": "排雲山莊",
             "to": "主北岔(風口)",
             "base_minutes": 60,
-            "distance_km": 1.5,
-            "ascent_m": 400,
+            "distance_km": 1.48,
+            "ascent_m": 394,
             "anchor_idx": [
-              0,
+              1,
               94
             ],
-            "descent_m": 0
+            "descent_m": 2,
+            "note": "風大注意保暖。決策點：走北峰或直上主峰"
           },
           {
             "id": "d2a-s1",
             "from": "主北岔(風口)",
             "to": "玉山北峰",
             "base_minutes": 80,
-            "distance_km": 2.5,
-            "ascent_m": 58,
+            "distance_km": 2.29,
+            "ascent_m": 250,
             "anchor_idx": [
-              94,
+              187,
               380
             ],
-            "descent_m": 0
+            "descent_m": 250,
+            "note": "千元大鈔背面經典角度"
           },
           {
             "id": "d2a-s2",
-            "from": "北峰",
+            "from": "玉山北峰",
             "to": "主北岔(風口)",
             "base_minutes": 65,
-            "distance_km": 2.5,
-            "ascent_m": 0,
+            "distance_km": 2.78,
+            "ascent_m": 292,
             "anchor_idx": [
               380,
-              94
+              672
             ],
-            "descent_m": 58
+            "descent_m": 295,
+            "note": "碎石坡陡上，抓好鐵鍊"
           },
           {
             "id": "d2a-s3",
             "from": "主北岔(風口)",
             "to": "玉山主峰",
             "base_minutes": 25,
-            "distance_km": 0.6,
-            "ascent_m": 152,
+            "distance_km": 0.2,
+            "ascent_m": 93,
             "anchor_idx": [
-              94,
-              140
+              672,
+              705
             ],
-            "descent_m": 0
+            "descent_m": 4
           },
           {
             "id": "d2a-s4",
-            "from": "主峰",
+            "from": "玉山主峰",
             "to": "排雲山莊",
             "base_minutes": 45,
-            "distance_km": 2.1,
-            "ascent_m": 0,
+            "distance_km": 1.75,
+            "ascent_m": 2,
             "anchor_idx": [
-              140,
-              800
+              705,
+              798
             ],
-            "descent_m": 550
+            "descent_m": 533
           }
         ],
         "decision_anchors": [
@@ -448,66 +450,104 @@
                 "id": "d2a-s0",
                 "from": "排雲山莊",
                 "to": "主北岔(風口)",
-                "base_minutes": 60,
-                "distance_km": 1.5,
-                "ascent_m": 400,
+                "base_minutes": 90,
+                "distance_km": 1.48,
+                "ascent_m": 394,
                 "anchor_idx": [
-                  0,
+                  1,
                   94
                 ],
-                "descent_m": 0
+                "descent_m": 2
               },
               {
                 "id": "d2a-s1",
                 "from": "主北岔(風口)",
                 "to": "玉山北峰",
-                "base_minutes": 80,
-                "distance_km": 2.5,
-                "ascent_m": 58,
+                "base_minutes": 90,
+                "distance_km": 2.29,
+                "ascent_m": 250,
                 "anchor_idx": [
-                  94,
+                  187,
                   380
                 ],
-                "descent_m": 0
+                "descent_m": 250,
+                "note": "千元大鈔背面經典角度"
+              },
+              {
+                "id": "d2a-r-bei",
+                "from": "玉山北峰",
+                "to": "玉山北峰",
+                "base_minutes": 90,
+                "distance_km": 0,
+                "ascent_m": 0,
+                "descent_m": 0,
+                "anchor_idx": null,
+                "note": "離開北峰前休息／碎石坡準備",
+                "is_rest_stop": true
               },
               {
                 "id": "d2a-s2",
-                "from": "北峰",
+                "from": "玉山北峰",
                 "to": "主北岔(風口)",
-                "base_minutes": 65,
-                "distance_km": 2.5,
-                "ascent_m": 0,
+                "base_minutes": 90,
+                "distance_km": 2.78,
+                "ascent_m": 292,
                 "anchor_idx": [
                   380,
-                  94
+                  672
                 ],
-                "descent_m": 58
+                "descent_m": 295,
+                "note": "碎石坡陡上，抓好鐵鍊"
               },
               {
                 "id": "d2a-s3",
                 "from": "主北岔(風口)",
                 "to": "玉山主峰",
-                "base_minutes": 25,
-                "distance_km": 0.6,
-                "ascent_m": 152,
+                "base_minutes": 30,
+                "distance_km": 0.2,
+                "ascent_m": 93,
                 "anchor_idx": [
-                  94,
-                  140
+                  672,
+                  705
                 ],
-                "descent_m": 0
+                "descent_m": 4
+              },
+              {
+                "id": "d2a-r-zhu",
+                "from": "玉山主峰",
+                "to": "玉山主峰",
+                "base_minutes": 60,
+                "distance_km": 0,
+                "ascent_m": 0,
+                "descent_m": 0,
+                "anchor_idx": null,
+                "note": "拍照、攻頂後休息",
+                "is_rest_stop": true
               },
               {
                 "id": "d2a-s4",
-                "from": "主峰",
+                "from": "玉山主峰",
                 "to": "排雲山莊",
-                "base_minutes": 45,
-                "distance_km": 2.1,
-                "ascent_m": 0,
+                "base_minutes": 90,
+                "distance_km": 1.75,
+                "ascent_m": 2,
                 "anchor_idx": [
-                  140,
-                  800
+                  705,
+                  798
                 ],
-                "descent_m": 550
+                "descent_m": 533
+              },
+              {
+                "id": "d2a-r-paiyun",
+                "from": "排雲山莊",
+                "to": "排雲山莊",
+                "base_minutes": 60,
+                "distance_km": 0,
+                "ascent_m": 0,
+                "descent_m": 0,
+                "anchor_idx": null,
+                "note": "吃麵・整裝",
+                "is_rest_stop": true
               }
             ],
             "decision_anchors": [
@@ -529,40 +569,64 @@
                 "id": "d2b-s0",
                 "from": "排雲山莊",
                 "to": "主北岔(風口)",
-                "base_minutes": 60,
-                "distance_km": 1.5,
-                "ascent_m": 400,
+                "base_minutes": 90,
+                "distance_km": 1.48,
+                "ascent_m": 394,
                 "anchor_idx": [
-                  0,
+                  1,
                   94
                 ],
-                "descent_m": 0
+                "descent_m": 2
               },
               {
                 "id": "d2b-s1",
                 "from": "主北岔(風口)",
                 "to": "玉山主峰",
-                "base_minutes": 35,
-                "distance_km": 0.6,
-                "ascent_m": 152,
+                "base_minutes": 50,
+                "distance_km": 0.41,
+                "ascent_m": 154,
                 "anchor_idx": [
                   94,
                   140
                 ],
-                "descent_m": 0
+                "descent_m": 3
+              },
+              {
+                "id": "d2b-r-zhu",
+                "from": "玉山主峰",
+                "to": "玉山主峰",
+                "base_minutes": 70,
+                "distance_km": 0,
+                "ascent_m": 0,
+                "descent_m": 0,
+                "anchor_idx": null,
+                "note": "拍照、日出",
+                "is_rest_stop": true
               },
               {
                 "id": "d2b-s2",
-                "from": "主峰",
+                "from": "玉山主峰",
                 "to": "排雲山莊",
-                "base_minutes": 30,
-                "distance_km": 2.1,
-                "ascent_m": 0,
+                "base_minutes": 90,
+                "distance_km": 1.75,
+                "ascent_m": 2,
                 "anchor_idx": [
-                  140,
-                  800
+                  705,
+                  798
                 ],
-                "descent_m": 552
+                "descent_m": 533
+              },
+              {
+                "id": "d2b-r-paiyun",
+                "from": "排雲山莊",
+                "to": "排雲山莊",
+                "base_minutes": 90,
+                "distance_km": 0,
+                "ascent_m": 0,
+                "descent_m": 0,
+                "anchor_idx": null,
+                "note": "補眠／午休",
+                "is_rest_stop": true
               }
             ],
             "decision_anchors": [
@@ -575,7 +639,7 @@
             "summit_idx": 140,
             "summit_label": "玉山主峰",
             "direction": "out_and_back",
-            "start_time": "04:00"
+            "start_time": "03:00"
           }
         },
         "default_variant": "d2a",

@@ -314,11 +314,30 @@ def main():
         ko, ao, do_ = old; kn, an, dn = new
         print(f"{where:<10}{fr+'→'+to:<32}{ko:>5} → {kn:<10}  {ao:>4} → {an:<8}  {do_:>4} → {dn:<8}  {'R' if rev else ' ':<4}{nlegs}")
 
-    # Write back
-    new_json = json.dumps(plan, ensure_ascii=False, separators=(",", ":"))
-    out = src[:jstart] + new_json + src[jend:]
+    # Write back to BOTH the inline plan-data block in index.html AND
+    # plan.json. The two used to drift — auth.html clone-on-login and
+    # dashboard.createPlan both fetch plan.json, so when only index.html
+    # got updated the cloned plans inherited stale anchor_idx + km/↑/↓
+    # values. Keep them in sync by writing both from the same `plan`
+    # object every migration run.
+    new_json_compact = json.dumps(plan, ensure_ascii=False, separators=(",", ":"))
+    out = src[:jstart] + new_json_compact + src[jend:]
     HTML.write_text(out, encoding="utf-8")
-    print(f"\n✔ wrote {len(rows)} segment updates back to index.html")
+    print(f"\n✔ wrote {len(rows)} segment updates → index.html (inline plan-data)")
+
+    # plan.json: preserve any keys it has that the inline doesn't carry
+    # (e.g. _static_kept). Indented for human-readability.
+    PLAN_JSON = HTML.parent / "plan.json"
+    existing = {}
+    try:
+        if PLAN_JSON.exists():
+            existing = json.loads(PLAN_JSON.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"  warn: could not read existing plan.json ({e}); writing fresh")
+    merged = dict(existing)
+    merged.update(plan)
+    PLAN_JSON.write_text(json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"✔ wrote                                    → plan.json (kept _static_kept etc.)")
 
 if __name__ == "__main__":
     main()
