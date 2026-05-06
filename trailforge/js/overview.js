@@ -174,6 +174,31 @@
     if (max > 0) return 'd' + (max + 1);
     return 'd' + ((days || []).length + (nonNumericSeen ? 1 : 1));
   }
+  // Pick a prepend id: prefer 'd0' if free, else d-pre-1, d-pre-2, …
+  function nextPrependId(days) {
+    const ids = new Set((days || []).map(d => (d && d.id) || ''));
+    if (!ids.has('d0')) return 'd0';
+    let n = 1;
+    while (ids.has('d-pre-' + n)) n++;
+    return 'd-pre-' + n;
+  }
+  // Recompute meta dates so the title's "幾天幾夜" stays in sync with
+  // plan.days. Called after every add/remove. start_date = first
+  // non-pretrip day; end_date = last day; depart_date = first day iff
+  // it looks like a transport / 出發 day.
+  function refreshMetaDates(plan) {
+    if (!plan || !plan.meta) return;
+    const days = plan.days || [];
+    if (!days.length) return;
+    const isPretrip = (d) => d && (d.id === 'd0' || /^d-pre/.test(d.id || '')
+      || (d.tag_text && /出發|交通|移動/.test(d.tag_text)));
+    const firstHike = days.find(d => !isPretrip(d)) || days[0];
+    const lastDay = days[days.length - 1];
+    if (firstHike && firstHike.date) plan.meta.start_date = firstHike.date;
+    if (lastDay && lastDay.date)     plan.meta.end_date   = lastDay.date;
+    if (isPretrip(days[0]) && days[0].date) plan.meta.depart_date = days[0].date;
+    else if (plan.meta.depart_date && !days.some(isPretrip)) delete plan.meta.depart_date;
+  }
 
   // ── Auto-return synthesis (shared by Edit + View) ─────────────────────
   // Locates the ascent_only day whose segments should be reversed onto
@@ -801,6 +826,12 @@
       }
 
       if (r.kind === 'rest') {
+        // Compact sub-row tucked under the prior transit segment —
+        // semantically "after arriving at X, dwell N minutes here".
+        // Same affordance family as .rp-note-row (↳ + indent), with sage
+        // tint, an asterism mark, and inline mins / clock-range / note.
+        // Place name is implicit (it's the prior segment's `to`), so
+        // we don't repeat it.
         const editing = document.body.classList.contains('tf-editing');
         const canEdit = !r.isReturn && r.segIdx != null;
         const derived = Math.round(r.base_minutes * factor);
@@ -817,61 +848,39 @@
                 data-variant-id="${escapeHtml(r.variantId || '')}"
                 min="0" step="1" value="${derived}"
                 aria-label="此段休息分鐘">`
-          : `<span class="rp-time-derived">${derived}</span>`;
-        const delBtn = (canEdit && editing) ? `<button type="button" class="rp-del-btn"
+          : `<span class="rp-sub-rest-mins-num">${derived}</span>`;
+        const delBtn = (canEdit && editing) ? `<button type="button" class="rp-del-btn rp-sub-del-btn"
             data-day-id="${escapeHtml(r.dayId)}"
             data-seg-idx="${r.segIdx}"
             data-variant-id="${escapeHtml(r.variantId || '')}"
             data-to-name="${escapeHtml(r.atName || '休息')}"
             aria-label="刪除此休息" title="刪除此休息">✕</button>` : '';
-        // Per-row info button (same exclamation toggle) so REST rows
-        // share the segment-row affordance set.
-        const restInfoKey = `${r.dayId}|${r.variantId || ''}|${r.segIdx == null ? 'r_'+idx : r.segIdx}|REST`;
-        const restInfoOpen = host && host._openInfoRows && host._openInfoRows.has(restInfoKey);
-        const restInfoBtn = `<button type="button" class="rp-info-btn"
-              data-info-key="${escapeHtml(restInfoKey)}"
-              aria-pressed="${restInfoOpen ? 'true' : 'false'}"
-              aria-label="顯示／隱藏此段詳情" title="顯示／隱藏此段詳情">
-            <svg viewBox="0 0 18 18" width="14" height="14" aria-hidden="true">
-              <path d="M9 3.6 v6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/>
-              <circle cx="9" cy="13.5" r="1.15" fill="currentColor"/>
-            </svg>
-          </button>`;
-        let noteHtml = '';
-        if (canEdit && editing) {
-          noteHtml = `<div class="rp-note-row rp-note-row-rest" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
-            <span class="rp-note-mark" aria-hidden="true">↳</span>
-            <input class="rp-note-input" type="text" value="${escapeHtml(r.note || '')}" placeholder="備註（午餐／補水／拍照…）" aria-label="此段備註">
-          </div>`;
-        } else if (r.note) {
-          noteHtml = `<div class="rp-note-row rp-note-row-rest rp-note-readonly">
-            <span class="rp-note-mark" aria-hidden="true">↳</span>
-            <span class="rp-note-text">${escapeHtml(r.note)}</span>
-          </div>`;
-        }
-        const rangeText = (startClock && endClock)
-          ? `<small>停留</small><b>${startClock}<span class="rp-rest-arrow">～</span>${endClock}</b>`
-          : '<small class="rp-arrive-empty">—</small>';
-        return `<div class="rp-row rp-rest-row${r.isReturn ? ' rp-row-return' : ''}${restInfoOpen ? ' rp-row-info-open' : ''}">
-          ${dayChip}
-          <span class="rp-cum rp-rest-stamp" aria-label="休息">REST</span>
-          <span class="rp-route rp-rest-route">
-            <span class="rp-rest-mark" aria-hidden="true">❋</span>
-            <span class="rp-rest-place">${escapeHtml(r.atName || '')}</span>
-          </span>
-          <span class="rp-cost">
-            <span class="rp-cost-main">
-              ${minsCell}<small>分</small>
-              ${delBtn}
-            </span>
-          </span>
-          <span class="rp-arrive rp-rest-arrive">${rangeText}</span>
-          ${restInfoBtn}
-        </div><div class="rp-info-row${restInfoOpen ? ' rp-info-row-open' : ''}" data-info-key="${escapeHtml(restInfoKey)}">
-          <span class="rp-info-stamp">▲ DETAILS</span>
-          <span class="rp-info-base">基準 <b>${r.base_minutes}</b><small>分</small></span>
-          <span class="rp-info-base">類型 <b>原地停留</b></span>
-        </div>${noteHtml}`;
+        const clockText = (startClock && endClock)
+          ? `<span class="rp-sub-rest-clock">${startClock}<span class="rp-rest-arrow">～</span>${endClock}</span>`
+          : '';
+        // Note inline on the same line. View mode → italic serif text.
+        // Edit mode → dotted-underline input that spans the remaining
+        // flex space. Either way, single-line stays compact.
+        const noteCell = (canEdit && editing)
+          ? `<input class="rp-sub-rest-note rp-sub-rest-note-edit" type="text"
+                value="${escapeHtml(r.note || '')}"
+                placeholder="備註（午餐／補水／拍照…）"
+                data-day-id="${escapeHtml(r.dayId)}"
+                data-seg-idx="${r.segIdx}"
+                data-variant-id="${escapeHtml(r.variantId || '')}"
+                aria-label="此段備註">`
+          : (r.note ? `<span class="rp-sub-rest-note">${escapeHtml(r.note)}</span>` : '');
+        return `<div class="rp-sub-rest${r.isReturn ? ' rp-sub-rest-return' : ''}"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-seg-idx="${r.segIdx == null ? '' : r.segIdx}"
+            data-variant-id="${escapeHtml(r.variantId || '')}">
+          <span class="rp-sub-mark" aria-hidden="true">↳</span>
+          <span class="rp-sub-rest-pill"><span class="rp-sub-rest-glyph" aria-hidden="true">❋</span>休息</span>
+          <span class="rp-sub-rest-mins">${minsCell}<small>分</small></span>
+          ${clockText}
+          ${noteCell}
+          ${delBtn}
+        </div>`;
       }
 
       if (r.kind === 'subtotal') {
@@ -1061,7 +1070,7 @@
       </div>
       <div class="rp-list">${rowsHtml}</div>
       ${(document.body.classList.contains('tf-editing')) ? `<div class="rp-day-add-row">
-        ${(plan.days || []).some(d => d.id === 'd0') ? '' : `<button type="button" class="rp-day-add-btn" data-add-kind="d0" title="在最前面加一個出發/移動日">＋ 出發日 (D0)</button>`}
+        <button type="button" class="rp-day-add-btn" data-add-kind="prepend" title="在最前面加一天（沒 D0 時自動帶出發日模板）">＋ 加在前面</button>
         <button type="button" class="rp-day-add-btn" data-add-kind="append" title="在最後面追加一天">＋ 多加一天</button>
       </div>` : ''}
       <div class="rp-total">
@@ -1140,10 +1149,12 @@
     }
 
     // ── Bind per-segment note inputs (edit mode only) ──
-    host.querySelectorAll('.rp-note-input').forEach((inp) => {
+    // Both .rp-note-input (transit segs, sibling note row) and
+    // .rp-sub-rest-note-edit (compact rest sub-row, inline note) write
+    // through to seg.note. Data attrs sit on the input itself for the
+    // sub-rest case; for transit, fall back to the wrapping .rp-note-row.
+    host.querySelectorAll('.rp-note-input, .rp-sub-rest-note-edit').forEach((inp) => {
       inp.addEventListener('input', () => {
-        // Data attributes can sit on the input itself (rest-row's inline
-        // note edit) or on the wrapping .rp-note-row (regular segment).
         const ds = inp.dataset.segIdx ? inp.dataset : (inp.closest('.rp-note-row') || {}).dataset;
         if (!ds || ds.segIdx == null) return;
         const segArr = resolveSegArr(ds.dayId, ds.variantId || null);
@@ -1872,16 +1883,20 @@
         const kind = btn.dataset.addKind;
         const days = plan.days || (plan.days = []);
         const blankEp = () => ({ shanghe_segments: [], gpx_ref: null, start_time: null });
-        if (kind === 'd0') {
-          if (days.some(d => d.id === 'd0')) return;
+        if (kind === 'prepend') {
           const firstDate = days[0] && days[0].date;
           const newDate = addDaysIso(firstDate, -1);
-          const d0 = {
-            id: 'd0',
+          const newId = nextPrependId(days);
+          // First-prepend (no D0 yet) gets the 出發日 template; subsequent
+          // prepends get a generic blank early day so multi-prepend stays
+          // disambiguable.
+          const isD0 = newId === 'd0';
+          const newDay = {
+            id: newId,
             date: newDate,
-            label: 'Day 0・出發',
-            tag_text: '出發日',
-            tag_color_override: 'linear-gradient(135deg,#4b5563,#6b7280)',
+            label: isD0 ? 'Day 0・出發' : 'Day 前置・(待命名)',
+            tag_text: isD0 ? '出發日' : null,
+            tag_color_override: isD0 ? 'linear-gradient(135deg,#4b5563,#6b7280)' : null,
             section_title: '',
             elevation_profile: blankEp(),
             schedule: [],
@@ -1891,8 +1906,7 @@
             details: [],
             retreat: null,
           };
-          days.unshift(d0);
-          if (newDate && plan.meta) plan.meta.depart_date = newDate;
+          days.unshift(newDay);
         } else if (kind === 'append') {
           const lastDate = days[days.length - 1] && days[days.length - 1].date;
           const newDate = addDaysIso(lastDate, 1);
@@ -1912,6 +1926,10 @@
             retreat: null,
           });
         }
+        // Sync meta dates so the title's "幾天幾夜" counter follows
+        // plan.days. start_date / end_date / depart_date all derived
+        // from the (post-mutation) day list inside refreshMetaDates.
+        refreshMetaDates(plan);
         if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
         renderRestPoints(plan, readSpeed());
         if (TF.modeToggle && TF.modeToggle.refreshAll) {
