@@ -606,11 +606,15 @@
           }
         });
         const suppress = d._suppressCheckpointNames || new Set();
-        // Sort by idx (left → right), then dedupe by NAME — out-and-back
-        // loops visit 主北岔(風口) / 排雲山莊 etc. multiple times in the
-        // stitched track, but only the first arrival's clock is useful.
-        // The REST POINTS table still shows every visit with its own time.
-        const seenNames = (opts._chartSeenNames = opts._chartSeenNames || new Set());
+        // Sort by idx (left → right), then dedupe by NAME — within ONE
+        // day. Out-and-back loops (D2A: 排雲→主北岔→北峰→主北岔→主峰→排雲)
+        // visit the same name multiple times in the stitched track; only
+        // the first visit's clock is useful on the chart. Cross-day
+        // dedupe is handled separately by stitchDayBoundaries (sets
+        // d._suppressCheckpointNames for adjacent same-name boundaries),
+        // so synth-return descent days still draw 孟祿亭 / 白木林 / 大峭壁
+        // again with their descent times — they're on a different day.
+        const seenNames = new Set();
         const cps = [...cpMap.entries()]
           .filter(([idx]) => idx >= 0 && idx < d.gpx.length)
           .filter(([idx]) => idx !== d.summitIdx)
