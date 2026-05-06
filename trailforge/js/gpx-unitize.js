@@ -25,7 +25,13 @@
 (function () {
   const TF = window.TF = window.TF || {};
 
-  const DEFAULT_THRESHOLD_M = 80;
+  const DEFAULT_THRESHOLD_M = 250;  // Voronoi-style: trkpts get the
+                                    // closest waypoint within this max.
+                                    // Generous because cell edges are
+                                    // determined by competing waypoint
+                                    // distances, not this radius.
+  const PHASE1_MAX_LEGS = 5;
+  const PHASE2_MAX_LEGS = 10;
 
   // Static aliases that the玉山 demo + most TW hiking plans use. New
   // aliases get auto-detected via lat/lon equality below, so this list
@@ -88,37 +94,53 @@
     return { km: dist / 1000, asc, desc };
   }
 
-  // ─── Visit detection (multi-visit per location) ────────────────
+  // ─── Visit detection (Voronoi-style multi-visit) ───────────────
+  // Each trkpt gets assigned to its NEAREST named waypoint within
+  // thresholdM. A visit = contiguous run of trkpts assigned to the
+  // same canonical name; anchor = run's local-min idx. Voronoi cells
+  // let coordinate-close waypoints (e.g. 主北岔/主峰 only 155m apart)
+  // each "win" the trkpts physically nearest them, instead of merging
+  // into one mega-visit when a per-name fixed threshold is too wide.
   function detectVisits(track, named, opts) {
     opts = opts || {};
     const thresholdM = opts.thresholdM || DEFAULT_THRESHOLD_M;
     const canonMap = opts.canonMap || buildCanon(named);
     if (!Array.isArray(track) || !named) return [];
 
-    const visits = [];
+    const n = track.length;
+    const assignments = new Array(n).fill(null);
+    const bestDists = new Array(n).fill(Infinity);
     for (const [name, loc] of Object.entries(named)) {
       if (!loc || loc.lat == null || loc.lon == null) continue;
       const cname = canonName(name, canonMap);
-      let inVisit = false;
-      let bestIdx = -1, bestDist = Infinity;
-      for (let i = 0; i < track.length; i++) {
+      for (let i = 0; i < n; i++) {
         const p = track[i];
         if (!p) continue;
         const d = haversineMeters(loc.lat, loc.lon, p[0], p[1]);
-        if (d < thresholdM) {
-          if (!inVisit) { inVisit = true; bestIdx = i; bestDist = d; }
-          else if (d < bestDist) { bestIdx = i; bestDist = d; }
-        } else if (inVisit) {
-          visits.push([bestIdx, cname]);
-          inVisit = false; bestIdx = -1; bestDist = Infinity;
+        if (d < bestDists[i] && d < thresholdM) {
+          bestDists[i] = d;
+          assignments[i] = cname;
         }
       }
-      if (inVisit) visits.push([bestIdx, cname]);
     }
-    visits.sort((a, b) => a[0] - b[0]);
 
-    // Dedupe consecutive same-canon visits — keep the smallest idx in
-    // each cluster. Covers both threshold-flicker and alias collisions.
+    const visits = [];
+    let i = 0;
+    while (i < n) {
+      if (assignments[i] == null) { i++; continue; }
+      const cur = assignments[i];
+      let runMinIdx = i, runMinDist = bestDists[i];
+      while (i < n && assignments[i] === cur) {
+        if (bestDists[i] < runMinDist) {
+          runMinDist = bestDists[i]; runMinIdx = i;
+        }
+        i++;
+      }
+      visits.push([runMinIdx, cur]);
+    }
+
+    // Dedupe consecutive same-canon visits — covers alias collisions
+    // that survived canonicalisation (rare, e.g. 3-way coord ties).
     const out = [];
     for (const v of visits) {
       if (out.length && out[out.length - 1][1] === v[1]) {
@@ -143,13 +165,54 @@
     return legs;
   }
 
-  // ─── Shortest-path search (Dijkstra on leg DAG) ────────────────
+  // ─── Two-phase path search ─────────────────────────────────────
+  // Mirrors scripts/recompute-gpx-stats.py find_path():
+  //   Phase 1 — greedy idx-monotonic chain. Among valid starts (lo ≥
+  //     min_idx, from = fr), prefer SHORTEST chain (by leg count) that
+  //     reaches `to` within phase1MaxLegs. Tie on length → earliest
+  //     start. Captures "user took the directest contiguous path"
+  //     while letting later segments correctly skip GPS noise blips.
+  //   Phase 2 — Dijkstra shortest-km, sparse (allow skip). Activates
+  //     when no contiguous chain fits within phase1MaxLegs (e.g. plan
+  //     bypasses a recorded detour like D2B omitting the 北峰 loop).
   function findPath(legs, fr, to, opts) {
     opts = opts || {};
-    const maxLegs = opts.maxLegs || 8;
+    const minIdx = opts.minIdx || 0;
+    const phase1MaxLegs = opts.phase1MaxLegs || PHASE1_MAX_LEGS;
+    const phase2MaxLegs = opts.phase2MaxLegs || PHASE2_MAX_LEGS;
     if (!Array.isArray(legs) || legs.length === 0) return null;
+    const n = legs.length;
 
-    // Min-heap simulation via sorted insert (small N — fine for ≤20 legs).
+    // Phase 1: shortest contiguous chain
+    let best = null;
+    for (let start = 0; start < n; start++) {
+      if (legs[start].lo < minIdx) continue;
+      if (legs[start].from !== fr) continue;
+      const path = [start];
+      let curTo = legs[start].to;
+      let nxt = start;
+      let reached = (curTo === to);
+      if (!reached) {
+        for (let step = 0; step < phase1MaxLegs - 1; step++) {
+          let foundNext = -1;
+          for (let k = nxt + 1; k < n; k++) {
+            if (legs[k].lo < legs[nxt].hi) continue;
+            if (legs[k].from !== curTo) continue;
+            foundNext = k; break;
+          }
+          if (foundNext < 0) break;
+          nxt = foundNext;
+          path.push(nxt);
+          curTo = legs[nxt].to;
+          if (curTo === to) { reached = true; break; }
+        }
+      }
+      if (!reached) continue;
+      if (best === null || path.length < best.length) best = path.slice();
+    }
+    if (best !== null) return best;
+
+    // Phase 2: Dijkstra shortest-km, sparse
     const frontier = [];
     const push = (km, path) => {
       let i = 0;
@@ -157,9 +220,8 @@
       frontier.splice(i, 0, { km, path });
     };
     const seen = Object.create(null);
-
-    for (let i = 0; i < legs.length; i++) {
-      if (legs[i].from === fr) push(legs[i].km, [i]);
+    for (let i = 0; i < n; i++) {
+      if (legs[i].from === fr && legs[i].lo >= minIdx) push(legs[i].km, [i]);
     }
     while (frontier.length) {
       const { km, path } = frontier.shift();
@@ -168,8 +230,8 @@
       if (cur === to) return path.slice();
       if (seen[cur] != null && seen[cur] <= km) continue;
       seen[cur] = km;
-      if (path.length >= maxLegs) continue;
-      for (let j = 0; j < legs.length; j++) {
+      if (path.length >= phase2MaxLegs) continue;
+      for (let j = 0; j < n; j++) {
         if (legs[j].from !== cur) continue;
         push(km + legs[j].km, path.concat(j));
       }
@@ -198,14 +260,20 @@
 
     function processSegs(segs, where) {
       if (!Array.isArray(segs)) return;
+      let cursor = 0;
       for (const s of segs) {
         if (!s || s.is_rest_stop) continue;
         const fr = canonName(s.from, canonMap);
         const to = canonName(s.to, canonMap);
-        let path = findPath(legs, fr, to);
+        let path = findPath(legs, fr, to, { minIdx: cursor });
         let reversed = false;
-        if (!path) { path = findPath(legs, to, fr); reversed = true; }
+        if (!path) { path = findPath(legs, to, fr, { minIdx: cursor }); reversed = true; }
+        // Cursor fallback — segment may be out of order, or all matching
+        // starts already past in this variant. Try without cursor.
+        if (!path) { path = findPath(legs, fr, to, { minIdx: 0 }); reversed = false; }
+        if (!path) { path = findPath(legs, to, fr, { minIdx: 0 }); reversed = true; }
         if (!path) { skipped.push({ where, from: s.from, to: s.to }); continue; }
+        cursor = Math.max(cursor, legs[path[path.length - 1]].hi);
 
         let km = 0, asc = 0, desc = 0;
         for (const idx of path) { km += legs[idx].km; asc += legs[idx].asc; desc += legs[idx].desc; }

@@ -27,7 +27,10 @@ import re, json, math, sys
 from pathlib import Path
 
 HTML = Path(__file__).resolve().parent.parent / "index.html"
-THRESHOLD_M = 80.0  # waypoint hit radius
+THRESHOLD_M = 250.0  # max distance for Voronoi-style trkpt → waypoint
+                     # assignment. Generous because the cell edge is
+                     # determined by the nearest competing waypoint, not
+                     # this radius.
 
 # ─── extract: inline arrays + plan-data + named_locations ───────────
 def extract_inline_array(text: str, name: str) -> list:
@@ -73,36 +76,49 @@ ALIASES = {
 def canon(name): return ALIASES.get(name, name)
 
 def detect_visits(track, named, threshold_m=THRESHOLD_M):
-    """Sweep track once for every named loc. A visit = contiguous run of
-       trkpts within threshold; we take the local-min idx as the anchor.
-       Names canonicalized via ALIASES so coordinate-equal aliases (e.g.
-       主峰 vs 玉山主峰) collapse to one visit cluster instead of fighting
-       at the same idx. Returns visits sorted by idx, deduped on
-       consecutive same-(canon)-name."""
-    visits = []
+    """Voronoi-style assignment + run detection.
+
+    For each trkpt, find its NEAREST named loc within `threshold_m`. A
+    visit is a contiguous run of trkpts assigned to the same canonical
+    name; its anchor is the run's local-min idx (closest physical
+    approach). This handles the 玉山 case where 主北岔(風口) and 主峰
+    sit only 155m apart — a per-name fixed-threshold sweep merged ALL
+    nearby trkpts into one or two huge visits, missing the saddle
+    re-passes between 主峰 ↔ 北峰. Voronoi cells let 主北岔 win the
+    saddle trkpts (closest) and 主峰 win the summit trkpts.
+
+    THRESHOLD_M is now a maximum — a trkpt only gets assigned if its
+    nearest waypoint is within that distance. Wider threshold + Voronoi
+    is safer than narrow per-name detection because each cell's edge is
+    where it's actually equidistant from neighbours, not an arbitrary
+    radius."""
+    n = len(track)
+    assignments = [None] * n
+    best_dists = [float("inf")] * n
     for name, loc in named.items():
         if loc.get("lat") is None or loc.get("lon") is None: continue
         cname = canon(name)
-        in_visit = False
-        best_idx = -1
-        best_dist = float("inf")
         for i, p in enumerate(track):
             d = haversine_m(loc["lat"], loc["lon"], p[0], p[1])
-            if d < threshold_m:
-                if not in_visit:
-                    in_visit = True
-                    best_idx = i; best_dist = d
-                elif d < best_dist:
-                    best_idx = i; best_dist = d
-            elif in_visit:
-                visits.append((best_idx, cname))
-                in_visit = False; best_idx = -1; best_dist = float("inf")
-        if in_visit:
-            visits.append((best_idx, cname))
-    visits.sort(key=lambda v: v[0])
-    # Dedupe consecutive same-name visits (covers both per-name double
-    # entries from re-entry within threshold and alias collisions at the
-    # same idx). Within a same-name run we keep the smallest idx.
+            if d < best_dists[i] and d < threshold_m:
+                best_dists[i] = d
+                assignments[i] = cname
+
+    visits = []
+    i = 0
+    while i < n:
+        if assignments[i] is None: i += 1; continue
+        cur = assignments[i]
+        run_min_idx = i
+        run_min_dist = best_dists[i]
+        while i < n and assignments[i] == cur:
+            if best_dists[i] < run_min_dist:
+                run_min_dist = best_dists[i]; run_min_idx = i
+            i += 1
+        visits.append((run_min_idx, cur))
+
+    # Dedupe consecutive same-name (alias collisions still possible
+    # after canonicalisation if there are 3-way coordinate ties).
     out = []
     for v in visits:
         if out and out[-1][1] == v[1]:
@@ -128,36 +144,86 @@ def build_legs(track, visits):
     return legs
 
 # ─── recompose: match each plan seg to a leg sequence ───────────────
-def find_path(legs, fr, to, max_legs=8):
-    """BFS-shortest path through the leg DAG from `fr` to `to`, weighted
-       by leg km. Each visit-pair (e.g. 主北岔↔主峰) appears as one or
-       more legs; we want the path whose sum km is smallest. Solves the
-       'cherry-pick around detour' case: D2B's 主峰→排雲 should pick
-       leg[4]+leg[5] (1.75km) rather than detour through 北峰 (7.25km),
-       even though both connect.
-       Path is a chain of leg indices i1, i2, ... where legs[i1].from=fr,
-       legs[i_k].to == legs[i_{k+1}].from, and legs[last].to=to. Legs
-       can be reused (real hiking revisits), so this is shortest-path
-       on a directed graph, not a tree-walk."""
+def find_path(legs, fr, to, min_idx=0, max_legs_phase1=5, max_legs_phase2=10):
+    """Two-phase matcher.
+
+    Phase 1 — greedy contiguous chain (cursor-aware, idx-monotonic):
+      Walk legs in idx order. From each leg starting at idx ≥ min_idx
+      with from=fr, chain forward (each next leg's lo ≥ prev.hi and
+      from = prev.to) until reaching `to`. Captures "user did everything
+      between fr and to including any wiggle" — the natural reading of
+      a plan segment when the recording is faithful.
+
+    Phase 2 — Dijkstra shortest-km fallback (cursor-aware, sparse):
+      When the recording includes detours the plan skips (e.g. D2B
+      omitting the 北峰 leg), the contiguous chain runs longer than
+      max_legs_phase1 without reaching `to`. Fall back to shortest-km
+      path that's allowed to skip non-contiguous trkpt ranges — picks
+      up the "after-detour" continuation (D2B's 主峰→排雲 jumps from
+      the first 主峰 visit to the post-北峰 主峰→主北岔→排雲 chain).
+
+    Phase 1 fixes the GPS-noise blip issue (a 0.09km mini-trip won't be
+    preferred over the real 0.41km approach because the chain walks legs
+    in idx order). Phase 2 fixes the plan-skips-detour case. The 5-leg
+    phase-1 cap is the gate: D2A's 主北岔→北峰 uses 4 legs (passes); D2B's
+    主峰→排雲 needs 8 legs to chain through the 北峰 loop (fails → phase 2)."""
     n = len(legs)
-    # Dijkstra on leg-graph: state = current "to" name, edge cost = leg km
+
+    # Phase 1: greedy idx-monotonic chain. Among all valid starts (lo ≥
+    # min_idx, from = fr) that produce a chain reaching `to` within
+    # max_legs_phase1, prefer:
+    #   1. SHORTEST chain length — captures "user took the directest
+    #      contiguous path", e.g. D2B's 主峰→排雲 picks the 2-leg
+    #      [8,9] over the 4-leg [6,7,8,9] that wanders through 主北岔.
+    #   2. Among ties on length, EARLIEST start — captures plan
+    #      contiguity (seg N+1 picks up where seg N left off), e.g.
+    #      D2B's 主北岔→主峰 picks leg[1] (the first ascent) over the
+    #      noise blip leg[3] or the post-北峰 leg[7].
+    best = None
+    for start in range(n):
+        if legs[start]["lo"] < min_idx: continue
+        if legs[start]["from"] != fr: continue
+        path = [start]
+        cur_to = legs[start]["to"]
+        nxt = start
+        reached = (cur_to == to)
+        if not reached:
+            for _ in range(max_legs_phase1 - 1):
+                found_next = -1
+                for k in range(nxt + 1, n):
+                    if legs[k]["lo"] < legs[nxt]["hi"]: continue
+                    if legs[k]["from"] != cur_to: continue
+                    found_next = k
+                    break
+                if found_next < 0: break
+                nxt = found_next
+                path.append(nxt)
+                cur_to = legs[nxt]["to"]
+                if cur_to == to: reached = True; break
+        if not reached: continue
+        # Strict shorter wins; tie on length → first-seen (earliest start
+        # since we iterate `start` ascending) is kept.
+        if best is None or len(path) < len(best):
+            best = path
+    if best is not None: return best
+
+    # Phase 2: Dijkstra shortest-km, skip-allowed
     import heapq
-    # Initial frontier: every leg starting at `fr`
-    pq = []  # (cum_km, path_indices_tuple)
-    seen = {}  # name -> best cum_km seen so far
+    pq = []
+    seen = {}
     for i, L in enumerate(legs):
-        if L["from"] == fr:
+        if L["from"] == fr and L["lo"] >= min_idx:
             heapq.heappush(pq, (L["km"], (i,)))
     while pq:
         km, path = heapq.heappop(pq)
         last = legs[path[-1]]
-        cur_name = last["to"]
-        if cur_name == to: return list(path)
-        if seen.get(cur_name, float("inf")) <= km: continue
-        seen[cur_name] = km
-        if len(path) >= max_legs: continue
+        cur = last["to"]
+        if cur == to: return list(path)
+        if seen.get(cur, float("inf")) <= km: continue
+        seen[cur] = km
+        if len(path) >= max_legs_phase2: continue
         for j, L in enumerate(legs):
-            if L["from"] != cur_name: continue
+            if L["from"] != cur: continue
             heapq.heappush(pq, (km + L["km"], path + (j,)))
     return None
 
@@ -194,17 +260,27 @@ def main():
     rows = []
     def process(day_id, ref, segs, where):
         legs = catalogues.get(ref, [])
+        cursor = 0
         for s in segs:
             if s.get("is_rest_stop"): continue
             fr, to = canon(s["from"]), canon(s["to"])
-            path = find_path(legs, fr, to)
+            path = find_path(legs, fr, to, min_idx=cursor)
             reversed_ = False
             if path is None:
-                path = find_path(legs, to, fr)
+                path = find_path(legs, to, fr, min_idx=cursor)
+                reversed_ = True
+            # Fall back: ignore cursor (segment may be out-of-order, or
+            # cursor advanced past all matching starts in this variant)
+            if path is None:
+                path = find_path(legs, fr, to, min_idx=0)
+            if path is None:
+                path = find_path(legs, to, fr, min_idx=0)
                 reversed_ = True
             if path is None:
                 print(f"  ⚠ {where}  {s['from']}→{s['to']}  no leg path found")
                 continue
+            # Advance cursor past the matched path's last leg
+            cursor = max(cursor, legs[path[-1]]["hi"])
             km, asc, desc = stats_for_path(legs, path)
             old = (s.get("distance_km",0), s.get("ascent_m",0), s.get("descent_m",0))
             new_asc, new_desc = (desc, asc) if reversed_ else (asc, desc)
