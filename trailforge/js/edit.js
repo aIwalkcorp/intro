@@ -622,14 +622,15 @@
   // exist any more). Re-enable by re-introducing decorateDayLinks/Details
   // calls below if a future iteration brings the editor UI back.
   function decorate() {
-    /* day-level qlinks + details editor blocks intentionally disabled */
-    // Retreat-times editor — sits inside the elevation-mode pane, just below
-    // the rest-points (shanghe) block. Lets the user edit timed warnings
-    // ("⏰ 09:30 未登頂主峰 → 立即折返排雲") + free-form notes per day.
-    (workingData?.days || []).forEach((day) => {
-      const panel = document.getElementById("day-" + day.id);
-      if (panel) decorateDayRetreat(panel, day);
-    });
+    /* All day-level edit blocks (qlinks, details, retreat) are now
+       intentionally disabled. Per user direction:
+         - quick_links: edited inline via render.js's renderQLinks
+           (commit 8d0b46a) — no separate "編輯快速連結" block.
+         - retreat: 撤退方案的設定仰賴休息點 Table 設定即可，不需要
+           獨立的「編輯撤退時間」這樣的區塊. The render path keeps
+           reading day.retreat for any HTML pre-baked into plan-data;
+           future retreat-from-rest-points derivation TBD.
+         - details: not yet brought back; tagged as future work. */
   }
 
   // ---- retreat editor (per day, inside elevation pane) ----
