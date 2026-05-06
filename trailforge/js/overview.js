@@ -654,6 +654,19 @@
           </svg>
           <span>分歧</span>
         </button>` : '';
+      // Delete-segment button — sits beside the branch button. Removes
+      // THIS segment from the active variant's shanghe_segments. The
+      // next segment's "from" auto-derives from collectRestPoints, so
+      // a chain like A→B→C with B deleted reads correctly as A→C iff
+      // the user fixes the next segment's `from` (we leave that as is
+      // for now; the chain may show a visual jump).
+      const deleteBtn = (canEditNote && editing) ? `<button type="button" class="rp-del-btn"
+            data-day-id="${escapeHtml(r.dayId)}"
+            data-seg-idx="${r.segIdx}"
+            data-variant-id="${escapeHtml(r.variantId || '')}"
+            data-to-name="${escapeHtml(r.to || '')}"
+            aria-label="刪除此地標"
+            title="刪除此地標">✕</button>` : '';
       let noteHtml = '';
       if (canEditNote && editing) {
         noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
@@ -679,6 +692,7 @@
           <span class="rp-cost-main">
             <span class="rp-time-derived">${derived}</span><small>分</small>
             ${branchBtn}
+            ${deleteBtn}
           </span>
           <span class="rp-time-base">基準 ${r.base_minutes}分</span>
         </span>
@@ -910,6 +924,9 @@
         const sugg = collectKnownWaypointNames(plan);
         form = document.createElement('div');
         form.className = 'rp-add-seg-form';
+        // Look up the FROM-anchor once so subsequent name picks can
+        // derive distance / asc / desc from GPX point arithmetic.
+        const fromAnchor = findWaypointTrackIdx(plan, fromName);
         form.innerHTML = `
           <div class="rp-branch-head">＋ 新增地標</div>
           <div class="rp-branch-fields">
@@ -925,27 +942,87 @@
             <label><span>↑</span><input type="number" class="rp-add-asc" min="0" value="0"><span class="rp-branch-unit">m</span></label>
             <label><span>↓</span><input type="number" class="rp-add-desc" min="0" value="0"><span class="rp-branch-unit">m</span></label>
           </div>
+          <div class="rp-add-gpx-status" hidden></div>
           <div class="rp-branch-actions">
             <button type="button" class="rp-branch-cancel">取消</button>
             <button type="button" class="rp-branch-confirm">＋ 新增</button>
           </div>
         `;
         btn.parentElement.parentNode.insertBefore(form, btn.parentElement.nextSibling);
-        form.querySelector('.rp-add-name').focus();
+        const nameInput = form.querySelector('.rp-add-name');
+        const kmInput   = form.querySelector('.rp-add-km');
+        const ascInput  = form.querySelector('.rp-add-asc');
+        const descInput = form.querySelector('.rp-add-desc');
+        const status    = form.querySelector('.rp-add-gpx-status');
+        // Track which numeric fields the user has typed in by hand —
+        // we won't overwrite those from GPX. Manual edits set a marker.
+        const manual = { km: false, asc: false, desc: false };
+        const markManual = (key) => () => { manual[key] = true; };
+        kmInput.addEventListener('input', markManual('km'));
+        ascInput.addEventListener('input', markManual('asc'));
+        descInput.addEventListener('input', markManual('desc'));
+        // On name change (datalist pick or blur), if both endpoints
+        // resolve to the same GPX track, auto-fill numeric fields with
+        // straight-line GPX-derived stats. Skip fields the user already
+        // edited.
+        const tryAutofill = () => {
+          const picked = nameInput.value.trim();
+          if (!picked || !fromAnchor) {
+            status.hidden = true; status.textContent = '';
+            return;
+          }
+          const toAnchor = findWaypointTrackIdx(plan, picked);
+          if (!toAnchor) {
+            status.hidden = false;
+            status.className = 'rp-add-gpx-status rp-gpx-miss';
+            status.textContent = '此地標尚無 GPX 對應點，請手動填入距離 / 海拔';
+            return;
+          }
+          if (toAnchor.trackRef !== fromAnchor.trackRef) {
+            status.hidden = false;
+            status.className = 'rp-add-gpx-status rp-gpx-miss';
+            status.textContent = '兩端 GPX 軌跡不同，無法自動估算';
+            return;
+          }
+          const stats = gpxStatsBetween(plan, fromAnchor.trackRef, fromAnchor.idx, toAnchor.idx);
+          if (!stats) {
+            status.hidden = false;
+            status.className = 'rp-add-gpx-status rp-gpx-miss';
+            status.textContent = 'GPX 資料不足，無法估算';
+            return;
+          }
+          if (!manual.km)   kmInput.value   = stats.distance_km;
+          if (!manual.asc)  ascInput.value  = stats.ascent_m;
+          if (!manual.desc) descInput.value = stats.descent_m;
+          status.hidden = false;
+          status.className = 'rp-add-gpx-status rp-gpx-hit';
+          status.textContent = `已由 GPX 估算：${stats.distance_km} km　↑${stats.ascent_m}m　↓${stats.descent_m}m（可手動覆寫）`;
+        };
+        nameInput.addEventListener('change', tryAutofill);
+        nameInput.addEventListener('blur',   tryAutofill);
+        nameInput.focus();
         form.querySelector('.rp-branch-cancel').addEventListener('click', () => form.remove());
         form.querySelector('.rp-branch-confirm').addEventListener('click', () => {
-          const name = form.querySelector('.rp-add-name').value.trim();
-          if (!name) { form.querySelector('.rp-add-name').focus(); return; }
+          const name = nameInput.value.trim();
+          if (!name) { nameInput.focus(); return; }
+          // Anchor the new segment's from/to to the GPX track if we
+          // resolved both ends — keeps chart focus, tooltips and future
+          // GPX recomputes consistent.
+          const toAnchor = findWaypointTrackIdx(plan, name);
+          let anchor_idx = null;
+          if (fromAnchor && toAnchor && fromAnchor.trackRef === toAnchor.trackRef) {
+            anchor_idx = [fromAnchor.idx, toAnchor.idx];
+          }
           const insertIdx = afterIdx >= 0 ? afterIdx + 1 : segArr.length;
           segArr.splice(insertIdx, 0, {
             id: 'seg-' + Math.random().toString(36).slice(2, 7),
             from: fromName,
             to: name,
             base_minutes: +form.querySelector('.rp-add-min').value || 0,
-            distance_km: +form.querySelector('.rp-add-km').value || 0,
-            ascent_m: +form.querySelector('.rp-add-asc').value || 0,
-            descent_m: +form.querySelector('.rp-add-desc').value || 0,
-            anchor_idx: null,
+            distance_km: +kmInput.value || 0,
+            ascent_m: +ascInput.value || 0,
+            descent_m: +descInput.value || 0,
+            anchor_idx,
             note: '',
           });
           if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
@@ -955,6 +1032,42 @@
           }
           if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
         });
+      });
+    });
+
+    // ── Bind ✕ delete-segment buttons ─────────────────────────────────
+    // Removes the segment from the active variant's shanghe_segments.
+    // Uses tfConfirm if available so the user has a chance to cancel.
+    host.querySelectorAll('.rp-del-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dayId = btn.dataset.dayId;
+        const variantId = btn.dataset.variantId || null;
+        const segIdx = +btn.dataset.segIdx;
+        const toName = btn.dataset.toName || '此地標';
+        const segArr = resolveSegArr(dayId, variantId);
+        if (!Array.isArray(segArr) || !segArr[segIdx]) return;
+        let ok = true;
+        if (typeof window.tfConfirm === 'function') {
+          ok = await window.tfConfirm({
+            title: '刪除地標',
+            message: `確定要刪除「${toName}」這段嗎？此操作可在儲存前透過取消編輯還原。`,
+            confirmText: '刪除',
+            cancelText: '取消',
+            destructive: true,
+          });
+        } else {
+          ok = window.confirm(`刪除「${toName}」？`);
+        }
+        if (!ok) return;
+        segArr.splice(segIdx, 1);
+        if (window.TF_EDIT && window.TF_EDIT.setDirty) window.TF_EDIT.setDirty(true);
+        renderRestPoints(plan, readSpeed());
+        if (TF.modeToggle && TF.modeToggle.refreshAll) {
+          requestAnimationFrame(() => TF.modeToggle.refreshAll());
+        }
+        if (TF.render) requestAnimationFrame(() => { try { TF.render(plan); } catch (e) {} });
       });
     });
 
@@ -1137,6 +1250,89 @@
         schedule: [],
       });
       return newId;
+    }
+
+    // ── GPX-derived geometry helpers ──────────────────────────────────────
+    // Same haversine + cum-distance + ascent/descent maths used by
+    // plan-from-gpx.js, copied here so the rest-points editor can derive
+    // distance / ascent / descent for a NEW segment when both endpoints
+    // are known waypoints with anchor_idx → GPX track points.
+    function _haversine(a1, o1, a2, o2) {
+      const R = 6371e3;
+      const dL = ((a2 - a1) * Math.PI) / 180;
+      const dO = ((o2 - o1) * Math.PI) / 180;
+      const a = Math.sin(dL / 2) ** 2 +
+                Math.cos((a1 * Math.PI) / 180) * Math.cos((a2 * Math.PI) / 180) *
+                Math.sin(dO / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    // Look up the GPX track index of a waypoint by name, by scanning
+    // existing segments' anchor_idx pairs (segment.from → anchor_idx[0],
+    // segment.to → anchor_idx[1]) across all days and variants. Also
+    // consults GPX <wpt> markers if the loaded GPX exposes them with
+    // pre-snapped indices on `__JM_GPX__.__wpts`.
+    // Returns { trackRef, idx } or null. trackRef tells us which GPX
+    // track in plan.data.gpx_tracks the index belongs to; segments
+    // without an explicit gpx_ref fall back to the day's gpx_ref.
+    function findWaypointTrackIdx(plan, name) {
+      if (!name) return null;
+      const target = String(name).trim();
+      const days = plan.days || [];
+      for (const d of days) {
+        const ep = d.elevation_profile;
+        if (!ep) continue;
+        const dayRef = d.gpx_ref || ep.gpx_ref || null;
+        const scan = (segs, vRef) => {
+          for (const s of (segs || [])) {
+            const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : null;
+            if (!ai || ai.length < 2) continue;
+            if (s.from === target) return { trackRef: s.gpx_ref || vRef || dayRef, idx: ai[0] };
+            if (s.to === target)   return { trackRef: s.gpx_ref || vRef || dayRef, idx: ai[1] };
+          }
+          return null;
+        };
+        const fromMain = scan(ep.shanghe_segments, dayRef);
+        if (fromMain) return fromMain;
+        if (ep.route_variants) {
+          for (const vid of Object.keys(ep.route_variants)) {
+            const v = ep.route_variants[vid];
+            const fromV = scan(v && v.shanghe_segments, v && v.gpx_ref || dayRef);
+            if (fromV) return fromV;
+          }
+        }
+      }
+      return null;
+    }
+    // Compute distance / ascent / descent between two GPX track indices
+    // on the same track. Returns null if the track isn't loaded or the
+    // indices are degenerate.
+    function gpxStatsBetween(plan, trackRef, idxA, idxB) {
+      if (!trackRef || idxA == null || idxB == null) return null;
+      const tracks = plan && plan.data && plan.data.gpx_tracks;
+      const track = tracks && tracks[trackRef];
+      if (!Array.isArray(track) || track.length < 2) return null;
+      const lo = Math.min(idxA, idxB);
+      const hi = Math.max(idxA, idxB);
+      if (lo === hi || hi >= track.length) return null;
+      let dist = 0, asc = 0, desc = 0;
+      for (let i = lo + 1; i <= hi; i++) {
+        const p0 = track[i - 1];
+        const p1 = track[i];
+        if (!p0 || !p1) continue;
+        dist += _haversine(p0[0], p0[1], p1[0], p1[1]);
+        const dE = (p1[2] || 0) - (p0[2] || 0);
+        if (dE > 0) asc += dE;
+        else        desc -= dE;
+      }
+      // If the user picked B before A in the GPX track (i.e. they're
+      // walking the track in reverse), swap ascent/descent so the
+      // returned numbers match the *direction of travel*.
+      const reversed = idxA > idxB;
+      return {
+        distance_km: +(dist / 1000).toFixed(2),
+        ascent_m:  Math.round(reversed ? desc : asc),
+        descent_m: Math.round(reversed ? asc  : desc),
+      };
     }
 
     // Helper for the branch form's name autocomplete: union of every

@@ -2553,6 +2553,48 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
 .overview-rest-points .rp-branch-btn:active{ transform:scale(.96); }
 .overview-rest-points .rp-branch-btn svg{ flex:none; }
 
+/* Delete-segment ✕ button — sits beside the branch button. Quiet rust
+   tone so destructive intent is signalled without shouting. */
+.overview-rest-points .rp-del-btn{
+  appearance:none; cursor:pointer; flex:none;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:18px; height:18px; margin-left:4px;
+  padding:0;
+  background:transparent;
+  border:1px dashed rgba(140,46,46,0.45);
+  border-radius:50%;
+  font-family:var(--mono); font-size:.62rem; font-weight:700;
+  color:rgba(140,46,46,.85);
+  align-self:center;
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.overview-rest-points .rp-del-btn:hover{
+  background:rgba(140,46,46,0.12);
+  border-style:solid; border-color:#8c2e2e;
+  color:#5a1a1a;
+  transform:translateY(-1px);
+}
+.overview-rest-points .rp-del-btn:active{ transform:scale(.92); }
+
+/* GPX-derived autofill hint inside the add-地標 form. Two states:
+   .rp-gpx-hit (sage, success) and .rp-gpx-miss (rust, advisory). */
+.overview-rest-points .rp-add-gpx-status{
+  font-family:var(--serif), serif; font-size:.74rem;
+  padding:5px 10px; margin-bottom:8px;
+  border-radius:4px; line-height:1.4;
+}
+.overview-rest-points .rp-add-gpx-status.rp-gpx-hit{
+  background:rgba(120,140,90,0.12);
+  border:1px solid rgba(120,140,90,0.45);
+  color:#3a4a22;
+}
+.overview-rest-points .rp-add-gpx-status.rp-gpx-miss{
+  background:rgba(140,90,46,0.10);
+  border:1px solid rgba(140,90,46,0.40);
+  color:#5a3a18;
+  font-style:italic;
+}
+
 /* Branch insertion form — slides below the note row when the user clicks
    the branch button. Compact so it doesn't dominate the table. */
 .overview-rest-points .rp-branch-form{
