@@ -598,8 +598,15 @@
           });
         }
 
-        // Per-row "+" affordance — only on real (non-synthesised) rows.
-        if (!isReturnSeg) {
+        // Per-row "+" affordance — only on real (non-synthesised) rows,
+        // and not when the very next seg is already a rest at the same
+        // place (it would render as a sub-row that already documents the
+        // dwell — adding "+ 地標 / + 休息" between them is just noise).
+        const nextSeg = segs[segIdx + 1];
+        const nextIsRestHere = !!nextSeg
+          && (!!nextSeg.is_rest_stop || (nextSeg.from && nextSeg.from === nextSeg.to))
+          && nextSeg.from === s.to;
+        if (!isReturnSeg && !nextIsRestHere) {
           rows.push({
             kind: 'add-segment',
             dayId, dayLabel,
