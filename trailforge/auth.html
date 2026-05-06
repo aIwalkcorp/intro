@@ -658,11 +658,88 @@ form .submit{animation-delay:.56s}
           if (data.refresh_token) localStorage.setItem("tf_refresh_token", data.refresh_token);
           if (data.user) localStorage.setItem("tf_user", JSON.stringify(data.user));
         }
-        // If the user was redirected here from a 401 during plan editing,
-        // honor ?next=<url> so we land back on the plan with their stashed
-        // edits ready to restore. Otherwise default to dashboard.
         const next = params.get("next");
         const apiQS = params.get("api") ? "?api=" + encodeURIComponent(params.get("api")) : "";
+
+        // Clone-on-login: when index.html sent us here with ?clone=1, the
+        // user was editing the demo template and their pre-login changes
+        // sit in localStorage["tf_demo_pending"]. Instead of returning
+        // them to the (read-only) demo URL where the auto-redirect would
+        // dump them at dashboard.html, copy plan.json into their
+        // personal plan list with the stashed edits merged on top, then
+        // open the new plan directly so they keep editing without losing
+        // their work.
+        if (params.get("clone") === "1") {
+          showBanner("ok", "OK", "通行成功。正在複製範本到你的計劃書…");
+          (async () => {
+            try {
+              // Fetch the demo template the same way dashboard.createPlan
+              // does — same-origin static plan.json.
+              const tplRes = await fetch("plan.json");
+              if (!tplRes.ok) throw new Error("plan.json " + tplRes.status);
+              const tpl = await tplRes.json();
+
+              // Merge the demo's stashed contacts + gear edits onto the
+              // template. tfStashDemoData (index.html) writes
+              // { at, contacts?, gear? }; both are top-level fields on
+              // the plan body, so a shallow override is correct.
+              let stash = null;
+              try {
+                const raw = localStorage.getItem("tf_demo_pending");
+                if (raw) stash = JSON.parse(raw);
+              } catch (e) {}
+              if (stash && typeof stash === "object") {
+                if (stash.contacts) tpl.contacts = stash.contacts;
+                if (stash.gear)     tpl.gear     = stash.gear;
+              }
+              const baseTitle = (tpl && tpl.meta && tpl.meta.title) || "新計劃書";
+              const title = `${baseTitle}（我的副本）`;
+
+              const r = await fetch(API_BASE + "/api/plans", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + localStorage.getItem("tf_access_token"),
+                },
+                body: JSON.stringify({ title, data: tpl }),
+              });
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              const created = await r.json();
+              if (!created || !created.id) throw new Error("missing id");
+
+              // Pre-arm edit.js's auto-resume so the user lands ALREADY
+              // in edit mode on the new plan — they came here from an
+              // edit attempt, picking up there is the natural next step.
+              try {
+                localStorage.setItem("tf_pending_edit_" + created.id, JSON.stringify({
+                  planId: created.id,
+                  autoEnter: true,
+                  cloneSeed: true,
+                  at: Date.now(),
+                }));
+              } catch (e) {}
+
+              // Stash served its purpose (already baked into the new
+              // plan body) — drop it so future demo visits start clean.
+              try { localStorage.removeItem("tf_demo_pending"); } catch (e) {}
+
+              const dest = "index.html?plan=" + encodeURIComponent(created.id) + (apiQS ? "&" + apiQS.slice(1) : "");
+              showBanner("ok", "OK", "副本已建立 — 正在開啟…");
+              setTimeout(() => { location.href = dest; }, 600);
+            } catch (e) {
+              // Clone failed (network, server 500, missing /api endpoint).
+              // Fall back to dashboard — the user is logged in, the
+              // stash is intact, they can manually create from there.
+              console.warn("[auth] clone-on-login failed, falling back to dashboard", e);
+              showBanner("err", "WARN", "副本建立失敗（" + (e.message || "未知") + "）。先帶你進儀表板手動建立。");
+              setTimeout(() => { location.href = "dashboard.html" + apiQS; }, 1400);
+            }
+          })();
+          return;
+        }
+
+        // Non-clone path: existing behavior — honor ?next= when valid,
+        // otherwise dashboard.
         let dest;
         if (next && /^\/[a-zA-Z0-9_\-./?&=%]*$/.test(next)) {
           dest = next;

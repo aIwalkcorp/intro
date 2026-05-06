@@ -4315,20 +4315,79 @@ window.tfConfirm = function (opts) {
 // Two early-load behaviours:
 //   (1) Mark body[data-jm-context="plan"] when ?plan=<id> is present so CSS
 //       can hide demo-only fixtures (上河驗算, 注意事項 — 玉山-specific).
-//   (2) Auto-redirect logged-in users from bare index.html → dashboard.
-//       Skip when ?plan=<id> (deep-link) or ?demo=1 (explicit demo).
+//   (2) Logged-in user hitting bare index.html → AUTO-CLONE the demo
+//       template into their plan list and open it as ?plan=NEW. This
+//       used to redirect them to dashboard.html, which made the template
+//       feel un-clickable post-login. Now clicking 玉山範本 always opens
+//       a fresh personal copy. ?demo=1 escapes (read-only demo view).
+//       ?plan=<id> already opens a specific plan, no clone.
 (function () {
   try {
     var params = new URLSearchParams(location.search);
     if (params.get('plan')) {
       document.body.dataset.jmContext = 'plan';
-      return;  // viewing a specific plan → don't auto-redirect
+      return;  // viewing a specific plan → don't auto-clone
     }
     if (params.get('demo') === '1') return;
     var token = localStorage.getItem('tf_access_token');
     if (!token) return;
-    var qs = params.get('api') ? '?api=' + encodeURIComponent(params.get('api')) : '';
-    location.replace('dashboard.html' + qs);
+    // Show a parchment-tinted "preparing your copy…" overlay so the
+    // page doesn't flash the demo content before the clone redirect.
+    var ov = document.createElement('div');
+    ov.id = 'tf-clone-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#f3ead4;display:flex;align-items:center;justify-content:center;font-family:"Noto Serif TC",serif;color:#1f3a23;font-size:.9rem;letter-spacing:.18em;';
+    ov.textContent = '正在為你建立副本…';
+    document.documentElement.appendChild(ov);
+
+    var apiHost = (params.get('api') || 'https://trailforge-api.fly.dev').replace(/\/+$/, '');
+    var apiQS = params.get('api') ? '?api=' + encodeURIComponent(params.get('api')) : '';
+
+    (function autoClone() {
+      fetch('plan.json').then(function (r) {
+        if (!r.ok) throw new Error('tpl ' + r.status);
+        return r.json();
+      }).then(function (tpl) {
+        var baseTitle = (tpl && tpl.meta && tpl.meta.title) || '新計劃書';
+        return fetch(apiHost + '/api/plans', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify({ title: baseTitle + '（我的副本）', data: tpl }),
+        }).then(function (r) {
+          if (r.status === 401) {
+            // Stale token — clear and let the page render the demo as
+            // a guest, so the save-chip flow can re-trigger auth.
+            try { localStorage.removeItem('tf_access_token'); } catch (e) {}
+            throw new Error('reauth');
+          }
+          if (!r.ok) throw new Error('post ' + r.status);
+          return r.json();
+        });
+      }).then(function (created) {
+        if (!created || !created.id) throw new Error('missing id');
+        try {
+          // Pre-arm edit.js auto-resume so the new plan opens in edit
+          // mode — user clicked the template, presumably to edit.
+          localStorage.setItem('tf_pending_edit_' + created.id, JSON.stringify({
+            planId: created.id, autoEnter: true, cloneSeed: true, at: Date.now(),
+          }));
+        } catch (e) {}
+        var dest = 'index.html?plan=' + encodeURIComponent(created.id) + (apiQS ? '&' + apiQS.slice(1) : '');
+        location.replace(dest);
+      }).catch(function (e) {
+        // Clone failed. Drop the overlay and let the demo render —
+        // user can still browse / edit-with-stash flow.
+        try { ov.remove(); } catch (e2) {}
+        if (e && e.message === 'reauth') {
+          // Token was stale; do nothing — demo renders as guest now.
+          console.warn('[index] auto-clone reauth needed, falling back to demo view');
+        } else {
+          console.warn('[index] auto-clone failed, falling back to demo view', e);
+        }
+      });
+    })();
   } catch (e) { /* ignore */ }
 })();
 </script>
@@ -5531,7 +5590,7 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
     const ok = await tfConfirm(isDemo ? {
       title: '示範頁面 · 無法直接儲存',
       en: 'Demo · Sign in required',
-      body: '示範頁面只能本地暫存。註冊或登入後即可在你自己的計劃書中保存編輯。',
+      body: '示範頁面只能本地暫存。登入或註冊後會自動把這份範本連同你的修改複製為個人副本。',
       okText: '前往登入', okEn: 'SIGN IN',
       cancelText: '繼續編輯',
     } : {
@@ -5548,6 +5607,12 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
     const qs = new URLSearchParams();
     if (apiVal) qs.set('api', apiVal);
     qs.set('next', here);
+    // Demo (no planId): tell auth.html to clone the template into the
+    // user's plan list after login, so the demo's stashed edits don't
+    // get washed away by the auto-redirect to dashboard. Personal plans
+    // (with planId) still take the plain `next` path — edit.js's
+    // per-plan stash handles their resume.
+    if (isDemo) qs.set('clone', '1');
     if (window.tfStashDemoData) window.tfStashDemoData();
     if (window.tfMarkIntentionalNav) window.tfMarkIntentionalNav();
     location.href = 'auth.html?' + qs.toString();
