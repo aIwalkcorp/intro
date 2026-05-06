@@ -153,6 +153,7 @@
   function buildDayBlank(opts) {
     const {
       id, dayIdx, daySpan, segments, events, snaps, namedLocations, gpxRef,
+      detectedJunctions,
     } = opts;
     const startDate = daySpan.startTs ? isoDate(daySpan.startTs) : null;
     const dateLabel = daySpan.startTs ? dowLabel(daySpan.startTs) : `Day ${dayIdx + 1}`;
@@ -218,6 +219,21 @@
         summit_idx: summitIdx,
         summit_label: summitLabel,
         direction,
+        // Junctions whose centroid trkpt falls inside this day's span.
+        // Format matches玉山 demo's manual decision_anchors with optional
+        // geometric/osm/source + reachable + reorder_enabled additions.
+        decision_anchors: (Array.isArray(detectedJunctions) ? detectedJunctions : [])
+          .filter(j => j.idx >= daySpan.lo && j.idx <= daySpan.hi)
+          .map(j => ({
+            idx: j.idx,
+            label: j.label || '決策點',
+            title: j.title || `${j.name} — 偵測為岔路`,
+            source: j.source || 'geometric',
+            reachable: j.reachable || [],
+            reorder_enabled: !!j.reorder_enabled,
+            cluster_idxs: j.cluster_idxs || [j.idx],
+            name: j.name,
+          })),
       },
     };
   }
@@ -240,6 +256,7 @@
       osm_locations = {},
       gpxFilename = 'gpx_main.gpx',
       trkName = '',
+      detected_junctions = [],
     } = input || {};
 
     if (!Array.isArray(track) || track.length < 2) {
@@ -336,6 +353,7 @@
         id, dayIdx, daySpan, segments, events,
         snaps: snap.snaps, namedLocations: finalNamed,
         gpxRef, track, timestamps,
+        detectedJunctions: detected_junctions,
       });
     });
 

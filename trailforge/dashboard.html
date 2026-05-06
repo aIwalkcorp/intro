@@ -1170,6 +1170,44 @@ body{
       // Continue without OSM — plan will only have GPX wpts (if any)
     }
 
+    // Junction detection — pure-geometric scan of the simplified track
+    // against the merged named_locations dict (waypoints + OSM). Each
+    // detected junction becomes a decision_anchor with reachable[] +
+    // reorder_enabled, so the rest-points UI can gate its 「重排」 button
+    // to only the actual fork points (rather than every segment row).
+    setStatus('偵測岔路…');
+    let detected_junctions = [];
+    try {
+      if (TF.junctionDetector && TF.junctionDetector.detect) {
+        // Pre-merge named_locations the same way generate() does, but
+        // without the alias-collapse (the detector handles aliases via
+        // its own coordinate-equal heuristic if needed). Snap is done
+        // by the detector internally only if `snaps` not supplied; here
+        // we run a quick local snap so the algorithm has both inputs.
+        const namedForDetect = {};
+        (waypoints || []).forEach(w => {
+          if (!w || !w.name || /^0+\d+$/.test(w.name)) return;
+          namedForDetect[w.name] = { lat: w.lat, lon: w.lon, ele: typeof w.ele === 'number' ? w.ele : null };
+        });
+        Object.assign(namedForDetect, osm_locations);
+
+        const localSnaps = {};
+        if (TF.gpxSnap && TF.gpxSnap.snapAllToTrack) {
+          const sr = TF.gpxSnap.snapAllToTrack(track, namedForDetect, { maxDistanceM: 500 });
+          if (sr && sr.snaps) Object.assign(localSnaps, sr.snaps);
+        }
+
+        detected_junctions = TF.junctionDetector.detect(track, namedForDetect, localSnaps, {});
+        if (detected_junctions.length) {
+          console.log(`[plan-wizard] detected ${detected_junctions.length} junction(s):`,
+            detected_junctions.map(j => `${j.name}@${j.idx} (${j.reachable.length} reachable)`).join(', '));
+        }
+      }
+    } catch (e) {
+      console.warn('[plan-wizard] junction detect failed', e);
+      detected_junctions = [];
+    }
+
     setStatus('產生計劃書骨架…');
     let result;
     try {
@@ -1178,6 +1216,7 @@ body{
         osm_locations,
         gpxFilename: file.name,
         trkName,
+        detected_junctions,
       });
     } catch (e) {
       setStatus('產生失敗：' + e.message, true); return;
@@ -1381,6 +1420,7 @@ body{
 <script src="js/outbox.js"></script>
 <script src="js/elevation.js"></script>
 <script src="js/gpx-snap.js"></script>
+<script src="js/junction-detector.js"></script>
 <script src="js/gpx-io.js"></script>
 <script src="js/plan-from-gpx.js"></script>
 </body>
