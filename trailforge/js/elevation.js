@@ -784,6 +784,50 @@
             ctx.textBaseline = 'alphabetic';
           }
         });
+
+        // Per-segment meta tag — distance + ascent/descent, drawn once
+        // at the midpoint between two checkpoint dots near the chart
+        // bottom. Lets the user read "2.8km ↑140m" without jumping to
+        // the rest-points table. Skipped for is_rest_stop / zero-length
+        // segs. Stagger near baseline so dense ascent regions still
+        // breathe (alternating Y per segment).
+        const baseY = pad.t + gH - 5;
+        ctx.font = '600 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        let segMetaIdx = 0;
+        d.segments.forEach((s) => {
+          if (s.is_rest_stop) return;
+          const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+          if (ai.length < 2) return;
+          const lo = Math.min(ai[0], ai[1]);
+          const hi = Math.max(ai[0], ai[1]);
+          if (lo < 0 || hi >= d.gpx.length || lo === hi) return;
+          const dist = +s.distance_km || 0;
+          if (!dist) return;
+          const mx = (xOf(d, lo) + xOf(d, hi)) / 2;
+          const my = baseY - (segMetaIdx++ % 2) * 11;  // stagger 0/-11
+          const distText = dist.toFixed(1) + ' km';
+          const asc = +s.ascent_m || 0;
+          const desc = +s.descent_m || 0;
+          const elevText = asc ? `↑${asc}` : (desc ? `↓${desc}` : '');
+          const text = elevText ? `${distText} ${elevText}` : distText;
+          const w = ctx.measureText(text).width + 8;
+          // Paper-tinted rounded background so the curve doesn't bleed through
+          ctx.fillStyle = 'rgba(253,249,238,0.78)';
+          ctx.strokeStyle = 'rgba(168,128,44,0.32)';
+          ctx.lineWidth = 0.6;
+          if (typeof ctx.roundRect === 'function') {
+            ctx.beginPath();
+            ctx.roundRect(mx - w/2, my - 9, w, 12, 3);
+            ctx.fill(); ctx.stroke();
+          } else {
+            ctx.fillRect(mx - w/2, my - 9, w, 12);
+            ctx.strokeRect(mx - w/2, my - 9, w, 12);
+          }
+          ctx.fillStyle = '#3a3528';
+          ctx.fillText(text, mx, my - 1);
+        });
       }
     });
 
