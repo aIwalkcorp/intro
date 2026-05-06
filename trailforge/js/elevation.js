@@ -589,21 +589,34 @@
       // cross-day dedupe pass below to avoid drawing e.g. 排雲山莊 twice
       // when it appears as Day N's last stop AND Day N+1's first stop.
       if (Array.isArray(d.segments) && d.segments.length) {
-        const cpMap = new Map();      // idx -> name
-        const cumMinByIdx = new Map(); // idx -> cumulative base minutes from day start to this checkpoint
+        const cpMap = new Map();         // idx → name
+        const cumMinByIdx = new Map();   // idx → cum minutes at FIRST visit
+        const dwellEndByIdx = new Map(); // idx → cum minutes after a same-place rest stop
         let cumMin = 0;
-        d.segments.forEach(s => {
+        d.segments.forEach((s, i) => {
           const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : [];
+          const baseMin = +s.base_minutes || 0;
           if (ai.length >= 2) {
             if (s.from && !cpMap.has(ai[0])) cpMap.set(ai[0], s.from);
             if (s.to   && !cpMap.has(ai[1])) cpMap.set(ai[1], s.to);
-            // The "from" anchor of the FIRST segment is at cum=0; subsequent
-            // segments' "to" sit at cum + base_minutes. We don't bother with
-            // mid-segment cum values (no checkpoint there).
             if (!cumMinByIdx.has(ai[0])) cumMinByIdx.set(ai[0], cumMin);
-            cumMin += (+s.base_minutes || 0);
-            cumMinByIdx.set(ai[1], cumMin);
+            const cumAtTo = cumMin + baseMin;
+            // First-visit-wins: out-and-back loops revisit the same anchor
+            // index later with a higher cum; the chart should still report
+            // the original arrival time.
+            if (!cumMinByIdx.has(ai[1])) cumMinByIdx.set(ai[1], cumAtTo);
+            // Look ahead — if the very next segment is an in-place dwell
+            // at this same waypoint, record the cum at its end so the
+            // label can render "T1～T2" (e.g. 玉山主峰 09:30～10:30).
+            const next = d.segments[i + 1];
+            if (next && next.is_rest_stop && next.from === s.to && !dwellEndByIdx.has(ai[1])) {
+              dwellEndByIdx.set(ai[1], cumAtTo + (+next.base_minutes || 0));
+            }
           }
+          // Always advance the day's cumulative clock — including
+          // is_rest_stop dwells that have no anchor_idx. Without this,
+          // any waypoint after 北峰 dwell / 主峰 dwell read as too early.
+          cumMin += baseMin;
         });
         const suppress = d._suppressCheckpointNames || new Set();
         // Sort by idx (left → right), then dedupe by NAME — within ONE
@@ -680,6 +693,12 @@
             const cumBase = cumMinByIdx.get(idx);
             if (cumBase != null) {
               arrivalText = fmtClock(startMin + Math.round(cumBase * factor));
+              // Same-day dwell directly after this waypoint (in-place rest
+              // stop) → render as a range: "09:30～10:30".
+              const dwellEnd = dwellEndByIdx.get(idx);
+              if (dwellEnd != null && dwellEnd !== cumBase) {
+                arrivalText += '～' + fmtClock(startMin + Math.round(dwellEnd * factor));
+              }
             }
           }
           // If a LATER day's first segment departs from this same
