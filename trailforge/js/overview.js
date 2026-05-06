@@ -789,27 +789,53 @@
             data-variant-id="${escapeHtml(r.variantId || '')}"
             data-to-name="${escapeHtml(r.atName || '休息')}"
             aria-label="刪除此休息" title="刪除此休息">✕</button>` : '';
-        const clockSpan = (startClock && endClock)
-          ? `<span class="rp-rest-clock"><b>${startClock}</b><span class="rp-rest-arrow">～</span><b>${endClock}</b></span>`
-          : '';
+        // Per-row info button (same exclamation toggle) so REST rows
+        // share the segment-row affordance set.
+        const restInfoKey = `${r.dayId}|${r.variantId || ''}|${r.segIdx == null ? 'r_'+idx : r.segIdx}|REST`;
+        const restInfoOpen = host && host._openInfoRows && host._openInfoRows.has(restInfoKey);
+        const restInfoBtn = `<button type="button" class="rp-info-btn"
+              data-info-key="${escapeHtml(restInfoKey)}"
+              aria-pressed="${restInfoOpen ? 'true' : 'false'}"
+              aria-label="顯示／隱藏此段詳情" title="顯示／隱藏此段詳情">
+            <svg viewBox="0 0 18 18" width="14" height="14" aria-hidden="true">
+              <path d="M9 3.6 v6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/>
+              <circle cx="9" cy="13.5" r="1.15" fill="currentColor"/>
+            </svg>
+          </button>`;
         let noteHtml = '';
         if (canEdit && editing) {
-          noteHtml = `<div class="rp-note-row" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
+          noteHtml = `<div class="rp-note-row rp-note-row-rest" data-day-id="${escapeHtml(r.dayId)}" data-seg-idx="${r.segIdx}" data-variant-id="${escapeHtml(r.variantId || '')}">
             <span class="rp-note-mark" aria-hidden="true">↳</span>
             <input class="rp-note-input" type="text" value="${escapeHtml(r.note || '')}" placeholder="備註（午餐／補水／拍照…）" aria-label="此段備註">
           </div>`;
         } else if (r.note) {
-          noteHtml = `<div class="rp-note-row rp-note-readonly">
+          noteHtml = `<div class="rp-note-row rp-note-row-rest rp-note-readonly">
             <span class="rp-note-mark" aria-hidden="true">↳</span>
             <span class="rp-note-text">${escapeHtml(r.note)}</span>
           </div>`;
         }
-        return `<div class="rp-row rp-rest-row${r.isReturn ? ' rp-row-return' : ''}">
-          <span class="rp-rest-mark" aria-hidden="true">☕</span>
-          <span class="rp-rest-label">休息</span>
-          <span class="rp-rest-place">${escapeHtml(r.atName || '')}</span>
-          ${clockSpan}
-          <span class="rp-rest-mins">${minsCell}<small>分</small>${delBtn}</span>
+        const rangeText = (startClock && endClock)
+          ? `<small>停留</small><b>${startClock}<span class="rp-rest-arrow">～</span>${endClock}</b>`
+          : '<small class="rp-arrive-empty">—</small>';
+        return `<div class="rp-row rp-rest-row${r.isReturn ? ' rp-row-return' : ''}${restInfoOpen ? ' rp-row-info-open' : ''}">
+          ${dayChip}
+          <span class="rp-cum rp-rest-stamp" aria-label="休息">REST</span>
+          <span class="rp-route rp-rest-route">
+            <span class="rp-rest-mark" aria-hidden="true">❋</span>
+            <span class="rp-rest-place">${escapeHtml(r.atName || '')}</span>
+          </span>
+          <span class="rp-cost">
+            <span class="rp-cost-main">
+              ${minsCell}<small>分</small>
+              ${delBtn}
+            </span>
+          </span>
+          <span class="rp-arrive rp-rest-arrive">${rangeText}</span>
+          ${restInfoBtn}
+        </div><div class="rp-info-row${restInfoOpen ? ' rp-info-row-open' : ''}" data-info-key="${escapeHtml(restInfoKey)}">
+          <span class="rp-info-stamp">▲ DETAILS</span>
+          <span class="rp-info-base">基準 <b>${r.base_minutes}</b><small>分</small></span>
+          <span class="rp-info-base">類型 <b>原地停留</b></span>
         </div>${noteHtml}`;
       }
 

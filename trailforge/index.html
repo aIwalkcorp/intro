@@ -2498,72 +2498,88 @@ body[data-jm-mode="elevation"] .elev-card .elev-role{display:block;}
   .overview-rest-points .rp-fork-row{ padding-left:48px; gap:8px; }
 }
 
-/* Rest-stop block — in-place dwell (lunch / 整裝 / 補眠). Same vertical
-   rhythm as transit rows; sage tint distinguishes it. Note flows below
-   in a standard .rp-note-row so all rows share one comment style. */
+/* Rest-stop row — in-place dwell (lunch / 整裝 / 補眠). Inherits the
+   segment row's 6-column grid so chip / cum / route / cost / arrival /
+   info-btn line up across the table. Identity comes from the sage left
+   rule + tint, plus a "REST" mono stamp in the cum slot and an asterism
+   ❋ before the place name. NO bespoke flex layout — that was the source
+   of the "messy" appearance the user flagged. */
 .overview-rest-points .rp-rest-row{
-  display:flex; align-items:center; gap:8px;
-  padding:4px 8px 4px 44px;
-  background:rgba(120,140,90,0.055);
-  border-bottom:1px solid rgba(120,140,90,0.18);
-  font-family:var(--serif), serif; font-size:.8rem;
-  line-height:1.25;
+  background:linear-gradient(90deg, rgba(120,140,90,0.10) 0%, rgba(120,140,90,0.045) 60%, transparent 100%);
+  box-shadow:inset 3px 0 0 rgba(94,110,60,0.65);
+  border-bottom:1px solid rgba(120,140,90,0.22);
+}
+/* Mute the day-chip a little so the "REST" stamp reads as the row's
+   primary marker, not the chip. */
+.overview-rest-points .rp-rest-row .rp-chip{
+  opacity:.55;
+}
+.overview-rest-points .rp-rest-row .rp-rest-stamp{
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.54rem; letter-spacing:.32em; font-weight:700;
+  text-transform:uppercase;
+  color:#3a4a22;
+  padding:2px 4px;
+  border:1px solid rgba(94,110,60,0.45);
+  border-radius:2px;
+  background:rgba(255,255,255,0.55);
+  font-feature-settings:"tnum" 1, "lnum" 1;
+}
+.overview-rest-points .rp-rest-row .rp-rest-route{
+  display:flex; align-items:baseline; gap:8px;
+  font-family:"Fraunces", var(--serif), serif;
+  color:var(--pri-deep,#0a1a06);
 }
 .overview-rest-points .rp-rest-row .rp-rest-mark{
-  font-size:.92rem; flex:none;
-}
-.overview-rest-points .rp-rest-row .rp-rest-label{
-  font-family:var(--mono); font-weight:700; letter-spacing:.14em;
-  font-size:.56rem; text-transform:uppercase;
-  padding:1px 6px; border-radius:99px;
-  background:rgba(120,140,90,0.18);
-  border:1px solid rgba(120,140,90,0.4);
-  color:#3a4a22; flex:none;
+  font-family:"Fraunces", var(--serif), serif;
+  color:#5e6e3c; opacity:.7;
+  font-size:.95rem; line-height:1;
+  flex:none;
 }
 .overview-rest-points .rp-rest-row .rp-rest-place{
-  font-family:"Fraunces", var(--serif), serif; font-style:italic;
-  font-size:.86rem; font-weight:700; color:var(--pri-deep,#0a1a06);
+  font-style:italic; font-weight:700;
+  font-size:.88rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.overview-rest-points .rp-rest-row .rp-rest-arrive{
+  /* Range "12:00～13:00" needs slightly more compact mono so it fits
+     the same 112px slot the segment rows use for "抵達 09:00". */
+  font-family:var(--mono);
+}
+.overview-rest-points .rp-rest-row .rp-rest-arrive small{
+  font-size:.52rem; letter-spacing:.22em; text-transform:uppercase;
+  color:#5e6e3c; font-weight:700;
+}
+.overview-rest-points .rp-rest-row .rp-rest-arrive b{
+  font-family:var(--mono); font-weight:800; font-size:.92rem;
+  color:#3a4a22;
+  letter-spacing:.02em;
+  font-feature-settings:"tnum" 1, "lnum" 1;
   white-space:nowrap;
 }
-.overview-rest-points .rp-rest-row .rp-rest-clock{
-  font-family:var(--mono); font-size:.72rem; font-weight:700;
-  color:#3a4a22; opacity:.8;
-  display:inline-flex; align-items:center; gap:4px;
-  flex:none;
+.overview-rest-points .rp-rest-row .rp-rest-arrive .rp-rest-arrow{
+  font-weight:400; opacity:.5; margin:0 1px;
 }
-.overview-rest-points .rp-rest-row .rp-rest-clock .rp-rest-arrow{
-  opacity:.5; font-weight:400;
+/* Sage tint cascades to the row's open info-row + note row so the rest
+   block reads as one continuous band even when expanded. */
+.overview-rest-points .rp-rest-row + .rp-info-row{
+  background:linear-gradient(90deg, rgba(120,140,90,0.07), rgba(120,140,90,0.03));
+  border-bottom-color:rgba(120,140,90,0.22);
+  box-shadow:inset 3px 0 0 rgba(94,110,60,0.45);
 }
-.overview-rest-points .rp-rest-row .rp-rest-mins{
-  margin-left:auto;
-  display:inline-flex; align-items:center; gap:3px;
-  font-family:var(--mono); font-size:.86rem; font-weight:700;
-  color:var(--pri-deep,#0a1a06);
-  flex:none;
+.overview-rest-points .rp-note-row.rp-note-row-rest{
+  background:rgba(120,140,90,0.04);
+  border-bottom-color:rgba(120,140,90,0.22);
+  box-shadow:inset 3px 0 0 rgba(94,110,60,0.35);
 }
-.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit{
-  width:40px; padding:1px 3px;
-  font-family:var(--mono); font-size:.86rem; font-weight:700;
-  color:var(--pri-deep,#0a1a06);
-  background:rgba(255,255,255,0.65);
-  border:1px dashed rgba(120,140,90,0.45);
-  border-radius:3px;
-  text-align:right;
-  -moz-appearance:textfield;
+/* Min-edit input inside rest row — match the green sage palette but
+   keep the same dimensions as segment rows so columns stay aligned. */
+.overview-rest-points .rp-rest-row .rp-cost .rp-min-edit{
+  border-color:rgba(94,110,60,0.45);
 }
-.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit::-webkit-outer-spin-button,
-.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit::-webkit-inner-spin-button{
-  -webkit-appearance:none; margin:0;
-}
-.overview-rest-points .rp-rest-row .rp-rest-mins .rp-min-edit:focus{
-  outline:none; border-style:solid; border-color:#5e6e3c; background:#fff;
-}
-.overview-rest-points .rp-rest-row .rp-rest-mins small{
-  font-size:.58rem; opacity:.7; margin-left:1px;
-}
-@media(max-width:560px){
-  .overview-rest-points .rp-rest-row{ padding-left:36px; gap:6px; flex-wrap:wrap; }
-  .overview-rest-points .rp-rest-row .rp-rest-clock{ font-size:.68rem; }
+.overview-rest-points .rp-rest-row .rp-cost .rp-min-edit:focus{
+  border-color:#5e6e3c;
 }
 
 /* Speed control */
