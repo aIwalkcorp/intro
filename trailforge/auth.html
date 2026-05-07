@@ -531,17 +531,6 @@ form .submit{animation-delay:.56s}
   const params = new URLSearchParams(location.search);
   const API_BASE = (params.get("api") || DEFAULT_API).replace(/\/+$/, "");
 
-  // Already-logged-in escape: if the user lands here with a valid-looking
-  // token, skip the form entirely and go to the dashboard. Stale tokens
-  // get caught by dashboard.html's own auth check, which sends them back
-  // here cleanly. Avoids the awkward "fill out login again even though I
-  // already logged in" experience.
-  if (localStorage.getItem("tf_access_token")) {
-    const apiQS = params.get("api") ? "?api=" + encodeURIComponent(params.get("api")) : "";
-    location.replace("dashboard.html" + apiQS);
-    return;
-  }
-
   document.getElementById("api-host").textContent = API_BASE.replace(/^https?:\/\//, "");
 
   // Warm-up: ping /healthz immediately on page load. By the time the user

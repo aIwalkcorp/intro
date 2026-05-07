@@ -5694,9 +5694,13 @@ function renderNowLine(){
     }
   });
 
-  // Attract pulse on the next-up "我在這" button when nothing is anchored yet,
-  // so first-time users' eyes go straight to the action they're meant to take.
-  if(trk.state==='idle'){
+  // Attract pulse on the next-up "我在這" button when nothing is anchored
+  // yet, so first-time users' eyes go straight to the action they're meant
+  // to take. Demo only — same scope as the coach mark above. Once a user
+  // is on their own plan they already know where this button lives.
+  let isDemo=true;
+  try{ isDemo=!new URLSearchParams(location.search).has('plan'); }catch(e){}
+  if(isDemo && trk.state==='idle'){
     const next=active.querySelector('.tl-i.is-next .tl-anchor:not(.active):not(.running):not(.paused-chip)');
     const target=next || active.querySelector('.tl-anchor:not(.active):not(.running):not(.paused-chip)');
     if(target) target.classList.add('intro-hint');
@@ -5717,6 +5721,13 @@ function dismissImHereCoach(){
   setTimeout(()=>{ try{ el.remove(); }catch(e){} },280);
 }
 function maybeShowImHereCoach(){
+  // 玉山 範本 only — the demo is the public learning surface where
+  // first-time users discover 「我在這」. Personal plans (?plan=...) are
+  // for users who already know how the check-in flow works.
+  try{
+    const qs=new URLSearchParams(location.search);
+    if(qs.has('plan')) return;
+  }catch(e){ return; }
   try{ if(localStorage.getItem(IMHERE_SEEN_KEY)==='1') return; }catch(e){ return; }
   if(document.getElementById('imhereCoach')) return;
   const idleBtn=document.querySelector('.day-panel.active .tl-anchor:not(.active):not(.running):not(.paused-chip)');
