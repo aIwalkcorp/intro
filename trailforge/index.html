@@ -1100,24 +1100,196 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 .tl-eta.overdue::before{content:"⚠";}
 @keyframes etaPulse{0%,100%{box-shadow:0 2px 8px rgba(220,38,38,.35);}50%{box-shadow:0 2px 14px rgba(220,38,38,.6);}}
 
-/* 📍 "I'm here" anchor button on timeline items */
+/* 📍 "我在這" — primary check-in CTA. This is THE core action of the app.
+   First-time users must instantly grasp that tapping this is what they do at
+   every checkpoint. Hence: full-width, tactile depth, mountain-paper palette. */
 .tl-anchor{
-  display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:4px 10px;
-  border-radius:999px;border:1px dashed var(--bdr-2);background:var(--card);
-  color:var(--pri-deep);font-family:var(--sans);font-weight:700;font-size:.72rem;
-  cursor:pointer;letter-spacing:.04em;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;margin-top:12px;padding:11px 16px;
+  border-radius:10px;border:1.5px solid var(--pri-deep);
+  background:linear-gradient(180deg,#fdf8ea 0%,#f5e9c5 100%);
+  color:var(--pri-deep);font-family:var(--serif);font-weight:700;
+  font-size:.95rem;letter-spacing:.18em;
+  cursor:pointer;transition:transform .18s ease,box-shadow .25s ease,background .25s ease;
+  box-shadow:
+    0 2px 0 var(--pri-deep),
+    0 4px 14px -4px rgba(13,31,10,.35),
+    inset 0 1px 0 rgba(255,255,255,.7),
+    inset 0 -2px 0 rgba(184,134,59,.18);
+  position:relative;overflow:hidden;
 }
-.tl-anchor:hover{border-color:var(--acc);border-style:solid;background:#fdf8ea;transform:translateY(-1px);}
-.tl-anchor:active{transform:scale(.96);}
-.tl-anchor::before{content:"📍";font-size:.86rem;}
-.tl-i.is-anchor{border-color:#86efac;background:linear-gradient(180deg,#f0fdf4,var(--card));}
+/* subtle topographic line decoration on the right edge — adds character */
+.tl-anchor::after{
+  content:"";position:absolute;right:-2px;top:0;bottom:0;width:42px;
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0 6px,
+      rgba(184,134,59,.18) 6px 7px);
+  opacity:.55;pointer-events:none;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 60%);
+          mask:linear-gradient(90deg,transparent,#000 60%);
+}
+.tl-anchor:hover{
+  transform:translateY(-2px);
+  background:linear-gradient(180deg,#fff5d8 0%,#f0dca3 100%);
+  box-shadow:
+    0 3px 0 var(--pri-deep),
+    0 8px 22px -6px rgba(13,31,10,.45),
+    inset 0 1px 0 rgba(255,255,255,.75);
+}
+.tl-anchor:active{
+  transform:translateY(1px);
+  box-shadow:
+    0 1px 0 var(--pri-deep),
+    0 2px 8px -2px rgba(13,31,10,.35),
+    inset 0 1px 0 rgba(255,255,255,.5);
+}
+.tl-anchor::before{
+  content:"📍";font-size:1.05rem;letter-spacing:0;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
+}
+
+/* ─── State: this row is anchored ─── */
+.tl-i.is-anchor{
+  border-color:#86efac;background:linear-gradient(180deg,#f0fdf4,var(--card));
+  box-shadow:0 6px 22px -8px rgba(22,163,74,.35), var(--shadow-1);
+}
 .tl-i.is-anchor::before{background:#16a34a;border-color:#15803d;box-shadow:0 0 0 3px var(--paper),0 0 0 4px #16a34a,0 0 10px rgba(34,197,94,.5);}
-.tl-anchor.active{background:#16a34a;color:#fff;border-style:solid;border-color:#15803d;}
-.tl-anchor.active::before{content:"✓";}
-.tl-anchor.running{background:linear-gradient(135deg,#065f46,#16a34a);color:#fff;border-style:solid;border-color:#15803d;font-family:var(--mono);letter-spacing:.08em;box-shadow:0 4px 14px -4px rgba(22,163,74,.5);}
-.tl-anchor.running::before{content:"⏱";animation:etaPulse 2s ease-in-out infinite;}
-.tl-anchor.paused-chip{background:linear-gradient(135deg,#92400e,#d97706);color:#fff;border-style:solid;border-color:#b45309;font-family:var(--mono);}
+
+/* ─── State: confirmed but tracker not running ─── */
+.tl-anchor.active{
+  background:linear-gradient(180deg,#16a34a 0%,#0f7a36 100%);
+  color:#fff;border-color:#0d4f24;
+  box-shadow:
+    0 2px 0 #0d4f24,
+    0 6px 16px -4px rgba(22,163,74,.5),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+.tl-anchor.active::before{content:"✓";font-weight:900;}
+.tl-anchor.active::after{display:none;}
+
+/* ─── State: timer running ─── */
+.tl-anchor.running{
+  background:linear-gradient(135deg,#0d1f0a 0%,#1e3a1a 50%,#365a2b 100%);
+  color:var(--acc-soft);border-color:#0d1f0a;
+  font-family:var(--mono);font-size:1rem;letter-spacing:.12em;font-weight:800;
+  box-shadow:
+    0 2px 0 #000,
+    0 8px 22px -6px rgba(22,163,74,.55),
+    inset 0 1px 0 rgba(230,201,138,.25);
+}
+.tl-anchor.running::before{
+  content:"⏱";animation:etaPulse 2s ease-in-out infinite;
+  filter:none;color:var(--acc);
+}
+.tl-anchor.running::after{display:none;}
+
+/* ─── State: paused ─── */
+.tl-anchor.paused-chip{
+  background:linear-gradient(180deg,#d97706 0%,#a35407 100%);
+  color:#fff;border-color:#7c3a05;
+  font-family:var(--mono);letter-spacing:.12em;font-weight:800;
+  box-shadow:
+    0 2px 0 #5c2c04,
+    0 6px 16px -4px rgba(217,119,6,.45),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
 .tl-anchor.paused-chip::before{content:"⏸";}
+.tl-anchor.paused-chip::after{display:none;}
+
+/* ─── First-visit attract-pulse on the next-up button (idle tracker only) ─── */
+.tl-anchor.intro-hint{
+  animation:imhereAttract 2.4s ease-in-out infinite;
+  border-color:var(--acc-2);
+}
+.tl-anchor.intro-hint::before{
+  animation:imherePinBob 2.4s ease-in-out infinite;
+}
+@keyframes imhereAttract{
+  0%,100%{
+    box-shadow:
+      0 2px 0 var(--pri-deep),
+      0 4px 14px -4px rgba(13,31,10,.35),
+      0 0 0 0 rgba(184,134,59,.45),
+      inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  55%{
+    box-shadow:
+      0 2px 0 var(--pri-deep),
+      0 6px 22px -6px rgba(13,31,10,.5),
+      0 0 0 8px rgba(184,134,59,0),
+      inset 0 1px 0 rgba(255,255,255,.85);
+  }
+}
+@keyframes imherePinBob{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-2px);}
+}
+
+/* ─── First-time coach mark — paper card with a downward arrow that floats
+       above the page, dismissable. Stored in localStorage(tf_seen_imhere_v1). */
+.imhere-coach{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0) + 88px);
+  transform:translateX(-50%);z-index:1300;
+  width:min(88vw,360px);
+  background:
+    radial-gradient(120% 140% at 30% 0%,#fcf6e3 0%,#f5ead0 60%,#ebe0c1 100%);
+  border:1px solid var(--bdr-2);border-radius:14px;
+  padding:14px 18px 12px;
+  box-shadow:
+    0 18px 38px -10px rgba(13,31,10,.4),
+    0 4px 10px rgba(13,31,10,.18),
+    inset 0 1px 0 rgba(255,255,255,.7);
+  font-family:var(--sans);
+  animation:coachIn .45s cubic-bezier(.2,.9,.3,1.2) both;
+}
+.imhere-coach::before{
+  /* downward-pointing arrow + stamp ribbon at top */
+  content:"";position:absolute;top:-8px;left:24px;
+  width:14px;height:14px;background:inherit;
+  border-top:1px solid var(--bdr-2);border-left:1px solid var(--bdr-2);
+  transform:rotate(45deg);border-top-left-radius:3px;
+}
+.imhere-coach .ihc-eyebrow{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.32em;
+  text-transform:uppercase;color:var(--acc-2);font-weight:800;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.imhere-coach .ihc-eyebrow::before{
+  content:"";width:18px;height:1px;background:var(--acc);
+}
+.imhere-coach .ihc-h{
+  font-family:var(--serif);font-weight:700;font-size:1.12rem;
+  color:var(--pri-deep);margin:6px 0 4px;letter-spacing:.02em;
+}
+.imhere-coach .ihc-h em{
+  font-style:normal;font-weight:900;
+  background:linear-gradient(180deg,transparent 60%,var(--acc-soft) 60%);
+  padding:0 4px;
+}
+.imhere-coach .ihc-p{
+  font-size:.83rem;color:var(--ink-2);line-height:1.65;margin:0 0 10px;
+}
+.imhere-coach .ihc-actions{display:flex;justify-content:flex-end;gap:8px;}
+.imhere-coach .ihc-x{
+  appearance:none;cursor:pointer;
+  background:var(--pri-deep);color:var(--acc-soft);
+  border:1px solid var(--pri-deep);border-radius:8px;
+  padding:7px 14px;font-family:var(--sans);font-weight:700;font-size:.78rem;
+  letter-spacing:.08em;
+  box-shadow:0 2px 0 #000, 0 4px 10px -3px rgba(13,31,10,.4);
+  transition:transform .15s ease;
+}
+.imhere-coach .ihc-x:hover{transform:translateY(-1px);}
+.imhere-coach .ihc-x:active{transform:translateY(1px);}
+.imhere-coach.dismissing{animation:coachOut .25s ease forwards;pointer-events:none;}
+@keyframes coachIn{
+  0%{opacity:0;transform:translate(-50%,18px) scale(.95);}
+  100%{opacity:1;transform:translate(-50%,0) scale(1);}
+}
+@keyframes coachOut{
+  to{opacity:0;transform:translate(-50%,12px) scale(.96);}
+}
 
 /* Inline tracker controls (play/pause + reset). Only rendered on the active
    anchor row when tracker is non-idle. Replaces the old bottom-right HUD. */
@@ -5524,6 +5696,50 @@ function renderNowLine(){
       }
     }
   });
+
+  // Attract pulse on the next-up "我在這" button when nothing is anchored yet,
+  // so first-time users' eyes go straight to the action they're meant to take.
+  if(trk.state==='idle'){
+    const next=active.querySelector('.tl-i.is-next .tl-anchor:not(.active):not(.running):not(.paused-chip)');
+    const target=next || active.querySelector('.tl-anchor:not(.active):not(.running):not(.paused-chip)');
+    if(target) target.classList.add('intro-hint');
+  }
+  maybeShowImHereCoach();
+}
+
+/* ── First-visit coach mark for 「我在這」 — the central interaction ──
+   Renders a small parchment toast above the active timeline pointing the user
+   at the primary action. Dismisses on first tap of any anchor button OR when
+   the user clicks 知道了. Persisted in localStorage so it shows once per device. */
+const IMHERE_SEEN_KEY='tf_seen_imhere_v1';
+function dismissImHereCoach(){
+  const el=document.getElementById('imhereCoach');
+  if(!el || el.classList.contains('dismissing')) return;
+  el.classList.add('dismissing');
+  try{ localStorage.setItem(IMHERE_SEEN_KEY,'1'); }catch(e){}
+  setTimeout(()=>{ try{ el.remove(); }catch(e){} },280);
+}
+function maybeShowImHereCoach(){
+  try{ if(localStorage.getItem(IMHERE_SEEN_KEY)==='1') return; }catch(e){ return; }
+  if(document.getElementById('imhereCoach')) return;
+  const idleBtn=document.querySelector('.day-panel.active .tl-anchor:not(.active):not(.running):not(.paused-chip)');
+  if(!idleBtn) return;
+  const wrap=document.createElement('div');
+  wrap.id='imhereCoach';wrap.className='imhere-coach';wrap.setAttribute('role','dialog');
+  wrap.innerHTML=
+    '<div class="ihc-eyebrow">CHECK-IN · 打卡</div>'+
+    '<div class="ihc-h">抵達地標時，點 <em>「我在這」</em></div>'+
+    '<div class="ihc-p">每張卡片下方都有這顆按鈕。按下後自動計時，並比對計畫時間顯示是否準時。</div>'+
+    '<div class="ihc-actions"><button type="button" class="ihc-x">知道了</button></div>';
+  document.body.appendChild(wrap);
+  wrap.querySelector('.ihc-x').addEventListener('click',dismissImHereCoach);
+  // Also dismiss on first anchor tap — using event delegation so it survives re-renders.
+  document.addEventListener('click',function onceAnchor(e){
+    if(e.target.closest('.tl-anchor')){
+      dismissImHereCoach();
+      document.removeEventListener('click',onceAnchor,true);
+    }
+  },true);
 }
 
 function jumpToNow(){
