@@ -5,7 +5,7 @@
 //   - Cross-origin API: passthrough, never cache (auth, /api/*)
 //   - POST / non-GET:   never cache
 
-const CACHE = 'trailforge-v158';
+const CACHE = 'trailforge-v159';
 
 // Same-origin assets we want available offline on first install
 const PRECACHE_LOCAL = [
@@ -25,6 +25,7 @@ const PRECACHE_LOCAL = [
   './js/outbox.js',
   './js/gpx-io.js',
   './js/gpx-snap.js',
+  './js/gpx-shape.js',
   './js/gpx-unitize.js',
   './js/junction-detector.js',
   './js/plan-from-gpx.js',

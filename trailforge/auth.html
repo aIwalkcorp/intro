@@ -161,28 +161,61 @@ body{
   text-decoration:none; color:inherit;
   cursor:pointer;
 }
+/* Vermillion 玉山 wax-seal — matches the same stamp on dashboard.html so the
+   範本 has one consistent identity across auth → dashboard → plan. Solid
+   lacquer fill (not line-art); content reads ▲ / 玉山 / YUSHAN TPL. Scaled
+   up for the auth surface (132px vs dashboard's 96px) since this is the
+   product's entry stamp. */
 .seal{
   position:relative;
-  width:128px; height:128px; border-radius:50%; flex:none;
-  border:2px solid var(--crimson);
-  display:flex; align-items:center; justify-content:center;
-  text-align:center;
-  color:var(--crimson);
-  font-family:var(--serif); font-weight:700;
+  width:132px; height:132px; border-radius:50%; flex:none;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family:var(--serif);
   transform: rotate(-9deg);
-  opacity:.85;
-  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.08), transparent 60%);
+  opacity:.92;
+  filter: drop-shadow(0 7px 14px rgba(139,42,31,0.36));
+  isolation:isolate;
   transition:
     transform .35s cubic-bezier(.2,.7,.2,1),
     opacity .25s ease,
-    box-shadow .3s ease;
+    filter .3s ease;
 }
 .seal::before{
-  content:""; position:absolute; inset:7px; border-radius:50%; border:1px solid var(--crimson);
+  /* outer wax disc — solid vermillion lacquer */
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:
+    radial-gradient(circle at 30% 26%, #de574a 0%, #b03828 38%, #7a1f15 78%, #4a0f08 100%);
+  box-shadow:
+    inset 0 -5px 12px rgba(0,0,0,0.42),
+    inset 0 2px 6px rgba(255,255,255,0.22),
+    0 1px 0 rgba(255,255,255,0.15);
 }
-.seal .sealtxt{font-size:.78rem; letter-spacing:.18em; line-height:1.4; padding:0 12px}
-.seal .sealtxt b{display:block;font-size:1.4rem;letter-spacing:.05em;margin-bottom:2px}
-.seal .yr{position:absolute;bottom:14px;font-family:var(--mono);font-size:.56rem;letter-spacing:.3em;font-weight:600}
+.seal::after{
+  /* inner dashed ring — old-permit detail */
+  content:""; position:absolute; inset:11px; border-radius:50%;
+  border:1px dashed rgba(252,230,198,0.55);
+  pointer-events:none;
+}
+.seal .sealtxt{
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  color:#fce6c6;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 10px rgba(255,224,180,0.18);
+  line-height:1; gap:3px;
+}
+.seal .seal-peak{
+  font-size:.84rem; opacity:.78; line-height:1; margin-bottom:3px;
+}
+.seal .seal-zh{
+  font-family:"Fraunces", var(--serif), serif; font-style:italic;
+  font-weight:900; font-size:1.86rem;
+  letter-spacing:.04em; line-height:1;
+}
+.seal .seal-en{
+  font-family:var(--mono); font-size:.54rem; font-weight:700;
+  letter-spacing:.34em; margin-top:5px; opacity:.78;
+  text-transform:uppercase;
+}
 
 .seal-cta{
   display:flex; align-items:center; gap:14px;
@@ -209,21 +242,27 @@ body{
   text-transform:uppercase; color:rgba(139,42,31,.72);
 }
 
-/* Hover: the stamp commits — pulse stops, stamp lifts, ink shadow blooms. */
+/* Hover: the wax stamp lifts — drop-shadow blooms, lacquer brightens. */
 .seal-link:hover .seal{
-  transform: rotate(-3deg) scale(1.08);
+  transform: rotate(-3deg) scale(1.06);
   opacity:1;
-  box-shadow:
-    0 8px 26px -10px rgba(139,42,31,.55),
-    0 0 0 1px rgba(139,42,31,.25);
+  filter: drop-shadow(0 12px 22px rgba(139,42,31,0.55));
+}
+.seal-link:hover .seal::before{
+  background:
+    radial-gradient(circle at 32% 26%, #e85a4a 0%, #b8392a 36%, #7e2117 78%, #4a0f08 100%);
 }
 .seal-link:hover .seal-cta-arrow{ animation:none; transform: translateX(-4px); transition:transform .25s ease }
 .seal-link:hover .seal-cta-en{ color:var(--crimson) }
 .seal-link:focus-visible{ outline:none }
 .seal-link:focus-visible .seal{
-  opacity:1; box-shadow:0 0 0 3px rgba(139,42,31,.3);
+  opacity:1; filter: drop-shadow(0 0 0 3px rgba(139,42,31,0.4));
 }
-.seal-link:active .seal{ transform: rotate(-9deg) scale(.97) }
+.seal-link:active .seal{
+  transform: rotate(-7deg) scale(.97) translateY(2px);
+  filter: drop-shadow(0 3px 6px rgba(139,42,31,0.32));
+  transition-duration:.08s;
+}
 
 @media (max-height: 760px){ .seal-link{ display:none } }
 @media (max-width: 880px){
@@ -450,8 +489,11 @@ form .submit{animation-delay:.56s}
 
     <a class="seal-link" href="index.html" aria-label="開啟玉山示範計劃書">
       <span class="seal" aria-hidden="true">
-        <span class="sealtxt"><b>通行</b>TRAIL<br>PERMIT</span>
-        <span class="yr">MMXXVI</span>
+        <span class="sealtxt">
+          <span class="seal-peak">▲</span>
+          <span class="seal-zh">玉山</span>
+          <span class="seal-en">Yushan Tpl</span>
+        </span>
       </span>
       <span class="seal-cta" aria-hidden="true">
         <svg class="seal-cta-arrow" viewBox="0 0 56 18">
