@@ -211,6 +211,91 @@ body{
 .new-btn:active .body{transform:translateY(1px)}
 .new-btn:disabled{opacity:.5; cursor:wait}
 
+/* ── Passport ink-chop collection on plan cards ────────────────────────
+   Each click on a plan card increments its visit count. At 3 / 8 / 20
+   visits, an ink chop appears on the card — stacking up to a 3-stamp
+   set. Same v90 line-art aesthetic as the auth/dashboard玉山 seal,
+   scaled to thumb-sized chops. Each tier shows a different CJK
+   character (閱 → 巡 → 達: read · patrolled · reached) and tilts at
+   a different angle so the set looks hand-pressed, not stencilled. */
+.card-passport{
+  position:absolute; top:34px; right:12px;
+  display:flex; flex-direction:column; align-items:center;
+  gap:0;  /* stamps slightly overlap via per-tier margin-top */
+  pointer-events:none;
+  z-index:2;
+}
+.card-seal{
+  position:relative; flex:none;
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  border:1.5px solid var(--crimson);
+  color:var(--crimson);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 65%),
+    rgba(251,246,232, 0.55);
+  font-family:"Fraunces", "Noto Serif TC", "Songti TC", serif;
+  font-weight:900;
+  --rot: -7deg;
+  transform: rotate(var(--rot));
+  opacity:.85;
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), opacity .25s ease;
+  /* Soft blood-ink bleed under the chop */
+  box-shadow:
+    0 1px 3px rgba(139,42,31,.18),
+    0 0 0 1px rgba(255,255,255,.35) inset;
+}
+.card-seal::before{
+  /* inner concentric ring — same "double ring" detail as the玉山 seal */
+  content:""; position:absolute; inset:3px; border-radius:50%;
+  border:1px solid var(--crimson); opacity:.78;
+}
+.card-seal::after{
+  /* faint ink halo bleeding past the chop edge — sells the "pressed" feel */
+  content:""; position:absolute; inset:-2px; border-radius:50%;
+  background:radial-gradient(circle, rgba(139,42,31,0.18) 0%, transparent 65%);
+  filter:blur(2px); z-index:-1; pointer-events:none;
+}
+.card-seal .cs-char{
+  position:relative; z-index:1;
+  font-size:1.05rem; line-height:1; padding-bottom:1px;
+  font-style:italic;
+}
+/* Per-tier rotation + slight overlap so the chops look stacked
+   informally, like real passport stamps pressed at different angles. */
+.card-seal.tier-1{ --rot: -7deg; }
+.card-seal.tier-2{ --rot:  6deg; margin-top:-6px; margin-right:-6px; }
+.card-seal.tier-3{ --rot: -11deg; margin-top:-6px; margin-right:4px; width:42px; height:42px; }
+.card-seal.tier-3 .cs-char{ font-size:1.18rem; }
+/* Card hover: the chops "commit" — a touch more opaque, slightly
+   straighter, ink shadow blooms. Subtle, since the chops aren't the
+   primary CTA. */
+.card:hover .card-seal{
+  opacity:.95;
+  box-shadow:
+    0 3px 8px rgba(139,42,31,.28),
+    0 0 0 1px rgba(255,255,255,.45) inset;
+}
+/* Press-in animation, fired only on the *newly earned* tier (the
+   localStorage pending flag controls which one). Rotates from a deeper
+   tilt into the resting --rot. */
+@keyframes card-seal-press{
+  0%   { opacity:0;  transform: rotate(calc(var(--rot) - 16deg)) scale(1.55); }
+  30%  { opacity:1;  }
+  60%  { transform: rotate(calc(var(--rot) + 5deg)) scale(.9); }
+  100% { opacity:.85; transform: rotate(var(--rot)) scale(1); }
+}
+.card-seal.is-fresh{
+  animation: card-seal-press 1.0s cubic-bezier(.55,0,.2,1) both;
+}
+/* When .has-passport, give the title row breathing room so the chop
+   collection (~46px wide) doesn't visually overlap the title text. */
+.card.has-passport .ttl-row{ padding-right: 50px; }
+.card.has-passport .num{ right: auto; left: 18px; letter-spacing:.24em; }
+@media (prefers-reduced-motion: reduce){
+  .card-seal.is-fresh{ animation:none; }
+}
+
 /* Plan grid */
 .grid{
   display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
@@ -941,8 +1026,11 @@ body{
       const dateBlock = p.startDate
         ? `<span class="dates-zh">${fmtRange(p.startDate, p.endDate)}${p.endDate ? ' · ' + computeNights(p.startDate, p.endDate, p.departDate) : ''}${partyTxt ? ' · ' + escapeHtml(partyTxt) : ''}</span>`
         : (partyTxt ? `<span class="dates-zh">${escapeHtml(partyTxt)}</span>` : '');
+      const passport = passportHtml(p.id);
+      const cardCls = 'card' + (passport ? ' has-passport' : '');
       return `
-      <div class="card" data-id="${p.id}" data-href="${planLink(p.id)}" tabindex="0" role="link">
+      <div class="${cardCls}" data-id="${p.id}" data-href="${planLink(p.id)}" tabindex="0" role="link">
+        ${passport}
         <div class="num">N° ${String(i+1).padStart(3, '0')}</div>
         <div class="ttl-row">
           <div class="ttl" data-id="${p.id}" data-title="${escapeAttr(p.title)}">${escapeHtml(p.title)}</div>
@@ -969,16 +1057,21 @@ body{
       </div>`;
     }).join('');
     content.innerHTML = '<div class="grid">' + cards + '</div>';
+    // Passport: clear pending flags after the press-in animation has played
+    // so the chops only animate once per earned tier.
+    clearAllPendingAfterAnimate();
     // navigate when clicking card body (not action buttons, not title, not confirm row)
     content.querySelectorAll('.card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (card.classList.contains('editing')) return;
         if (e.target.closest('.act-btn,.ttl-edit-btn,.ttl,.ttl-confirm-row')) return;
+        bumpVisits(card.dataset.id);
         location.href = card.dataset.href;
       });
       card.addEventListener('keydown', (e) => {
         if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.act-btn,.ttl-edit-btn,.ttl,.ttl-confirm-row')) {
           e.preventDefault();
+          bumpVisits(card.dataset.id);
           location.href = card.dataset.href;
         }
       });
@@ -992,6 +1085,83 @@ body{
 
   function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
   function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+  /* ── Passport ink-chop tracker ───────────────────────────────────────
+     localStorage["tf_plan_visits"]      = { planId: visitCount }
+     localStorage["tf_plan_seal_pending"]= { planId: tierIndex }    (animated once)
+
+     Tiers are unlocked at strict click-thresholds. Each opening of a
+     plan from the dashboard nav (.card click / Enter) bumps the
+     counter, tier rises, and the next render presses the new chop in.
+
+     Characters chosen for narrative resonance with hiking culture:
+       閱 read  → 巡 patrolled  → 達 reached
+     Same v90 line-art crimson aesthetic as the玉山 wax seal. */
+  const VISITS_KEY = 'tf_plan_visits';
+  const PENDING_KEY = 'tf_plan_seal_pending';
+  const SEAL_TIERS = [
+    { at: 3,  ch: '閱', label: 'REVIEWED'  },
+    { at: 8,  ch: '巡', label: 'PATROLLED' },
+    { at: 20, ch: '達', label: 'REACHED'   },
+  ];
+  function loadVisits() {
+    try { return JSON.parse(localStorage.getItem(VISITS_KEY) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function loadPending() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function saveVisits(v) { try { localStorage.setItem(VISITS_KEY, JSON.stringify(v)); } catch (e) {} }
+  function savePending(p) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); } catch (e) {} }
+  function tierForCount(c) {
+    let t = -1;
+    for (let i = 0; i < SEAL_TIERS.length; i++) if (c >= SEAL_TIERS[i].at) t = i;
+    return t;
+  }
+  function bumpVisits(planId) {
+    if (!planId) return;
+    const v = loadVisits();
+    const prev = v[planId] || 0;
+    const next = prev + 1;
+    v[planId] = next;
+    saveVisits(v);
+    const prevTier = tierForCount(prev);
+    const nextTier = tierForCount(next);
+    if (nextTier > prevTier) {
+      const p = loadPending();
+      p[planId] = nextTier;
+      savePending(p);
+    }
+  }
+  function clearVisitsFor(planId) {
+    const v = loadVisits(); if (v[planId] !== undefined) { delete v[planId]; saveVisits(v); }
+    const p = loadPending(); if (p[planId] !== undefined) { delete p[planId]; savePending(p); }
+  }
+  function passportHtml(planId) {
+    const v = loadVisits();
+    const c = v[planId] || 0;
+    const t = tierForCount(c);
+    if (t < 0) return '';
+    const pending = loadPending();
+    const freshTier = pending[planId];
+    let parts = [];
+    for (let i = 0; i <= t; i++) {
+      const fresh = (freshTier === i) ? ' is-fresh' : '';
+      parts.push(
+        `<span class="card-seal tier-${i+1}${fresh}" aria-label="${SEAL_TIERS[i].label} stamp">` +
+          `<span class="cs-char">${SEAL_TIERS[i].ch}</span>` +
+        `</span>`
+      );
+    }
+    return `<div class="card-passport" aria-hidden="true">${parts.join('')}</div>`;
+  }
+  function clearAllPendingAfterAnimate() {
+    setTimeout(() => {
+      const p = loadPending();
+      if (Object.keys(p).length) savePending({});
+    }, 1100);  // > animation duration; only first render plays the press-in
+  }
 
   async function load() {
     try {
@@ -1150,6 +1320,7 @@ body{
     try {
       const r = await api('/api/plans/' + id, { method: 'DELETE' });
       if (!r.ok && !r.queued) throw new Error(`HTTP ${r.status}`);
+      clearVisitsFor(id);  // drop the passport history with the plan
       showToast(r.queued ? '離線：刪除已暫存（按右上「⬆ 上傳」）' : '已刪除。');
       load();
     } catch (err) {
