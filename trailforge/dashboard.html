@@ -1697,27 +1697,6 @@ body{
 })();
 </script>
 <script src="js/outbox.js"></script>
-<script>
-  /* Dashboard doesn't surface the outbox pill — plan-ops have their own
-     toast feedback ("離線：刪除已暫存…") and the dashboard chrome should
-     stay clean (no floating button competing with the玉山 stamp). The
-     queue itself keeps working: we silently drain on load and whenever
-     the device comes back online, then reload to pick up server state. */
-  (function () {
-    const hide = document.createElement('style');
-    hide.textContent = '.tf-outbox-pill{display:none!important}';
-    document.head.appendChild(hide);
-    function autoDrain() {
-      if (!window.TF_OUTBOX || !navigator.onLine || TF_OUTBOX.count() === 0) return;
-      TF_OUTBOX.drain().then(function (r) {
-        if (r && r.sent > 0 && typeof load === 'function') load();
-      }).catch(function () { /* silent — pill is hidden, no UX to update */ });
-    }
-    window.addEventListener('online', autoDrain);
-    // Wait for token + initial plans request to settle before draining.
-    setTimeout(autoDrain, 1200);
-  })();
-</script>
 <script src="js/elevation.js"></script>
 <script src="js/gpx-snap.js"></script>
 <script src="js/gpx-shape.js"></script>
