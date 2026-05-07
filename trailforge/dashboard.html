@@ -603,6 +603,10 @@ body{
   .head-row{flex-direction:column; align-items:flex-start}
   .head-row .meta{text-align:left}
 }
+
+/* Hide the outbox pill on dashboard — plan-ops have their own toast
+   feedback. Auto-drain runs silently on load + when coming online. */
+.tf-outbox-pill{display:none !important}
 </style>
 </head>
 <body>
@@ -1697,6 +1701,20 @@ body{
 })();
 </script>
 <script src="js/outbox.js"></script>
+<script>
+  // Pill is hidden via CSS on dashboard. Drain queued requests silently
+  // on load + on `online` so offline plan-ops still flush eventually.
+  (function () {
+    function autoDrain() {
+      if (!window.TF_OUTBOX || !navigator.onLine || TF_OUTBOX.count() === 0) return;
+      TF_OUTBOX.drain().then(function (r) {
+        if (r && r.sent > 0 && typeof load === 'function') load();
+      }).catch(function () {});
+    }
+    window.addEventListener('online', autoDrain);
+    setTimeout(autoDrain, 1200);
+  })();
+</script>
 <script src="js/elevation.js"></script>
 <script src="js/gpx-snap.js"></script>
 <script src="js/gpx-shape.js"></script>
