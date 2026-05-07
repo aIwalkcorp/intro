@@ -505,6 +505,9 @@
 
   // If we have stashed pending edits for this plan AND a valid auth token,
   // auto-enter edit mode so the user lands back where they were after login.
+  // ONLY when the stash carries real unsaved `data` — cloneSeed stashes (the
+  // pre-arm from the dashboard/auth clone flow) had no payload yet looped the
+  // user into edit mode every reload, making 檢視 toggle look broken.
   function maybeAutoResumeEdit() {
     if (!planId) return;
     const token = localStorage.getItem("tf_access_token");
@@ -515,6 +518,12 @@
       if (raw) stash = JSON.parse(raw);
     } catch (e) {}
     if (!stash || stash.planId !== planId) return;
+    if (!stash.data) {
+      // Legacy cloneSeed pre-arm with no payload — drop it so next reload
+      // lands cleanly on 檢視 mode. Real unsaved edits always carry .data.
+      try { localStorage.removeItem("tf_pending_edit_" + planId); } catch (e) {}
+      return;
+    }
     // Defer slightly so render.js / contacts.js have a chance to mount first.
     setTimeout(() => { if (!editing) enterEdit(); }, 600);
   }

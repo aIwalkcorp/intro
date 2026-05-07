@@ -4720,13 +4720,10 @@ window.tfConfirm = function (opts) {
         });
       }).then(function (created) {
         if (!created || !created.id) throw new Error('missing id');
-        try {
-          // Pre-arm edit.js auto-resume so the new plan opens in edit
-          // mode — user clicked the template, presumably to edit.
-          localStorage.setItem('tf_pending_edit_' + created.id, JSON.stringify({
-            planId: created.id, autoEnter: true, cloneSeed: true, at: Date.now(),
-          }));
-        } catch (e) {}
+        // New plans land in 檢視 (View) mode by default — users open the
+        // plan to read it, not to immediately edit. They can flip to 編輯
+        // via the toggle. (Was previously pre-arming auto-enter edit, which
+        // also broke the 檢視 toggle by re-entering on every reload.)
         var dest = 'index.html?plan=' + encodeURIComponent(created.id) + (apiQS ? '&' + apiQS.slice(1) : '');
         location.replace(dest);
       }).catch(function (e) {
