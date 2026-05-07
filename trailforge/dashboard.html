@@ -107,81 +107,86 @@ body{
 }
 .btn-row .new-btn{ margin-bottom:0; }
 
-/* 玉山範本 wax-seal stamp button — vermillion lacquer, tilted, hand-pressed.
-   One-click clone of the official 玉山主峰・北峰 plan template (no chooser
-   modal — bypasses showCreateChooser, calls createPlan() directly). */
+/* 玉山範本 line-art permit stamp — matches auth.html's seal aesthetic
+   (v90 lineage). Hand-drawn crimson contour, double ring, no fill. Reads
+   as a vintage trail-permit chop pressed onto parchment, NOT a corporate
+   logo. One-click clone of the official 玉山主峰・北峰 plan template. */
 .tpl-stamp-btn{
   appearance:none; cursor:pointer; border:none; background:none; padding:0;
   position:relative; display:inline-flex; align-items:center; justify-content:center;
-  width:96px; height:96px; flex:none;
-  transform:rotate(-5deg);
+  width:104px; height:104px; flex:none;
+  border-radius:50%;
+  transform:rotate(-7deg);
   transition: transform .35s cubic-bezier(.2,.85,.25,1),
-              filter .25s cubic-bezier(.2,.7,.2,1);
-  filter: drop-shadow(0 5px 10px rgba(139,42,31,0.32));
+              opacity .25s ease,
+              box-shadow .3s ease;
+  /* line-art ring — same vibe as .seal on auth.html */
+  outline:2px solid var(--crimson);
+  outline-offset:-2px;  /* sit on the disc edge so it reads as the seal's border */
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 60%);
+  color:var(--crimson);
+  opacity:.88;
   isolation:isolate;
 }
 .tpl-stamp-btn::before{
-  /* outer wax disc */
-  content:""; position:absolute; inset:0; border-radius:50%;
-  background:
-    radial-gradient(circle at 30% 26%, #de574a 0%, #b03828 38%, #7a1f15 78%, #4a0f08 100%);
-  box-shadow:
-    inset 0 -4px 10px rgba(0,0,0,0.4),
-    inset 0 2px 5px rgba(255,255,255,0.22),
-    0 1px 0 rgba(255,255,255,0.18);
-}
-.tpl-stamp-btn::after{
-  /* inner dashed ring — old-permit detail */
-  content:""; position:absolute; inset:9px; border-radius:50%;
-  border:1px dashed rgba(252,230,198,0.52);
+  /* inner ring — vintage permit detail */
+  content:""; position:absolute; inset:6px; border-radius:50%;
+  border:1px solid var(--crimson);
   pointer-events:none;
 }
 .tpl-stamp-btn .ts-inner{
   position:relative; z-index:1;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  color:#fce6c6;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.45), 0 0 8px rgba(255,224,180,0.18);
-  line-height:1; gap:2px;
+  color:var(--crimson);
+  font-family:var(--serif); font-weight:700;
+  line-height:1.05;
+  margin-bottom:11px;  /* leave room for ts-yr at the bottom */
 }
 .tpl-stamp-btn .ts-peak{
-  font-size:.66rem; opacity:.78; line-height:1;
-  margin-bottom:2px;
+  font-family:var(--mono); font-size:.5rem; font-weight:700;
+  letter-spacing:.32em; opacity:.65;
+  margin-bottom:4px; text-transform:uppercase;
 }
 .tpl-stamp-btn .ts-zh{
   font-family:"Fraunces", var(--serif), serif; font-style:italic;
-  font-weight:900; font-size:1.34rem;
+  font-weight:900; font-size:1.32rem;
   letter-spacing:.04em;
 }
 .tpl-stamp-btn .ts-en{
   font-family:var(--mono);
-  font-size:.46rem; font-weight:700;
+  font-size:.42rem; font-weight:700;
   letter-spacing:.32em;
-  margin-top:3px; opacity:.76;
+  margin-top:4px; opacity:.65;
   text-transform:uppercase;
 }
-.tpl-stamp-btn:hover{
-  transform: rotate(0deg) scale(1.05);
-  filter: drop-shadow(0 9px 18px rgba(139,42,31,0.5));
+.tpl-stamp-btn .ts-yr{
+  position:absolute; bottom:11px; left:0; right:0;
+  font-family:var(--mono); font-size:.46rem; font-weight:600;
+  letter-spacing:.3em; opacity:.6;
+  text-transform:uppercase; color:var(--crimson);
 }
-.tpl-stamp-btn:hover::before{
-  background:
-    radial-gradient(circle at 32% 26%, #e85a4a 0%, #b8392a 36%, #7e2117 78%, #4a0f08 100%);
+.tpl-stamp-btn:hover{
+  transform: rotate(-2deg) scale(1.08);
+  opacity:1;
+  box-shadow:
+    0 8px 26px -10px rgba(139,42,31,.55),
+    0 0 0 1px rgba(139,42,31,.25);
 }
 .tpl-stamp-btn:active{
-  transform: rotate(-3deg) scale(.97) translateY(1px);
-  filter: drop-shadow(0 2px 4px rgba(139,42,31,0.32));
+  transform: rotate(-7deg) scale(.97);
   transition-duration:.08s;
 }
 .tpl-stamp-btn:disabled{ opacity:.45; cursor:wait; }
-/* Subtle "press" pulse on first paint so the user notices it. */
+/* Press-in animation on first paint — "settles into the page". */
 @keyframes ts-settle{
-  0%   { transform: rotate(-12deg) scale(.6); opacity:0; filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
-  50%  { transform: rotate(-2deg) scale(1.08); opacity:1; }
-  100% { transform: rotate(-5deg) scale(1); opacity:1; filter: drop-shadow(0 5px 10px rgba(139,42,31,0.32)); }
+  0%   { opacity:0; transform: rotate(-14deg) scale(1.4); }
+  35%  { opacity:1; }
+  60%  { transform: rotate(-3deg)  scale(.95); }
+  100% { opacity:.88; transform: rotate(-7deg) scale(1); }
 }
-.tpl-stamp-btn{ animation: ts-settle .7s cubic-bezier(.2,.85,.25,1) both; animation-delay:.3s; }
+.tpl-stamp-btn{ animation: ts-settle .9s cubic-bezier(.6,0,.2,1) .25s both; }
 @media (prefers-reduced-motion: reduce){
-  .tpl-stamp-btn{ animation:none; }
+  .tpl-stamp-btn{ animation:none; opacity:.88; }
 }
 .new-btn .body{
   background:var(--pri-deep); color:var(--paper);
@@ -550,10 +555,11 @@ body{
             aria-label="從玉山主峰・北峰範本建立計劃書"
             title="從玉山主峰・北峰範本建立計劃書">
       <span class="ts-inner">
-        <span class="ts-peak" aria-hidden="true">▲</span>
+        <span class="ts-peak" aria-hidden="true">▲ PEAK ▲</span>
         <span class="ts-zh">玉山</span>
         <span class="ts-en">Yushan Tpl</span>
       </span>
+      <span class="ts-yr" aria-hidden="true">MMXXVI</span>
     </button>
   </div>
 
@@ -1522,6 +1528,7 @@ body{
 <script src="js/outbox.js"></script>
 <script src="js/elevation.js"></script>
 <script src="js/gpx-snap.js"></script>
+<script src="js/gpx-shape.js"></script>
 <script src="js/junction-detector.js"></script>
 <script src="js/gpx-io.js"></script>
 <script src="js/plan-from-gpx.js"></script>
