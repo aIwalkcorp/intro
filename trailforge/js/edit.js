@@ -512,6 +512,18 @@
     if (!planId) return;
     const token = localStorage.getItem("tf_access_token");
     if (!token) return;
+    // Honor the user's explicit mode preference. If `jm_mode_global` is
+    // 檢視 (checkpoint), they last said "I want to view, not edit" — drop
+    // any leftover stash and stay out of edit mode. Without this, a user
+    // running an older edit.js (cached from a previous SW) where
+    // intentionalReload didn't clear the stash would loop right back into
+    // 編輯 on every reload no matter how many times they tap 檢視.
+    let lastMode = null;
+    try { lastMode = localStorage.getItem("jm_mode_global"); } catch (e) {}
+    if (lastMode === "checkpoint") {
+      try { localStorage.removeItem("tf_pending_edit_" + planId); } catch (e) {}
+      return;
+    }
     let stash = null;
     try {
       const raw = localStorage.getItem("tf_pending_edit_" + planId);
