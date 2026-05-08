@@ -549,6 +549,15 @@
   // clear dirty + flag the navigation so the global beforeunload guard skips.
   function intentionalReload(delay) {
     setDirty(false);
+    // Every caller of intentionalReload() is "user explicitly exited edit mode"
+    // (檢視 toggle, FAB ✕, Esc, cancel button). Drop any pending edit stash so
+    // maybeAutoResumeEdit doesn't drag them back into 編輯 on the next load.
+    // Without this, an offline-save failure or a stale 401-redirect stash
+    // would loop the user into edit mode after every reload, making the
+    // 檢視 toggle look broken.
+    if (planId) {
+      try { localStorage.removeItem("tf_pending_edit_" + planId); } catch (e) {}
+    }
     if (window.tfMarkIntentionalNav) window.tfMarkIntentionalNav();
     if (delay) setTimeout(() => location.reload(), delay);
     else location.reload();
