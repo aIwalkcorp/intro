@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智意行科技 經營團隊 / aIwalk Management Team — Team Overview</title>
+<meta name="description" content="智意行科技股份有限公司（aIwalk Co., Ltd.）經營團隊組成與成員介紹 — 董事長、技術長、研發團隊一覽。">
+<meta name="keywords" content="智意行科技經營團隊, aIwalk management team, 智意行 團隊, aIwalk team, ExoPulse team, 黃志仁, 董事長, AI 復健 團隊">
+<link rel="canonical" href="https://aiwalkcorp.com/team.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="智意行科技 經營團隊 — Management Team Overview">
+<meta property="og:description" content="aIwalk Co., Ltd. 經營團隊組成與成員介紹">
+<meta property="og:url" content="https://aiwalkcorp.com/team.html">
+<meta property="og:site_name" content="智意行科技 aIwalk">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
+<link rel="icon" href="assets/favicon.ico">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "智意行科技 經營團隊 / aIwalk Management Team",
+  "url": "https://aiwalkcorp.com/team.html",
+  "about": {
+    "@type": "Organization",
+    "name": "aIwalk Co., Ltd.",
+    "alternateName": ["智意行科技股份有限公司", "智意行科技", "智意行", "aIwalk", "aiwalk", "AIwalk", "ExoPulse"],
+    "url": "https://aiwalkcorp.com/"
+  }
+}
+</script>
+<style>
+  body { margin:0; background:#0a1828; color:#e7eef6; font-family: 'Noto Sans TC','Inter',-apple-system,BlinkMacSystemFont,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  .splash { text-align:center; padding:24px; }
+  .splash h1 { font-size:18px; font-weight:600; letter-spacing:0.5px; margin:0 0 8px; }
+  .splash p { font-size:13px; color:#9bb0c4; margin:0 0 18px; }
+  .splash a { color:#ffd58a; text-decoration:none; font-size:13px; }
+  .splash a:hover { text-decoration:underline; }
+  .spin { width:24px; height:24px; border:2px solid #1f3a5a; border-top-color:#ffd58a; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<noscript>
+  <div class="splash">
+    <h1>智意行科技 經營團隊 / Management Team</h1>
+    <p>請啟用 JavaScript 以瀏覽團隊總覽，或前往：</p>
+    <a href="card.html?view=team">card.html?view=team</a>
+  </div>
+</noscript>
+<div class="splash" id="splash">
+  <div class="spin" aria-hidden="true"></div>
+  <h1>智意行科技 經營團隊 / Management Team</h1>
+  <p>Loading Team Overview…</p>
+</div>
+<script>
+  // Forward to the canonical overview view inside card.html.
+  // Preserve any extra query params (e.g. ?profile=arthur) so deep links work.
+  // Using replace() so back-button returns to whatever sent the user here.
+  (function () {
+    const params = new URLSearchParams(window.location.search);
+    params.set('view', 'team');
+    window.location.replace('card.html?' + params.toString() + window.location.hash);
+  })();
+</script>
+</body>
+</html>

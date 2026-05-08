@@ -44,6 +44,8 @@
   .nav-back:hover { background: rgba(26,58,92,0.06); }
   .nav-back svg { width: 16px; height: 16px; }
   .nav-title { font-size: 14px; font-weight: 700; color: #1a3a5c; letter-spacing: 0.3px; }
+  /* In team view, hide the "數位名片" label so the header reads as a team page */
+  body.team-view .nav-title { display: none; }
   .nav-overview {
     display: inline-flex; align-items: center; gap: 7px;
     padding: 7px 16px;
@@ -95,6 +97,20 @@
     background: linear-gradient(180deg, #f8f6f1 72%, rgba(248,246,241,0));
   }
   .overview-header > .overview-close { margin-top: 18px; flex-shrink: 0; }
+  .overview-home-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: #6b7d8e;
+    text-decoration: none; letter-spacing: 0.4px;
+    margin-bottom: 12px; padding: 4px 10px 4px 6px;
+    border: 1px solid rgba(26,58,92,0.12); border-radius: 999px;
+    background: rgba(255,255,255,0.5); transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .overview-home-link:hover {
+    color: #1a3a5c; background: rgba(255,255,255,0.95);
+    border-color: rgba(26,58,92,0.25); transform: translateX(-2px);
+  }
+  .overview-home-link svg { width: 12px; height: 12px; }
   .overview-eyebrow {
     font-family: 'Noto Sans TC', sans-serif;
     font-size: 11px; font-weight: 700; color: #c06a1a;
@@ -114,12 +130,31 @@
     text-transform: uppercase; font-weight: 600;
   }
   .overview-close {
-    background: transparent; border: 1px solid rgba(26,58,92,0.2);
-    border-radius: 999px; padding: 8px 16px; font-size: 12px;
-    color: #1a3a5c; cursor: pointer; font-weight: 600; letter-spacing: 0.5px;
+    display: inline-flex; align-items: center;
+    background: linear-gradient(135deg, #c06a1a 0%, #d4893a 100%);
+    border: none;
+    border-radius: 999px; padding: 8px 18px; font-size: 12px;
+    color: #fff; cursor: pointer; font-weight: 700; letter-spacing: 0.5px;
     transition: all 0.2s; font-family: inherit;
+    box-shadow: 0 3px 12px rgba(192,106,26,0.32);
   }
-  .overview-close:hover { background: #1a3a5c; color: #f8f6f1; border-color: #1a3a5c; }
+  .overview-close:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(192,106,26,0.45); }
+  .overview-actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; flex-shrink: 0; }
+  .overview-header > .overview-actions { margin-top: 18px; }
+  .lang-pill {
+    background: transparent; border: 1px solid rgba(26,58,92,0.2);
+    border-radius: 999px; padding: 8px 14px; font-size: 11px;
+    color: #1a3a5c; cursor: pointer; font-weight: 700; letter-spacing: 1px;
+    transition: all 0.2s; font-family: 'Inter', inherit; min-width: 56px;
+  }
+  .lang-pill:hover { background: #c06a1a; color: #fff; border-color: #c06a1a; }
+  body[data-lang="zh"] .lang-pill::before { content: 'EN'; }
+  body[data-lang="en"] .lang-pill::before { content: '中'; }
+  /* Profile topbar variant — sits beside the back button */
+  .profile-topbar .lang-pill { color: #f4ecd8; border-color: rgba(244,236,216,0.3); }
+  .profile-topbar .lang-pill:hover { background: #c06a1a; color: #fff; border-color: #c06a1a; }
+  /* Page-navbar variant — compact pill inside the glass navbar */
+  .nav-lang { padding: 5px 12px; font-size: 11px; min-width: 50px; border-color: rgba(26,58,92,0.18); }
   .overview-body { padding: 0 48px 64px; }
   .overview-group { margin-bottom: 48px; }
   .overview-group-head {
@@ -163,24 +198,41 @@
     box-shadow: 0 10px 30px rgba(26,58,92,0.08), 0 2px 8px rgba(0,0,0,0.04);
   }
   .ov-card:hover::before { transform: scaleY(1); }
-  .ov-initial {
-    font-family: 'Noto Serif TC', serif; font-size: 32px; font-weight: 900;
-    color: #1a2d42; line-height: 1; letter-spacing: 1px;
+  /* Primary name slot — large; lang-aware */
+  .ov-name-primary {
+    font-size: 32px; font-weight: 900;
+    color: #1a2d42; line-height: 1.05;
     margin-bottom: 6px;
   }
-  .ov-name-en {
-    font-size: 11px; color: #6b7d8e; letter-spacing: 1px;
+  body[data-lang="zh"] .ov-name-primary {
+    font-family: 'Noto Serif TC', serif; letter-spacing: 1px;
+  }
+  body[data-lang="en"] .ov-name-primary {
+    font-family: 'Noto Serif TC', 'Inter', serif;
+    letter-spacing: 0.3px; font-size: 24px; font-weight: 800;
+  }
+  /* Secondary name slot — small; lang-aware */
+  .ov-name-secondary {
+    font-size: 11px; color: #6b7d8e;
     font-weight: 500; margin-bottom: 10px;
+  }
+  body[data-lang="zh"] .ov-name-secondary {
+    letter-spacing: 1px;
+  }
+  body[data-lang="en"] .ov-name-secondary {
+    font-family: 'Noto Serif TC', serif;
+    letter-spacing: 2px; font-weight: 600;
   }
   .ov-role {
     font-size: 12px; color: #1a3a5c; font-weight: 600;
     line-height: 1.5; letter-spacing: 0.3px;
   }
-  .ov-role-en {
+  .ov-role-sub {
     display: block; font-size: 10px; color: #94a3b8;
     font-weight: 500; letter-spacing: 0.5px; margin-top: 2px;
     text-transform: uppercase;
   }
+  body[data-lang="en"] .ov-role-sub { text-transform: none; letter-spacing: 0.3px; }
   .ov-arrow {
     position: absolute; right: 16px; top: 20px;
     color: #c06a1a; opacity: 0;
@@ -194,7 +246,8 @@
     .overview-title { font-size: 22px; }
     .overview-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
     .ov-card { padding: 14px 16px; }
-    .ov-initial { font-size: 26px; }
+    .ov-name-primary { font-size: 26px; }
+    body[data-lang="en"] .ov-name-primary { font-size: 20px; }
   }
 
   /* ===== STAGE ===== */
@@ -776,8 +829,9 @@
   .ov-card:hover .ov-portrait-ribbon .ov-ribbon-arrow { transform: translateX(4px); }
 
   .ov-meta { padding: 18px 20px 18px; flex: 1; display: flex; flex-direction: column; }
-  .ov-card.has-profile .ov-initial { font-size: 22px; margin-bottom: 4px; }
-  .ov-card.has-profile .ov-name-en { margin-bottom: 12px; }
+  .ov-card.has-profile .ov-name-primary { font-size: 22px; margin-bottom: 4px; }
+  body[data-lang="en"] .ov-card.has-profile .ov-name-primary { font-size: 18px; }
+  .ov-card.has-profile .ov-name-secondary { margin-bottom: 12px; }
   .ov-card.has-profile .ov-role { margin-bottom: 12px; }
   .ov-highlights {
     display: flex; flex-wrap: wrap; gap: 4px;
@@ -888,18 +942,32 @@
     color: #c06a1a;
     margin-bottom: 14px;
   }
-  .profile-name-zh {
-    font-family: 'Noto Serif TC', serif;
+  /* Primary name slot — large; lang-aware font/letter-spacing */
+  .profile-name-primary {
     font-size: 64px; font-weight: 900;
-    color: #0f1d2d; line-height: 1; letter-spacing: 4px;
+    color: #0f1d2d; line-height: 1.05;
     margin-bottom: 6px;
   }
-  .profile-name-en {
-    font-family: 'Noto Serif JP', 'Noto Serif TC', serif;
-    font-style: italic;
+  body[data-lang="zh"] .profile-name-primary {
+    font-family: 'Noto Serif TC', serif; letter-spacing: 4px;
+  }
+  body[data-lang="en"] .profile-name-primary {
+    font-family: 'Noto Serif TC', 'Inter', serif;
+    letter-spacing: 0.5px; font-size: 52px; font-weight: 800;
+  }
+  /* Secondary name slot — small; lang-aware */
+  .profile-name-secondary {
     font-size: 22px; font-weight: 400;
-    color: #6b7d8e; letter-spacing: 0.3px;
+    color: #6b7d8e;
     margin-bottom: 24px;
+  }
+  body[data-lang="zh"] .profile-name-secondary {
+    font-family: 'Noto Serif JP', 'Noto Serif TC', serif;
+    font-style: italic; letter-spacing: 0.3px;
+  }
+  body[data-lang="en"] .profile-name-secondary {
+    font-family: 'Noto Serif TC', serif;
+    font-style: normal; letter-spacing: 4px; font-weight: 700;
   }
   .profile-highlights {
     display: flex; flex-wrap: wrap; gap: 8px;
@@ -1010,8 +1078,11 @@
   @media (max-width: 860px) {
     .profile-hero { grid-template-columns: 1fr; gap: 28px; padding: 32px 24px 16px; }
     .profile-portrait { max-width: 280px; }
-    .profile-name-zh { font-size: 44px; letter-spacing: 2px; }
-    .profile-name-en { font-size: 18px; margin-bottom: 16px; }
+    .profile-name-primary { font-size: 44px; }
+    body[data-lang="zh"] .profile-name-primary { letter-spacing: 2px; }
+    body[data-lang="en"] .profile-name-primary { font-size: 36px; letter-spacing: 0.3px; }
+    .profile-name-secondary { font-size: 18px; margin-bottom: 16px; }
+    body[data-lang="en"] .profile-name-secondary { letter-spacing: 2px; }
     .profile-body { grid-template-columns: 1fr; gap: 28px; padding: 24px 24px 64px; }
     .profile-topbar { padding: 14px 20px; }
     .profile-portrait-monogram { font-size: 120px; }
@@ -1028,6 +1099,7 @@
   <span class="nav-title">
     <span class="lbl-zh">數位名片</span><span class="lbl-en">Digital Business Card</span>
   </span>
+  <button class="lang-pill nav-lang" id="btnNavLang" type="button" aria-label="Toggle language"></button>
   <button class="nav-overview" id="btnOverview" aria-label="Management Team Overview">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     <span class="nav-overview-label">
@@ -1041,13 +1113,21 @@
 <div class="overview" id="overview" role="dialog" aria-modal="true" aria-label="Team overview">
   <div class="overview-header">
     <div>
+      <a class="overview-home-link" href="index.html">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        <span class="lbl-zh">返回 aIwalk 首頁</span><span class="lbl-en">Back to aIwalk Home</span>
+      </a>
       <div class="overview-eyebrow"><span class="lbl-zh">經營團隊</span><span class="lbl-en">Management Team</span></div>
       <div class="overview-title"><span class="lbl-zh">團隊總覽</span><span class="lbl-en">Team Overview</span></div>
       <div class="overview-subtitle">aIwalk Co., Ltd.</div>
     </div>
-    <button class="overview-close" id="btnCloseOverview">
-      <span class="lbl-zh">關閉 ✕</span><span class="lbl-en">Close ✕</span>
-    </button>
+    <div class="overview-actions">
+      <button class="lang-pill" id="btnOverviewLang" type="button" aria-label="Toggle language"></button>
+      <button class="overview-close" id="btnCloseOverview" aria-label="Browse business cards">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6"/><path d="M7 13h4"/></svg>
+        <span class="lbl-zh">翻閱名片</span><span class="lbl-en">Browse Cards</span>
+      </button>
+    </div>
   </div>
   <div class="overview-body" id="overviewBody"></div>
 </div>
@@ -1056,10 +1136,13 @@
 <div class="profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Team member profile">
   <div class="profile-topbar">
     <span class="profile-eyebrow"><span class="lbl-zh">團隊介紹</span><span class="lbl-en">Team / Profile</span></span>
-    <button class="profile-back" id="btnProfileBack">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-      <span class="lbl-zh">回團隊總覽</span><span class="lbl-en">Back to Team</span>
-    </button>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="lang-pill" id="btnProfileLang" type="button" aria-label="Toggle language"></button>
+      <button class="profile-back" id="btnProfileBack">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        <span class="lbl-zh">回團隊總覽</span><span class="lbl-en">Back to Team</span>
+      </button>
+    </div>
   </div>
   <div id="profileBody"></div>
 </div>
@@ -1143,8 +1226,9 @@ const PEOPLE = [
   {
     id: 'arthur',
     name: '黃志仁', sub: '董事長 / Chairman, Ph.D.',
+    nameZh: '黃志仁', nameEn: 'Arthur Huang, Ph.D.',
     profile: {
-      headshot: null, // drop a square portrait at assets/headshot-arthur.jpg and set this to that path
+      headshot: 'assets/headshot-arthur.jpg',
       monogram: '黃',
       nameZh: '黃志仁', nameEn: 'Arthur Huang, Ph.D.',
       titleZh: '董事長', titleEn: 'Chairman',
@@ -1180,6 +1264,7 @@ const PEOPLE = [
   {
     id: 'eddie',
     name: '副領隊', sub: '執行長 / CEO & Co-Founder',
+    nameZh: '副領隊', nameEn: 'Eddie Lai',
     front: `<div class="card style-b">
       <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
       <div class="mid"><div class="sep"></div><div class="title">執行長</div><div class="name-row"><span class="name-zh">副領隊</span></div></div>
@@ -1209,6 +1294,7 @@ const PEOPLE = [
   {
     id: 'chen-youyin',
     name: 'Prof. You-Yin Chen', sub: '致謝 · 學術指導 / Acknowledgment · Academic Advisor',
+    nameZh: '陳右穎 教授', nameEn: 'Prof. You-Yin Chen',
     front: `<div class="card style-ack">
       <div class="ack-top">
         <div class="ack-fleuron">❦</div>
@@ -1263,6 +1349,7 @@ const PEOPLE = [
   {
     id: 'eric',
     name: 'Eric', sub: '致謝 · 網頁架構協力 / Acknowledgment · Web Engineering',
+    nameZh: 'Eric', nameEn: 'Eric',
     front: `<div class="card style-ack">
       <div class="ack-top">
         <div class="ack-fleuron">❦</div>
@@ -1316,6 +1403,7 @@ function buildTeam(list) {
   return list.map(p => ({
     id: p.id,
     name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
+    nameZh: p.zh, nameEn: p.en,
     front: `<div class="card style-b">
       <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
       <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
@@ -1560,14 +1648,26 @@ function renderOverview() {
       const p = PEOPLE.find(x => x.id === id);
       if (!p) return '';
       const enMatch = p.back.match(/class="name-en">([^<]+)</);
-      const enName = enMatch ? enMatch[1].trim() : '';
+      const nameZh = p.nameZh || p.name || '';
+      const nameEn = p.nameEn || (enMatch ? enMatch[1].trim() : p.name || '');
       const roleZh = p.sub.split('/')[0].trim();
       const roleEn = p.sub.includes('/') ? p.sub.split('/').slice(1).join('/').trim() : '';
+      const namesDiffer = nameZh !== nameEn;
+      const rolesDiffer = roleEn && roleEn !== roleZh;
+      const namePrimaryHTML = `<div class="ov-name-primary"><span class="lbl-zh">${escHTML(nameZh)}</span><span class="lbl-en">${escHTML(nameEn)}</span></div>`;
+      const nameSecondaryHTML = namesDiffer
+        ? `<div class="ov-name-secondary"><span class="lbl-zh">${escHTML(nameEn)}</span><span class="lbl-en">${escHTML(nameZh)}</span></div>`
+        : '';
+      const roleHTML = `<div class="ov-role"><span class="lbl-zh">${escHTML(roleZh)}</span><span class="lbl-en">${escHTML(roleEn || roleZh)}</span>${
+        rolesDiffer
+          ? `<span class="ov-role-sub"><span class="lbl-zh">${escHTML(roleEn)}</span><span class="lbl-en">${escHTML(roleZh)}</span></span>`
+          : ''
+      }</div>`;
       const pf = p.profile;
       if (pf) {
         const portraitInner = pf.headshot
-          ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(pf.nameZh || p.name)}">`
-          : `<span class="ov-portrait-monogram">${escHTML(pf.monogram || (p.name && p.name[0]) || '·')}</span>`;
+          ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(nameZh)}">`
+          : `<span class="ov-portrait-monogram">${escHTML(pf.monogram || (nameZh && nameZh[0]) || '·')}</span>`;
         const chips = (pf.highlights || []).slice(0, 2).map(h =>
           `<span class="ov-chip lbl-zh">${escHTML(h.zh)}</span><span class="ov-chip lbl-en">${escHTML(h.en)}</span>`
         ).join('');
@@ -1582,17 +1682,17 @@ function renderOverview() {
             </div>
           </div>
           <div class="ov-meta">
-            <div class="ov-initial">${escHTML(p.name)}</div>
-            ${enName ? `<div class="ov-name-en">${escHTML(enName)}</div>` : ''}
-            <div class="ov-role">${escHTML(roleZh)}${roleEn ? `<span class="ov-role-en">${escHTML(roleEn)}</span>` : ''}</div>
+            ${namePrimaryHTML}
+            ${nameSecondaryHTML}
+            ${roleHTML}
             ${chips ? `<div class="ov-highlights">${chips}</div>` : ''}
           </div>
         </button>`;
       }
       return `<button class="ov-card" data-id="${p.id}">
-        <div class="ov-initial">${escHTML(p.name)}</div>
-        ${enName ? `<div class="ov-name-en">${escHTML(enName)}</div>` : ''}
-        <div class="ov-role">${escHTML(roleZh)}${roleEn ? `<span class="ov-role-en">${escHTML(roleEn)}</span>` : ''}</div>
+        ${namePrimaryHTML}
+        ${nameSecondaryHTML}
+        ${roleHTML}
         <div class="ov-action-hint">
           <span class="lbl-zh">數位名片</span><span class="lbl-en">Business Card</span>
           <span class="ov-hint-arrow" aria-hidden="true">→</span>
@@ -1666,8 +1766,8 @@ function renderProfile(id) {
       <div class="profile-portrait">${portraitInner}</div>
       <div class="profile-headlines">
         <div class="profile-role-tag"><span class="lbl-zh">${escHTML(pf.titleZh)}</span><span class="lbl-en">${escHTML(pf.titleEn)}</span></div>
-        <div class="profile-name-zh"><span class="lbl-zh">${escHTML(pf.nameZh)}</span><span class="lbl-en">${escHTML(pf.nameEn)}</span></div>
-        <div class="profile-name-en"><span class="lbl-zh">${escHTML(pf.nameEn)}</span><span class="lbl-en">${escHTML(pf.nameZh)}</span></div>
+        <div class="profile-name-primary"><span class="lbl-zh">${escHTML(pf.nameZh)}</span><span class="lbl-en">${escHTML(pf.nameEn)}</span></div>
+        <div class="profile-name-secondary"><span class="lbl-zh">${escHTML(pf.nameEn)}</span><span class="lbl-en">${escHTML(pf.nameZh)}</span></div>
         ${chipsHTML ? `<div class="profile-highlights">${chipsHTML}</div>` : ''}
       </div>
     </section>
@@ -1704,9 +1804,6 @@ function renderProfile(id) {
             <button class="profile-cta-btn" data-action="view-card" data-id="${p.id}">
               <span class="lbl-zh">查看名片</span><span class="lbl-en">View Business Card</span>
             </button>
-            <button class="profile-cta-btn secondary" data-action="back">
-              <span class="lbl-zh">回團隊總覽</span><span class="lbl-en">Back to Team</span>
-            </button>
           </div>
         </section>
       </div>
@@ -1735,15 +1832,35 @@ function renderProfile(id) {
 // Tracks whether the user opened profile from overview, so 'back' can
 // restore the previous layer instead of falling through to the card.
 let profileCameFromOverview = false;
-function openProfile(id) {
+const TEAM_TITLE = '智意行科技 Management Team — Team Overview';
+
+function setProfileUrl(id) {
+  const u = new URL(window.location.href);
+  u.searchParams.set('view', 'team');
+  if (id) u.searchParams.set('profile', id);
+  else u.searchParams.delete('profile');
+  return u.pathname + u.search;
+}
+
+function openProfile(id, fromUrl = false) {
   renderProfile(id);
   profileCameFromOverview = overview.classList.contains('show');
   if (profileCameFromOverview) overview.classList.remove('show'); // hide the layer underneath
   profilePanel.classList.add('show');
   profilePanel.scrollTop = 0;
   document.body.style.overflow = 'hidden';
+  // Give the profile its own URL — pushState so browser back closes it
+  if (!fromUrl) {
+    history.pushState({ profile: id }, '', setProfileUrl(id));
+  }
+  const p = PEOPLE.find(x => x.id === id);
+  if (p) {
+    const zh = p.nameZh || p.name || '';
+    const en = p.nameEn || '';
+    document.title = (zh && en && zh !== en) ? `${zh} / ${en} — aIwalk Management Team` : `${zh || en} — aIwalk Management Team`;
+  }
 }
-function closeProfile(restoreOverview = profileCameFromOverview) {
+function closeProfile(restoreOverview = profileCameFromOverview, fromUrl = false) {
   profilePanel.classList.remove('show');
   if (restoreOverview) {
     overview.classList.add('show');
@@ -1751,7 +1868,40 @@ function closeProfile(restoreOverview = profileCameFromOverview) {
     document.body.style.overflow = '';
   }
   profileCameFromOverview = false;
+  if (!fromUrl) {
+    if (history.state && history.state.profile) {
+      history.back(); // unwind the pushState entry → triggers popstate → no-op (panel already closed)
+    } else {
+      // edge case: arrived directly with ?profile=xxx — replace state to drop param
+      history.replaceState(null, '', setProfileUrl(null));
+    }
+  }
+  document.title = TEAM_TITLE;
 }
+
+// Browser back/forward sync
+window.addEventListener('popstate', () => {
+  const params = new URLSearchParams(window.location.search);
+  const profileId = params.get('profile');
+  const onTeam = params.get('view') === 'team';
+  if (profileId && !profilePanel.classList.contains('show')) {
+    // Forward navigation (or direct URL load) into a profile
+    if (onTeam && !overview.classList.contains('show')) overview.classList.add('show');
+    openProfile(profileId, true);
+  } else if (!profileId) {
+    // Back navigation out of profile
+    if (profilePanel.classList.contains('show')) {
+      // restoreOverview if URL still says we're in team view
+      closeProfile(onTeam, true);
+    }
+    // If we also left team view (browser back from team to card view), close overview
+    if (!onTeam && overview.classList.contains('show')) {
+      overview.classList.remove('show');
+      document.body.style.overflow = '';
+      document.body.classList.remove('team-view');
+    }
+  }
+});
 btnProfileBack.addEventListener('click', closeProfile);
 // Profile's Esc handler runs first and stops further Esc handlers (overview's)
 // from firing, so a single Escape only closes the topmost layer.
@@ -1776,6 +1926,35 @@ btnCloseOverview.addEventListener('click', closeOverview);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && overview.classList.contains('show')) closeOverview();
 });
+
+// Language toggle inside overview / profile (mirrors the card flip's lang state)
+function toggleOverlayLang() {
+  // setFlip(true) → English (back side); setFlip(false) → 中文 (front side)
+  const goEn = currentLang !== 'en';
+  setFlip(goEn);
+}
+const btnOverviewLang = document.getElementById('btnOverviewLang');
+const btnProfileLang = document.getElementById('btnProfileLang');
+const btnNavLang = document.getElementById('btnNavLang');
+if (btnOverviewLang) btnOverviewLang.addEventListener('click', toggleOverlayLang);
+if (btnProfileLang) btnProfileLang.addEventListener('click', toggleOverlayLang);
+if (btnNavLang) btnNavLang.addEventListener('click', toggleOverlayLang);
+
+// Auto-open overview when arriving via team.html / ?view=team / #team
+(function autoOpenTeamView() {
+  const params = new URLSearchParams(window.location.search);
+  const wantTeam = params.get('view') === 'team' || window.location.hash.toLowerCase() === '#team';
+  if (wantTeam) {
+    document.title = TEAM_TITLE;
+    document.body.classList.add('team-view');
+    openOverview();
+    const profileId = params.get('profile');
+    if (profileId && PEOPLE.find(p => p.id === profileId && p.profile)) {
+      // fromUrl=true → don't pushState; arrived here directly
+      openProfile(profileId, true);
+    }
+  }
+})();
 
 // Load language preference and set card side accordingly
 const savedLang = localStorage.getItem('aiwalk-lang');
