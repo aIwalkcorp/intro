@@ -1218,9 +1218,10 @@ const LOGO_SRC = "assets/business-card-logo.png";
 function _d(s) { return atob(s); }
 const _C = {
   t1: 'Kzg4NiA5NjMtMzgzLTM4OQ==',       // phone 1
-  e1: 'Y2ouaHVhbmc2MTA3QGdtYWlsLmNvbQ==', // email 1
+  e1: 'Y2pAYWl3YWxrY29ycC5jb20=',        // email 1 — cj@aiwalkcorp.com (改自 cj.huang6107@gmail.com, 2026-05-15)
   t2: 'Kzg4NiA5ODMtMDg4LTI1NA==',         // phone 2
-  e2: 'ZWRkbGFpLmJlMTBAbnljdS5lZHUudHc=',  // email 2
+  e2: 'ZWRkbGFpQGFpd2Fsa2NvcnAuY29t',    // email 2 — eddlai@aiwalkcorp.com (改自 eddlai.be10@nycu.edu.tw, 2026-05-15)
+  e3: 'c2VhbkBhaXdhbGtjb3JwLmNvbQ==',    // email 3 — sean@aiwalkcorp.com
 };
 const PEOPLE = [
   {
@@ -1279,7 +1280,7 @@ const PEOPLE = [
     </div>`
   },
   ...buildTeam([
-    { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research' },
+    { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research', email: _C.e3 },
     { id: 'curtis',    zh: '黎志添',          en: 'Curtis (Le Chi Thien)', titleZh: '研究科學家 — 動作與控制',          titleEn: 'Research Scientist – Motion & Control' },
     { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '演算法工程師 — 動作捕捉',          titleEn: 'Algorithm Engineer – Motion Capture' },
     { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師 — 外骨骼與肌電',        titleEn: 'Hardware Engineer – Exoskeleton & EMG' },
@@ -1400,21 +1401,25 @@ const PEOPLE = [
 ];
 
 function buildTeam(list) {
-  return list.map(p => ({
-    id: p.id,
-    name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
-    nameZh: p.zh, nameEn: p.en,
-    front: `<div class="card style-b">
-      <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
-      <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
-      <div class="bot"><div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
-    </div>`,
-    back: `<div class="card style-b">
-      <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
-      <div class="mid"><div class="sep"></div><div class="title">${p.titleEn}</div><div class="name-row"><span class="name-en">${p.en}</span></div></div>
-      <div class="bot"><div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Tax ID</span><span class="ct">60331893</span></div></div>
-    </div>`
-  }));
+  return list.map(p => {
+    const emailRowZh = p.email ? `<div class="crow"><span class="ci-zh">信箱</span><span class="ct">${_d(p.email)}</span></div>` : '';
+    const emailRowEn = p.email ? `<div class="crow"><span class="ci-en">Email</span><span class="ct">${_d(p.email)}</span></div>` : '';
+    return {
+      id: p.id,
+      name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
+      nameZh: p.zh, nameEn: p.en,
+      front: `<div class="card style-b">
+        <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+        <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
+        <div class="bot">${emailRowZh}<div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
+      </div>`,
+      back: `<div class="card style-b">
+        <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+        <div class="mid"><div class="sep"></div><div class="title">${p.titleEn}</div><div class="name-row"><span class="name-en">${p.en}</span></div></div>
+        <div class="bot">${emailRowEn}<div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Tax ID</span><span class="ct">60331893</span></div></div>
+      </div>`
+    };
+  });
 }
 
 const GROUPS = [
