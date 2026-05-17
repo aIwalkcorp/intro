@@ -1280,7 +1280,27 @@ const PEOPLE = [
     </div>`
   },
   ...buildTeam([
-    { id: 'lin',       zh: '林淑卿',          en: 'Lin Shu-Ching',         titleZh: '監察人',            titleEn: 'Supervisor' },
+    { id: 'lin',       zh: '林淑卿',          en: 'Lin Shu-Ching',         titleZh: '監察人',            titleEn: 'Supervisor',
+      profile: {
+        monogram: '林',
+        nameZh: '林淑卿', nameEn: 'Lin Shu-Ching',
+        titleZh: '監察人', titleEn: 'Supervisor',
+        highlights: [
+          { zh: '政大公行 學士・碩士',       en: 'NCCU Public Admin. B.A./M.A.' },
+          { zh: '20 年組織管理經驗',         en: '20 yrs Organizational Management' },
+          { zh: '公部門對接專業',            en: 'Public-Sector Liaison' },
+        ],
+        bioZh: '政治大學公共行政學系學士、碩士，深耕組織管理與政府事務領域逾二十年。熟悉公部門運作邏輯與跨機關協調，擅長制度設計、流程治理與利害關係人溝通。於 aIwalk 擔任監察人，從治理面確保財務與營運合規，並協助公司與政府計畫、法規申辦窗口建立穩定對接管道。',
+        bioEn: 'B.A. and M.A. in Public Administration from National Chengchi University (NCCU), with over twenty years across organizational management and government affairs. Fluent in public-sector operating logic and inter-agency coordination, with a track record in institutional design, process governance, and stakeholder communication. As Supervisor at aIwalk, she anchors financial and operational compliance from the governance side, and bridges the company to government programs and regulatory counterparts.',
+        education: [
+          { degZh: '公共行政 碩士', degEn: 'M.A., Public Administration', orgZh: '國立政治大學', orgEn: 'National Chengchi University' },
+          { degZh: '公共行政 學士', degEn: 'B.A., Public Administration', orgZh: '國立政治大學', orgEn: 'National Chengchi University' },
+        ],
+        experience: [
+          { roleZh: '組織管理 / 公部門對接', roleEn: 'Organizational Management & Public-Sector Liaison', orgZh: '逾 20 年資歷', orgEn: '20+ years', noteZh: '制度設計、跨機關協調', noteEn: 'Institutional design & inter-agency coordination' },
+        ],
+      }
+    },
     { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research', email: _C.e3 },
     { id: 'curtis',    zh: '黎志添',          en: 'Curtis (Le Chi Thien)', titleZh: '研究科學家 — 動作與控制',          titleEn: 'Research Scientist – Motion & Control' },
     { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '演算法工程師 — 動作捕捉',          titleEn: 'Algorithm Engineer – Motion Capture' },
@@ -1409,6 +1429,7 @@ function buildTeam(list) {
       id: p.id,
       name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
       nameZh: p.zh, nameEn: p.en,
+      ...(p.profile ? { profile: p.profile } : {}),
       front: `<div class="card style-b">
         <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
         <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
