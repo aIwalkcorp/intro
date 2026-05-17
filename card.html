@@ -1534,8 +1534,16 @@ function renderPerson(idx) {
   dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
   btnPrev.classList.toggle('disabled', idx === 0);
   btnNext.classList.toggle('disabled', idx === VP.length - 1);
-  // Update URL hash without jumping
-  history.replaceState(null, null, '#' + p.id);
+  // Update URL hash without jumping — only when we're in single-card mode.
+  // Team view's authoritative state lives in ?profile=…; writing #arthur on
+  // boot would pollute deep links like ?view=team&profile=lin.
+  const inTeamView = (() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('view') === 'team' || window.location.hash.toLowerCase() === '#team' || document.body.classList.contains('team-view');
+  })();
+  if (!inTeamView) {
+    history.replaceState(null, null, '#' + p.id);
+  }
 }
 
 const flipBtn = document.getElementById('flipBtn');
