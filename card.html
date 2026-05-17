@@ -1214,6 +1214,13 @@
 <script>
 const LOGO_SRC = "assets/logo_signature%20bg%20removed.png";
 
+// Boot-time URL state — fixed for the page's lifetime; team-view callers
+// read this instead of re-parsing on every navigation.
+const IS_TEAM_VIEW = (() => {
+  const sp = new URLSearchParams(window.location.search);
+  return sp.get('view') === 'team' || window.location.hash.toLowerCase() === '#team';
+})();
+
 // Anti-scraping: decode contact data at runtime
 function _d(s) { return atob(s); }
 const _C = {
@@ -1431,7 +1438,7 @@ function buildTeam(list) {
       id: p.id,
       name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
       nameZh: p.zh, nameEn: p.en,
-      ...(p.profile ? { profile: p.profile } : {}),
+      profile: p.profile,
       front: `<div class="card style-b">
         <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
         <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
@@ -1534,16 +1541,9 @@ function renderPerson(idx) {
   dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
   btnPrev.classList.toggle('disabled', idx === 0);
   btnNext.classList.toggle('disabled', idx === VP.length - 1);
-  // Update URL hash without jumping — only when we're in single-card mode.
-  // Team view's authoritative state lives in ?profile=…; writing #arthur on
-  // boot would pollute deep links like ?view=team&profile=lin.
-  const inTeamView = (() => {
-    const sp = new URLSearchParams(window.location.search);
-    return sp.get('view') === 'team' || window.location.hash.toLowerCase() === '#team' || document.body.classList.contains('team-view');
-  })();
-  if (!inTeamView) {
-    history.replaceState(null, null, '#' + p.id);
-  }
+  // Team view's authoritative URL lives in ?profile=…; writing #arthur here
+  // would pollute deep links like ?view=team&profile=lin.
+  if (!IS_TEAM_VIEW) history.replaceState(null, null, '#' + p.id);
 }
 
 const flipBtn = document.getElementById('flipBtn');
@@ -1979,13 +1979,11 @@ if (btnNavLang) btnNavLang.addEventListener('click', toggleOverlayLang);
 
 // Auto-open overview when arriving via team.html / ?view=team / #team
 (function autoOpenTeamView() {
-  const params = new URLSearchParams(window.location.search);
-  const wantTeam = params.get('view') === 'team' || window.location.hash.toLowerCase() === '#team';
-  if (wantTeam) {
+  if (IS_TEAM_VIEW) {
     document.title = TEAM_TITLE;
     document.body.classList.add('team-view');
     openOverview();
-    const profileId = params.get('profile');
+    const profileId = new URLSearchParams(window.location.search).get('profile');
     if (profileId && PEOPLE.find(p => p.id === profileId && p.profile)) {
       // fromUrl=true → don't pushState; arrived here directly
       openProfile(profileId, true);
