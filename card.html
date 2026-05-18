@@ -1311,7 +1311,14 @@ const PEOPLE = [
         ],
       }
     },
-    { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research', email: _C.e3 },
+    { id: 'sean',      zh: '劉智翔',          en: 'Sean Liu',              titleZh: '首席科學家',        titleEn: 'Chief Scientist / Head of Research', email: _C.e3,
+      profile: {
+        headshot: 'assets/headshot-sean.jpg',
+        monogram: '劉',
+        nameZh: '劉智翔', nameEn: 'Sean Liu',
+        titleZh: '首席科學家', titleEn: 'Chief Scientist / Head of Research',
+      }
+    },
     { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '演算法工程師 — 動作捕捉',          titleEn: 'Algorithm Engineer – Motion Capture' },
     { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師 — 外骨骼與肌電',        titleEn: 'Hardware Engineer – Exoskeleton & EMG' },
     { id: 'stephen',   zh: '王星皓',          en: 'Stephen Wang',          titleZh: '臨床演算法研究員',                 titleEn: 'Clinical Algorithm Researcher' },
@@ -1829,6 +1836,7 @@ function renderProfile(id) {
         </section>` : ''}
       </div>
       <div class="profile-body-right">
+        ${(pf.bioZh || pf.bioEn) ? `
         <section class="profile-section">
           <div class="profile-section-head">
             <span class="profile-section-num">03</span>
@@ -1836,12 +1844,12 @@ function renderProfile(id) {
             <span class="profile-section-title-en">Biography</span>
           </div>
           <div class="profile-bio"><span class="lbl-zh">${escHTML(pf.bioZh)}</span><span class="lbl-en">${escHTML(pf.bioEn)}</span></div>
-          <div class="profile-cta">
-            <button class="profile-cta-btn" data-action="view-card" data-id="${p.id}">
-              <span class="lbl-zh">查看名片</span><span class="lbl-en">View Business Card</span>
-            </button>
-          </div>
-        </section>
+        </section>` : ''}
+        <div class="profile-cta">
+          <button class="profile-cta-btn" data-action="view-card" data-id="${p.id}">
+            <span class="lbl-zh">查看名片</span><span class="lbl-en">View Business Card</span>
+          </button>
+        </div>
       </div>
     </div>
   `;
