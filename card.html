@@ -1730,12 +1730,15 @@ function renderOverview() {
           </div>
         </button>`;
       }
+      const isAck = ACK_IDS.has(p.id);
+      const hintZh = isAck ? '致謝卡' : '數位名片';
+      const hintEn = isAck ? 'Acknowledgment' : 'Business Card';
       return `<button class="ov-card" data-id="${p.id}">
         ${namePrimaryHTML}
         ${nameSecondaryHTML}
         ${roleHTML}
         <div class="ov-action-hint">
-          <span class="lbl-zh">數位名片</span><span class="lbl-en">Business Card</span>
+          <span class="lbl-zh">${hintZh}</span><span class="lbl-en">${hintEn}</span>
           <span class="ov-hint-arrow" aria-hidden="true">→</span>
         </div>
       </button>`;
