@@ -1231,6 +1231,53 @@ const _C = {
   e3: 'c2VhbkBhaXdhbGtjb3JwLmNvbQ==',    // email 3 — sean@aiwalkcorp.com
   e4: 'c2NAYWl3YWxrY29ycC5jb20=',         // email 4 — sc@aiwalkcorp.com (林淑卿)
 };
+
+// 致謝卡資料來源（單一資料源）；buildAck() 依此產出 style-ack 證書卡。
+// ACK_IDS 也由此衍生，新增致謝人員只需要在這裡加一筆。
+const ACK_PEOPLE_SPEC = [
+  {
+    id: 'chen-youyin',
+    nameZh: '陳 右 穎', nameEn: 'You-Yin Chen', sub: '致謝 · 學術指導 / Acknowledgment · Academic Advisor',
+    roleZh: '學術指導',  roleEn: 'Academic Advisor',
+    subZh:  '教授　Ph.D.', subEn:  'Professor, Ph.D.',
+    affilZh: '國立陽明交通大學<br>生物醫學工程學系 · 神經工程實驗室',
+    affilEn: 'National Yang Ming Chiao Tung University<br>Dept. of Biomedical Engineering · NeuroTech Lab',
+    contribZh: '於本公司成立籌備階段<br>提供神經工程領域之學術指導',
+    contribEn: 'For academic guidance in neural engineering<br>during the formation of aIwalk Co., Ltd.',
+    qr: { href: 'https://neurotech.lab.nycu.edu.tw/', src: 'assets/chen-neurotech-qr.png', label: 'NeuroTech Lab' },
+  },
+  {
+    id: 'eric',
+    nameZh: 'Eric', nameEn: 'Eric', sub: '致謝 · 網頁架構協力 / Acknowledgment · Web Engineering',
+    roleZh: '網頁架構協力', roleEn: 'Web Engineering Collaborator',
+    subZh:  '獨立貢獻者',   subEn:  'Independent Contributor',
+    affilZh: '協助本公司官網<br>底層架構與部署流程建置',
+    affilEn: 'For helping establish the<br>foundation and deployment of this website',
+    contribZh: '於網站初始建置階段<br>提供前端工程與部署實務協力',
+    contribEn: 'For frontend engineering and<br>deployment support during site bootstrap',
+  },
+  {
+    id: 'gokul',
+    nameZh: 'Gokul Adithya Suresh', nameEn: 'Gokul Adithya Suresh', sub: '致謝 · 系統 / GPU 工程 / Acknowledgment · Systems & GPU',
+    roleZh: '系統 / GPU 工程',         roleEn: 'Systems & GPU Engineering',
+    subZh:  '前團隊成員',               subEn:  'Former Team Member',
+    affilZh: '參與 NTKCAP 動作捕捉<br>系統與 GPU 工程相關開發',
+    affilEn: 'Contributed to systems and GPU engineering<br>for the NTKCAP motion-capture stack',
+    contribZh: '於團隊早期階段<br>提供系統工程與運算加速協力',
+    contribEn: 'For systems engineering and<br>compute-acceleration support in the early team',
+  },
+  {
+    id: 'stephen',
+    nameZh: '王 星 皓', nameEn: 'Stephen Wang', sub: '致謝 · 臨床演算法研究 / Acknowledgment · Clinical Algorithms',
+    roleZh: '臨床演算法研究',           roleEn: 'Clinical Algorithm Research',
+    subZh:  '前團隊成員',                subEn:  'Former Team Member',
+    affilZh: '參與 Patient Cloud<br>臨床平台早期演算法研究',
+    affilEn: 'Contributed to early clinical algorithm research<br>for the Patient Cloud platform',
+    contribZh: '於團隊早期階段<br>提供臨床演算法研究與驗證協力',
+    contribEn: 'For clinical algorithm research and<br>validation support in the early team',
+  },
+];
+
 const PEOPLE = [
   {
     id: 'arthur',
@@ -1321,120 +1368,13 @@ const PEOPLE = [
     },
     { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '演算法工程師 — 動作捕捉',          titleEn: 'Algorithm Engineer – Motion Capture' },
     { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師 — 外骨骼與肌電',        titleEn: 'Hardware Engineer – Exoskeleton & EMG' },
-    { id: 'stephen',   zh: '王星皓',          en: 'Stephen Wang',          titleZh: '臨床演算法研究員',                 titleEn: 'Clinical Algorithm Researcher' },
     { id: 'jennifer',  zh: '吳沛蓁',          en: 'Jennifer Wu',           titleZh: '部署工程師',                       titleEn: 'Deployment Engineer' },
-    { id: 'gokul',     zh: 'Gokul Suresh',    en: 'Gokul Adithya Suresh',  titleZh: '系統 / GPU 工程師',                titleEn: 'Systems / GPU Engineer' },
     { id: 'lewis',     zh: '陳正綸',          en: 'Lewis Chen',            titleZh: '即時 SDK 工程師',                  titleEn: 'Realtime SDK Engineer' },
   ]),
   // ===== 致謝卡 Acknowledgments =====
-  // 這些人不是員工：使用 style-ack 證書樣式，無公司 logo / 統編 / 地址。
-  // 陳教授預設隱藏（見 DEFAULT_HIDDEN），admin 可切換顯示。
-  {
-    id: 'chen-youyin',
-    name: 'Prof. You-Yin Chen', sub: '致謝 · 學術指導 / Acknowledgment · Academic Advisor',
-    nameZh: '陳右穎 教授', nameEn: 'Prof. You-Yin Chen',
-    front: `<div class="card style-ack">
-      <div class="ack-top">
-        <div class="ack-fleuron">❦</div>
-        <div>
-          <div class="ack-eyebrow">致　謝</div>
-          <div class="ack-eyebrow-sub">ACKNOWLEDGMENTS</div>
-        </div>
-        <div class="ack-fleuron">❦</div>
-      </div>
-      <div class="ack-rule"></div>
-      <div class="ack-body">
-        <div class="ack-role-zh">學術指導</div>
-        <div class="ack-name-zh">陳 右 穎</div>
-        <div class="ack-name-sub">教授　Ph.D.</div>
-        <div class="ack-affil">國立陽明交通大學<br>生物醫學工程學系 · 神經工程實驗室</div>
-      </div>
-      <div class="ack-rule thin"></div>
-      <div class="ack-bot">
-        <div class="ack-contrib">於本公司成立籌備階段<br>提供神經工程領域之學術指導</div>
-        <div class="ack-signature">—— 智意行科技　敬誌 ——</div>
-      </div>
-      <div class="ack-qr-caption">NeuroTech Lab</div>
-      <a class="ack-qr" href="https://neurotech.lab.nycu.edu.tw/" target="_blank" rel="noopener" aria-label="NeuroTech Lab"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab QR"></a>
-      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">敬誌 2026</span></div></div>
-    </div>`,
-    back: `<div class="card style-ack">
-      <div class="ack-top">
-        <div class="ack-fleuron">❦</div>
-        <div>
-          <div class="ack-eyebrow">ACKNOWLEDGMENT</div>
-          <div class="ack-eyebrow-sub">With Gratitude</div>
-        </div>
-        <div class="ack-fleuron">❦</div>
-      </div>
-      <div class="ack-rule"></div>
-      <div class="ack-body">
-        <div class="ack-role">Academic Advisor</div>
-        <div class="ack-name-en">You-Yin Chen</div>
-        <div class="ack-name-sub">Professor, Ph.D.</div>
-        <div class="ack-affil">National Yang Ming Chiao Tung University<br>Dept. of Biomedical Engineering · NeuroTech Lab</div>
-      </div>
-      <div class="ack-rule thin"></div>
-      <div class="ack-bot">
-        <div class="ack-contrib">For academic guidance in neural engineering<br>during the formation of aIwalk Co., Ltd.</div>
-        <div class="ack-signature">—— with gratitude from aIwalk ——</div>
-      </div>
-      <div class="ack-qr-caption">NeuroTech Lab</div>
-      <a class="ack-qr" href="https://neurotech.lab.nycu.edu.tw/" target="_blank" rel="noopener" aria-label="NeuroTech Lab"><img src="assets/chen-neurotech-qr.png" alt="NeuroTech Lab QR"></a>
-      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">MMXXVI</span></div></div>
-    </div>`
-  },
-  {
-    id: 'eric',
-    name: 'Eric', sub: '致謝 · 網頁架構協力 / Acknowledgment · Web Engineering',
-    nameZh: 'Eric', nameEn: 'Eric',
-    front: `<div class="card style-ack">
-      <div class="ack-top">
-        <div class="ack-fleuron">❦</div>
-        <div>
-          <div class="ack-eyebrow">致　謝</div>
-          <div class="ack-eyebrow-sub">ACKNOWLEDGMENTS</div>
-        </div>
-        <div class="ack-fleuron">❦</div>
-      </div>
-      <div class="ack-rule"></div>
-      <div class="ack-body">
-        <div class="ack-role-zh">網頁架構協力</div>
-        <div class="ack-name-zh">Eric</div>
-        <div class="ack-name-sub">獨立貢獻者</div>
-        <div class="ack-affil">協助本公司官網<br>底層架構與部署流程建置</div>
-      </div>
-      <div class="ack-rule thin"></div>
-      <div class="ack-bot">
-        <div class="ack-contrib">於網站初始建置階段<br>提供前端工程與部署實務協力</div>
-        <div class="ack-signature">—— 智意行科技　敬誌 ——</div>
-      </div>
-      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">敬誌 2026</span></div></div>
-    </div>`,
-    back: `<div class="card style-ack">
-      <div class="ack-top">
-        <div class="ack-fleuron">❦</div>
-        <div>
-          <div class="ack-eyebrow">ACKNOWLEDGMENT</div>
-          <div class="ack-eyebrow-sub">With Gratitude</div>
-        </div>
-        <div class="ack-fleuron">❦</div>
-      </div>
-      <div class="ack-rule"></div>
-      <div class="ack-body">
-        <div class="ack-role">Web Engineering Collaborator</div>
-        <div class="ack-name-en">Eric</div>
-        <div class="ack-name-sub">Independent Contributor</div>
-        <div class="ack-affil">For helping establish the<br>foundation and deployment of this website</div>
-      </div>
-      <div class="ack-rule thin"></div>
-      <div class="ack-bot">
-        <div class="ack-contrib">For frontend engineering and<br>deployment support during site bootstrap</div>
-        <div class="ack-signature">—— with gratitude from aIwalk ——</div>
-      </div>
-      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">MMXXVI</span></div></div>
-    </div>`
-  },
+  // 這些人不再是員工（或從未是員工）：使用 style-ack 證書樣式，
+  // 無公司 logo / 統編 / 地址。陳教授預設隱藏（見 DEFAULT_HIDDEN），admin 可切換顯示。
+  ...ACK_PEOPLE_SPEC.map(buildAck),
 ];
 
 function buildTeam(list) {
@@ -1458,6 +1398,64 @@ function buildTeam(list) {
       </div>`
     };
   });
+}
+
+function buildAck(p) {
+  const qrZh = p.qr ? `
+      <div class="ack-qr-caption">${p.qr.label}</div>
+      <a class="ack-qr" href="${p.qr.href}" target="_blank" rel="noopener" aria-label="${p.qr.label}"><img src="${p.qr.src}" alt="${p.qr.label} QR"></a>` : '';
+  const qrEn = qrZh;
+  return {
+    id: p.id,
+    name: p.nameEn, sub: p.sub,
+    nameZh: p.nameZh, nameEn: p.nameEn,
+    front: `<div class="card style-ack">
+      <div class="ack-top">
+        <div class="ack-fleuron">❦</div>
+        <div>
+          <div class="ack-eyebrow">致　謝</div>
+          <div class="ack-eyebrow-sub">ACKNOWLEDGMENTS</div>
+        </div>
+        <div class="ack-fleuron">❦</div>
+      </div>
+      <div class="ack-rule"></div>
+      <div class="ack-body">
+        <div class="ack-role-zh">${p.roleZh}</div>
+        <div class="ack-name-zh">${p.nameZh}</div>
+        <div class="ack-name-sub">${p.subZh}</div>
+        <div class="ack-affil">${p.affilZh}</div>
+      </div>
+      <div class="ack-rule thin"></div>
+      <div class="ack-bot">
+        <div class="ack-contrib">${p.contribZh}</div>
+        <div class="ack-signature">—— 智意行科技　敬誌 ——</div>
+      </div>${qrZh}
+      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">敬誌 2026</span></div></div>
+    </div>`,
+    back: `<div class="card style-ack">
+      <div class="ack-top">
+        <div class="ack-fleuron">❦</div>
+        <div>
+          <div class="ack-eyebrow">ACKNOWLEDGMENT</div>
+          <div class="ack-eyebrow-sub">With Gratitude</div>
+        </div>
+        <div class="ack-fleuron">❦</div>
+      </div>
+      <div class="ack-rule"></div>
+      <div class="ack-body">
+        <div class="ack-role">${p.roleEn}</div>
+        <div class="ack-name-en">${p.nameEn}</div>
+        <div class="ack-name-sub">${p.subEn}</div>
+        <div class="ack-affil">${p.affilEn}</div>
+      </div>
+      <div class="ack-rule thin"></div>
+      <div class="ack-bot">
+        <div class="ack-contrib">${p.contribEn}</div>
+        <div class="ack-signature">—— with gratitude from aIwalk ——</div>
+      </div>${qrEn}
+      <div class="ack-seal" aria-hidden="true"><div class="ack-seal-text">a<em>I</em>walk<span class="ack-seal-yr">MMXXVI</span></div></div>
+    </div>`
+  };
 }
 
 const GROUPS = [
@@ -1533,7 +1531,7 @@ function rebuildDots() {
 }
 rebuildDots();
 
-const ACK_IDS = new Set(['chen-youyin', 'eric']);
+const ACK_IDS = new Set(ACK_PEOPLE_SPEC.map(p => p.id));
 function renderPerson(idx) {
   if (!VP.length) return; // nothing visible
   if (idx < 0 || idx >= VP.length) idx = 0;
