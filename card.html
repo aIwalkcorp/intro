@@ -875,6 +875,10 @@
     transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .profile-panel.show { opacity: 1; pointer-events: auto; transform: none; }
+  /* When profile is open, hide the global floating page-navbar — profile-topbar
+     already carries its own back-to-team control, and stacking both at the top
+     reads as a duplicate "back" on narrow viewports. */
+  body:has(.profile-panel.show) .page-navbar { display: none; }
 
   .profile-topbar {
     position: sticky; top: 0; z-index: 5;
