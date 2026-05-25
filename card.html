@@ -150,8 +150,8 @@
   .lang-pill:hover { background: #c06a1a; color: #fff; border-color: #c06a1a; }
   body[data-lang="zh"] .lang-pill::before { content: 'EN'; }
   body[data-lang="en"] .lang-pill::before { content: '中'; }
-  /* Profile topbar variant — sits beside the back button */
-  .profile-topbar .lang-pill { color: #f4ecd8; border-color: rgba(244,236,216,0.3); }
+  /* Profile topbar variant — light cream topbar, so use dark navy ink (was cream-on-cream = invisible) */
+  .profile-topbar .lang-pill { color: #1a3a5c; border-color: rgba(26,58,92,0.25); background: rgba(255,255,255,0.5); }
   .profile-topbar .lang-pill:hover { background: #c06a1a; color: #fff; border-color: #c06a1a; }
   /* Page-navbar variant — compact pill inside the glass navbar */
   .nav-lang { padding: 5px 12px; font-size: 11px; min-width: 50px; border-color: rgba(26,58,92,0.18); }
@@ -1324,6 +1324,8 @@ const PEOPLE = [
   },
   ...buildTeam([
     { id: 'eddie',     zh: '賴宏達',          en: 'Eddie Lai',             titleZh: '願景發起人',        titleEn: 'Founding Visionary',
+      phone: _C.t2, email: _C.e2,
+      qr: { href: 'https://eddlai.github.io/open_resume/eddie.html', src: 'assets/eddie-website-qr.png', alt: 'Eddie Lai personal site' },
       profile: {
         headshot: 'assets/headshot-eddie.jpg',
         monogram: '賴',
@@ -1331,7 +1333,7 @@ const PEOPLE = [
         titleZh: '願景發起人', titleEn: 'Founding Visionary',
         highlights: [
           { zh: 'aIwalk 願景發起',      en: 'Originated aIwalk' },
-          { zh: 'AI × 穿戴式機器人',    en: 'AI × Wearable Robotics' },
+          { zh: '神經控制・終身穿戴機器人夥伴', en: 'Neural-Controlled Lifelong Wearable Robot Partner' },
           { zh: '三大產品線藍圖',       en: 'Three-Product Blueprint' },
         ],
         bioZh: '以 AI 與穿戴式機器人重新定義復健——aIwalk 的最初構想源自於此。從技術願景到產品藍圖，勾勒出 NTKCAP 無標記動作捕捉、ExoPulse 外骨骼、Patient Cloud 臨床平台三大方向，是公司從概念到落地的願景起點。aIwalk 並與國立陽明交通大學醫學工程學院 神經工程實驗室（陳右穎 教授）建立產學合作，銜接學界的神經工程研究與公司的技術落地。',
@@ -1381,8 +1383,12 @@ const PEOPLE = [
 
 function buildTeam(list) {
   return list.map(p => {
+    const phoneRowZh = p.phone ? `<div class="crow"><span class="ci-zh">電話</span><span class="ct">${_d(p.phone)}</span></div>` : '';
+    const phoneRowEn = p.phone ? `<div class="crow"><span class="ci-en">Tel</span><span class="ct">${_d(p.phone)}</span></div>` : '';
     const emailRowZh = p.email ? `<div class="crow"><span class="ci-zh">信箱</span><span class="ct">${_d(p.email)}</span></div>` : '';
     const emailRowEn = p.email ? `<div class="crow"><span class="ci-en">Email</span><span class="ct">${_d(p.email)}</span></div>` : '';
+    const qrTag = p.qr ? `<a href="${p.qr.href}" target="_blank" rel="noopener" style="position:absolute;right:5mm;bottom:5mm;width:17mm;height:17mm;z-index:2;display:block;background:#fff;padding:0.8mm;border-radius:1mm;"><img src="${p.qr.src}" alt="${p.qr.alt || p.en}" style="width:100%;height:100%;display:block;"></a>` : '';
+    const botPad = p.qr ? ' style="padding-right:20mm;"' : '';
     return {
       id: p.id,
       name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
@@ -1391,12 +1397,14 @@ function buildTeam(list) {
       front: `<div class="card style-b">
         <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
         <div class="mid"><div class="sep"></div><div class="title">${p.titleZh}</div><div class="name-row"><span class="name-zh">${p.en}</span></div></div>
-        <div class="bot">${emailRowZh}<div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
+        <div class="bot"${botPad}>${phoneRowZh}${emailRowZh}<div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
+        ${qrTag}
       </div>`,
       back: `<div class="card style-b">
         <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
         <div class="mid"><div class="sep"></div><div class="title">${p.titleEn}</div><div class="name-row"><span class="name-en">${p.en}</span></div></div>
-        <div class="bot">${emailRowEn}<div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Tax ID</span><span class="ct">60331893</span></div></div>
+        <div class="bot"${botPad}>${phoneRowEn}${emailRowEn}<div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Tax ID</span><span class="ct">60331893</span></div></div>
+        ${qrTag}
       </div>`
     };
   });
