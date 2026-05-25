@@ -1241,13 +1241,13 @@ const _C = {
 const ACK_PEOPLE_SPEC = [
   {
     id: 'chen-youyin',
-    nameZh: '陳 右 穎', nameEn: 'You-Yin Chen', sub: '致謝 · 學術指導 / Acknowledgment · Academic Advisor',
-    roleZh: '學術指導',  roleEn: 'Academic Advisor',
+    nameZh: '陳 右 穎', nameEn: 'You-Yin Chen', sub: '產學合作 · 學術指導 / Academic Partner · Advisor',
+    roleZh: '產學合作 · 學術指導',  roleEn: 'Academic Partner · Advisor',
     subZh:  '教授　Ph.D.', subEn:  'Professor, Ph.D.',
     affilZh: '國立陽明交通大學<br>生物醫學工程學系 · 神經工程實驗室',
     affilEn: 'National Yang Ming Chiao Tung University<br>Dept. of Biomedical Engineering · NeuroTech Lab',
-    contribZh: '於本公司成立籌備階段<br>提供神經工程領域之學術指導',
-    contribEn: 'For academic guidance in neural engineering<br>during the formation of aIwalk Co., Ltd.',
+    contribZh: '與 aIwalk 建立產學合作<br>於神經工程領域提供學術指導與研究合作',
+    contribEn: 'Industry-academia partnership with aIwalk<br>academic guidance &amp; joint research in neural engineering',
     qr: { href: 'https://neurotech.lab.nycu.edu.tw/', src: 'assets/chen-neurotech-qr.png', label: 'NeuroTech Lab' },
   },
   {
@@ -1334,8 +1334,8 @@ const PEOPLE = [
           { zh: 'AI × 穿戴式機器人',    en: 'AI × Wearable Robotics' },
           { zh: '三大產品線藍圖',       en: 'Three-Product Blueprint' },
         ],
-        bioZh: '以 AI 與穿戴式機器人重新定義復健——aIwalk 的最初構想源自於此。從技術願景到產品藍圖，勾勒出 NTKCAP 無標記動作捕捉、ExoPulse 外骨骼、Patient Cloud 臨床平台三大方向，是公司從概念到落地的願景起點。',
-        bioEn: 'Redefining rehabilitation through AI and wearable robotics — this is where the original idea of aIwalk began. From the founding technical vision to the product blueprint, he outlined the three directions of NTKCAP markerless motion capture, ExoPulse exoskeleton, and Patient Cloud clinical platform — the visionary origin that carried the company from concept to reality.',
+        bioZh: '以 AI 與穿戴式機器人重新定義復健——aIwalk 的最初構想源自於此。從技術願景到產品藍圖，勾勒出 NTKCAP 無標記動作捕捉、ExoPulse 外骨骼、Patient Cloud 臨床平台三大方向，是公司從概念到落地的願景起點。aIwalk 並與國立陽明交通大學醫學工程學院 神經工程實驗室（陳右穎 教授）建立產學合作，銜接學界的神經工程研究與公司的技術落地。',
+        bioEn: 'Redefining rehabilitation through AI and wearable robotics — this is where the original idea of aIwalk began. From the founding technical vision to the product blueprint, he outlined the three directions of NTKCAP markerless motion capture, ExoPulse exoskeleton, and Patient Cloud clinical platform — the visionary origin that carried the company from concept to reality. aIwalk also maintains an industry-academia collaboration with the NeuroTech Lab (Prof. You-Yin Chen) at the College of Biomedical Engineering, NYCU — bridging academic neural-engineering research with the company\'s technical deployment.',
       }
     },
     { id: 'lin',       zh: '林淑卿',          en: 'Karen Lin',         titleZh: '監察人',            titleEn: 'Supervisor', email: _C.e4,
@@ -1469,7 +1469,7 @@ const GROUPS = [
 ];
 
 // ===== Visibility state (driven by admin panel, persisted in localStorage) =====
-const DEFAULT_HIDDEN = ['chen-youyin'];
+const DEFAULT_HIDDEN = [];
 const HIDDEN_KEY = 'aiwalk-hidden-ids-v3';
 function loadHiddenSet() {
   try {
