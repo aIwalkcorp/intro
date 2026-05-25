@@ -1328,6 +1328,7 @@ const PEOPLE = [
       qr: { href: 'https://eddlai.github.io/open_resume/eddie.html', src: 'assets/eddie-website-qr.png', alt: 'Eddie Lai personal site' },
       profile: {
         headshot: 'assets/headshot-eddie.jpg',
+        headshotProfile: 'assets/headshot-eddie-profile.jpg',
         monogram: '賴',
         nameZh: '賴宏達', nameEn: 'Eddie Lai',
         titleZh: '願景發起人', titleEn: 'Founding Visionary',
@@ -1336,8 +1337,8 @@ const PEOPLE = [
           { zh: '神經控制・終身穿戴機器人夥伴', en: 'Neural-Controlled Lifelong Wearable Robot Partner' },
           { zh: '三大產品線藍圖',       en: 'Three-Product Blueprint' },
         ],
-        bioZh: '以 AI 與穿戴式機器人重新定義復健——aIwalk 的最初構想源自於此。從技術願景到產品藍圖，勾勒出 NTKCAP 無標記動作捕捉、ExoPulse 外骨骼、Patient Cloud 臨床平台三大方向，是公司從概念到落地的願景起點。aIwalk 並與國立陽明交通大學醫學工程學院 神經工程實驗室（陳右穎 教授）建立產學合作，銜接學界的神經工程研究與公司的技術落地。',
-        bioEn: 'Redefining rehabilitation through AI and wearable robotics — this is where the original idea of aIwalk began. From the founding technical vision to the product blueprint, he outlined the three directions of NTKCAP markerless motion capture, ExoPulse exoskeleton, and Patient Cloud clinical platform — the visionary origin that carried the company from concept to reality. aIwalk also maintains an industry-academia collaboration with the NeuroTech Lab (Prof. You-Yin Chen) at the College of Biomedical Engineering, NYCU — bridging academic neural-engineering research with the company\'s technical deployment.',
+        bioZh: '以 AI 與穿戴式機器人重新定義復健——aIwalk 的最初構想源自於此。從技術願景到產品藍圖，主導開發 ExoPulse 外骨骼與 Patient Cloud 臨床平台，並參與 NTKCAP 無標記動作捕捉，是公司從概念到落地的願景起點。他亦為 aIwalk 與國立陽明交通大學醫學工程學院 神經工程實驗室（陳右穎 教授）產學合作下的產學博士生，銜接學界的神經工程研究與公司的技術落地。',
+        bioEn: 'Redefining rehabilitation through AI and wearable robotics — this is where the original idea of aIwalk began. From the founding technical vision to the product blueprint, he led the development of the ExoPulse exoskeleton and Patient Cloud clinical platform and contributed to NTKCAP markerless motion capture — the visionary origin that carried the company from concept to reality. He is also the industry-academia doctoral student under aIwalk\'s collaboration with the NeuroTech Lab (Prof. You-Yin Chen) at the College of Biomedical Engineering, NYCU — bridging academic neural-engineering research with the company\'s technical deployment.',
       }
     },
     { id: 'lin',       zh: '林淑卿',          en: 'Karen Lin',         titleZh: '監察人',            titleEn: 'Supervisor', email: _C.e4,
@@ -1791,8 +1792,9 @@ function renderProfile(id) {
   const p = PEOPLE.find(x => x.id === id);
   if (!p || !p.profile) { profileBody.innerHTML = ''; return; }
   const pf = p.profile;
-  const portraitInner = pf.headshot
-    ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(pf.nameZh)}">`
+  const profileImg = pf.headshotProfile || pf.headshot;  // detail view can use a sharper/closer crop
+  const portraitInner = profileImg
+    ? `<img src="${escHTML(profileImg)}" alt="${escHTML(pf.nameZh)}">`
     : `<span class="profile-portrait-monogram">${escHTML(pf.monogram || (p.name && p.name[0]) || '·')}</span>`;
   const chipsHTML = (pf.highlights || []).map(h =>
     `<span class="profile-chip lbl-zh">${escHTML(h.zh)}</span><span class="profile-chip lbl-en">${escHTML(h.en)}</span>`
