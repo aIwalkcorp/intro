@@ -141,5 +141,79 @@
     return warnings;
   }
 
-  TF.gpxSnap = { snapAllToTrack, validateOrder };
+  // Multi-visit snap: for out-and-back / loop / multi-day GPX, a named
+  // location may pass under the trkpt cursor TWICE (e.g. 排雲 at trip
+  // start and again on the return). The single-best-idx contract of
+  // `snapAllToTrack` discards every visit but one, which causes the
+  // wizard to drop the descent half of an out-and-back trip.
+  //
+  // Strategy — hysteresis local minima:
+  //   walk the track, enter a "visit window" when dist(loc, trkpt) drops
+  //   below `proximityM`, track the closest trkpt within the window,
+  //   close the window when dist climbs back above `departM`. Each
+  //   closed window contributes one visit at the in-window minimum.
+  //   `departM > proximityM` prevents flapping when the trail wobbles
+  //   right at the threshold.
+  //
+  // Falls back to global linear-scan minimum when no proximity hit
+  // (covers the case where the GPX comes within 400m but never below
+  // 200m — still a valid snap if within `maxDistanceM`).
+  //
+  // Returns:
+  //   visits:  { name → [{idx, distance_m}, ...] }   sorted by idx
+  //   missing: [{ name, distance_m }]                global min > maxDistanceM
+  function snapAllVisits(track, named_locations, opts) {
+    opts = opts || {};
+    const proximityM = (typeof opts.proximityM === 'number') ? opts.proximityM : 200;
+    const departM = (typeof opts.departM === 'number') ? opts.departM : 400;
+    const maxD = (typeof opts.maxDistanceM === 'number') ? opts.maxDistanceM : 500;
+    const visits = {};
+    const missing = [];
+    if (!Array.isArray(track) || !track.length) return { visits, missing };
+    if (!named_locations || typeof named_locations !== 'object') return { visits, missing };
+    const names = Object.keys(named_locations);
+    for (const name of names) {
+      const loc = named_locations[name];
+      if (!loc || typeof loc.lat !== 'number' || typeof loc.lon !== 'number') continue;
+      const found = [];
+      let inVisit = false;
+      let bestIdx = -1, bestD = Infinity;
+      let globalIdx = -1, globalD = Infinity;
+      for (let i = 0; i < track.length; i++) {
+        const p = track[i];
+        if (!Array.isArray(p) || p.length < 2) continue;
+        const d = dist(loc.lat, loc.lon, p[0], p[1]);
+        if (d < globalD) { globalD = d; globalIdx = i; }
+        if (!inVisit) {
+          if (d <= proximityM) {
+            inVisit = true;
+            bestIdx = i; bestD = d;
+          }
+        } else {
+          if (d < bestD) { bestIdx = i; bestD = d; }
+          if (d > departM) {
+            found.push({ idx: bestIdx, distance_m: Math.round(bestD) });
+            inVisit = false;
+            bestIdx = -1; bestD = Infinity;
+          }
+        }
+      }
+      if (inVisit && bestIdx >= 0) {
+        found.push({ idx: bestIdx, distance_m: Math.round(bestD) });
+      }
+      if (!found.length) {
+        // No proximity-trigger hit — fall back to global min if within maxD
+        if (globalIdx >= 0 && globalD <= maxD) {
+          found.push({ idx: globalIdx, distance_m: Math.round(globalD) });
+        } else {
+          missing.push({ name, distance_m: Math.round(globalD) });
+          continue;
+        }
+      }
+      visits[name] = found;
+    }
+    return { visits, missing };
+  }
+
+  TF.gpxSnap = { snapAllToTrack, snapAllVisits, validateOrder };
 })();

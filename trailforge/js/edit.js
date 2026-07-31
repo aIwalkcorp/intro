@@ -1026,13 +1026,22 @@
         const j = await r.json().catch(() => ({}));
         throw new Error(j.error || "HTTP " + r.status);
       }
-      // Successful save — clear any stashed pending edits for this plan,
-      // and ALSO drop the PWA frozen snapshot so the next reload pulls the
-      // fresh version (which then re-freezes if running standalone).
+      // Successful save — clear stash + frozen snapshot, then SOFT refresh
+      // (no page reload, so user stays in edit mode + scroll position +
+      // open inline forms aren't torn down). The data we just sent IS
+      // already in window.__PLAN__ (collect() mutated through it), so we
+      // only need to refresh derived UI: rest-points, chart, and any
+      // module that listens for tf:plan-loaded.
       clearPendingFor(planId);
       try { localStorage.removeItem("tf_pwa_frozen_" + planId); } catch (e) {}
-      showToast("已儲存。重新載入計劃書…");
-      intentionalReload(600);
+      setDirty(false);
+      saveBtn.disabled = false;
+      cancelBtn.disabled = false;
+      saveBtn.textContent = "儲存";
+      showToast("已儲存");
+      try { document.dispatchEvent(new CustomEvent("tf:plan-saved", { detail: { plan: window.__PLAN__ } })); } catch (e) {}
+      try { if (window.TF && TF.render) TF.render(window.__PLAN__); } catch (e) {}
+      try { if (window.TF && TF.modeToggle && TF.modeToggle.refreshAll) TF.modeToggle.refreshAll(); } catch (e) {}
     } catch (e) {
       // Network failure: stash locally so the next session can recover.
       const offline = e && /Failed to fetch|NetworkError|TypeError/i.test(e.message || "");

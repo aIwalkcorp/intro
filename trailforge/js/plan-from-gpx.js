@@ -113,15 +113,23 @@
   }
 
   // ─── Build segments from snapped POIs in trkpt order ─────────────────
-  // Given a day's [lo..hi] index range and a snaps map, returns segments
-  // of consecutive snapped POIs ordered by their trkpt index. Each
-  // segment has from/to/distance_km/ascent_m/descent_m/anchor_idx.
-  function buildDaySegments(track, daySpan, snaps, namedLocations, dayId) {
+  // Given a day's [lo..hi] index range and a visits map (name → array of
+  // {idx} where the named location was passed), return segments chaining
+  // each visit in trkpt order. Multi-visit names (e.g. 排雲 on the way
+  // out AND on the way back) emit one event per visit so the segment
+  // chain naturally walks 排雲→主峰→排雲 instead of collapsing to a
+  // single ascent. Each segment has from/to/distance_km/ascent_m/
+  // descent_m/anchor_idx.
+  function buildDaySegments(track, daySpan, visits, namedLocations, dayId) {
     const events = [];
-    for (const name of Object.keys(snaps)) {
-      const idx = snaps[name];
-      if (idx >= daySpan.lo && idx <= daySpan.hi) {
-        events.push({ name, idx });
+    for (const name of Object.keys(visits)) {
+      const arr = visits[name] || [];
+      for (const v of arr) {
+        const idx = v && v.idx;
+        if (typeof idx !== 'number') continue;
+        if (idx >= daySpan.lo && idx <= daySpan.hi) {
+          events.push({ name, idx });
+        }
       }
     }
     events.sort((a, b) => a.idx - b.idx);
@@ -176,10 +184,23 @@
     const dayStats = trackStats(opts.track, daySpan.lo, daySpan.hi);
     const tagText = `${dayKm.toFixed(1)} KM ｜ +${dayStats.ascent_m} M`;
 
-    // Direction: ascent_only when ascent > descent + 100m, else out_and_back
+    // Shape classification — TF.gpxShape.detect uses 3 orthogonal signals
+    // (endpoint distance, self-overlap, net elevation) to assign one of
+    // ascent_only / descent_only / out_and_back / loop / traverse / complex.
+    // Falls back to the legacy ascent_m vs descent_m heuristic when the
+    // gpx-shape module isn't loaded (e.g. server-side / older bundles).
+    let gpxShape = null;
     let direction = 'out_and_back';
-    if (dayStats.ascent_m > dayStats.descent_m + 100) direction = 'ascent_only';
-    else if (dayStats.descent_m > dayStats.ascent_m + 100) direction = 'descent_only';
+    const dayTrack = opts.track.slice(daySpan.lo, daySpan.hi + 1);
+    if (window.TF && TF.gpxShape && TF.gpxShape.detect) {
+      const detected = TF.gpxShape.detect(dayTrack);
+      gpxShape = detected.shape;
+      direction = TF.gpxShape.shapeToLegacyDirection(gpxShape);
+    } else {
+      if (dayStats.ascent_m > dayStats.descent_m + 100) direction = 'ascent_only';
+      else if (dayStats.descent_m > dayStats.ascent_m + 100) direction = 'descent_only';
+      gpxShape = direction;
+    }
 
     // Summit: highest-elevation event in the day (or null if none)
     let summitIdx = null, summitLabel = null;
@@ -219,6 +240,7 @@
         summit_idx: summitIdx,
         summit_label: summitLabel,
         direction,
+        gpx_shape: gpxShape,
         // Junctions whose centroid trkpt falls inside this day's span.
         // Format matches玉山 demo's manual decision_anchors with optional
         // geometric/osm/source + reachable + reorder_enabled additions.
@@ -281,10 +303,23 @@
       namedLocations[name] = osm_locations[name];
     });
 
-    // Snap named_locations onto the track
-    const snap = (TF.gpxSnap && TF.gpxSnap.snapAllToTrack)
-      ? TF.gpxSnap.snapAllToTrack(track, namedLocations, { maxDistanceM: 500 })
-      : { snaps: {}, missing: [] };
+    // Snap named_locations onto the track. snapAllVisits returns ALL
+    // visit indices (not just the global closest), so out-and-back GPX
+    // produces up→summit→down segment chains rather than collapsing the
+    // return half. snap.snaps (legacy single-idx map) is built from the
+    // FIRST visit per name for alias-collapse compatibility downstream.
+    const visitsResult = (TF.gpxSnap && TF.gpxSnap.snapAllVisits)
+      ? TF.gpxSnap.snapAllVisits(track, namedLocations, { maxDistanceM: 500 })
+      : { visits: {}, missing: [] };
+    const visits = visitsResult.visits || {};
+    const snap = {
+      snaps: {},
+      missing: visitsResult.missing || [],
+    };
+    Object.keys(visits).forEach(name => {
+      const arr = visits[name];
+      if (Array.isArray(arr) && arr.length) snap.snaps[name] = arr[0].idx;
+    });
 
     // Drop locations that didn't snap from the canonical dict — they
     // confuse the chart later if left in. The user can re-add them
@@ -339,6 +374,31 @@
     Object.assign(finalNamed, collapsedNamed);
     snap.snaps = canonicalSnaps;
 
+    // Propagate alias collapse into the multi-visit map: every visit
+    // recorded under an aliased name re-emerges under the canonical
+    // name, then we dedup-by-idx so two aliases that visited the same
+    // place don't double-count an event.
+    const canonicalVisits = {};
+    Object.keys(visits).forEach(origName => {
+      const canonical = canonicalByName[origName] || origName;
+      if (!canonicalVisits[canonical]) canonicalVisits[canonical] = [];
+      for (const v of (visits[origName] || [])) {
+        canonicalVisits[canonical].push(v);
+      }
+    });
+    Object.keys(canonicalVisits).forEach(name => {
+      const arr = canonicalVisits[name];
+      arr.sort((a, b) => a.idx - b.idx);
+      // Dedup adjacent visits at the same (or near-same) idx
+      const seen = [];
+      for (const v of arr) {
+        if (!seen.length || Math.abs(seen[seen.length - 1].idx - v.idx) > 2) {
+          seen.push(v);
+        }
+      }
+      canonicalVisits[name] = seen;
+    });
+
     // Day boundaries
     const dayBoundaries = detectDayBoundaries(timestamps, track.length);
 
@@ -348,7 +408,7 @@
     // Build days
     const days = dayBoundaries.map((daySpan, dayIdx) => {
       const id = `d${dayIdx + 1}`;
-      const { segments, events } = buildDaySegments(track, daySpan, snap.snaps, finalNamed, id);
+      const { segments, events } = buildDaySegments(track, daySpan, canonicalVisits, finalNamed, id);
       return buildDayBlank({
         id, dayIdx, daySpan, segments, events,
         snaps: snap.snaps, namedLocations: finalNamed,
@@ -413,8 +473,23 @@
           distance_km: +totalKm.toFixed(2),
         },
       },
+      // gpx_anchor_idx is a fallback NAME→idx map used by the chart only
+      // when a segment lacks its own anchor_idx pair. For multi-visit
+      // names (排雲 visited twice on a round-trip) a single idx is
+      // ambiguous and would mis-anchor one of the legs. Per Trailforge_
+      // GPX_OSM_Naming_Pipeline.md §3.4 we omit such names here so
+      // segment.anchor_idx (which buildDaySegments populated correctly
+      // per visit) stays authoritative.
       gpx_anchor_idx: {
-        [gpxRef]: snap.snaps,
+        [gpxRef]: (() => {
+          const out = {};
+          Object.keys(canonicalVisits).forEach(name => {
+            const arr = canonicalVisits[name] || [];
+            if (arr.length === 1) out[name] = arr[0].idx;
+            // ≥ 2 visits: omit (caller relies on segment.anchor_idx)
+          });
+          return out;
+        })(),
       },
     };
 

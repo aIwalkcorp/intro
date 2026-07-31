@@ -1386,6 +1386,112 @@ details.exp .exp-body a{color:var(--pri-l);word-break:break-all;border-bottom:1p
 /* hide inline eq-card in day panels — accessed via 🚨 fab */
 .day-panel > .eq-card{display:none;}
 
+/* ── 🚨 popup editor (edit-mode only) ──────────────────────────────────
+   When body.tf-editing, the popup body is replaced with editors for
+   plan-level emergency_default + the active day's key_times. Each
+   change mutates window.__PLAN__ in place; a registered TF_EDIT
+   collector copies that into the save payload at PATCH time. */
+.ke-edit{display:flex;flex-direction:column;gap:14px;padding:4px 0 2px;}
+.ke-section{
+  display:flex;flex-direction:column;gap:8px;
+  padding:12px 14px;border:1px dashed var(--bdr-2);border-radius:10px;
+  background:linear-gradient(180deg,var(--card),#fbf6e9);
+}
+.ke-section .ke-h{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.28em;
+  color:var(--acc-2);font-weight:800;text-transform:uppercase;
+}
+.ke-section .ke-h .ke-h-zh{
+  font-family:var(--serif);font-size:.84rem;font-weight:700;
+  color:var(--pri-deep);letter-spacing:.04em;text-transform:none;
+}
+.ke-day-pick{
+  display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;
+}
+.ke-day-pick button{
+  appearance:none;cursor:pointer;
+  padding:4px 10px;border-radius:999px;
+  border:1px solid var(--bdr-2);background:var(--card);
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;
+  color:var(--ink-2);font-weight:700;
+  transition:all .15s;
+}
+.ke-day-pick button.active{
+  background:var(--pri-deep);color:var(--acc-soft);border-color:var(--pri-deep);
+}
+.ke-day-pick button:hover:not(.active){border-color:var(--acc);color:var(--pri);}
+.ke-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.ke-grid label{
+  display:flex;flex-direction:column;gap:4px;
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.22em;
+  color:var(--txtL);text-transform:uppercase;font-weight:700;
+}
+.ke-grid label.full{grid-column:1 / -1;}
+.ke-grid input[type="text"], .ke-grid input[type="url"]{
+  appearance:none;
+  padding:7px 10px;border:1px solid var(--bdr-2);border-radius:6px;
+  background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:.86rem;font-weight:500;letter-spacing:.02em;
+  transition:border-color .15s;
+}
+.ke-grid input[type="text"]:focus, .ke-grid input[type="url"]:focus{
+  outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(184,134,59,.15);
+}
+.ke-toggles{display:flex;gap:14px;flex-wrap:wrap;}
+.ke-toggles label{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--sans);font-size:.78rem;font-weight:600;
+  color:var(--ink);letter-spacing:0;text-transform:none;
+  cursor:pointer;
+}
+.ke-toggles input[type="checkbox"]{cursor:pointer;}
+.kt-rows{display:flex;flex-direction:column;gap:6px;}
+.kt-row{
+  display:grid;
+  grid-template-columns: 1fr 76px 1fr 28px;
+  gap:6px;align-items:center;
+}
+.kt-row input{
+  appearance:none;
+  padding:7px 10px;border:1px solid var(--bdr-2);border-radius:6px;
+  background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:.84rem;
+  min-width:0;  /* allow flex shrink */
+}
+.kt-row input.kt-value{font-family:var(--mono);text-align:center;letter-spacing:.04em;}
+.kt-row input:focus{outline:none;border-color:var(--acc);}
+.kt-del{
+  appearance:none;cursor:pointer;
+  width:28px;height:28px;border-radius:6px;
+  border:1px solid var(--bdr-2);background:var(--card);
+  color:var(--txtL);font-size:.78rem;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.kt-del:hover{border-color:var(--ember);color:var(--ember);background:#fef2f2;}
+.kt-add{
+  appearance:none;cursor:pointer;
+  margin-top:4px;padding:8px 12px;
+  border:1px dashed var(--acc-2);border-radius:8px;
+  background:transparent;color:var(--pri-deep);
+  font-family:var(--serif);font-weight:700;font-size:.82rem;letter-spacing:.06em;
+  transition:all .15s;
+}
+.kt-add:hover{background:#fdf8ea;border-style:solid;}
+.kt-empty{
+  font-family:var(--serif);font-style:italic;font-size:.82rem;
+  color:var(--txtL);text-align:center;padding:8px 0;
+}
+@media (max-width:520px){
+  .ke-grid{grid-template-columns:1fr;}
+  .kt-row{grid-template-columns: 1fr 70px 28px;grid-template-areas: "lbl val del" "note note note";}
+  .kt-row .kt-label{grid-area:lbl;}
+  .kt-row .kt-value{grid-area:val;}
+  .kt-row .kt-del{grid-area:del;}
+  .kt-row .kt-note{grid-area:note;}
+}
+
 /* Day sub-tabs — segmented control */
 .day-bar{
   display:flex;gap:6px;padding:6px;margin-bottom:16px;
@@ -4900,7 +5006,7 @@ window.tfConfirm = function (opts) {
 })();
 </script>
 
-<script type="application/json" id="plan-data">{"version":1,"meta":{"title":"玉山主峰・北峰","subtitle":"登山計劃書","start_date":"2026-04-18","end_date":"2026-04-19","depart_date":"2026-04-17","party_size":3,"party_label":"3人","lang":"zh-TW","theme_color":"#1e3a1a","activity_type":"hiking","page_title":"玉山主峰北峰登山計劃書","short_name":"玉山計劃"},"emergency_default":{"standby":{"name":"留守 A","phone":"0900-000-000","phone_tel":"0900000000"},"messenger_url":"https://m.me/","include_112":true,"include_119":true,"local_emergency_label":"南投消防"},"days":[{"id":"d0","date":"2026-04-17","date_label":"4/17 FRI","label":"Day 0・出發","tag":null,"tag_text":"出發日","tag_color_override":"linear-gradient(135deg,#4b5563,#6b7280)","summary":null,"stats":null,"section_title":"Day 0 — 4/17（五）出發","emergency_card_title":"🚨 Day 0・出發關鍵時間","key_times":[{"label":"集合 / 出發","value":"18:00","note":"跟森的接駁地點"},{"label":"預計入住","value":"22:30","note":"示範民宿・已事先告知逾 18:00"},{"label":"明晨叫車","value":"06:30","note":"上塔塔加"}],"quick_links":[{"icon":"📍","text":"跟森的接駁地點","href":"https://maps.app.goo.gl/kmTci2kQMecRgM4h6","external":true},{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"🏠","text":"示範民宿","href":"https://maps.google.com/?q=示範民宿","external":true},{"icon":"📞","text":"示範民宿 0900-000-001","href":"tel:0900000001","external":false},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true},{"icon":"🚧","text":"台21線施工資訊","href":"https://share.google/DvveUzXhSXF3jlzIm","external":true}],"schedule":[],"details":[{"icon":"🏠","title":"示範民宿 住宿資訊","rows_html":["<b>地址：</b>[地址略]","<b>電話：</b><a href=\"tel:0900000001\">0900-000-001</a>　<small style=\"color:var(--txtL);\">(非緊急勿 24:00 後撥打)</small>","<b>Google Maps：</b><a href=\"https://maps.google.com/?q=示範民宿\" target=\"_blank\">搜尋「示範民宿」</a>　<small style=\"color:var(--txtL);\">進入部落範圍後請看民宿指示牌，不要太信導航</small>","<div style=\"margin-top:6px;\"><b>Check-in：</b>14:00–18:00　<b>房型：</b>通舖 × 3 人　<b>總房價：</b>$1,500（已付訂金 $1,000）</div>","<b>入住須知：</b>不提供一次性盥洗用品、通舖請自備毛巾、垃圾分類、吸菸限吸菸區、寵物僅限套房"]},{"icon":"💳","title":"訂房 / 匯款 / 退費資訊","rows_html":["<b>訂房：</b>2026/4/17（五）・通舖・3 人・總額 $1,500・定金 $1,000（已付）","<div style=\"margin-top:6px;\"><b>匯款戶資（如需）：</b>國泰世華（013）營業部（218）・帳號 示範帳號・戶名 示範戶名</div>","<div style=\"margin-top:6px;\"><b>取消退費：</b>14 日前 100%・10–13 日 70%・7–9 日 50%・4–6 日 40%・2–3 日 30%・1 日前 10%・當日或未入住 0%</div>","<b>不可抗力（颱風/地震，依政府公告）：</b>全額退款或協助延期 3 個月內","<div style=\"margin-top:6px;\"><b>匯款回報需附：</b>匯款日期、訂房姓名、入住日期、房型</div>"]}],"retreat":null,"elevation_profile":{"shanghe_segments":[{"id":"d0-intro","from":"集合地點","to":"示範民宿","base_minutes":210,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"於「跟森的接駁地點」集合 → 前往 示範民宿（南投縣信義鄉）","is_transport":true}],"start_time":"18:00"}},{"id":"d1","date":"2026-04-18","date_label":"4/18 SAT","label":"Day 1・上山","tag_text":"8.5 KM ｜ +923 M","tag":"d1","section_title":"Day 1 — 4/18（六）塔塔加 → 排雲山莊","emergency_card_title":"🚨 Day 1・上山關鍵時間","key_times":[{"label":"登山口出發","value":"09:00","note":"2,610m 起登"},{"label":"抵達排雲（目標）","value":"15:00","note":"3,402m +923m"},{"label":"排雲供水","value":"16–17","note":"錯過即無水"},{"label":"晚餐・就寢","value":"18:00","note":"19:00 前睡"}],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"schedule":[],"details":[],"retreat":{"title":"⚠️ Day 1 撤退","title_color":"#b45309","title_border":"#fcd34d","items_html":["<b>Day 1：</b>身體不適或天候惡劣，原路折返塔塔加。"]},"elevation_profile":{"gpx_ref":"d1","color":"#1e3a1a","fill":"rgba(30,58,26,0.20)","label":"上河文化步程基準","start_time":"08:30","shanghe_segments":[{"id":"d1-s-shuttle","from":"塔塔加接駁站","to":"登山口","base_minutes":30,"distance_km":2.8,"ascent_m":50,"anchor_idx":null,"descent_m":0,"note":"搭接駁車 $100/趟 或步行 ~40 分鐘"},{"id":"d1-s0","from":"登山口","to":"孟祿亭","base_minutes":90,"distance_km":1.69,"ascent_m":277,"anchor_idx":[0,83],"descent_m":137,"note":"小休 10 分鐘"},{"id":"d1-s1","from":"孟祿亭","to":"白木林觀景台","base_minutes":100,"distance_km":3.31,"ascent_m":414,"anchor_idx":[83,240],"descent_m":122,"note":"午餐行動糧 30 分鐘"},{"id":"d1-s2","from":"白木林觀景台","to":"大峭壁","base_minutes":100,"distance_km":1.7,"ascent_m":165,"anchor_idx":[240,319],"descent_m":57,"note":"拍照留念"},{"id":"d1-s3","from":"大峭壁","to":"排雲山莊","base_minutes":100,"distance_km":1.62,"ascent_m":204,"anchor_idx":[319,394],"descent_m":99},{"id":"d1-evening","from":"排雲山莊","to":"排雲山莊","base_minutes":120,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"晚餐・整理攻頂包・入睡（供水 16–17:00，晚餐 18:00）","is_rest_stop":true}],"summit_idx":394,"summit_label":"排雲山莊","direction":"ascent_only"}},{"id":"d2","date":"2026-04-19","date_label":"4/19 SUN","label":"Day 2・攻頂","tag_text":null,"tag":null,"section_title":"Day 2 — 4/19（日）攻頂・下山","emergency_card_title":"🚨 Day 2・攻頂關鍵時間","key_times":[{"label":"攻頂折返時限","value":"09:30","note":"過此未登頂即撤退"},{"label":"回排雲最晚","value":"12:00","note":"逾時恐摸黑下山"},{"label":"下山通知","value":"17:30","note":"報留守平安"},{"label":"山難管制","value":"19:00","note":"未回即通報"}],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"routes":[{"id":"d2a","tab_label":"Day 2A 北峰＋主峰","tag_class":"d2b","tag_text":"Day 2A — 北峰 + 主峰","active":true,"schedule":[]},{"id":"d2b","tab_label":"Day 2B 僅主峰","tag_class":"d2a","tag_text":"Day 2B — 僅主峰","active":false,"schedule":[]}],"details":[],"retreat":{"title":"🛑 Day 2 撤退方案（關鍵）","title_color":"#dc2626","title_border":"#dc2626","items_html":["<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 06:00 未到北峰</b> → 放棄北峰，直攻主峰</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 09:30 未登頂主峰</b> → 立即折返排雲</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 12:00 未回到排雲</b> → 取消當日下山計畫</div>","<div class=\"ret-i\"><b>Day 2 主峰：</b>天候驟變或體力不支，立即折返排雲。</div>","<div class=\"ret-i\"><b>Day 2 北峰：</b>體力不足或時間不夠，放棄北峰直接回排雲下山。</div>"],"raw_html":true},"elevation_profile":{"gpx_ref":"d2","color":"#8b2a1f","fill":"rgba(139,42,31,0.18)","label":"上河文化步程基準（主+北峰）","shanghe_segments":[{"id":"d2a-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":60,"distance_km":1.48,"ascent_m":394,"anchor_idx":[1,94],"descent_m":2,"note":"風大注意保暖。決策點：走北峰或直上主峰"},{"id":"d2a-s1","from":"主北岔(風口)","to":"玉山北峰","base_minutes":80,"distance_km":2.29,"ascent_m":250,"anchor_idx":[187,380],"descent_m":250,"note":"千元大鈔背面經典角度"},{"id":"d2a-s2","from":"玉山北峰","to":"主北岔(風口)","base_minutes":65,"distance_km":2.78,"ascent_m":292,"anchor_idx":[380,672],"descent_m":295,"note":"碎石坡陡上，抓好鐵鍊"},{"id":"d2a-s3","from":"主北岔(風口)","to":"玉山主峰","base_minutes":25,"distance_km":0.2,"ascent_m":93,"anchor_idx":[672,705],"descent_m":4},{"id":"d2a-s4","from":"玉山主峰","to":"排雲山莊","base_minutes":45,"distance_km":1.75,"ascent_m":2,"anchor_idx":[705,798],"descent_m":533}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"route_variants":{"d2a":{"label":"Day 2A・北峰 + 主峰","shanghe_segments":[{"id":"d2a-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":90,"distance_km":1.48,"ascent_m":394,"anchor_idx":[1,94],"descent_m":2},{"id":"d2a-s1","from":"主北岔(風口)","to":"玉山北峰","base_minutes":90,"distance_km":2.29,"ascent_m":250,"anchor_idx":[187,380],"descent_m":250,"note":"千元大鈔背面經典角度"},{"id":"d2a-r-bei","from":"玉山北峰","to":"玉山北峰","base_minutes":90,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"離開北峰前休息／碎石坡準備","is_rest_stop":true},{"id":"d2a-s2","from":"玉山北峰","to":"主北岔(風口)","base_minutes":90,"distance_km":2.78,"ascent_m":292,"anchor_idx":[380,672],"descent_m":295,"note":"碎石坡陡上，抓好鐵鍊"},{"id":"d2a-s3","from":"主北岔(風口)","to":"玉山主峰","base_minutes":30,"distance_km":0.2,"ascent_m":93,"anchor_idx":[672,705],"descent_m":4},{"id":"d2a-r-zhu","from":"玉山主峰","to":"玉山主峰","base_minutes":60,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"拍照、攻頂後休息","is_rest_stop":true},{"id":"d2a-s4","from":"玉山主峰","to":"排雲山莊","base_minutes":90,"distance_km":1.75,"ascent_m":2,"anchor_idx":[705,798],"descent_m":533},{"id":"d2a-r-paiyun","from":"排雲山莊","to":"排雲山莊","base_minutes":60,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"吃麵・整裝","is_rest_stop":true}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"summit_idx":380,"summit_label":"玉山北峰","direction":"out_and_back","start_time":"03:00"},"d2b":{"label":"Day 2B・僅主峰","shanghe_segments":[{"id":"d2b-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":90,"distance_km":1.48,"ascent_m":394,"anchor_idx":[1,94],"descent_m":2},{"id":"d2b-s1","from":"主北岔(風口)","to":"玉山主峰","base_minutes":50,"distance_km":0.41,"ascent_m":154,"anchor_idx":[94,140],"descent_m":3},{"id":"d2b-r-zhu","from":"玉山主峰","to":"玉山主峰","base_minutes":70,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"拍照、日出","is_rest_stop":true},{"id":"d2b-s2","from":"玉山主峰","to":"排雲山莊","base_minutes":90,"distance_km":1.75,"ascent_m":2,"anchor_idx":[705,798],"descent_m":533},{"id":"d2b-r-paiyun","from":"排雲山莊","to":"排雲山莊","base_minutes":90,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"補眠／午休","is_rest_stop":true}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"summit_idx":140,"summit_label":"玉山主峰","direction":"out_and_back","start_time":"03:00"}},"default_variant":"d2a","summit_idx":380,"summit_label":"玉山北峰","direction":"out_and_back"}}],"named_locations":{"登山口":{"lat":23.475727,"lon":120.899933,"ele":2610,"source":"curated_inline"},"孟祿亭":{"lat":23.471448,"lon":120.911163,"ele":2700,"source":"curated_inline","osm_id":"node/1478679906","kind":"shelter"},"白木林觀景台":{"lat":23.464638,"lon":120.931147,"ele":3000,"source":"curated_inline"},"大峭壁":{"lat":23.466918,"lon":120.940657,"ele":3100,"source":"curated_inline"},"排雲山莊":{"lat":23.46673,"lon":120.950243,"ele":3402,"source":"curated_inline","osm_id":"way/409205679","kind":"hut","wikipedia":"zh:排雲山莊"},"主北岔(風口)":{"lat":23.469446,"lon":120.955846,"ele":3800,"source":"curated_inline"},"玉山北峰":{"lat":23.48757,"lon":120.959459,"ele":3858,"source":"curated_inline","osm_id":"node/625239452","kind":"peak","百岳":4,"wikipedia":"zh:玉山北峰"},"北峰":{"lat":23.48757,"lon":120.959459,"ele":3858,"source":"curated_inline","osm_id":"node/625239452","kind":"peak","百岳":4,"wikipedia":"zh:玉山北峰"},"玉山主峰":{"lat":23.46998,"lon":120.957252,"ele":3952,"source":"curated_inline","osm_id":"node/3428095932","kind":"peak","百岳":1,"wikipedia":"zh:玉山"},"主峰":{"lat":23.46998,"lon":120.957252,"ele":3952,"source":"curated_inline"}},"gpx_anchor_idx":{"d1":{"登山口":0,"孟祿亭":83,"白木林觀景台":240,"大峭壁":319,"排雲山莊":394},"d2":{"主北岔(風口)":94,"玉山北峰":380,"北峰":380,"玉山主峰":140,"主峰":140}}}</script>
+<script type="application/json" id="plan-data">{"version":1,"meta":{"title":"玉山主峰・北峰","subtitle":"登山計劃書","start_date":"2026-04-18","end_date":"2026-04-19","depart_date":"2026-04-17","party_size":3,"party_label":"3人","lang":"zh-TW","theme_color":"#1e3a1a","activity_type":"hiking","page_title":"玉山主峰北峰登山計劃書","short_name":"玉山計劃"},"emergency_default":{"include_112":false,"include_119":false},"days":[{"id":"d0","date":"2026-04-17","date_label":"4/17 FRI","label":"Day 0・出發","tag":null,"tag_text":"出發日","tag_color_override":"linear-gradient(135deg,#4b5563,#6b7280)","summary":null,"stats":null,"section_title":"Day 0 — 4/17（五）出發","emergency_card_title":"🚨 Day 0・出發關鍵時間","key_times":[],"quick_links":[{"icon":"📍","text":"跟森的接駁地點","href":"https://maps.app.goo.gl/kmTci2kQMecRgM4h6","external":true},{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"🏠","text":"示範民宿","href":"https://maps.google.com/?q=示範民宿","external":true},{"icon":"📞","text":"示範民宿 0900-000-001","href":"tel:0900000001","external":false},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true},{"icon":"🚧","text":"台21線施工資訊","href":"https://share.google/DvveUzXhSXF3jlzIm","external":true}],"schedule":[],"details":[{"icon":"🏠","title":"示範民宿 住宿資訊","rows_html":["<b>地址：</b>[地址略]","<b>電話：</b><a href=\"tel:0900000001\">0900-000-001</a>　<small style=\"color:var(--txtL);\">(非緊急勿 24:00 後撥打)</small>","<b>Google Maps：</b><a href=\"https://maps.google.com/?q=示範民宿\" target=\"_blank\">搜尋「示範民宿」</a>　<small style=\"color:var(--txtL);\">進入部落範圍後請看民宿指示牌，不要太信導航</small>","<div style=\"margin-top:6px;\"><b>Check-in：</b>14:00–18:00　<b>房型：</b>通舖 × 3 人　<b>總房價：</b>$1,500（已付訂金 $1,000）</div>","<b>入住須知：</b>不提供一次性盥洗用品、通舖請自備毛巾、垃圾分類、吸菸限吸菸區、寵物僅限套房"]},{"icon":"💳","title":"訂房 / 匯款 / 退費資訊","rows_html":["<b>訂房：</b>2026/4/17（五）・通舖・3 人・總額 $1,500・定金 $1,000（已付）","<div style=\"margin-top:6px;\"><b>匯款戶資（如需）：</b>國泰世華（013）營業部（218）・帳號 示範帳號・戶名 示範戶名</div>","<div style=\"margin-top:6px;\"><b>取消退費：</b>14 日前 100%・10–13 日 70%・7–9 日 50%・4–6 日 40%・2–3 日 30%・1 日前 10%・當日或未入住 0%</div>","<b>不可抗力（颱風/地震，依政府公告）：</b>全額退款或協助延期 3 個月內","<div style=\"margin-top:6px;\"><b>匯款回報需附：</b>匯款日期、訂房姓名、入住日期、房型</div>"]}],"retreat":null,"elevation_profile":{"shanghe_segments":[{"id":"d0-intro","from":"集合地點","to":"示範民宿","base_minutes":210,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"於「跟森的接駁地點」集合 → 前往 示範民宿（南投縣信義鄉）","is_transport":true}],"start_time":"18:00"}},{"id":"d1","date":"2026-04-18","date_label":"4/18 SAT","label":"Day 1・上山","tag_text":"8.5 KM ｜ +923 M","tag":"d1","section_title":"Day 1 — 4/18（六）塔塔加 → 排雲山莊","emergency_card_title":"🚨 Day 1・上山關鍵時間","key_times":[],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"schedule":[],"details":[],"retreat":{"title":"⚠️ Day 1 撤退","title_color":"#b45309","title_border":"#fcd34d","items_html":["<b>Day 1：</b>身體不適或天候惡劣，原路折返塔塔加。"]},"elevation_profile":{"gpx_ref":"d1","color":"#1e3a1a","fill":"rgba(30,58,26,0.20)","label":"上河文化步程基準","start_time":"08:30","shanghe_segments":[{"id":"d1-s-shuttle","from":"塔塔加接駁站","to":"登山口","base_minutes":30,"distance_km":2.8,"ascent_m":50,"anchor_idx":null,"descent_m":0,"note":"搭接駁車 $100/趟 或步行 ~40 分鐘"},{"id":"d1-s0","from":"登山口","to":"孟祿亭","base_minutes":90,"distance_km":1.69,"ascent_m":277,"anchor_idx":[0,83],"descent_m":137,"note":"小休 10 分鐘"},{"id":"d1-s1","from":"孟祿亭","to":"白木林觀景台","base_minutes":100,"distance_km":3.31,"ascent_m":414,"anchor_idx":[83,240],"descent_m":122,"note":"午餐行動糧 30 分鐘"},{"id":"d1-s2","from":"白木林觀景台","to":"大峭壁","base_minutes":100,"distance_km":1.7,"ascent_m":165,"anchor_idx":[240,319],"descent_m":57,"note":"拍照留念"},{"id":"d1-s3","from":"大峭壁","to":"排雲山莊","base_minutes":100,"distance_km":1.62,"ascent_m":204,"anchor_idx":[319,394],"descent_m":99},{"id":"d1-evening","from":"排雲山莊","to":"排雲山莊","base_minutes":120,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"晚餐・整理攻頂包・入睡（供水 16–17:00，晚餐 18:00）","is_rest_stop":true}],"summit_idx":394,"summit_label":"排雲山莊","direction":"ascent_only"}},{"id":"d2","date":"2026-04-19","date_label":"4/19 SUN","label":"Day 2・攻頂","tag_text":null,"tag":null,"section_title":"Day 2 — 4/19（日）攻頂・下山","emergency_card_title":"🚨 Day 2・攻頂關鍵時間","key_times":[],"quick_links":[{"icon":"🌦","text":"氣象","href":"https://www.cwa.gov.tw/V8/C/L/Mountain/Mountain.html?PID=D080","external":true},{"icon":"📹","text":"草坪頭即時影像","href":"https://share.google/k4yvOaDUDmZJGFNlK","external":true}],"routes":[{"id":"d2a","tab_label":"Day 2A 北峰＋主峰","tag_class":"d2b","tag_text":"Day 2A — 北峰 + 主峰","active":true,"schedule":[]},{"id":"d2b","tab_label":"Day 2B 僅主峰","tag_class":"d2a","tag_text":"Day 2B — 僅主峰","active":false,"schedule":[]}],"details":[],"retreat":{"title":"🛑 Day 2 撤退方案（關鍵）","title_color":"#dc2626","title_border":"#dc2626","items_html":["<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 06:00 未到北峰</b> → 放棄北峰，直攻主峰</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 09:30 未登頂主峰</b> → 立即折返排雲</div>","<div class=\"ret-i\" style=\"background:linear-gradient(180deg,#fee2e2,#fecaca);border-left-color:#dc2626;\"><b>⏰ 12:00 未回到排雲</b> → 取消當日下山計畫</div>","<div class=\"ret-i\"><b>Day 2 主峰：</b>天候驟變或體力不支，立即折返排雲。</div>","<div class=\"ret-i\"><b>Day 2 北峰：</b>體力不足或時間不夠，放棄北峰直接回排雲下山。</div>"],"raw_html":true},"elevation_profile":{"gpx_ref":"d2","color":"#8b2a1f","fill":"rgba(139,42,31,0.18)","label":"上河文化步程基準（主+北峰）","shanghe_segments":[{"id":"d2a-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":60,"distance_km":1.48,"ascent_m":394,"anchor_idx":[1,94],"descent_m":2,"note":"風大注意保暖。決策點：走北峰或直上主峰"},{"id":"d2a-s1","from":"主北岔(風口)","to":"玉山北峰","base_minutes":80,"distance_km":2.29,"ascent_m":250,"anchor_idx":[187,380],"descent_m":250,"note":"千元大鈔背面經典角度"},{"id":"d2a-s2","from":"玉山北峰","to":"主北岔(風口)","base_minutes":65,"distance_km":2.78,"ascent_m":292,"anchor_idx":[380,672],"descent_m":295,"note":"碎石坡陡上，抓好鐵鍊"},{"id":"d2a-s3","from":"主北岔(風口)","to":"玉山主峰","base_minutes":25,"distance_km":0.2,"ascent_m":93,"anchor_idx":[672,705],"descent_m":4},{"id":"d2a-s4","from":"玉山主峰","to":"排雲山莊","base_minutes":45,"distance_km":1.75,"ascent_m":2,"anchor_idx":[705,798],"descent_m":533}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"route_variants":{"d2a":{"label":"Day 2A・北峰 + 主峰","shanghe_segments":[{"id":"d2a-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":90,"distance_km":1.48,"ascent_m":394,"anchor_idx":[1,94],"descent_m":2},{"id":"d2a-s1","from":"主北岔(風口)","to":"玉山北峰","base_minutes":90,"distance_km":2.29,"ascent_m":250,"anchor_idx":[187,380],"descent_m":250,"note":"千元大鈔背面經典角度"},{"id":"d2a-r-bei","from":"玉山北峰","to":"玉山北峰","base_minutes":90,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"離開北峰前休息／碎石坡準備","is_rest_stop":true},{"id":"d2a-s2","from":"玉山北峰","to":"主北岔(風口)","base_minutes":90,"distance_km":2.78,"ascent_m":292,"anchor_idx":[380,672],"descent_m":295,"note":"碎石坡陡上，抓好鐵鍊"},{"id":"d2a-s3","from":"主北岔(風口)","to":"玉山主峰","base_minutes":30,"distance_km":0.2,"ascent_m":93,"anchor_idx":[672,705],"descent_m":4},{"id":"d2a-r-zhu","from":"玉山主峰","to":"玉山主峰","base_minutes":60,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"拍照、攻頂後休息","is_rest_stop":true},{"id":"d2a-s4","from":"玉山主峰","to":"排雲山莊","base_minutes":90,"distance_km":1.75,"ascent_m":2,"anchor_idx":[705,798],"descent_m":533},{"id":"d2a-r-paiyun","from":"排雲山莊","to":"排雲山莊","base_minutes":60,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"吃麵・整裝","is_rest_stop":true}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"summit_idx":380,"summit_label":"玉山北峰","direction":"out_and_back","start_time":"03:00"},"d2b":{"label":"Day 2B・僅主峰","shanghe_segments":[{"id":"d2b-s0","from":"排雲山莊","to":"主北岔(風口)","base_minutes":90,"distance_km":1.48,"ascent_m":394,"anchor_idx":[1,94],"descent_m":2},{"id":"d2b-s1","from":"主北岔(風口)","to":"玉山主峰","base_minutes":50,"distance_km":0.41,"ascent_m":154,"anchor_idx":[94,140],"descent_m":3},{"id":"d2b-r-zhu","from":"玉山主峰","to":"玉山主峰","base_minutes":70,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"拍照、日出","is_rest_stop":true},{"id":"d2b-s2","from":"玉山主峰","to":"排雲山莊","base_minutes":90,"distance_km":1.75,"ascent_m":2,"anchor_idx":[705,798],"descent_m":533},{"id":"d2b-r-paiyun","from":"排雲山莊","to":"排雲山莊","base_minutes":90,"distance_km":0,"ascent_m":0,"descent_m":0,"anchor_idx":null,"note":"補眠／午休","is_rest_stop":true}],"decision_anchors":[{"idx":94,"label":"決策點","title":"主北岔(風口) — 點擊切換 Day 2A / 2B 路線"}],"summit_idx":140,"summit_label":"玉山主峰","direction":"out_and_back","start_time":"03:00"}},"default_variant":"d2a","summit_idx":380,"summit_label":"玉山北峰","direction":"out_and_back"}}],"named_locations":{"登山口":{"lat":23.475727,"lon":120.899933,"ele":2610,"source":"curated_inline"},"孟祿亭":{"lat":23.471448,"lon":120.911163,"ele":2700,"source":"curated_inline","osm_id":"node/1478679906","kind":"shelter"},"白木林觀景台":{"lat":23.464638,"lon":120.931147,"ele":3000,"source":"curated_inline"},"大峭壁":{"lat":23.466918,"lon":120.940657,"ele":3100,"source":"curated_inline"},"排雲山莊":{"lat":23.46673,"lon":120.950243,"ele":3402,"source":"curated_inline","osm_id":"way/409205679","kind":"hut","wikipedia":"zh:排雲山莊"},"主北岔(風口)":{"lat":23.469446,"lon":120.955846,"ele":3800,"source":"curated_inline"},"玉山北峰":{"lat":23.48757,"lon":120.959459,"ele":3858,"source":"curated_inline","osm_id":"node/625239452","kind":"peak","百岳":4,"wikipedia":"zh:玉山北峰"},"北峰":{"lat":23.48757,"lon":120.959459,"ele":3858,"source":"curated_inline","osm_id":"node/625239452","kind":"peak","百岳":4,"wikipedia":"zh:玉山北峰"},"玉山主峰":{"lat":23.46998,"lon":120.957252,"ele":3952,"source":"curated_inline","osm_id":"node/3428095932","kind":"peak","百岳":1,"wikipedia":"zh:玉山"},"主峰":{"lat":23.46998,"lon":120.957252,"ele":3952,"source":"curated_inline"}},"gpx_anchor_idx":{"d1":{"登山口":0,"孟祿亭":83,"白木林觀景台":240,"大峭壁":319,"排雲山莊":394},"d2":{"主北岔(風口)":94,"玉山北峰":380,"北峰":380,"玉山主峰":140,"主峰":140}},"contacts":{"members":[],"emergency":[]}}</script>
 
 <!-- Global mode toggle: 打卡 ⇄ 海拔 (floats above .fab-stack) -->
 <div id="jmModeToggle" class="jm-mode-toggle" role="tablist" aria-label="行程模式">
@@ -5500,20 +5606,203 @@ function togglePop(id){
   document.querySelectorAll('.fab.active').forEach(f=>f.classList.remove('active'));
   if(opening){
     if(id==='pop-key'){
-      const day=activeDayId()||'d0';
-      const dayEl=document.getElementById('day-'+day);
-      const eq=dayEl?dayEl.querySelector(':scope > .eq-card'):null;
-      const retreat=dayEl?dayEl.querySelector(':scope > .retreat-section'):null;
+      const editing=document.body.classList.contains('tf-editing');
       const body=document.getElementById('pop-key-body');
-      const parts=[];
-      if(eq) parts.push(eq.outerHTML);
-      if(retreat) parts.push(retreat.outerHTML);
-      body.innerHTML=parts.length?parts.join(''):'<div style="color:var(--txtL);font-size:.86rem;">此日無關鍵時間資料</div>';
+      if(editing){
+        // Edit mode: render the inline editor for emergency_default + active
+        // day's key_times. Mutations write straight to window.__PLAN__; the
+        // registered collector mirrors them into the save payload.
+        body.innerHTML=renderKeyEditorHTML(activeDayId()||'d0');
+      } else {
+        const day=activeDayId()||'d0';
+        const dayEl=document.getElementById('day-'+day);
+        const eq=dayEl?dayEl.querySelector(':scope > .eq-card'):null;
+        const retreat=dayEl?dayEl.querySelector(':scope > .retreat-section'):null;
+        const parts=[];
+        if(eq) parts.push(eq.outerHTML);
+        if(retreat) parts.push(retreat.outerHTML);
+        body.innerHTML=parts.length?parts.join(''):'<div style="color:var(--txtL);font-size:.86rem;">此日無關鍵時間資料</div>';
+      }
     }
     pop.classList.add('open');
     const fab=document.getElementById(fabMap[id]);if(fab)fab.classList.add('active');
   }
 }
+
+/* ── 🚨 popup editor — emergency_default + per-day key_times ──────────
+   Builder + delegation. The popup body re-renders on every add/delete
+   (so row indices stay correct) but plain typing into inputs only
+   mutates window.__PLAN__ in place — DOM stays focused, no re-render. */
+function escAttr(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderKeyEditorHTML(activeDayId){
+  const plan=window.__PLAN__||{};
+  const ed=plan.emergency_default||{};
+  const stb=ed.standby||{};
+  const days=Array.isArray(plan.days)?plan.days:[];
+  const aDay=days.find(d=>d.id===activeDayId)||days[0]||{id:'d0',label:'Day 0',key_times:[]};
+  // Day picker (in edit mode the day-bar is hidden, so let user switch days inline)
+  const dayPick=days.length>1
+    ? `<div class="ke-day-pick">${days.map(d=>`<button type="button" data-ke-day="${escAttr(d.id)}"${d.id===aDay.id?' class="active"':''}>${escAttr(d.label||d.id)}</button>`).join('')}</div>`
+    : '';
+  const kts=aDay.key_times||[];
+  const ktRows=kts.length
+    ? kts.map((k,i)=>`
+        <div class="kt-row" data-day-id="${escAttr(aDay.id)}" data-i="${i}">
+          <input type="text" class="kt-label" data-k="label" value="${escAttr(k.label)}" placeholder="標題（如 集合/出發）" aria-label="標題">
+          <input type="text" class="kt-value" data-k="value" value="${escAttr(k.value)}" placeholder="HH:MM" aria-label="時間">
+          <input type="text" class="kt-note"  data-k="note"  value="${escAttr(k.note)}"  placeholder="備註（可選）" aria-label="備註">
+          <button type="button" class="kt-del" aria-label="刪除這條" title="刪除這條">✕</button>
+        </div>`).join('')
+    : '<div class="kt-empty">尚無關鍵時間。可由下方「+ 新增」手動加入，或於上河 REST POINTS 表勾 🚨 自動補入抵達時間。</div>';
+  return `
+    <div class="ke-edit" data-active-day="${escAttr(aDay.id)}">
+      <div class="ke-section">
+        <div class="ke-h">
+          <span>EMERGENCY · 緊急聯絡單位</span>
+          <span class="ke-h-zh">📞 全行程共用</span>
+        </div>
+        <div class="ke-grid">
+          <label>留守姓名
+            <input type="text" data-ed="standby.name" value="${escAttr(stb.name)}" placeholder="留守 A">
+          </label>
+          <label>留守電話
+            <input type="text" data-ed="standby.phone" value="${escAttr(stb.phone)}" placeholder="0900-000-000">
+          </label>
+          <label class="full">Messenger URL
+            <input type="url" data-ed="messenger_url" value="${escAttr(ed.messenger_url)}" placeholder="https://m.me/your-handle">
+          </label>
+          <label class="full">在地緊急單位名稱
+            <input type="text" data-ed="local_emergency_label" value="${escAttr(ed.local_emergency_label)}" placeholder="南投消防">
+          </label>
+        </div>
+        <div class="ke-toggles">
+          <label><input type="checkbox" data-ed="include_112"${ed.include_112!==false?' checked':''}> 含 112 國際緊急</label>
+          <label><input type="checkbox" data-ed="include_119"${ed.include_119!==false?' checked':''}> 含 119（消防）</label>
+        </div>
+      </div>
+      <div class="ke-section">
+        <div class="ke-h">
+          <span>KEY TIMES · 關鍵時間</span>
+          <span class="ke-h-zh">${escAttr(aDay.label||aDay.id)}</span>
+        </div>
+        ${dayPick}
+        <div class="kt-rows">${ktRows}</div>
+        <button type="button" class="kt-add" data-day-id="${escAttr(aDay.id)}">＋ 新增關鍵時間</button>
+      </div>
+    </div>`;
+}
+function reRenderKeyEditor(activeDayId){
+  const body=document.getElementById('pop-key-body');
+  if(!body) return;
+  body.innerHTML=renderKeyEditorHTML(activeDayId);
+}
+// Document-level delegation — lives forever, fires only when popup is open.
+document.addEventListener('input',e=>{
+  const root=e.target.closest('.ke-edit'); if(!root) return;
+  const plan=window.__PLAN__; if(!plan) return;
+  // emergency_default fields
+  const edPath=e.target.dataset.ed;
+  if(edPath){
+    plan.emergency_default=plan.emergency_default||{};
+    if(edPath==='standby.name'||edPath==='standby.phone'){
+      plan.emergency_default.standby=plan.emergency_default.standby||{};
+      const k=edPath.split('.')[1];
+      plan.emergency_default.standby[k]=e.target.value;
+      // Auto-derive phone_tel as digits-only mirror of phone (so tel: links work)
+      if(k==='phone'){
+        plan.emergency_default.standby.phone_tel=e.target.value.replace(/[^0-9+]/g,'');
+      }
+    } else if(e.target.type==='checkbox'){
+      plan.emergency_default[edPath]=e.target.checked;
+    } else {
+      plan.emergency_default[edPath]=e.target.value;
+    }
+    if(window.TF_EDIT&&TF_EDIT.setDirty) TF_EDIT.setDirty(true);
+    return;
+  }
+  // key_times row inputs
+  const row=e.target.closest('.kt-row');
+  if(row){
+    const dayId=row.dataset.dayId;
+    const i=parseInt(row.dataset.i,10);
+    const day=(plan.days||[]).find(d=>d.id===dayId);
+    if(!day) return;
+    day.key_times=day.key_times||[];
+    if(!day.key_times[i]) day.key_times[i]={label:'',value:'',note:''};
+    const k=e.target.dataset.k;
+    if(k) day.key_times[i][k]=e.target.value;
+    if(window.TF_EDIT&&TF_EDIT.setDirty) TF_EDIT.setDirty(true);
+  }
+},true);
+document.addEventListener('change',e=>{
+  // Checkbox events fire as 'change', not 'input' on some browsers — re-route.
+  if(e.target.matches('.ke-edit input[type="checkbox"]')){
+    const ev=new Event('input',{bubbles:true});
+    e.target.dispatchEvent(ev);
+  }
+},true);
+document.addEventListener('click',e=>{
+  const root=e.target.closest('.ke-edit'); if(!root) return;
+  const plan=window.__PLAN__; if(!plan) return;
+  // Day picker
+  const pickBtn=e.target.closest('[data-ke-day]');
+  if(pickBtn){
+    e.preventDefault();
+    reRenderKeyEditor(pickBtn.dataset.keDay);
+    return;
+  }
+  // Add row
+  if(e.target.classList.contains('kt-add')){
+    e.preventDefault();
+    const dayId=e.target.dataset.dayId;
+    const day=(plan.days||[]).find(d=>d.id===dayId);
+    if(!day) return;
+    day.key_times=day.key_times||[];
+    day.key_times.push({label:'',value:'',note:''});
+    if(window.TF_EDIT&&TF_EDIT.setDirty) TF_EDIT.setDirty(true);
+    reRenderKeyEditor(dayId);
+    // Focus the new label input for instant typing.
+    setTimeout(()=>{
+      const rows=document.querySelectorAll('.kt-row');
+      const last=rows[rows.length-1];
+      if(last) last.querySelector('.kt-label')?.focus();
+    },20);
+    return;
+  }
+  // Delete row
+  if(e.target.classList.contains('kt-del')){
+    e.preventDefault();
+    const row=e.target.closest('.kt-row'); if(!row) return;
+    const dayId=row.dataset.dayId;
+    const i=parseInt(row.dataset.i,10);
+    const day=(plan.days||[]).find(d=>d.id===dayId);
+    if(!day||!Array.isArray(day.key_times)) return;
+    day.key_times.splice(i,1);
+    if(window.TF_EDIT&&TF_EDIT.setDirty) TF_EDIT.setDirty(true);
+    reRenderKeyEditor(dayId);
+  }
+});
+// Collector — copy the live mutations on window.__PLAN__ into the save payload.
+// Runs once at save() time; emergency_default + per-day key_times only.
+(function registerKeyEditorCollector(){
+  function attach(){
+    if(!window.TF_EDIT||!TF_EDIT.registerCollector) return setTimeout(attach,50);
+    TF_EDIT.registerCollector(data=>{
+      const src=window.__PLAN__; if(!src) return null;
+      if(src.emergency_default){
+        data.emergency_default=JSON.parse(JSON.stringify(src.emergency_default));
+      }
+      (data.days||[]).forEach(d=>{
+        const s=(src.days||[]).find(x=>x.id===d.id);
+        if(s&&Array.isArray(s.key_times)){
+          d.key_times=JSON.parse(JSON.stringify(s.key_times));
+        }
+      });
+      return null;
+    });
+  }
+  attach();
+})();
 document.addEventListener('click',(e)=>{
   if(e.target.closest('.pop')||e.target.closest('.fab')||e.target.closest('.nowbtn'))return;
   document.querySelectorAll('.pop.open').forEach(p=>p.classList.remove('open'));
@@ -6155,6 +6444,7 @@ if(document.getElementById('tab-split'))setTimeout(()=>{try{renderSplit();render
 <script src="js/contacts.js"></script>
 <script src="js/gear.js"></script>
 <script src="js/gpx-snap.js"></script>
+<script src="js/gpx-shape.js"></script>
 <script src="js/gpx-unitize.js"></script>
 <script src="js/junction-detector.js"></script>
 <script src="js/gpx-io.js"></script>

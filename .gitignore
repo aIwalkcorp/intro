@@ -1,3 +1,13 @@
 # Image optimization originals (kept locally, regenerated on demand)
 assets/.original-backup/
 .gstack/
+
+# OS / editor / local tooling artifacts
+Thumbs.db
+Thumbs.db:encryptable
+.playwright/
+.playwright-cli/
+.claude/
+
+# Contains personal data (隊員身分證/住址/緊急聯絡人) — keep out of version control
+trailforge/api/scripts/update-xueshan.ts

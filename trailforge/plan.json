@@ -15,15 +15,8 @@
     "short_name": "玉山計劃"
   },
   "emergency_default": {
-    "standby": {
-      "name": "留守 A",
-      "phone": "0900-000-000",
-      "phone_tel": "0900000000"
-    },
-    "messenger_url": "https://m.me/",
-    "include_112": true,
-    "include_119": true,
-    "local_emergency_label": "南投消防"
+    "include_112": false,
+    "include_119": false
   },
   "days": [
     {
@@ -38,23 +31,7 @@
       "stats": null,
       "section_title": "Day 0 — 4/17（五）出發",
       "emergency_card_title": "🚨 Day 0・出發關鍵時間",
-      "key_times": [
-        {
-          "label": "集合 / 出發",
-          "value": "18:00",
-          "note": "跟森的接駁地點"
-        },
-        {
-          "label": "預計入住",
-          "value": "22:30",
-          "note": "示範民宿・已事先告知逾 18:00"
-        },
-        {
-          "label": "明晨叫車",
-          "value": "06:30",
-          "note": "上塔塔加"
-        }
-      ],
+      "key_times": [],
       "quick_links": [
         {
           "icon": "📍",
@@ -146,28 +123,7 @@
       "tag": "d1",
       "section_title": "Day 1 — 4/18（六）塔塔加 → 排雲山莊",
       "emergency_card_title": "🚨 Day 1・上山關鍵時間",
-      "key_times": [
-        {
-          "label": "登山口出發",
-          "value": "09:00",
-          "note": "2,610m 起登"
-        },
-        {
-          "label": "抵達排雲（目標）",
-          "value": "15:00",
-          "note": "3,402m +923m"
-        },
-        {
-          "label": "排雲供水",
-          "value": "16–17",
-          "note": "錯過即無水"
-        },
-        {
-          "label": "晚餐・就寢",
-          "value": "18:00",
-          "note": "19:00 前睡"
-        }
-      ],
+      "key_times": [],
       "quick_links": [
         {
           "icon": "🌦",
@@ -292,28 +248,7 @@
       "tag": null,
       "section_title": "Day 2 — 4/19（日）攻頂・下山",
       "emergency_card_title": "🚨 Day 2・攻頂關鍵時間",
-      "key_times": [
-        {
-          "label": "攻頂折返時限",
-          "value": "09:30",
-          "note": "過此未登頂即撤退"
-        },
-        {
-          "label": "回排雲最晚",
-          "value": "12:00",
-          "note": "逾時恐摸黑下山"
-        },
-        {
-          "label": "下山通知",
-          "value": "17:30",
-          "note": "報留守平安"
-        },
-        {
-          "label": "山難管制",
-          "value": "19:00",
-          "note": "未回即通報"
-        }
-      ],
+      "key_times": [],
       "quick_links": [
         {
           "icon": "🌦",
@@ -754,5 +689,9 @@
       "玉山主峰": 140,
       "主峰": 140
     }
+  },
+  "contacts": {
+    "members": [],
+    "emergency": []
   }
 }

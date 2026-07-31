@@ -216,7 +216,7 @@
     let firstAscentSegs = null;
     for (const d of days) {
       const v = activeVariantFor(d);
-      if (!v || v.direction !== 'ascent_only') continue;
+      if (!v || (v.gpxShape || v.direction) !== 'ascent_only') continue;
       const segs = v.segments || [];
       if (segs.length) { firstAscentSegs = segs; break; }
     }
@@ -237,7 +237,7 @@
     if (!startName || !endName || startName === endName) return null;
     for (const d of days) {
       const v = activeVariantFor(d);
-      if (!v || v.direction !== 'ascent_only') continue;
+      if (!v || (v.gpxShape || v.direction) !== 'ascent_only') continue;
       const segs = v.segments || [];
       if (!segs.length) continue;
       if (segs[0].from !== startName) continue;
@@ -381,6 +381,7 @@
       summitIdx: ep.summit_idx,
       summitLabel: ep.summit_label,
       direction: ep.direction,
+      gpxShape: ep.gpx_shape || ep.direction,
       segments: ep.shanghe_segments || [],
     };
     if (ep.route_variants) {
@@ -397,6 +398,7 @@
         if (v.summit_idx != null) out.summitIdx = v.summit_idx;
         if (v.summit_label) out.summitLabel = v.summit_label;
         if (v.direction) out.direction = v.direction;
+        if (v.gpx_shape) out.gpxShape = v.gpx_shape;
         if (v.shanghe_segments) out.segments = v.shanghe_segments;
       }
     }
@@ -1183,11 +1185,18 @@
     // Helper: resolve the live segments array for a given (dayId, variantId).
     function resolveSegArr(dayId, variantId) {
       const day = (plan.days || []).find(d => d.id === dayId);
-      if (!day || !day.elevation_profile) return null;
+      if (!day) return null;
+      // Materialise missing structures on demand so add-地標 / add-休息
+      // works on freshly-prepended D0 / appended days even when the
+      // upstream plan-data omitted elevation_profile entirely.
+      if (!day.elevation_profile) day.elevation_profile = { shanghe_segments: [], gpx_ref: null, start_time: null };
       if (variantId) {
         const rv = day.elevation_profile.route_variants;
-        return rv && rv[variantId] && rv[variantId].shanghe_segments;
+        if (!rv || !rv[variantId]) return null;
+        if (!Array.isArray(rv[variantId].shanghe_segments)) rv[variantId].shanghe_segments = [];
+        return rv[variantId].shanghe_segments;
       }
+      if (!Array.isArray(day.elevation_profile.shanghe_segments)) day.elevation_profile.shanghe_segments = [];
       return day.elevation_profile.shanghe_segments;
     }
 
@@ -2361,69 +2370,152 @@
   // Operates on the same {gpx, label, summitIdx, summitLabel, direction,
   // segments} day objects that drawOverview consumes.
   function synthesizeReturnDay(days, plan, opts) {
-    if (!days || days.length < 2) return days;
-    // User-level toggle (checkbox in the overview header) wins; absent
-    // an explicit pref we default ON. plan.auto_return_descent === false
-    // remains a hard plan-level disable for cases like one-way traverses.
+    if (!days || !days.length) return days;
     if (opts && opts.enabled === false) return days;
-    if (plan && plan.auto_return_descent === false) return days;
+    // Single decision point: ask findAutoReturnSource (the same predicate
+    // the rest-points table uses) which day's segments to reverse. If it
+    // returns null — round-trip, opt-out flag, or no matching ascent —
+    // the chart synthesises nothing, exactly matching the table.
+    const src = findAutoReturnSource(plan);
+    if (!src) return days;
 
-    const first = days[0];
-    const last = days[days.length - 1];
-    const firstSeg = first.segments && first.segments[0];
-    const lastSegs = last.segments || [];
-    const lastSeg = lastSegs[lastSegs.length - 1];
-    if (!firstSeg || !lastSeg) return days;
-    const startName = firstSeg.from;
-    const endName = lastSeg.to;
-    if (!startName || !endName || startName === endName) return days;
+    // Locate the chart-day matching the source plan-day by id. Chart days
+    // are pre-filtered to those with gpx_ref + actual GPX track loaded;
+    // if the source day was filtered out, no descent curve is possible.
+    const sourceChartDay = days.find(d => d && d.dayId === src.sourceDay.id);
+    if (!sourceChartDay || !Array.isArray(sourceChartDay.gpx) || !sourceChartDay.gpx.length) return days;
+    // Locate the chart-day matching the trip's true endpoint (where the
+    // descent curve gets visually attached / inherits dayId+palette).
+    const targetChartDay = days.find(d => d && d.dayId === src.targetDayId) || sourceChartDay;
 
-    // Find an ascent_only day whose segment chain starts at startName
-    // and ends at endName. If found, its reverse is exactly the descent
-    // home we're missing.
-    for (const d of days) {
-      if (d.direction !== 'ascent_only') continue;
-      const segs = d.segments || [];
-      if (!segs.length) continue;
-      if (segs[0].from !== startName) continue;
-      if (segs[segs.length - 1].to !== endName) continue;
-      if (!Array.isArray(d.gpx) || !d.gpx.length) continue;
-
-      const N = d.gpx.length;
-      const revGpx = d.gpx.slice().reverse();
-      const revSegments = segs.slice().reverse().map(s => {
-        const ai = (Array.isArray(s.anchor_idx) && s.anchor_idx.length === 2)
-          ? [N - 1 - s.anchor_idx[1], N - 1 - s.anchor_idx[0]]
-          : null;
-        return Object.assign({}, s, {
-          id: (s.id || 'seg') + '-ret',
-          from: s.to,
-          to: s.from,
-          ascent_m: +s.descent_m || 0,
-          descent_m: +s.ascent_m || 0,
-          anchor_idx: ai,
-          __synthetic_return: true,
-        });
+    const N = sourceChartDay.gpx.length;
+    const revGpx = sourceChartDay.gpx.slice().reverse();
+    // Reuse buildReverseSegments so descent_skip / override_minutes /
+    // descent_factor handling stays identical to the table. Then remap
+    // anchor_idx into the reversed-gpx index space for chart slicing.
+    const revFromShared = buildReverseSegments(src.sourceSegs, plan);
+    const revSegments = revFromShared.map(s => {
+      const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : null;
+      return Object.assign({}, s, {
+        anchor_idx: (ai && ai.length === 2 && ai[0] != null && ai[1] != null)
+          ? [N - 1 - ai[0], N - 1 - ai[1]]
+          : null,
+        __synthetic_return: true,
       });
-      // Inherit the LAST real day's identity so the synthetic 回程 reads as
-      // "still Day 2" — same dayId for chip + palette index, label keeps the
-      // "Day N·" prefix so the band header makes sense in context. Without
-      // this the chart shows a stand-alone "回程" that looks like a third day.
-      const sourceDayLabel = (last && last.label) || '';
+    });
+    if (revSegments.length) {
+      const sourceDayLabel = (targetChartDay && targetChartDay.label) || '';
       const dayPrefix = sourceDayLabel.split('・')[0].split('·')[0] || sourceDayLabel || 'Day';
       days.push({
         gpx: revGpx,
         label: `${dayPrefix}·回程`,
-        summitIdx: 0,           // makes drawOverview render the whole day as descent zone
+        summitIdx: 0,
         summitLabel: null,
         direction: 'descent_only',
         segments: revSegments,
-        dayId: last && last.dayId,
+        dayId: targetChartDay && targetChartDay.dayId,
         __synthetic_return: true,
-        __returnFromDayIdx: days.indexOf(last),
+        __returnFromDayIdx: days.indexOf(targetChartDay),
       });
-      break;
     }
+    return days;
+  }
+
+  // ─── Out-and-back chart split ────────────────────────────────────────
+  // When a day's plan-data declares out_and_back AND the segment chain is
+  // a strict palindrome (A→B→C→D→C→B→A) AND the underlying GPX is one-way
+  // (ascent_only / descent_only — i.e. only one half of the loop is
+  // recorded), the chart can't honestly draw the descent: anchor_idx for
+  // the descent segs lands in the SAME [0..N] index range as the ascent,
+  // visually overlapping. Split the chart-day in two: ascent half uses
+  // the original GPX, descent half uses a reversed copy with anchor
+  // indices remapped to [N-1-ai] so the x-axis naturally extends.
+  //
+  // Skipped when:
+  //   - direction ≠ 'out_and_back'
+  //   - chain is not strictly palindromic (different return route, loop
+  //     with detour, etc.) — leaves the chart as-is rather than guess
+  //   - GPX itself is shape='out_and_back' (already covers both halves)
+  //   - route_variants present (let the variant unitize logic handle it)
+  function splitOutAndBackChartDays(days, plan) {
+    if (!Array.isArray(days) || !days.length) return days;
+    const planDays = (plan && plan.days) || [];
+    const out = [];
+    for (const d of days) {
+      const planDay = planDays.find(pd => pd.id === d.dayId);
+      if (!planDay) { out.push(d); continue; }
+      const ep = planDay.elevation_profile || {};
+      // Variant routes have their own chart strategy (applyDerivedTrack)
+      // — don't double-process.
+      if (ep.route_variants) { out.push(d); continue; }
+      const direction = ep.gpx_shape || ep.direction;
+      if (direction !== 'out_and_back') { out.push(d); continue; }
+      const segs = Array.isArray(d.segments) ? d.segments.filter(s => !s.is_rest_stop) : [];
+      if (segs.length < 2 || segs.length % 2 !== 0) { out.push(d); continue; }
+      // Strict palindrome: segs[i].from === segs[N-1-i].to AND
+      //                    segs[i].to   === segs[N-1-i].from
+      const half = segs.length / 2;
+      let palindromic = true;
+      for (let i = 0; i < half; i++) {
+        const a = segs[i], b = segs[segs.length - 1 - i];
+        if (!a || !b) { palindromic = false; break; }
+        if (a.from !== b.to || a.to !== b.from) { palindromic = false; break; }
+      }
+      if (!palindromic) { out.push(d); continue; }
+      const N = (d.gpx && d.gpx.length) || 0;
+      if (N < 2) { out.push(d); continue; }
+      // Walk the original d.segments (NOT the rest-filtered one) so
+      // is_rest_stop dwells stay attached to the correct half.
+      const allSegs = d.segments;
+      const ascentSegsAll = allSegs.slice(0, half);
+      const descentSegsAllRaw = allSegs.slice(half);
+      // Anchor-range probe: if any descent seg already references an idx
+      // > N-1, the GPX must be a full 2N recording with anchors already
+      // spanning both halves — no remapping needed, leave the day intact.
+      let anchorsOutOfRange = false;
+      for (const s of descentSegsAllRaw) {
+        const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : null;
+        if (ai && ai.some(i => i != null && i >= N)) { anchorsOutOfRange = true; break; }
+      }
+      if (anchorsOutOfRange) { out.push(d); continue; }
+      // Belt-and-suspenders: also bail when shape detector says the GPX
+      // itself loops back to start (out_and_back / loop). Strict palindrome
+      // + in-range anchors on a self-returning track usually means the
+      // recording captured both halves and the rest is render-as-is.
+      const trackShape = (TF.gpxShape && Array.isArray(d.gpx))
+        ? TF.gpxShape.detect(d.gpx).shape : null;
+      if (trackShape === 'out_and_back' || trackShape === 'loop') {
+        out.push(d); continue;
+      }
+      const revGpx = d.gpx.slice().reverse();
+      const descentSegsAll = descentSegsAllRaw.map(s => {
+        const ai = Array.isArray(s.anchor_idx) ? s.anchor_idx : null;
+        return Object.assign({}, s, {
+          anchor_idx: (ai && ai.length === 2 && ai[0] != null && ai[1] != null)
+            ? [N - 1 - ai[0], N - 1 - ai[1]]
+            : null,
+          __from_oab_split: true,
+        });
+      });
+      const labelBase = (d.label || '').split('・')[0].split('·')[0] || d.label || 'Day';
+      out.push(Object.assign({}, d, {
+        label: `${labelBase}·上山`,
+        direction: 'ascent_only',
+        segments: ascentSegsAll,
+        __oab_split_half: 'ascent',
+      }));
+      out.push(Object.assign({}, d, {
+        gpx: revGpx,
+        label: `${labelBase}·回程`,
+        direction: 'descent_only',
+        segments: descentSegsAll,
+        summitIdx: 0,
+        summitLabel: null,
+        __oab_split_half: 'descent',
+      }));
+    }
+    days.length = 0;
+    for (const d of out) days.push(d);
     return days;
   }
 
@@ -2725,7 +2817,7 @@
   }
 
   TF.overview = {
-    render, stitchDayBoundaries, synthesizeReturnDay,
+    render, stitchDayBoundaries, synthesizeReturnDay, splitOutAndBackChartDays,
     deriveTrackFromSegments, applyDerivedTrack,
     buildSyntheticFromWaypoints, applySyntheticFromWaypoints,
     namesMatch, normalizeName,

@@ -483,6 +483,16 @@
     });
     if (!days.length) return;
 
+    // Out-and-back materialized split — when ep.direction is out_and_back
+    // AND segs are a strict palindrome AND the GPX itself is one-way, the
+    // descent half visually overlaps the ascent on a single x-axis. Split
+    // the chart-day in two so the descent extends rightward. Runs BEFORE
+    // synthesizeReturnDay since after the split the second half carries
+    // direction='descent_only' and won't trigger another synth.
+    if (TF.overview && TF.overview.splitOutAndBackChartDays) {
+      TF.overview.splitOutAndBackChartDays(days, plan);
+    }
+
     // Auto-return-descent: append a reversed-ascent_only synthetic day
     // when the trip clearly returns to its trailhead but no later day
     // covers that descent. Must run BEFORE stitchDayBoundaries so the

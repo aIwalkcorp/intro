@@ -57,26 +57,27 @@
   let data = clone(DEFAULTS);
 
   function loadFromPlan() {
-    // 1. Demo stash takes priority — restore unsaved edits from a prior session
-    //    (page closed, jumped to auth, etc.). Cleared on successful save.
-    try {
-      const raw = localStorage.getItem("tf_demo_pending");
-      if (raw) {
-        const stash = JSON.parse(raw);
-        if (stash && stash.contacts) {
-          data = {
-            emergency: Array.isArray(stash.contacts.emergency) ? clone(stash.contacts.emergency) : clone(DEFAULTS.emergency),
-            members:   Array.isArray(stash.contacts.members)   ? clone(stash.contacts.members)   : clone(DEFAULTS.members),
-          };
-          // Mark restored once both modules have loaded so the user sees feedback.
-          window.__TF_DEMO_RESTORED__ = true;
-          return;
-        }
-      }
-    } catch (e) {}
-
-    // 2. Otherwise, the plan's own contacts (if loaded) or anonymized defaults.
     const plan = window.__PLAN__;
+    // Demo stash only applies in demo mode (no saved-plan id). For saved plans,
+    // never let leftover demo edits clobber server data.
+    const isDemo = !plan || !plan.id;
+    if (isDemo) {
+      try {
+        const raw = localStorage.getItem("tf_demo_pending");
+        if (raw) {
+          const stash = JSON.parse(raw);
+          if (stash && stash.contacts) {
+            data = {
+              emergency: Array.isArray(stash.contacts.emergency) ? clone(stash.contacts.emergency) : clone(DEFAULTS.emergency),
+              members:   Array.isArray(stash.contacts.members)   ? clone(stash.contacts.members)   : clone(DEFAULTS.members),
+            };
+            window.__TF_DEMO_RESTORED__ = true;
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+
     if (plan && plan.contacts) {
       data = {
         emergency: Array.isArray(plan.contacts.emergency) ? clone(plan.contacts.emergency) : clone(DEFAULTS.emergency),
