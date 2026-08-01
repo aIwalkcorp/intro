@@ -1620,6 +1620,10 @@ function goToPerson(idx, direction) {
     current = idx;
     setFlip(keepFlipped);  // Maintain language/flip state
     renderPerson(idx);
+    // In team view, keep the shareable ?card=<id> in sync as the user swipes through cards
+    if (IS_TEAM_VIEW && !overview.classList.contains('show') && !profilePanel.classList.contains('show')) {
+      history.replaceState(history.state, '', setCardUrl(VP[idx].id));
+    }
     scene.classList.remove('exit-' + dir);
     scene.classList.add('enter-' + (dir === 'left' ? 'right' : 'left'));
     requestAnimationFrame(() => {
@@ -1862,6 +1866,12 @@ function renderProfile(id) {
           <button class="profile-cta-btn" data-action="view-card" data-id="${p.id}">
             <span class="lbl-zh">查看名片</span><span class="lbl-en">View Business Card</span>
           </button>
+          <button class="profile-cta-btn secondary" data-action="copy-card" data-id="${p.id}">
+            <span class="lbl-zh">複製名片連結</span><span class="lbl-en">Copy Card Link</span>
+          </button>
+          <button class="profile-cta-btn secondary" data-action="copy-profile" data-id="${p.id}">
+            <span class="lbl-zh">複製檔案連結</span><span class="lbl-en">Copy Profile Link</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1870,15 +1880,22 @@ function renderProfile(id) {
   profileBody.querySelectorAll('.profile-cta-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action;
+      const cardId = btn.dataset.id;
       if (action === 'view-card') {
-        const cardId = btn.dataset.id;
         const idx = VP.findIndex(x => x.id === cardId);
         if (idx !== -1) {
           current = idx;
           renderPerson(idx);
-          closeProfile(false);   // don't bounce back to overview, land on the card
-          closeOverview();       // belt-and-braces in case overview is somehow still showing
+          closeProfile(false, true);   // fromUrl=true → we manage history ourselves below
+          closeOverview();             // belt-and-braces in case overview is somehow still showing
+          // Business card gets its own deep link, distinct from ?profile=
+          if (IS_TEAM_VIEW) history.pushState({ card: cardId }, '', setCardUrl(cardId));
+          else history.replaceState(null, null, '#' + cardId);
         }
+      } else if (action === 'copy-card') {
+        copyShareLink(absShareUrl(setCardUrl(cardId)), '已複製名片連結 Card link copied');
+      } else if (action === 'copy-profile') {
+        copyShareLink(absShareUrl(setProfileUrl(cardId)), '已複製檔案連結 Profile link copied');
       } else if (action === 'back') {
         closeProfile();          // default → restore overview if user came from there
       }
@@ -1894,9 +1911,46 @@ const TEAM_TITLE = '智意行科技 Management Team — Team Overview';
 function setProfileUrl(id) {
   const u = new URL(window.location.href);
   u.searchParams.set('view', 'team');
+  u.searchParams.delete('card');           // profile & card deep links are mutually exclusive
   if (id) u.searchParams.set('profile', id);
   else u.searchParams.delete('profile');
   return u.pathname + u.search;
+}
+// Business-card deep link — kept on its own ?card= param so it never collides with ?profile=
+function setCardUrl(id) {
+  const u = new URL(window.location.href);
+  u.searchParams.set('view', 'team');
+  u.searchParams.delete('profile');
+  if (id) u.searchParams.set('card', id);
+  else u.searchParams.delete('card');
+  return u.pathname + u.search;
+}
+function absShareUrl(pathAndSearch) { return window.location.origin + pathAndSearch; }
+function copyShareLink(url, okMsg) {
+  const done = () => showCopyToast(okMsg);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => _fallbackCopy(url, done));
+  } else { _fallbackCopy(url, done); }
+}
+function _fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); cb(); } catch (e) { prompt('複製此連結 Copy this link:', text); }
+  document.body.removeChild(ta);
+}
+function showCopyToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transition:opacity .2s ease,transform .2s ease;pointer-events:none;box-shadow:0 6px 22px rgba(0,0,0,.35);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)'; });
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(10px)'; }, 1800);
 }
 
 function openProfile(id, fromUrl = false) {
@@ -1940,7 +1994,16 @@ function closeProfile(restoreOverview = profileCameFromOverview, fromUrl = false
 window.addEventListener('popstate', () => {
   const params = new URLSearchParams(window.location.search);
   const profileId = params.get('profile');
+  const cardId = params.get('card');
   const onTeam = params.get('view') === 'team';
+  // ?card=<id> — land on the flip business card; make sure overlays are closed
+  if (cardId) {
+    const idx = VP.findIndex(p => p.id === cardId);
+    if (idx !== -1 && idx !== current) { current = idx; renderPerson(idx); }
+    if (profilePanel.classList.contains('show')) closeProfile(false, true);
+    if (overview.classList.contains('show')) { overview.classList.remove('show'); document.body.style.overflow = ''; }
+    return;
+  }
   if (profileId && !profilePanel.classList.contains('show')) {
     // Forward navigation (or direct URL load) into a profile
     if (onTeam && !overview.classList.contains('show')) overview.classList.add('show');
@@ -1999,15 +2062,22 @@ if (btnNavLang) btnNavLang.addEventListener('click', toggleOverlayLang);
 
 // Auto-open overview when arriving via team.html / ?view=team / #team
 (function autoOpenTeamView() {
-  if (IS_TEAM_VIEW) {
-    document.title = TEAM_TITLE;
-    document.body.classList.add('team-view');
-    openOverview();
-    const profileId = new URLSearchParams(window.location.search).get('profile');
-    if (profileId && PEOPLE.find(p => p.id === profileId && p.profile)) {
-      // fromUrl=true → don't pushState; arrived here directly
-      openProfile(profileId, true);
-    }
+  if (!IS_TEAM_VIEW) return;
+  document.title = TEAM_TITLE;
+  document.body.classList.add('team-view');
+  const sp = new URLSearchParams(window.location.search);
+  const cardId = sp.get('card');
+  const profileId = sp.get('profile');
+  // ?card=<id> — deep link straight to a person's business card, skipping the overview
+  if (cardId) {
+    const idx = VP.findIndex(p => p.id === cardId);
+    if (idx !== -1) { current = idx; renderPerson(idx); return; }
+    // unknown id → fall through to the overview
+  }
+  openOverview();
+  if (profileId && PEOPLE.find(p => p.id === profileId && p.profile)) {
+    // fromUrl=true → don't pushState; arrived here directly
+    openProfile(profileId, true);
   }
 })();
 
