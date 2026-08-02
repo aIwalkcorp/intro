@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CopyMe 復刻 — 復刻一個會說話的你｜aiwalkcorp</title>
+<meta name="description" content="上傳 LINE 聊天紀錄，蒸餾出一個會說話的分身。aiwalkcorp 出品。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2ece0; --card:#fbf7ee; --ink:#191d2b;
+  --pri:#2c3e6b; --pri-deep:#1c2749; --seal:#b3382c; --seal-soft:#e8c4bd;
+  --mist:#7a7466; --bdr:#d9d2c2; --ok:#3e6b63;
+  --serif:"Noto Serif TC",serif; --sans:"Noto Sans TC",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.75;
+  background-image:radial-gradient(rgba(44,62,107,.05) 1px,transparent 1px);
+  background-size:26px 26px}
+a{color:var(--pri)}
+button{font-family:var(--sans);cursor:pointer}
+:focus-visible{outline:3px solid var(--pri);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+
+/* ── header ── */
+.top{display:flex;align-items:baseline;gap:14px;padding:34px 0 8px;flex-wrap:wrap}
+.wordmark{font-family:var(--serif);font-weight:900;font-size:1.7rem;letter-spacing:.02em}
+.wordmark em{font-style:normal;color:var(--seal)}
+.byline{font-family:var(--mono);font-size:.75rem;color:var(--mist)}
+.lede{font-family:var(--serif);font-weight:600;font-size:1.12rem;color:var(--pri-deep);
+  border-left:4px solid var(--seal);padding-left:14px;margin:14px 0 6px}
+.sub{color:var(--mist);font-size:.9rem;max-width:60ch}
+
+/* ── 管線步驟 ── */
+.station{position:relative;margin:34px 0 0;padding-left:58px}
+.station::before{content:"";position:absolute;left:19px;top:44px;bottom:-34px;
+  width:2px;background:var(--bdr)}
+.station:last-of-type::before{display:none}
+.stno{position:absolute;left:0;top:0;width:40px;height:40px;border-radius:50%;
+  border:2px solid var(--bdr);background:var(--card);color:var(--mist);
+  font-family:var(--mono);font-size:.8rem;font-weight:600;
+  display:flex;align-items:center;justify-content:center;transition:all .3s}
+.station.on .stno{border-color:var(--pri);color:var(--pri)}
+.station.done .stno{border-color:var(--ok);background:var(--ok);color:var(--card)}
+.sttitle{font-family:var(--serif);font-weight:900;font-size:1.25rem;padding-top:4px}
+.sthint{color:var(--mist);font-size:.88rem;margin:2px 0 14px}
+.card{background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;
+  padding:22px;box-shadow:0 2px 0 rgba(25,29,43,.04)}
+.station:not(.on):not(.done) .card{opacity:.45;pointer-events:none}
+.station.done .card{opacity:.92}
+
+/* ── 上傳 ── */
+.drop{border:2px dashed var(--bdr);border-radius:8px;padding:34px 18px;text-align:center;
+  color:var(--mist);transition:all .2s;background:rgba(255,255,255,.3)}
+.drop.hover{border-color:var(--pri);color:var(--pri);background:rgba(44,62,107,.05)}
+.drop strong{color:var(--ink)}
+.filebtn{display:inline-block;margin-top:10px;background:var(--pri);color:#fff;border:none;
+  padding:9px 22px;border-radius:6px;font-size:.95rem;font-weight:500}
+.filebtn:hover{background:var(--pri-deep)}
+.privacy{font-size:.78rem;color:var(--mist);margin-top:12px}
+.coderow{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+.coderow label{font-size:.85rem;color:var(--mist)}
+.coderow input{font-family:var(--mono);padding:7px 10px;border:1.5px solid var(--bdr);
+  border-radius:6px;background:#fff;font-size:.9rem;width:180px}
+
+/* ── 選人 ── */
+.meta{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-bottom:14px}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.person{text-align:left;background:#fff;border:1.5px solid var(--bdr);border-radius:8px;
+  padding:14px;transition:all .15s;font-family:var(--sans)}
+.person:hover{border-color:var(--pri);transform:translateY(-1px)}
+.person.sel{border-color:var(--seal);box-shadow:0 0 0 2px var(--seal-soft)}
+.pname{font-weight:700;font-size:1rem}
+.pcount{font-family:var(--mono);font-size:.72rem;color:var(--mist);margin-bottom:8px}
+.psample{font-size:.78rem;color:var(--mist);line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.gobtn{margin-top:16px;background:var(--seal);color:#fff;border:none;
+  padding:11px 28px;border-radius:6px;font-size:1rem;font-weight:700;letter-spacing:.06em}
+.gobtn:hover{filter:brightness(.92)}
+.gobtn:disabled{background:var(--bdr);color:var(--mist);cursor:not-allowed}
+
+/* ── 蒸餾 ── */
+.still{position:relative}
+.doc{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;height:340px;
+  overflow-y:auto;padding:18px 20px;font-family:var(--mono);font-size:.78rem;
+  line-height:1.7;white-space:pre-wrap;word-break:break-all;color:var(--pri-deep)}
+.doc .cursor{display:inline-block;width:7px;height:14px;background:var(--seal);
+  vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.stage{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-bottom:10px;
+  display:flex;align-items:center;gap:8px}
+.dropicon{width:10px;height:10px;border-radius:50%;background:var(--seal);
+  animation:drip 1.2s ease-in-out infinite}
+@keyframes drip{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(5px);opacity:.4}}
+/* 朱印 */
+.seal-stamp{position:absolute;right:26px;bottom:26px;width:92px;height:92px;
+  border:4px solid var(--seal);border-radius:8px;color:var(--seal);
+  font-family:var(--serif);font-weight:900;font-size:1.5rem;line-height:1.15;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:8px;transform:rotate(-6deg);mix-blend-mode:multiply;
+  background:rgba(179,56,44,.06);pointer-events:none;
+  animation:stamp .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes stamp{0%{transform:rotate(-6deg) scale(2.4);opacity:0}
+  60%{transform:rotate(-6deg) scale(.94);opacity:1}
+  100%{transform:rotate(-6deg) scale(1);opacity:1}}
+
+/* ── 對話 ── */
+.chatbox{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;
+  height:430px;display:flex;flex-direction:column}
+.chathead{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-bottom:1.5px solid var(--bdr)}
+.chatseal{width:34px;height:34px;border:2.5px solid var(--seal);border-radius:6px;
+  color:var(--seal);font-family:var(--serif);font-weight:900;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;transform:rotate(-6deg);
+  flex-shrink:0;overflow:hidden;padding:1px;text-align:center;line-height:1}
+.chatname{font-weight:700}
+.chattag{font-family:var(--mono);font-size:.7rem;color:var(--mist)}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.bub{max-width:75%;padding:9px 14px;border-radius:12px;font-size:.92rem;
+  line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.bub.ai{background:var(--paper);border:1px solid var(--bdr);align-self:flex-start;
+  border-bottom-left-radius:3px}
+.bub.me{background:var(--pri);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.chatin{display:flex;gap:10px;padding:12px;border-top:1.5px solid var(--bdr)}
+.chatin input{flex:1;padding:10px 14px;border:1.5px solid var(--bdr);border-radius:8px;
+  font-family:var(--sans);font-size:.95rem;background:var(--card)}
+.chatin button{background:var(--pri);color:#fff;border:none;padding:0 22px;
+  border-radius:8px;font-weight:700}
+.chatin button:disabled{background:var(--bdr)}
+
+/* ── 既有分身 ── */
+.shelf{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.shelfbtn{display:flex;gap:8px;align-items:center;background:#fff;
+  border:1.5px solid var(--bdr);border-radius:8px;padding:7px 12px;font-size:.85rem}
+.shelfbtn:hover{border-color:var(--seal)}
+.shelfbtn .mini{width:20px;height:20px;border:2px solid var(--seal);border-radius:4px;
+  transform:rotate(-6deg);color:var(--seal);font-family:var(--serif);font-weight:900;
+  font-size:.6rem;display:flex;align-items:center;justify-content:center}
+
+.err{background:#fdf0ee;border:1.5px solid var(--seal);color:var(--seal);
+  border-radius:8px;padding:12px 16px;margin-top:14px;font-size:.9rem;display:none}
+footer{margin:60px 0 30px;color:var(--mist);font-size:.78rem;font-family:var(--mono)}
+footer a{color:var(--mist)}
+@media(max-width:560px){
+  .station{padding-left:0}
+  .stno{position:static;margin-bottom:8px}
+  .station::before{display:none}
+  .bub{max-width:88%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="wordmark">Copy<em>Me</em> 復刻</div>
+  <div class="byline">aiwalkcorp product no.5</div>
+</header>
+<p class="lede">我們不只打造你的小腦，還能復刻一個你。</p>
+<p class="sub">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——
+說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</p>
+<div class="shelf" id="shelf"></div>
+
+<div class="err" id="err"></div>
+
+<!-- 01 上傳 -->
+<section class="station on" id="st1">
+  <div class="stno">01</div>
+  <h2 class="sttitle">上傳聊天紀錄</h2>
+  <p class="sthint">LINE App → 聊天室設定 → 傳送聊天紀錄 → 存成 .txt</p>
+  <div class="card">
+    <div class="drop" id="drop">
+      把 .txt 拖到這裡，或
+      <div><label class="filebtn">選擇檔案<input type="file" id="file" accept=".txt,text/plain" hidden></label></div>
+      <div class="privacy">檔案只用於本次蒸餾，存放在 aiwalkcorp 自有伺服器，不會交給第三方。</div>
+    </div>
+    <div class="coderow">
+      <label for="code">通行碼</label>
+      <input id="code" type="password" autocomplete="off" placeholder="向 aiwalkcorp 索取">
+    </div>
+  </div>
+</section>
+
+<!-- 02 選人 -->
+<section class="station" id="st2">
+  <div class="stno">02</div>
+  <h2 class="sttitle">選擇要蒸餾的人</h2>
+  <p class="sthint">名單依發言量排序；至少要有 30 句文字訊息才蒸得出來</p>
+  <div class="card">
+    <div class="meta" id="uploadmeta"></div>
+    <div class="people" id="people"></div>
+    <button class="gobtn" id="distillbtn" disabled>開始蒸餾</button>
+  </div>
+</section>
+
+<!-- 03 蒸餾 -->
+<section class="station" id="st3">
+  <div class="stno">03</div>
+  <h2 class="sttitle">蒸餾中</h2>
+  <p class="sthint">人格檔正在成形——表達 DNA、語氣例句、誠實邊界</p>
+  <div class="card still">
+    <div class="stage" id="stage"><span class="dropicon"></span><span id="stagetext">等待開始</span></div>
+    <div class="doc" id="doc"></div>
+    <div id="sealslot"></div>
+    <button class="gobtn" id="chatbtn" style="display:none;margin-top:16px">跟分身說話</button>
+  </div>
+</section>
+
+<!-- 04 對話 -->
+<section class="station" id="st4">
+  <div class="stno">04</div>
+  <h2 class="sttitle">對話</h2>
+  <p class="sthint">分身只知道語料裡的事；私人資訊它會裝傻</p>
+  <div class="card">
+    <div class="chatbox">
+      <div class="chathead">
+        <div class="chatseal" id="chatseal"></div>
+        <div>
+          <div class="chatname" id="chatname"></div>
+          <div class="chattag" id="chattag"></div>
+        </div>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="chatin">
+        <input id="say" placeholder="說點什麼…" autocomplete="off">
+        <button id="send">送出</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CopyMe 復刻 by <a href="https://aiwalkcorp.com">aiwalkcorp 智意行科技</a> ·
+  蒸餾引擎 Claude API · 語料不離開自有伺服器
+</footer>
+</div>
+
+<script>
+"use strict";
+const API = (location.hostname.endsWith("fly.dev") || location.hostname === "localhost")
+  ? "" : "https://copyme.fly.dev";
+const $ = id => document.getElementById(id);
+const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[] };
+
+function showErr(msg){ const e=$("err"); e.textContent=msg; e.style.display="block";
+  e.scrollIntoView({block:"center"}); }
+function clearErr(){ $("err").style.display="none"; }
+function setStation(n){
+  [1,2,3,4].forEach(i=>{
+    const el=$("st"+i);
+    el.classList.toggle("on", i===n);
+    el.classList.toggle("done", i<n);
+  });
+  $("st"+n).scrollIntoView({block:"start"});
+}
+function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
+const code = () => $("code").value.trim();
+
+/* ── SSE over fetch ── */
+async function sseFetch(url, body, onEvent){
+  const res = await fetch(API+url, {method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  if(!res.ok){
+    let d = "服務暫時沒有回應";
+    try{ d = (await res.json()).detail || d; }catch(_){}
+    throw new Error(d);
+  }
+  const rd = res.body.getReader(); const dec = new TextDecoder();
+  let buf = "";
+  for(;;){
+    const {done, value} = await rd.read();
+    if(done) break;
+    buf += dec.decode(value, {stream:true});
+    let idx;
+    while((idx = buf.indexOf("\n\n")) >= 0){
+      const block = buf.slice(0, idx); buf = buf.slice(idx+2);
+      let ev = "message", data = "";
+      for(const line of block.split("\n")){
+        if(line.startsWith("event: ")) ev = line.slice(7);
+        else if(line.startsWith("data: ")) data += line.slice(6);
+      }
+      if(data) onEvent(ev, JSON.parse(data));
+    }
+  }
+}
+
+/* ── 01 上傳 ── */
+const drop = $("drop");
+["dragover","dragenter"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("hover");}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("hover");}));
+drop.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) upload(f); });
+$("file").addEventListener("change", e=>{ const f=e.target.files[0]; if(f) upload(f); });
+
+async function upload(f){
+  clearErr();
+  drop.firstChild.textContent = "上傳解析中… ";
+  const fd = new FormData();
+  fd.append("file", f); fd.append("access_code", code());
+  try{
+    const res = await fetch(API+"/api/upload", {method:"POST", body:fd});
+    const j = await res.json();
+    if(!res.ok) throw new Error(j.detail || "上傳失敗");
+    state.uploadId = j.upload_id;
+    $("uploadmeta").textContent =
+      `${j.room} ・ ${j.total.toLocaleString()} 則訊息 ・ ${j.span}`;
+    renderPeople(j.people);
+    setStation(2);
+  }catch(err){ showErr(err.message); }
+  finally{ drop.firstChild.textContent = "把 .txt 拖到這裡，或 "; }
+}
+
+function renderPeople(people){
+  const box = $("people"); box.innerHTML = "";
+  people.forEach(p=>{
+    const b = document.createElement("button");
+    b.className = "person";
+    b.innerHTML = `<div class="pname"></div>
+      <div class="pcount">${p.count.toLocaleString()} 則發言</div>
+      <div class="psample"></div>`;
+    b.querySelector(".pname").textContent = p.name;
+    b.querySelector(".psample").textContent = p.samples.join(" / ") || "（多為貼圖照片）";
+    b.addEventListener("click", ()=>{
+      state.person = p.name;
+      box.querySelectorAll(".person").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel");
+      $("distillbtn").disabled = false;
+      $("distillbtn").textContent = `開始蒸餾「${p.name}」`;
+    });
+    box.appendChild(b);
+  });
+}
+
+/* ── 03 蒸餾 ── */
+$("distillbtn").addEventListener("click", async ()=>{
+  clearErr(); setStation(3);
+  const docEl = $("doc");
+  docEl.innerHTML = '<span class="cursor"></span>';
+  $("stagetext").textContent = `正在閱讀「${state.person}」的語料…`;
+  $("sealslot").innerHTML = ""; $("chatbtn").style.display = "none";
+  let started = false;
+  try{
+    await sseFetch("/api/distill",
+      {upload_id:state.uploadId, person:state.person, access_code:code()},
+      (ev, d)=>{
+        if(ev==="status"){
+          $("stagetext").textContent =
+            `語料 ${d.stats.count} 句（取樣 ${d.stats.sampled}）・跨度 ${d.stats.span}・蒸餾中`;
+        }else if(ev==="delta"){
+          if(!started){ docEl.textContent=""; started=true;
+            docEl.insertAdjacentHTML("beforeend",'<span class="cursor"></span>'); }
+          docEl.querySelector(".cursor").insertAdjacentText("beforebegin", d.text);
+          docEl.scrollTop = docEl.scrollHeight;
+        }else if(ev==="done"){
+          state.personaId = d.persona_id; state.personaName = d.name;
+          docEl.querySelector(".cursor")?.remove();
+          $("stagetext").textContent = "蒸餾完成，人格已定調";
+          document.querySelector(".stage .dropicon").style.animation = "none";
+          $("sealslot").innerHTML =
+            `<div class="seal-stamp">${sealText(d.name)}</div>`;
+          $("chatbtn").style.display = "inline-block";
+        }else if(ev==="error"){ throw new Error(d.message); }
+      });
+  }catch(err){ showErr(err.message); $("stagetext").textContent = "蒸餾中斷"; }
+});
+
+$("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.personaName));
+
+/* ── 04 對話 ── */
+function enterChat(pid, name){
+  state.personaId = pid; state.personaName = name; state.history = [];
+  $("chatname").textContent = name;
+  $("chattag").textContent = "AI 分身 · CopyMe 復刻";
+  $("chatseal").textContent = sealText(name);
+  $("msgs").innerHTML = "";
+  setStation(4);
+  $("say").focus();
+}
+
+function bubble(cls, text){
+  const b = document.createElement("div");
+  b.className = "bub "+cls; b.textContent = text;
+  $("msgs").appendChild(b);
+  $("msgs").scrollTop = $("msgs").scrollHeight;
+  return b;
+}
+
+async function send(){
+  const input = $("say"); const text = input.value.trim();
+  if(!text || !state.personaId) return;
+  clearErr();
+  input.value = ""; $("send").disabled = true;
+  bubble("me", text);
+  state.history.push({role:"user", content:text});
+  const live = bubble("ai", "…");
+  let acc = "";
+  try{
+    await sseFetch("/api/chat",
+      {persona_id:state.personaId, messages:state.history, access_code:code()},
+      (ev,d)=>{
+        if(ev==="delta"){ acc += d.text; live.textContent = acc;
+          $("msgs").scrollTop = $("msgs").scrollHeight; }
+        else if(ev==="error"){ throw new Error(d.message); }
+      });
+    state.history.push({role:"assistant", content:acc});
+    /* 拆成多則氣泡，還原短訊連發的節奏 */
+    const lines = acc.split("\n").map(s=>s.trim()).filter(Boolean);
+    if(lines.length > 1){
+      live.remove();
+      lines.forEach(l=>bubble("ai", l));
+    }
+  }catch(err){
+    live.textContent = "（訊息沒送出去："+err.message+"）";
+  }finally{ $("send").disabled = false; input.focus(); }
+}
+$("send").addEventListener("click", send);
+$("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
+
+/* ── 既有分身書架 ── */
+(async ()=>{
+  try{
+    const j = await (await fetch(API+"/api/personas")).json();
+    if(!j.personas?.length) return;
+    const shelf = $("shelf");
+    j.personas.slice(0,6).forEach(p=>{
+      const b = document.createElement("button");
+      b.className = "shelfbtn";
+      b.innerHTML = `<span class="mini">${sealText(p.name)}</span> 續聊`;
+      b.insertBefore(document.createTextNode(p.name+" "), b.lastChild);
+      b.addEventListener("click", ()=> enterChat(p.id, p.name));
+      shelf.appendChild(b);
+    });
+  }catch(_){/* 服務喚醒中，靜默 */}
+})();
+</script>
+</body>
+</html>

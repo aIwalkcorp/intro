@@ -987,6 +987,19 @@
     flex-shrink: 0;
     box-shadow: var(--shadow-sm);
   }
+  /* CopyMe seal glyph — 朱印 square, matches copyme/ stamp motif */
+  .demo-card .demo-logo.copyme-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #b3382c;
+    border-radius: 8px;
+    background: rgba(179, 56, 44, 0.07);
+    color: #b3382c;
+    transform: rotate(-6deg);
+    font-weight: 900;
+    box-shadow: var(--shadow-sm);
+  }
   /* Trailforge brass-seal glyph — matches the chip in auth.html / trailforge */
   .demo-card .demo-logo.trailforge-glyph {
     position: relative;
@@ -2509,6 +2522,35 @@
           <div class="demo-live-cue">
             <span class="live-dot" aria-hidden="true"></span>
             <span class="lang-zh">登入 Trailforge</span><span class="lang-en">Sign in to Trailforge</span>
+            <i data-lucide="arrow-up-right"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+    <!-- COPYME — persona distillation product item -->
+    <div class="demo-card demo-card-copyme">
+      <div class="demo-video">
+        <span class="preview-badge" aria-hidden="true">PREVIEW</span>
+        <div class="preview-iframe-wrap">
+          <iframe class="preview-iframe" src="copyme/" loading="lazy" title="CopyMe 復刻" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="preview-veil" aria-hidden="true"></div>
+      </div>
+      <a class="demo-info" href="copyme/" target="_blank" rel="noopener" title="開啟 CopyMe 復刻">
+        <span class="demo-logo copyme-glyph" aria-hidden="true"><i data-lucide="stamp"></i></span>
+        <div class="demo-info-main">
+          <div class="demo-name">
+            <span>CopyMe 復刻</span>
+            <span class="companion-tag lang-zh">新品</span>
+            <span class="companion-tag lang-en">New</span>
+          </div>
+          <div class="demo-desc">
+            <span class="lang-zh">上傳聊天紀錄，蒸餾出會說話的 AI 分身——復刻你自己</span>
+            <span class="lang-en">Distill a talking AI twin from your chat history — a faithful copy of you</span>
+          </div>
+          <div class="demo-live-cue">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span class="lang-zh">開始復刻</span><span class="lang-en">Start copying</span>
             <i data-lucide="arrow-up-right"></i>
           </div>
         </div>

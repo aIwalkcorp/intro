@@ -1,0 +1,48 @@
+# CopyMe 復刻 — aiwalkcorp 第五套產品
+# 上傳 LINE 聊天紀錄 → 蒸餾人格 → 直接對話。
+#
+# 首次：
+#   fly apps create copyme
+#   fly volumes create pf_data --region nrt --size 1 --app copyme --yes
+#   fly secrets set --app copyme ANTHROPIC_API_KEY=... ACCESS_CODE=...
+# 部署（在 imprint/ 目錄下）：
+#   fly deploy
+#
+# 入口：https://copyme.fly.dev/（前端直接由 API 服務）
+
+app = "copyme"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "api/Dockerfile"
+
+[env]
+  PF_MODEL = "claude-opus-5"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 80
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/healthz"
+
+[[mounts]]
+  source = "pf_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpus = 1
