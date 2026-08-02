@@ -38,6 +38,40 @@ ACCESS_CODE = os.environ.get("ACCESS_CODE", "")
 MODEL = os.environ.get("PF_MODEL", "claude-opus-5")
 TZ = timezone(timedelta(hours=8))
 
+# ---- 體驗額度池：伺服器自己記帳（API 無法查帳戶餘額，且 key 與其他服務共用）
+BUDGET_USD = float(os.environ.get("PF_BUDGET_USD", "5"))
+SPEND_FILE = DATA / "spend.json"
+# claude-opus-5 每百萬 token 價目：輸入 $5、輸出 $25、cache 寫 1.25x、cache 讀 0.1x
+_PRICE = {"in": 5.0, "out": 25.0, "cache_w": 6.25, "cache_r": 0.5}
+
+
+def _spent() -> float:
+    try:
+        return json.loads(SPEND_FILE.read_text())["usd"]
+    except (OSError, ValueError, KeyError):
+        return 0.0
+
+
+def track_usage(usage) -> None:
+    cost = (
+        usage.input_tokens * _PRICE["in"]
+        + usage.output_tokens * _PRICE["out"]
+        + (getattr(usage, "cache_creation_input_tokens", 0) or 0) * _PRICE["cache_w"]
+        + (getattr(usage, "cache_read_input_tokens", 0) or 0) * _PRICE["cache_r"]
+    ) / 1e6
+    tmp = SPEND_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"usd": _spent() + cost}))
+    tmp.replace(SPEND_FILE)
+
+
+def budget_left() -> float:
+    return max(0.0, BUDGET_USD - _spent())
+
+
+def check_budget() -> None:
+    if budget_left() <= 0:
+        raise HTTPException(402, "本站的體驗額度已用完，之後會再補充——晚點再來試試！")
+
 claude = anthropic.Anthropic()
 
 app = FastAPI(title="Imprint")
@@ -287,6 +321,12 @@ def healthz():
     return {"ok": True, "model": MODEL, "personas": len(list(PERSONAS.glob("*/meta.json")))}
 
 
+@app.get("/api/budget")
+def budget():
+    return {"budget": BUDGET_USD, "spent": round(_spent(), 4),
+            "remaining": round(budget_left(), 4)}
+
+
 @app.get("/")
 def index():
     return FileResponse(Path(__file__).parent / "index.html")
@@ -331,6 +371,7 @@ async def upload(file: UploadFile = File(...), access_code: str = Form("")):
 @app.post("/api/distill")
 async def distill(payload: dict):
     check_code(payload.get("access_code"))
+    check_budget()
     uid, person = payload.get("upload_id", ""), payload.get("person", "")
     upath = UPLOADS / f"{re.sub(r'[^a-f0-9]', '', uid)}.json"
     if not upath.exists():
@@ -363,6 +404,7 @@ async def distill(payload: dict):
                     chunks.append(text)
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
+            track_usage(final.usage)
             if final.stop_reason == "refusal":
                 yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
                 return
@@ -418,6 +460,7 @@ def delete_persona(pid: str, payload: dict):
 @app.post("/api/chat")
 async def chat(payload: dict):
     check_code(payload.get("access_code"))
+    check_budget()
     pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
     pdir = PERSONAS / pid
     if not (pdir / "persona.md").exists():
@@ -445,6 +488,7 @@ async def chat(payload: dict):
                 for text in stream.text_stream:
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
+            track_usage(final.usage)
             if final.stop_reason == "refusal":
                 yield sse("delta", {"text": "（這題我不方便回）"})
         except anthropic.APIStatusError as e:

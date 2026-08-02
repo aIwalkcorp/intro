@@ -45,6 +45,13 @@ body.en div.lang-en{display:block}
   text-decoration:none;transition:all .15s}
 .homebtn:hover{border-color:var(--pri);color:var(--pri);transform:translateY(-1px)}
 .homebtn svg{flex-shrink:0}
+.poolchip{display:inline-flex;align-items:center;gap:7px;margin-left:auto;
+  border:1.5px solid var(--bdr);background:var(--card);border-radius:8px;
+  padding:7px 13px;font-family:var(--mono);font-size:.78rem;color:var(--mist)}
+.poolchip svg{color:var(--pri);flex-shrink:0}
+.poolchip b{color:var(--ink);font-weight:600}
+.poolchip.empty{border-color:var(--seal);color:var(--seal)}
+.poolchip.empty b{color:var(--seal)}
 .langtoggle{display:flex;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden}
 .langtoggle button{background:var(--card);border:none;padding:7px 14px;
   font-size:.82rem;font-weight:700;color:var(--mist)}
@@ -233,6 +240,10 @@ footer a{color:var(--mist)}
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     <span class="lang-zh">aiwalkcorp 公司主頁</span><span class="lang-en">aiwalkcorp Home</span>
   </a>
+  <div class="poolchip" id="poolchip" style="display:none">
+    <svg width="11" height="13" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
+    <span><span class="lang-zh">體驗額度</span><span class="lang-en">Free pool</span> <b id="poolval"></b></span>
+  </div>
   <div class="langtoggle" role="group" aria-label="Language">
     <button id="btn-zh" type="button">中文</button>
     <button id="btn-en" type="button">EN</button>
@@ -567,6 +578,7 @@ $("distillbtn").addEventListener("click", async ()=>{
           $("docwrap").style.display = "block";
           $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(d.name)}</div>`;
           $("chatbtn").style.display = "inline-block";
+          loadBudget();
         }else if(ev==="error"){ throw new Error(d.message); }
       });
   }catch(err){
@@ -650,7 +662,7 @@ async function send(){
     }
   }catch(err){
     live.textContent = t("sendFail")(err.message);
-  }finally{ $("send").disabled = false; input.focus(); }
+  }finally{ $("send").disabled = false; input.focus(); loadBudget(); }
 }
 $("send").addEventListener("click", send);
 $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
@@ -673,6 +685,22 @@ $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) 
     });
   }catch(_){/* 服務喚醒中，靜默 */}
 })();
+
+async function loadBudget(){
+  try{
+    const j = await (await fetch(API+"/api/budget")).json();
+    const chip = $("poolchip");
+    chip.style.display = "inline-flex";
+    if(j.remaining <= 0){
+      chip.classList.add("empty");
+      $("poolval").textContent = LANG==="en" ? "empty, refills soon" : "用罄，稍後補充";
+    }else{
+      chip.classList.remove("empty");
+      $("poolval").textContent = "$" + j.remaining.toFixed(2);
+    }
+  }catch(_){/* 喚醒中，靜默 */}
+}
+loadBudget();
 
 applyLang(LANG);
 </script>
