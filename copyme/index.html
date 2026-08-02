@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CopyMe 復刻 — 復刻一個會說話的你｜aiwalkcorp</title>
-<meta name="description" content="上傳 LINE 聊天紀錄，蒸餾出一個會說話的分身。aiwalkcorp 出品。">
+<meta name="description" content="上傳 LINE 聊天紀錄，蒸餾出會說話的 AI 分身。對話檔用完即刪。aiwalkcorp 出品。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -27,33 +27,38 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);
 a{color:var(--pri)}
 button{font-family:var(--sans);cursor:pointer}
 :focus-visible{outline:3px solid var(--pri);outline-offset:2px;border-radius:4px}
+/* 語言切換：沿用主站 body.en 慣例 */
+.lang-en{display:none}
+body.en .lang-en{display:inline}
+body.en .lang-zh{display:none}
+div.lang-en,body.en div.lang-zh{display:none}
+body.en div.lang-en{display:block}
 
 .wrap{max-width:880px;margin:0 auto;padding:0 20px}
 
+/* ── 頂列：主頁按鈕＋語言 ── */
+.topbar{display:flex;justify-content:space-between;align-items:center;
+  padding-top:22px;gap:12px;flex-wrap:wrap}
+.homebtn{display:inline-flex;align-items:center;gap:8px;
+  border:1.5px solid var(--bdr);background:var(--card);color:var(--ink);
+  padding:8px 16px;border-radius:8px;font-size:.88rem;font-weight:700;
+  text-decoration:none;transition:all .15s}
+.homebtn:hover{border-color:var(--pri);color:var(--pri);transform:translateY(-1px)}
+.homebtn svg{flex-shrink:0}
+.langtoggle{display:flex;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden}
+.langtoggle button{background:var(--card);border:none;padding:7px 14px;
+  font-size:.82rem;font-weight:700;color:var(--mist)}
+.langtoggle button.active{background:var(--pri);color:#fff}
+
 /* ── header ── */
-.top{display:flex;align-items:baseline;gap:14px;padding:34px 0 8px;flex-wrap:wrap}
+.top{display:flex;align-items:baseline;gap:14px;padding:26px 0 8px;flex-wrap:wrap}
 .wordmark{font-family:var(--serif);font-weight:900;font-size:1.7rem;letter-spacing:.02em}
 .wordmark em{font-style:normal;color:var(--seal)}
 .byline{font-family:var(--mono);font-size:.75rem;color:var(--mist)}
 .lede{font-family:var(--serif);font-weight:900;font-size:1.45rem;color:var(--pri-deep);
   letter-spacing:.01em;margin:18px 0 6px;text-wrap:balance}
 .lede em{font-style:normal;color:var(--seal)}
-.homelink{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);
-  font-size:.75rem;color:var(--mist);text-decoration:none;margin-top:26px}
-.homelink:hover{color:var(--pri)}
-.homelink svg{flex-shrink:0}
-.trust{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:12px;
-  border-top:1px solid var(--bdr);text-align:left}
-.trust div{display:flex;gap:7px;align-items:flex-start;flex:1;min-width:180px;
-  font-size:.78rem;color:var(--mist);line-height:1.55}
-.trust svg{flex-shrink:0;margin-top:2px;color:var(--ok)}
-.trust b{color:var(--ink);font-weight:700}
-.delbtn{margin-left:auto;background:none;border:1.5px solid var(--bdr);color:var(--mist);
-  border-radius:6px;padding:5px 12px;font-size:.78rem}
-.delbtn:hover{border-color:var(--seal);color:var(--seal)}
-.delbtn.arm{border-color:var(--seal);background:var(--seal);color:#fff}
-.msgs-empty{margin:auto;color:var(--mist);font-size:.85rem;text-align:center}
-.sub{color:var(--mist);font-size:.9rem;max-width:60ch}
+.sub{color:var(--mist);font-size:.9rem;max-width:62ch}
 
 /* ── 管線步驟 ── */
 .station{position:relative;margin:34px 0 0;padding-left:58px}
@@ -77,15 +82,15 @@ button{font-family:var(--sans);cursor:pointer}
 .drop{border:2px dashed var(--bdr);border-radius:8px;padding:34px 18px;text-align:center;
   color:var(--mist);transition:all .2s;background:rgba(255,255,255,.3)}
 .drop.hover{border-color:var(--pri);color:var(--pri);background:rgba(44,62,107,.05)}
-.drop strong{color:var(--ink)}
 .filebtn{display:inline-block;margin-top:10px;background:var(--pri);color:#fff;border:none;
   padding:9px 22px;border-radius:6px;font-size:.95rem;font-weight:500}
 .filebtn:hover{background:var(--pri-deep)}
-.privacy{font-size:.78rem;color:var(--mist);margin-top:12px}
-.coderow{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
-.coderow label{font-size:.85rem;color:var(--mist)}
-.coderow input{font-family:var(--mono);padding:7px 10px;border:1.5px solid var(--bdr);
-  border-radius:6px;background:#fff;font-size:.9rem;width:180px}
+.trust{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--bdr);text-align:left}
+.trust>div{display:flex;gap:7px;align-items:flex-start;flex:1;min-width:180px;
+  font-size:.78rem;color:var(--mist);line-height:1.55}
+.trust svg{flex-shrink:0;margin-top:2px;color:var(--ok)}
+.trust b{color:var(--ink);font-weight:700}
 
 /* ── 選人 ── */
 .meta{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-bottom:14px}
@@ -103,21 +108,60 @@ button{font-family:var(--sans);cursor:pointer}
 .gobtn:hover{filter:brightness(.92)}
 .gobtn:disabled{background:var(--bdr);color:var(--mist);cursor:not-allowed}
 
-/* ── 蒸餾 ── */
+/* ── 蒸餾動畫 ── */
 .still{position:relative}
-.doc{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;height:340px;
-  overflow-y:auto;padding:18px 20px;font-family:var(--mono);font-size:.78rem;
-  line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;color:var(--pri-deep)}
-.doc .cursor{display:inline-block;width:7px;height:14px;background:var(--seal);
-  vertical-align:-2px;animation:blink 1s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
-.stage{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-bottom:10px;
-  display:flex;align-items:center;gap:8px}
-.dropicon{width:10px;height:10px;border-radius:50%;background:var(--seal);
-  animation:drip 1.2s ease-in-out infinite}
-@keyframes drip{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(5px);opacity:.4}}
+.viz{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;
+  min-height:340px;padding:26px 24px 20px;display:flex;flex-direction:column;
+  align-items:center;gap:0;overflow:hidden;position:relative}
+/* 墨滴 → 池 */
+.alembic{position:relative;width:120px;height:150px;flex-shrink:0}
+.a-drop{position:absolute;left:50%;top:0;width:10px;height:14px;margin-left:-5px;
+  background:var(--pri-deep);border-radius:50% 50% 60% 60%;
+  animation:fall 1.5s cubic-bezier(.5,.05,.9,.4) infinite}
+.viz.running .a-drop{animation-play-state:running}
+.viz:not(.running) .a-drop{display:none}
+@keyframes fall{0%{transform:translateY(0) scale(.6);opacity:0}
+  15%{opacity:1;transform:translateY(4px) scale(1)}
+  85%{transform:translateY(104px) scale(1);opacity:1}
+  100%{transform:translateY(110px) scale(1.6,.3);opacity:0}}
+.a-pool{position:absolute;left:10px;right:10px;bottom:8px;height:0;
+  background:linear-gradient(180deg,var(--pri) 0%,var(--pri-deep) 100%);
+  border-radius:6px 6px 10px 10px;transition:height .8s ease;min-height:4px;opacity:.92}
+.a-pool::after{content:"";position:absolute;left:0;right:0;top:-3px;height:4px;
+  background:rgba(255,255,255,.35);border-radius:50%}
+.a-dish{position:absolute;left:4px;right:4px;bottom:4px;height:34px;
+  border:2.5px solid var(--ink);border-top:none;border-radius:0 0 14px 14px}
+/* 浮現的語氣片段 */
+.frag{min-height:54px;display:flex;align-items:center;justify-content:center;
+  text-align:center;max-width:52ch;margin:10px 0 4px}
+.frag span{font-family:var(--serif);font-weight:600;font-size:.95rem;
+  color:var(--pri-deep);animation:fragfade 2.6s ease both}
+@keyframes fragfade{0%{opacity:0;transform:translateY(8px);filter:blur(3px)}
+  18%{opacity:1;transform:none;filter:none}82%{opacity:1}100%{opacity:0}}
+/* 六段成形軌 */
+.stages{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.stage-chip{display:inline-flex;align-items:center;gap:6px;
+  border:1.5px solid var(--bdr);border-radius:99px;padding:5px 13px;
+  font-size:.78rem;color:var(--mist);background:var(--card);transition:all .35s}
+.stage-chip svg{color:var(--bdr);transition:color .35s}
+.stage-chip.lit{border-color:var(--ok);color:var(--ok);background:rgba(62,107,99,.07)}
+.stage-chip.lit svg{color:var(--ok)}
+.stage-chip.now{border-color:var(--pri);color:var(--pri);background:rgba(44,62,107,.07)}
+.vizstatus{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-top:14px;
+  min-height:1.4em;text-align:center}
+/* 全文摺疊 */
+.docwrap{margin-top:14px;width:100%}
+.docwrap summary{cursor:pointer;font-size:.85rem;color:var(--pri);font-weight:700;
+  list-style:none;display:inline-flex;align-items:center;gap:6px}
+.docwrap summary::-webkit-details-marker{display:none}
+.docwrap[open] summary svg{transform:rotate(90deg)}
+.docwrap summary svg{transition:transform .2s}
+.docfull{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;max-height:300px;
+  overflow-y:auto;padding:16px 18px;font-family:var(--mono);font-size:.76rem;
+  line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;color:var(--pri-deep);
+  margin-top:10px}
 /* 朱印 */
-.seal-stamp{position:absolute;right:26px;bottom:26px;width:92px;height:92px;
+.seal-stamp{position:absolute;right:26px;top:26px;width:92px;height:92px;
   border:4px solid var(--seal);border-radius:8px;color:var(--seal);
   font-family:var(--serif);font-weight:900;font-size:1.5rem;line-height:1.15;
   display:flex;align-items:center;justify-content:center;text-align:center;
@@ -139,7 +183,12 @@ button{font-family:var(--sans);cursor:pointer}
   flex-shrink:0;overflow:hidden;padding:1px;text-align:center;line-height:1}
 .chatname{font-weight:700}
 .chattag{font-family:var(--mono);font-size:.7rem;color:var(--mist)}
+.delbtn{margin-left:auto;background:none;border:1.5px solid var(--bdr);color:var(--mist);
+  border-radius:6px;padding:5px 12px;font-size:.78rem}
+.delbtn:hover{border-color:var(--seal);color:var(--seal)}
+.delbtn.arm{border-color:var(--seal);background:var(--seal);color:#fff}
 .msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msgs-empty{margin:auto;color:var(--mist);font-size:.85rem;text-align:center}
 .bub{max-width:75%;padding:9px 14px;border-radius:12px;font-size:.92rem;
   line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .bub.ai{background:var(--paper);border:1px solid var(--bdr);align-self:flex-start;
@@ -148,6 +197,7 @@ button{font-family:var(--sans);cursor:pointer}
 .chatin{display:flex;gap:10px;padding:12px;border-top:1.5px solid var(--bdr)}
 .chatin input{flex:1;padding:10px 14px;border:1.5px solid var(--bdr);border-radius:8px;
   font-family:var(--sans);font-size:.95rem;background:var(--card)}
+.chatin input::placeholder{color:var(--mist)}
 .chatin button{background:var(--pri);color:#fff;border:none;padding:0 22px;
   border-radius:8px;font-weight:700}
 .chatin button:disabled{background:var(--bdr)}
@@ -165,28 +215,42 @@ button{font-family:var(--sans);cursor:pointer}
   border-radius:8px;padding:12px 16px;margin-top:14px;font-size:.9rem;display:none}
 footer{margin:60px 0 30px;color:var(--mist);font-size:.78rem;font-family:var(--mono)}
 footer a{color:var(--mist)}
+.gobtn.chatgo{display:none;margin-top:16px}
 @media(max-width:560px){
   .station{padding-left:0}
   .stno{position:static;margin-bottom:8px}
   .station::before{display:none}
   .bub{max-width:88%}
+  .seal-stamp{width:72px;height:72px;font-size:1.15rem;right:14px;top:14px}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<a class="homelink" href="https://aiwalkcorp.com/" title="aiwalkcorp 智意行科技 公司主頁">
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-  aiwalkcorp.com — 公司主頁
-</a>
+<div class="topbar">
+  <a class="homebtn" href="https://aiwalkcorp.com/">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span class="lang-zh">aiwalkcorp 公司主頁</span><span class="lang-en">aiwalkcorp Home</span>
+  </a>
+  <div class="langtoggle" role="group" aria-label="Language">
+    <button id="btn-zh" type="button">中文</button>
+    <button id="btn-en" type="button">EN</button>
+  </div>
+</div>
+
 <header class="top">
   <div class="wordmark">Copy<em>Me</em> 復刻</div>
   <div class="byline">aiwalkcorp product no.5</div>
 </header>
-<p class="lede">我們不只打造你的小腦，還能<em>復刻</em>一個你。</p>
-<p class="sub">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——
-說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</p>
+<p class="lede">
+  <span class="lang-zh">我們不只打造你的小腦，還能<em>復刻</em>一個你。</span>
+  <span class="lang-en">We don't just build your cerebellum — we can <em>copy</em> you.</span>
+</p>
+<p class="sub">
+  <span class="lang-zh">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</span>
+  <span class="lang-en">aiwalkcorp's cerebellum lets an exoskeleton walk for you; CopyMe faithfully copies how you talk into an AI twin. Upload a LINE chat export, pick a person, and minutes later you're talking to their twin — rhythm, catchphrases, even the typos, all distilled from the corpus.</span>
+</p>
 <div class="shelf" id="shelf"></div>
 
 <div class="err" id="err"></div>
@@ -194,25 +258,25 @@ footer a{color:var(--mist)}
 <!-- 01 上傳 -->
 <section class="station on" id="st1">
   <div class="stno">01</div>
-  <h2 class="sttitle">上傳聊天紀錄</h2>
-  <p class="sthint">LINE App → 聊天室設定 → 傳送聊天紀錄 → 存成 .txt</p>
+  <h2 class="sttitle"><span class="lang-zh">上傳聊天紀錄</span><span class="lang-en">Upload a chat export</span></h2>
+  <p class="sthint"><span class="lang-zh">LINE App → 聊天室設定 → 傳送聊天紀錄 → 存成 .txt</span><span class="lang-en">LINE App → Chat settings → Export chat history → save as .txt</span></p>
   <div class="card">
     <div class="drop" id="drop">
-      把 .txt 拖到這裡，或
-      <div><label class="filebtn">選擇檔案<input type="file" id="file" accept=".txt,text/plain" hidden></label></div>
+      <span id="droptext"><span class="lang-zh">把 .txt 拖到這裡，或</span><span class="lang-en">Drop the .txt here, or</span></span>
+      <div><label class="filebtn"><span class="lang-zh">選擇檔案</span><span class="lang-en">Choose file</span><input type="file" id="file" accept=".txt,text/plain" hidden></label></div>
     </div>
     <div class="trust">
       <div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-        <span><b>一次性蒸餾</b>——原始對話檔只用於這一次蒸餾，完成後立即從伺服器刪除，未完成的上傳 2 小時內自動清除</span>
+        <span><span class="lang-zh"><b>一次性蒸餾</b>——原始對話檔只用於這一次蒸餾，完成後立即從伺服器刪除，未完成的上傳 2 小時內自動清除</span><span class="lang-en"><b>One-time distillation</b> — your chat file is used once and deleted from the server the moment distillation completes; abandoned uploads are purged within 2 hours</span></span>
       </div>
       <div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-        <span><b>不做訓練</b>——你的對話不會被用來訓練任何模型，也不交給第三方；只留下蒸餾出的人格檔供對話</span>
+        <span><span class="lang-zh"><b>不做訓練</b>——你的對話不會被用來訓練任何模型，也不交給第三方；只留下蒸餾出的人格檔供對話</span><span class="lang-en"><b>Never used for training</b> — your conversations never train any model and are never shared; only the distilled persona file remains, for chatting</span></span>
       </div>
       <div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-        <span><b>隨時可刪</b>——蒸餾出的分身在對話視窗一鍵刪除，人格檔即刻銷毀</span>
+        <span><span class="lang-zh"><b>隨時可刪</b>——蒸餾出的分身在對話視窗一鍵刪除，人格檔即刻銷毀</span><span class="lang-en"><b>Delete anytime</b> — remove the twin with one click in the chat window; its persona file is destroyed immediately</span></span>
       </div>
     </div>
   </div>
@@ -221,33 +285,48 @@ footer a{color:var(--mist)}
 <!-- 02 選人 -->
 <section class="station" id="st2">
   <div class="stno">02</div>
-  <h2 class="sttitle">選擇要蒸餾的人</h2>
-  <p class="sthint">名單依發言量排序；至少要有 30 句文字訊息才蒸得出來</p>
+  <h2 class="sttitle"><span class="lang-zh">選擇要復刻的人</span><span class="lang-en">Pick who to copy</span></h2>
+  <p class="sthint"><span class="lang-zh">名單依發言量排序；至少要有 30 句文字訊息才蒸得出來</span><span class="lang-en">Sorted by message count; at least 30 text messages are needed</span></p>
   <div class="card">
     <div class="meta" id="uploadmeta"></div>
     <div class="people" id="people"></div>
-    <button class="gobtn" id="distillbtn" disabled>開始蒸餾</button>
+    <button class="gobtn" id="distillbtn" disabled><span class="lang-zh">開始蒸餾</span><span class="lang-en">Start distilling</span></button>
   </div>
 </section>
 
 <!-- 03 蒸餾 -->
 <section class="station" id="st3">
   <div class="stno">03</div>
-  <h2 class="sttitle">蒸餾中</h2>
-  <p class="sthint">人格檔正在成形——表達 DNA、語氣例句、誠實邊界</p>
+  <h2 class="sttitle"><span class="lang-zh">蒸餾中</span><span class="lang-en">Distilling</span></h2>
+  <p class="sthint"><span class="lang-zh">人格檔正在成形——表達 DNA、語氣例句、誠實邊界</span><span class="lang-en">The persona is taking shape — expression DNA, voice samples, honest limits</span></p>
   <div class="card still">
-    <div class="stage" id="stage"><span class="dropicon"></span><span id="stagetext">等待開始</span></div>
-    <div class="doc" id="doc"></div>
-    <div id="sealslot"></div>
-    <button class="gobtn" id="chatbtn" style="display:none;margin-top:16px">跟分身說話</button>
+    <div class="viz" id="viz">
+      <div class="alembic" aria-hidden="true">
+        <div class="a-drop"></div>
+        <div class="a-dish"></div>
+        <div class="a-pool" id="pool"></div>
+      </div>
+      <div class="frag" id="frag" aria-live="polite"></div>
+      <div class="stages" id="stages"></div>
+      <div class="vizstatus" id="vizstatus"></div>
+      <details class="docwrap" id="docwrap" style="display:none">
+        <summary>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="lang-zh">查看人格檔全文</span><span class="lang-en">View the full persona file</span>
+        </summary>
+        <div class="docfull" id="docfull"></div>
+      </details>
+      <div id="sealslot"></div>
+    </div>
+    <button class="gobtn chatgo" id="chatbtn"><span class="lang-zh">跟分身說話</span><span class="lang-en">Talk to the twin</span></button>
   </div>
 </section>
 
 <!-- 04 對話 -->
 <section class="station" id="st4">
   <div class="stno">04</div>
-  <h2 class="sttitle">對話</h2>
-  <p class="sthint">分身只知道語料裡的事；私人資訊它會裝傻</p>
+  <h2 class="sttitle"><span class="lang-zh">對話</span><span class="lang-en">Chat</span></h2>
+  <p class="sthint"><span class="lang-zh">分身只知道語料裡的事；私人資訊它會裝傻</span><span class="lang-en">The twin only knows what's in the corpus; it plays dumb on private matters</span></p>
   <div class="card">
     <div class="chatbox">
       <div class="chathead">
@@ -256,20 +335,20 @@ footer a{color:var(--mist)}
           <div class="chatname" id="chatname"></div>
           <div class="chattag" id="chattag"></div>
         </div>
-        <button class="delbtn" id="delbtn" title="刪除這個分身，人格檔即刻銷毀">刪除分身</button>
+        <button class="delbtn" id="delbtn"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
       </div>
       <div class="msgs" id="msgs"></div>
       <div class="chatin">
-        <input id="say" placeholder="說點什麼…" autocomplete="off">
-        <button id="send">送出</button>
+        <input id="say" autocomplete="off">
+        <button id="send"><span class="lang-zh">送出</span><span class="lang-en">Send</span></button>
       </div>
     </div>
   </div>
 </section>
 
 <footer>
-  CopyMe 復刻 by <a href="https://aiwalkcorp.com">aiwalkcorp 智意行科技</a> ·
-  蒸餾引擎 Claude API · 對話檔用完即刪、不做訓練、分身隨時可刪
+  <span class="lang-zh">CopyMe 復刻 by <a href="https://aiwalkcorp.com">aiwalkcorp 智意行科技</a> · 蒸餾引擎 Claude API · 對話檔用完即刪、不做訓練、分身隨時可刪</span>
+  <span class="lang-en">CopyMe by <a href="https://aiwalkcorp.com">aiwalkcorp</a> · distilled with the Claude API · chat files deleted after use, never trained on, twins deletable anytime</span>
 </footer>
 </div>
 
@@ -280,7 +359,54 @@ const API = (location.hostname.endsWith("fly.dev") || location.hostname === "loc
 const $ = id => document.getElementById(id);
 const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[] };
 
-function showErr(msg){ const e=$("err"); e.textContent=msg; e.style.display="block";
+/* ── 語言（沿用主站 aiwalk-lang 慣例） ── */
+let LANG = localStorage.getItem("aiwalk-lang") || "zh";
+const T = {
+  zh: {
+    parsing:"上傳解析中…", dropback:"把 .txt 拖到這裡，或",
+    msgsUnit:(n)=>`${n.toLocaleString()} 則訊息`, saysUnit:(n)=>`${n.toLocaleString()} 則發言`,
+    mediaOnly:"（多為貼圖照片）", distillName:(n)=>`開始蒸餾「${n}」`,
+    reading:(n)=>`正在閱讀「${n}」的語料…`,
+    corpusInfo:(s)=>`語料 ${s.count} 句（取樣 ${s.sampled}）・跨度 ${s.span}`,
+    formed:"蒸餾完成，人格已定調", interrupted:"蒸餾中斷",
+    stages:["角色規則","身份卡","表達DNA","語氣例句","情境應對","誠實邊界"],
+    aiTag:"AI 分身 · CopyMe 復刻", hello:(n)=>`跟「${n}」的分身打個招呼吧`,
+    deleted:"分身已刪除，人格檔已從伺服器銷毀。",
+    delBtn:"刪除分身", delConfirm:"確定刪除？",
+    say:"說點什麼…", resume:"續聊", sendFail:(m)=>`（訊息沒送出去：${m}）`,
+    refuse:"（這題我不方便回）", svcDown:"服務暫時沒有回應",
+  },
+  en: {
+    parsing:"Uploading & parsing…", dropback:"Drop the .txt here, or",
+    msgsUnit:(n)=>`${n.toLocaleString()} messages`, saysUnit:(n)=>`${n.toLocaleString()} messages`,
+    mediaOnly:"(mostly stickers & photos)", distillName:(n)=>`Distill "${n}"`,
+    reading:(n)=>`Reading ${n}'s corpus…`,
+    corpusInfo:(s)=>`${s.count} lines (sampled ${s.sampled}) · span ${s.span}`,
+    formed:"Distillation complete — persona sealed", interrupted:"Distillation interrupted",
+    stages:["Role rules","Identity","Expression DNA","Voice samples","Scenarios","Honest limits"],
+    aiTag:"AI twin · CopyMe", hello:(n)=>`Say hi to ${n}'s twin`,
+    deleted:"Twin deleted. Its persona file has been destroyed on the server.",
+    delBtn:"Delete twin", delConfirm:"Delete for real?",
+    say:"Say something…", resume:"resume", sendFail:(m)=>`(Message not sent: ${m})`,
+    refuse:"(I'd rather not answer that)", svcDown:"The service didn't respond",
+  },
+};
+const t = key => T[LANG][key];
+
+function applyLang(l){
+  LANG = l;
+  localStorage.setItem("aiwalk-lang", l);
+  document.body.classList.toggle("en", l === "en");
+  document.documentElement.lang = l === "en" ? "en" : "zh-Hant";
+  $("btn-zh").classList.toggle("active", l === "zh");
+  $("btn-en").classList.toggle("active", l === "en");
+  $("say").placeholder = t("say");
+  buildStages();
+}
+$("btn-zh").addEventListener("click", ()=>applyLang("zh"));
+$("btn-en").addEventListener("click", ()=>applyLang("en"));
+
+function showErr(msg){ const e=$("err"); e.textContent = msg; e.style.display="block";
   e.scrollIntoView({block:"center"}); }
 function clearErr(){ $("err").style.display="none"; }
 function setStation(n){
@@ -292,14 +418,13 @@ function setStation(n){
   $("st"+n).scrollIntoView({block:"start"});
 }
 function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
-const code = () => "";  // 開放使用，不設通行碼
 
 /* ── SSE over fetch ── */
 async function sseFetch(url, body, onEvent){
   const res = await fetch(API+url, {method:"POST",
     headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
   if(!res.ok){
-    let d = "服務暫時沒有回應";
+    let d = t("svcDown");
     try{ d = (await res.json()).detail || d; }catch(_){}
     throw new Error(d);
   }
@@ -324,27 +449,29 @@ async function sseFetch(url, body, onEvent){
 
 /* ── 01 上傳 ── */
 const drop = $("drop");
-["dragover","dragenter"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("hover");}));
-["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("hover");}));
+["dragover","dragenter"].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.add("hover");}));
+["dragleave","drop"].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.remove("hover");}));
 drop.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) upload(f); });
 $("file").addEventListener("change", e=>{ const f=e.target.files[0]; if(f) upload(f); });
 
 async function upload(f){
   clearErr();
-  drop.firstChild.textContent = "上傳解析中… ";
+  $("droptext").textContent = t("parsing");
   const fd = new FormData();
-  fd.append("file", f); fd.append("access_code", code());
+  fd.append("file", f); fd.append("access_code", "");
   try{
     const res = await fetch(API+"/api/upload", {method:"POST", body:fd});
     const j = await res.json();
-    if(!res.ok) throw new Error(j.detail || "上傳失敗");
+    if(!res.ok) throw new Error(j.detail || t("svcDown"));
     state.uploadId = j.upload_id;
-    $("uploadmeta").textContent =
-      `${j.room} ・ ${j.total.toLocaleString()} 則訊息 ・ ${j.span}`;
+    $("uploadmeta").textContent = `${j.room} ・ ${t("msgsUnit")(j.total)} ・ ${j.span}`;
     renderPeople(j.people);
     setStation(2);
   }catch(err){ showErr(err.message); }
-  finally{ drop.firstChild.textContent = "把 .txt 拖到這裡，或 "; }
+  finally{
+    $("droptext").innerHTML =
+      '<span class="lang-zh">把 .txt 拖到這裡，或</span><span class="lang-en">Drop the .txt here, or</span>';
+  }
 }
 
 function renderPeople(people){
@@ -352,53 +479,100 @@ function renderPeople(people){
   people.forEach(p=>{
     const b = document.createElement("button");
     b.className = "person";
-    b.innerHTML = `<div class="pname"></div>
-      <div class="pcount">${p.count.toLocaleString()} 則發言</div>
-      <div class="psample"></div>`;
+    b.innerHTML = `<div class="pname"></div><div class="pcount"></div><div class="psample"></div>`;
     b.querySelector(".pname").textContent = p.name;
-    b.querySelector(".psample").textContent = p.samples.join(" / ") || "（多為貼圖照片）";
+    b.querySelector(".pcount").textContent = t("saysUnit")(p.count);
+    b.querySelector(".psample").textContent = p.samples.join(" / ") || t("mediaOnly");
     b.addEventListener("click", ()=>{
       state.person = p.name;
       box.querySelectorAll(".person").forEach(x=>x.classList.remove("sel"));
       b.classList.add("sel");
       $("distillbtn").disabled = false;
-      $("distillbtn").textContent = `開始蒸餾「${p.name}」`;
+      $("distillbtn").textContent = t("distillName")(p.name);
     });
     box.appendChild(b);
   });
 }
 
-/* ── 03 蒸餾 ── */
+/* ── 03 蒸餾動畫（真實串流驅動） ── */
+const STAGE_KEYS = ["角色扮演規則","身份卡","表達DNA","語氣例句","情境應對","誠實邊界"];
+let stageState = [];
+
+function buildStages(){
+  const box = $("stages"); box.innerHTML = "";
+  t("stages").forEach((label,i)=>{
+    const chip = document.createElement("span");
+    chip.className = "stage-chip" + (stageState[i] ? " lit" : "");
+    chip.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span></span>`;
+    chip.querySelector("span").textContent = label;
+    box.appendChild(chip);
+  });
+}
+
+function lightStage(i){
+  stageState[i] = true;
+  const chips = $("stages").children;
+  for(let k=0;k<chips.length;k++){
+    chips[k].classList.toggle("lit", !!stageState[k]);
+    chips[k].classList.toggle("now", k === i+1 && !stageState[k+1]);
+  }
+  $("pool").style.height = `${6 + (stageState.filter(Boolean).length/STAGE_KEYS.length)*24}px`;
+}
+
+let lastFrag = 0;
+function showFrag(text){
+  const now = Date.now();
+  if(now - lastFrag < 2800) return;
+  lastFrag = now;
+  const f = $("frag"); f.innerHTML = "";
+  const s = document.createElement("span");
+  s.textContent = text.length > 42 ? text.slice(0,42)+"…" : text;
+  f.appendChild(s);
+}
+
 $("distillbtn").addEventListener("click", async ()=>{
   clearErr(); setStation(3);
-  const docEl = $("doc");
-  docEl.innerHTML = '<span class="cursor"></span>';
-  $("stagetext").textContent = `正在閱讀「${state.person}」的語料…`;
+  stageState = STAGE_KEYS.map(()=>false);
+  buildStages();
+  $("viz").classList.add("running");
+  $("pool").style.height = "6px";
+  $("frag").innerHTML = ""; $("docfull").textContent = "";
+  $("docwrap").style.display = "none"; $("docwrap").removeAttribute("open");
   $("sealslot").innerHTML = ""; $("chatbtn").style.display = "none";
-  let started = false;
+  $("vizstatus").textContent = t("reading")(state.person);
+  let acc = "", stageIdx = 0;
   try{
     await sseFetch("/api/distill",
-      {upload_id:state.uploadId, person:state.person, access_code:code()},
+      {upload_id:state.uploadId, person:state.person, access_code:""},
       (ev, d)=>{
         if(ev==="status"){
-          $("stagetext").textContent =
-            `語料 ${d.stats.count} 句（取樣 ${d.stats.sampled}）・跨度 ${d.stats.span}・蒸餾中`;
+          $("vizstatus").textContent = t("corpusInfo")(d.stats);
         }else if(ev==="delta"){
-          if(!started){ docEl.textContent=""; started=true;
-            docEl.insertAdjacentHTML("beforeend",'<span class="cursor"></span>'); }
-          docEl.querySelector(".cursor").insertAdjacentText("beforebegin", d.text);
-          docEl.scrollTop = docEl.scrollHeight;
+          acc += d.text;
+          while(stageIdx < STAGE_KEYS.length && acc.includes(STAGE_KEYS[stageIdx])){
+            lightStage(stageIdx); stageIdx++;
+          }
+          const q = acc.match(/[>「]([^\n」>]{6,40})[」]?\n/g);
+          if(q && q.length){
+            const raw = q[q.length-1].replace(/[>「」\n]/g,"").trim();
+            if(raw) showFrag(raw);
+          }
         }else if(ev==="done"){
           state.personaId = d.persona_id; state.personaName = d.name;
-          docEl.querySelector(".cursor")?.remove();
-          $("stagetext").textContent = "蒸餾完成，人格已定調";
-          document.querySelector(".stage .dropicon").style.animation = "none";
-          $("sealslot").innerHTML =
-            `<div class="seal-stamp">${sealText(d.name)}</div>`;
+          stageState = STAGE_KEYS.map(()=>true); buildStages();
+          $("pool").style.height = "30px";
+          $("viz").classList.remove("running");
+          $("vizstatus").textContent = t("formed");
+          $("docfull").textContent = acc;
+          $("docwrap").style.display = "block";
+          $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(d.name)}</div>`;
           $("chatbtn").style.display = "inline-block";
         }else if(ev==="error"){ throw new Error(d.message); }
       });
-  }catch(err){ showErr(err.message); $("stagetext").textContent = "蒸餾中斷"; }
+  }catch(err){
+    $("viz").classList.remove("running");
+    showErr(err.message); $("vizstatus").textContent = t("interrupted");
+  }
 });
 
 $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.personaName));
@@ -407,33 +581,38 @@ $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.per
 function enterChat(pid, name){
   state.personaId = pid; state.personaName = name; state.history = [];
   $("chatname").textContent = name;
-  $("chattag").textContent = "AI 分身 · CopyMe 復刻";
+  $("chattag").textContent = t("aiTag");
   $("chatseal").textContent = sealText(name);
-  $("msgs").innerHTML =
-    `<div class="msgs-empty">跟「${name}」的分身打個招呼吧</div>`;
+  $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
+  $("msgs").firstChild.textContent = t("hello")(name);
   const db = $("delbtn");
-  db.textContent = "刪除分身"; db.classList.remove("arm");
+  db.classList.remove("arm"); resetDelBtn();
   setStation(4);
   $("say").focus();
 }
+function resetDelBtn(){
+  $("delbtn").innerHTML =
+    '<span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span>';
+}
 
-/* 兩段式刪除：第一下武裝、第二下執行；點別處解除 */
 $("delbtn").addEventListener("click", async ()=>{
   const db = $("delbtn");
+  if(!state.personaId) return;
   if(!db.classList.contains("arm")){
-    db.classList.add("arm"); db.textContent = "確定刪除？";
-    setTimeout(()=>{ db.classList.remove("arm"); db.textContent = "刪除分身"; }, 4000);
+    db.classList.add("arm"); db.textContent = t("delConfirm");
+    setTimeout(()=>{ db.classList.remove("arm"); resetDelBtn(); }, 4000);
     return;
   }
   try{
     const res = await fetch(API+`/api/personas/${state.personaId}/delete`, {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({access_code: code()})});
-    if(!res.ok) throw new Error((await res.json()).detail || "刪除失敗");
-    $("msgs").innerHTML = '<div class="msgs-empty">分身已刪除，人格檔已從伺服器銷毀。</div>';
+      body: JSON.stringify({access_code:""})});
+    if(!res.ok) throw new Error((await res.json()).detail || t("svcDown"));
+    $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
+    $("msgs").firstChild.textContent = t("deleted");
     $("chatname").textContent = ""; $("chattag").textContent = "";
     $("chatseal").textContent = ""; state.personaId = null; state.history = [];
-    db.classList.remove("arm"); db.textContent = "刪除分身";
+    db.classList.remove("arm"); resetDelBtn();
   }catch(err){ showErr(err.message); }
 });
 
@@ -457,21 +636,20 @@ async function send(){
   let acc = "";
   try{
     await sseFetch("/api/chat",
-      {persona_id:state.personaId, messages:state.history, access_code:code()},
+      {persona_id:state.personaId, messages:state.history, access_code:""},
       (ev,d)=>{
         if(ev==="delta"){ acc += d.text; live.textContent = acc;
           $("msgs").scrollTop = $("msgs").scrollHeight; }
         else if(ev==="error"){ throw new Error(d.message); }
       });
     state.history.push({role:"assistant", content:acc});
-    /* 拆成多則氣泡，還原短訊連發的節奏 */
     const lines = acc.split("\n").map(s=>s.trim()).filter(Boolean);
     if(lines.length > 1){
       live.remove();
       lines.forEach(l=>bubble("ai", l));
     }
   }catch(err){
-    live.textContent = "（訊息沒送出去："+err.message+"）";
+    live.textContent = t("sendFail")(err.message);
   }finally{ $("send").disabled = false; input.focus(); }
 }
 $("send").addEventListener("click", send);
@@ -486,13 +664,17 @@ $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) 
     j.personas.slice(0,6).forEach(p=>{
       const b = document.createElement("button");
       b.className = "shelfbtn";
-      b.innerHTML = `<span class="mini">${sealText(p.name)}</span> 續聊`;
-      b.insertBefore(document.createTextNode(p.name+" "), b.lastChild);
+      b.innerHTML = `<span class="mini"></span><span class="nm"></span> <span class="rs"></span>`;
+      b.querySelector(".mini").textContent = sealText(p.name);
+      b.querySelector(".nm").textContent = p.name;
+      b.querySelector(".rs").textContent = t("resume");
       b.addEventListener("click", ()=> enterChat(p.id, p.name));
       shelf.appendChild(b);
     });
   }catch(_){/* 服務喚醒中，靜默 */}
 })();
+
+applyLang(LANG);
 </script>
 </body>
 </html>
