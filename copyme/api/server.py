@@ -292,9 +292,19 @@ def index():
     return FileResponse(Path(__file__).parent / "index.html")
 
 
+def _purge_stale_uploads() -> None:
+    """一次性承諾的保險絲：沒蒸餾就離開的上傳檔，2 小時後自動清除。"""
+    import time
+    cutoff = time.time() - 7200
+    for p in UPLOADS.glob("*.json"):
+        if p.stat().st_mtime < cutoff:
+            p.unlink(missing_ok=True)
+
+
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...), access_code: str = Form("")):
     check_code(access_code)
+    _purge_stale_uploads()
     raw = (await file.read()).decode("utf-8", errors="replace")
     if len(raw) > 30_000_000:
         raise HTTPException(413, "檔案太大（上限 30MB）")
@@ -368,6 +378,7 @@ async def distill(payload: dict):
             "stats": stats,
             "created": datetime.now(TZ).isoformat(timespec="seconds"),
         }, ensure_ascii=False), encoding="utf-8")
+        upath.unlink(missing_ok=True)  # 一次性承諾：蒸餾完成，原始對話檔立即刪除
         yield sse("done", {"persona_id": pid, "name": person})
 
     return StreamingResponse(gen(), media_type="text/event-stream",
@@ -390,6 +401,18 @@ def get_persona(pid: str):
         raise HTTPException(404, "找不到這個人格")
     return {"meta": json.loads((pdir / "meta.json").read_text(encoding="utf-8")),
             "persona": (pdir / "persona.md").read_text(encoding="utf-8")}
+
+
+@app.post("/api/personas/{pid}/delete")
+def delete_persona(pid: str, payload: dict):
+    """分身可隨時刪除：人格檔＋meta 一併移除。"""
+    check_code(payload.get("access_code"))
+    import shutil
+    pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
+    if not (pdir / "meta.json").exists():
+        raise HTTPException(404, "找不到這個分身")
+    shutil.rmtree(pdir)
+    return {"deleted": True}
 
 
 @app.post("/api/chat")

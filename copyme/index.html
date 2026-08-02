@@ -12,7 +12,7 @@
 :root{
   --paper:#f2ece0; --card:#fbf7ee; --ink:#191d2b;
   --pri:#2c3e6b; --pri-deep:#1c2749; --seal:#b3382c; --seal-soft:#e8c4bd;
-  --mist:#7a7466; --bdr:#d9d2c2; --ok:#3e6b63;
+  --mist:#696355; --bdr:#d9d2c2; --ok:#3e6b63;
   --serif:"Noto Serif TC",serif; --sans:"Noto Sans TC",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,monospace;
 }
@@ -35,8 +35,24 @@ button{font-family:var(--sans);cursor:pointer}
 .wordmark{font-family:var(--serif);font-weight:900;font-size:1.7rem;letter-spacing:.02em}
 .wordmark em{font-style:normal;color:var(--seal)}
 .byline{font-family:var(--mono);font-size:.75rem;color:var(--mist)}
-.lede{font-family:var(--serif);font-weight:600;font-size:1.12rem;color:var(--pri-deep);
-  border-left:4px solid var(--seal);padding-left:14px;margin:14px 0 6px}
+.lede{font-family:var(--serif);font-weight:900;font-size:1.45rem;color:var(--pri-deep);
+  letter-spacing:.01em;margin:18px 0 6px;text-wrap:balance}
+.lede em{font-style:normal;color:var(--seal)}
+.homelink{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);
+  font-size:.75rem;color:var(--mist);text-decoration:none;margin-top:26px}
+.homelink:hover{color:var(--pri)}
+.homelink svg{flex-shrink:0}
+.trust{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--bdr);text-align:left}
+.trust div{display:flex;gap:7px;align-items:flex-start;flex:1;min-width:180px;
+  font-size:.78rem;color:var(--mist);line-height:1.55}
+.trust svg{flex-shrink:0;margin-top:2px;color:var(--ok)}
+.trust b{color:var(--ink);font-weight:700}
+.delbtn{margin-left:auto;background:none;border:1.5px solid var(--bdr);color:var(--mist);
+  border-radius:6px;padding:5px 12px;font-size:.78rem}
+.delbtn:hover{border-color:var(--seal);color:var(--seal)}
+.delbtn.arm{border-color:var(--seal);background:var(--seal);color:#fff}
+.msgs-empty{margin:auto;color:var(--mist);font-size:.85rem;text-align:center}
 .sub{color:var(--mist);font-size:.9rem;max-width:60ch}
 
 /* ── 管線步驟 ── */
@@ -91,7 +107,7 @@ button{font-family:var(--sans);cursor:pointer}
 .still{position:relative}
 .doc{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;height:340px;
   overflow-y:auto;padding:18px 20px;font-family:var(--mono);font-size:.78rem;
-  line-height:1.7;white-space:pre-wrap;word-break:break-all;color:var(--pri-deep)}
+  line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;color:var(--pri-deep)}
 .doc .cursor{display:inline-block;width:7px;height:14px;background:var(--seal);
   vertical-align:-2px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
@@ -160,11 +176,15 @@ footer a{color:var(--mist)}
 <body>
 <div class="wrap">
 
+<a class="homelink" href="https://aiwalkcorp.com/" title="aiwalkcorp 智意行科技 公司主頁">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+  aiwalkcorp.com — 公司主頁
+</a>
 <header class="top">
   <div class="wordmark">Copy<em>Me</em> 復刻</div>
   <div class="byline">aiwalkcorp product no.5</div>
 </header>
-<p class="lede">我們不只打造你的小腦，還能復刻一個你。</p>
+<p class="lede">我們不只打造你的小腦，還能<em>復刻</em>一個你。</p>
 <p class="sub">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——
 說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</p>
 <div class="shelf" id="shelf"></div>
@@ -180,7 +200,20 @@ footer a{color:var(--mist)}
     <div class="drop" id="drop">
       把 .txt 拖到這裡，或
       <div><label class="filebtn">選擇檔案<input type="file" id="file" accept=".txt,text/plain" hidden></label></div>
-      <div class="privacy">檔案只用於本次蒸餾，存放在 aiwalkcorp 自有伺服器，不會交給第三方。</div>
+    </div>
+    <div class="trust">
+      <div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><b>一次性蒸餾</b>——原始對話檔只用於這一次蒸餾，完成後立即從伺服器刪除，未完成的上傳 2 小時內自動清除</span>
+      </div>
+      <div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><b>不做訓練</b>——你的對話不會被用來訓練任何模型，也不交給第三方；只留下蒸餾出的人格檔供對話</span>
+      </div>
+      <div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><b>隨時可刪</b>——蒸餾出的分身在對話視窗一鍵刪除，人格檔即刻銷毀</span>
+      </div>
     </div>
     <div class="coderow">
       <label for="code">通行碼</label>
@@ -227,6 +260,7 @@ footer a{color:var(--mist)}
           <div class="chatname" id="chatname"></div>
           <div class="chattag" id="chattag"></div>
         </div>
+        <button class="delbtn" id="delbtn" title="刪除這個分身，人格檔即刻銷毀">刪除分身</button>
       </div>
       <div class="msgs" id="msgs"></div>
       <div class="chatin">
@@ -239,7 +273,7 @@ footer a{color:var(--mist)}
 
 <footer>
   CopyMe 復刻 by <a href="https://aiwalkcorp.com">aiwalkcorp 智意行科技</a> ·
-  蒸餾引擎 Claude API · 語料不離開自有伺服器
+  蒸餾引擎 Claude API · 對話檔用完即刪、不做訓練、分身隨時可刪
 </footer>
 </div>
 
@@ -379,12 +413,36 @@ function enterChat(pid, name){
   $("chatname").textContent = name;
   $("chattag").textContent = "AI 分身 · CopyMe 復刻";
   $("chatseal").textContent = sealText(name);
-  $("msgs").innerHTML = "";
+  $("msgs").innerHTML =
+    `<div class="msgs-empty">跟「${name}」的分身打個招呼吧</div>`;
+  const db = $("delbtn");
+  db.textContent = "刪除分身"; db.classList.remove("arm");
   setStation(4);
   $("say").focus();
 }
 
+/* 兩段式刪除：第一下武裝、第二下執行；點別處解除 */
+$("delbtn").addEventListener("click", async ()=>{
+  const db = $("delbtn");
+  if(!db.classList.contains("arm")){
+    db.classList.add("arm"); db.textContent = "確定刪除？";
+    setTimeout(()=>{ db.classList.remove("arm"); db.textContent = "刪除分身"; }, 4000);
+    return;
+  }
+  try{
+    const res = await fetch(API+`/api/personas/${state.personaId}/delete`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({access_code: code()})});
+    if(!res.ok) throw new Error((await res.json()).detail || "刪除失敗");
+    $("msgs").innerHTML = '<div class="msgs-empty">分身已刪除，人格檔已從伺服器銷毀。</div>';
+    $("chatname").textContent = ""; $("chattag").textContent = "";
+    $("chatseal").textContent = ""; state.personaId = null; state.history = [];
+    db.classList.remove("arm"); db.textContent = "刪除分身";
+  }catch(err){ showErr(err.message); }
+});
+
 function bubble(cls, text){
+  $("msgs").querySelector(".msgs-empty")?.remove();
   const b = document.createElement("div");
   b.className = "bub "+cls; b.textContent = text;
   $("msgs").appendChild(b);
