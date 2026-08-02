@@ -215,10 +215,6 @@ footer a{color:var(--mist)}
         <span><b>隨時可刪</b>——蒸餾出的分身在對話視窗一鍵刪除，人格檔即刻銷毀</span>
       </div>
     </div>
-    <div class="coderow">
-      <label for="code">通行碼</label>
-      <input id="code" type="password" autocomplete="off" placeholder="向 aiwalkcorp 索取">
-    </div>
   </div>
 </section>
 
@@ -296,7 +292,7 @@ function setStation(n){
   $("st"+n).scrollIntoView({block:"start"});
 }
 function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
-const code = () => $("code").value.trim();
+const code = () => "";  // 開放使用，不設通行碼
 
 /* ── SSE over fetch ── */
 async function sseFetch(url, body, onEvent){
