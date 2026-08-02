@@ -11,3 +11,5 @@ Thumbs.db:encryptable
 
 # Contains personal data (隊員身分證/住址/緊急聯絡人) — keep out of version control
 trailforge/api/scripts/update-xueshan.ts
+__pycache__/
+*.pyc
