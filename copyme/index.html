@@ -367,8 +367,8 @@ footer a{color:var(--mist)}
     <button class="mclose" id="au-close" aria-label="Close">✕</button>
     <h3 id="au-title"><span class="lang-zh">登入</span><span class="lang-en">Sign in</span></h3>
     <p class="mnote">
-      <span class="lang-zh">與 Trailforge 共用同一組帳號。登入後蒸餾的分身只有你看得到。</span>
-      <span class="lang-en">One account across aiwalkcorp products. Twins you distill are visible only to you.</span>
+      <span class="lang-zh">與 Trailforge 共用同一組帳號。登入後蒸餾的分身只有你看得到。密碼至少 6 個字元。</span>
+      <span class="lang-en">One account across aiwalkcorp products. Twins you distill are visible only to you. Password: 6+ characters.</span>
     </p>
     <input id="au-email" type="email" autocomplete="email" placeholder="email">
     <input id="au-name" type="text" autocomplete="username" placeholder="username" style="display:none">
@@ -649,23 +649,37 @@ $("au-mode").addEventListener("click", ()=>{
     ? '<span class="lang-zh">已有帳號？改為登入</span><span class="lang-en">Have an account? Sign in</span>'
     : '<span class="lang-zh">還沒有帳號？我要註冊</span><span class="lang-en">No account yet? Register</span>';
 });
+function authErrMsg(code){
+  const zh = {invalid_input:"輸入格式不對——密碼至少 6 個字元；使用者名稱 3-32 位，只能用英數、_、-",
+    email_taken:"這個 email 已註冊過，改用登入", username_taken:"這個使用者名稱已被使用，換一個",
+    invalid_credentials:"帳號或密碼不對", rate_limited:"嘗試太多次，請稍後再試"};
+  const en = {invalid_input:"Invalid input — password needs 6+ characters; username 3-32 chars (letters, digits, _, -)",
+    email_taken:"Email already registered — sign in instead", username_taken:"Username taken — pick another",
+    invalid_credentials:"Wrong email or password", rate_limited:"Too many attempts — try again later"};
+  return (LANG==="en"?en:zh)[code] || t("svcDown");
+}
 async function doAuth(){
   clearErr();
   const email = $("au-email").value.trim(), pass = $("au-pass").value;
   if(!email || !pass) return;
+  if(regMode){
+    const uname = $("au-name").value.trim() || email.split("@")[0];
+    if(pass.length < 6){ showErr(authErrMsg("invalid_input")); return; }
+    if(!/^[a-zA-Z0-9_-]{3,32}$/.test(uname)){ showErr(authErrMsg("invalid_input")); return; }
+  }
   try{
     if(regMode){
       const rr = await fetch(API+"/api/auth/register", {method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({email, username: $("au-name").value.trim() || email.split("@")[0], password: pass})});
       if(!rr.ok){ const j = await rr.json();
-        throw new Error(j.error === "email_taken" ? (LANG==="en"?"Email already registered":"這個 email 已註冊過") : JSON.stringify(j.error||t("svcDown"))); }
+        throw new Error(authErrMsg(j.error)); }
     }
     const r = await fetch(API+"/api/auth/login", {method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({identifier: email, password: pass})});
     const j = await r.json();
-    if(!r.ok || !j.access_token) throw new Error(t("authFail"));
+    if(!r.ok || !j.access_token) throw new Error(authErrMsg(j.error || "invalid_credentials"));
     store.set("tf_access_token", j.access_token);
     if(j.refresh_token) store.set("tf_refresh_token", j.refresh_token);
     if(j.user) store.set("tf_user", JSON.stringify(j.user));
