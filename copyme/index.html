@@ -247,7 +247,7 @@ body.en div.lang-en{display:block}
   border-radius:6px;font-weight:700;font-size:.88rem}
 
 /* ── 對話 focus 介面（全螢幕層） ── */
-.chatlayer{position:fixed;inset:0;background:var(--paper);z-index:50;display:none;
+.chatlayer{position:fixed;inset:0;background:var(--paper);z-index:55;display:none;
   flex-direction:column;
   background-image:radial-gradient(rgba(44,62,107,.05) 1px,transparent 1px);
   background-size:26px 26px}
@@ -264,6 +264,53 @@ body.en div.lang-en{display:block}
 .cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
   border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
+/* ── 我的印譜（收藏頁） ── */
+.studio{position:fixed;inset:0;background:var(--paper);z-index:40;display:none;
+  overflow-y:auto;
+  background-image:radial-gradient(rgba(44,62,107,.05) 1px,transparent 1px);
+  background-size:26px 26px}
+.studio.open{display:block}
+.studio-wrap{max-width:880px;margin:0 auto;padding:26px 20px 60px}
+.studio-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:26px}
+.studio-title{font-family:var(--serif);font-weight:900;font-size:1.6rem}
+.studio-title em{font-style:normal;color:var(--seal)}
+.studio-sub{font-family:var(--mono);font-size:.75rem;color:var(--mist)}
+.studio-back{margin-left:auto;background:none;border:1.5px solid var(--bdr);
+  color:var(--mist);border-radius:6px;padding:7px 16px;font-size:.84rem;font-weight:700}
+.studio-back:hover{border-color:var(--pri);color:var(--pri)}
+.albumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.leaf{background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;
+  padding:20px;display:flex;flex-direction:column;gap:10px;position:relative;
+  box-shadow:0 2px 0 rgba(25,29,43,.04)}
+.leaf-seal{width:64px;height:64px;border:3.5px solid var(--seal);border-radius:7px;
+  color:var(--seal);font-family:var(--serif);font-weight:900;font-size:1.15rem;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  transform:rotate(-6deg);mix-blend-mode:multiply;background:rgba(179,56,44,.06);
+  transition:transform .15s}
+.leaf:hover .leaf-seal{transform:rotate(-6deg) scale(1.06)}
+.leaf-name{font-family:var(--serif);font-weight:900;font-size:1.1rem}
+.leaf-name .demo-badge{vertical-align:2px}
+.leaf-meta{font-family:var(--mono);font-size:.72rem;color:var(--mist);line-height:1.8}
+.leaf-actions{display:flex;gap:8px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
+.leaf-actions button{border-radius:6px;padding:7px 14px;font-size:.82rem;font-weight:700}
+.la-chat{background:var(--seal);color:#fff;border:none;flex:1}
+.la-chat:hover{filter:brightness(.92)}
+.la-view{background:none;border:1.5px solid var(--bdr);color:var(--mist)}
+.la-view:hover{border-color:var(--pri);color:var(--pri)}
+.la-del{background:none;border:1.5px solid var(--bdr);color:var(--mist)}
+.la-del:hover{border-color:var(--seal);color:var(--seal)}
+.la-del.arm{background:var(--seal);border-color:var(--seal);color:#fff}
+.studio-empty{text-align:center;color:var(--mist);padding:70px 20px;font-size:.95rem}
+.studio-empty .gobtn{margin-top:18px}
+.mytwins{display:none;align-items:center;gap:7px;border:1.5px solid var(--bdr);
+  background:var(--card);border-radius:8px;padding:7px 14px;font-size:.84rem;
+  font-weight:700;color:var(--ink)}
+.mytwins:hover{border-color:var(--seal);color:var(--seal)}
+/* 人格檔檢視 */
+.pmodal-doc{max-height:56vh;overflow-y:auto;font-family:var(--mono);font-size:.74rem;
+  line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;color:var(--pri-deep);
+  background:#fff;border:1.5px solid var(--bdr);border-radius:8px;padding:14px 16px}
 .err{background:#fdf0ee;border:1.5px solid var(--seal);color:var(--seal);
   border-radius:8px;padding:12px 16px;margin-top:14px;font-size:.9rem;display:none}
 footer{margin:60px 0 30px;color:var(--mist);font-size:.78rem;font-family:var(--mono)}
@@ -290,6 +337,10 @@ footer a{color:var(--mist)}
     <svg width="11" height="13" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
     <span><span class="lang-zh">體驗額度</span><span class="lang-en">Free pool</span> <b id="poolval"></b></span>
   </div>
+  <button class="mytwins" id="mytwins">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
+    <span class="lang-zh">我的印譜</span><span class="lang-en">My twins</span>
+  </button>
   <button class="authchip" id="authchip">
     <span id="authchip-label"><span class="lang-zh">登入／註冊</span><span class="lang-en">Sign in</span></span>
   </button>
@@ -411,6 +462,32 @@ footer a{color:var(--mist)}
   </div>
 </section>
 
+<!-- 我的印譜：登入後的分身收藏頁 -->
+<div class="studio" id="studio" role="dialog" aria-modal="true">
+  <div class="studio-wrap">
+    <div class="studio-head">
+      <div>
+        <div class="studio-title"><span class="lang-zh">我的<em>印譜</em></span><span class="lang-en">My <em>twins</em></span></div>
+        <div class="studio-sub" id="studio-sub"></div>
+      </div>
+      <button class="studio-back" id="studioback"><span class="lang-zh">← 回蒸餾所</span><span class="lang-en">← Back to distilling</span></button>
+    </div>
+    <div class="albumgrid" id="albumgrid"></div>
+    <div class="studio-empty" id="studioempty" style="display:none">
+      <div><span class="lang-zh">印譜還是空的——蒸你的第一個分身吧。</span><span class="lang-en">Your album is empty — distill your first twin.</span></div>
+      <button class="gobtn" id="emptygo"><span class="lang-zh">去蒸餾</span><span class="lang-en">Start distilling</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-veil" id="pmodal">
+  <div class="modal modal-box" style="max-width:640px">
+    <button class="mclose" id="pm-close" aria-label="Close">✕</button>
+    <h3 id="pm-title"></h3>
+    <div class="pmodal-doc" id="pm-doc"></div>
+  </div>
+</div>
+
 <!-- 對話 focus 介面 -->
 <div class="chatlayer" id="chatlayer" role="dialog" aria-modal="true">
   <div class="cl-head">
@@ -507,6 +584,7 @@ function applyLang(l){
   if(state.person && !$("distillbtn").disabled)
     $("distillbtn").textContent = t("distillName")(state.person);
   if(state.personaId) $("chattag").textContent = t("aiTag");
+  if($("studio").classList.contains("open")) renderStudio();
 }
 $("btn-zh").addEventListener("click", ()=>applyLang("zh"));
 $("btn-en").addEventListener("click", ()=>applyLang("en"));
@@ -544,6 +622,8 @@ function renderAuth(){
     l.textContent = LANG==="en" ? "Sign in / Register" : "登入／註冊";
     chip.append(l);
   }
+  $("mytwins").style.display = on ? "inline-flex" : "none";
+  if(!on) closeStudio();
   $("lockline").style.display = on ? "none" : "flex";
   $("drop").style.display = on ? "" : "none";
   $("st1").classList.toggle("on", on && !document.querySelector(".station.on:not(#st1)"));
@@ -591,7 +671,8 @@ async function doAuth(){
     if(j.user) store.set("tf_user", JSON.stringify(j.user));
     $("au-pass").value = "";
     closeAuth();
-    await refreshMe(); loadShelf();
+    await refreshMe(); await loadShelf();
+    if(location.hash === "#studio") openStudio();
   }catch(err){ showErr(err.message); }
 }
 $("au-go").addEventListener("click", doAuth);
@@ -783,6 +864,91 @@ function enterChat(pid, name){
   document.body.style.overflow = "hidden";
   $("say").focus();
 }
+/* ── 我的印譜 ── */
+function openStudio(){
+  if(!ME){ openAuth(); return; }
+  renderStudio();
+  $("studio").classList.add("open");
+  if(location.hash !== "#studio") history.pushState(null, "", "#studio");
+}
+function closeStudio(){
+  $("studio").classList.remove("open");
+  if(location.hash === "#studio") history.pushState(null, "", location.pathname);
+}
+window.addEventListener("popstate", ()=>{
+  $("studio").classList.toggle("open", location.hash === "#studio" && !!ME);
+});
+$("mytwins").addEventListener("click", openStudio);
+$("studioback").addEventListener("click", closeStudio);
+$("emptygo").addEventListener("click", closeStudio);
+$("pm-close").addEventListener("click", ()=> $("pmodal").classList.remove("open"));
+$("pmodal").addEventListener("click", e=>{ if(e.target===$("pmodal")) $("pmodal").classList.remove("open"); });
+
+function renderStudio(){
+  const grid = $("albumgrid"), mine = (state.twins||[]);
+  grid.innerHTML = "";
+  $("studio-sub").textContent = (ME ? (ME.username || ME.email) + " ・ " : "") +
+    (LANG==="en" ? mine.length + " twins" : mine.length + " 方");
+  $("studioempty").style.display = mine.length ? "none" : "block";
+  mine.forEach(p=>{
+    const leaf = document.createElement("div");
+    leaf.className = "leaf";
+    leaf.innerHTML = `<div class="leaf-seal"></div>
+      <div class="leaf-name"></div>
+      <div class="leaf-meta"></div>
+      <div class="leaf-actions">
+        <button class="la-chat"></button>
+        <button class="la-view"></button>
+        <button class="la-del"></button>
+      </div>`;
+    leaf.querySelector(".leaf-seal").textContent = sealText(p.name);
+    const nm = leaf.querySelector(".leaf-name");
+    nm.textContent = p.name;
+    if(p.demo){
+      const b = document.createElement("span");
+      b.className = "demo-badge"; b.textContent = t("demo");
+      nm.append(" ", b);
+    }
+    const st = p.stats || {};
+    leaf.querySelector(".leaf-meta").textContent =
+      (p.room ? p.room + "\n" : "") +
+      (st.count ? (LANG==="en" ? st.count + " lines" : st.count + " 句語料") + " ・ " : "") +
+      (p.created || "").slice(0,10);
+    const [bc, bv, bd] = leaf.querySelectorAll("button");
+    bc.textContent = LANG==="en" ? "Chat" : "對話";
+    bv.textContent = LANG==="en" ? "Persona file" : "人格檔";
+    bd.textContent = LANG==="en" ? "Delete" : "刪除";
+    bc.addEventListener("click", ()=> enterChat(p.id, p.name));
+    bv.addEventListener("click", async ()=>{
+      try{
+        const r = await fetch(API+"/api/personas/"+p.id, {headers: authHeaders()});
+        const j = await r.json();
+        if(!r.ok) throw new Error(j.detail || t("svcDown"));
+        $("pm-title").textContent = p.name + (LANG==="en" ? " · persona file" : " · 人格檔");
+        $("pm-doc").textContent = j.persona;
+        $("pmodal").classList.add("open");
+      }catch(err){ showErr(err.message); }
+    });
+    bd.addEventListener("click", async ()=>{
+      if(!bd.classList.contains("arm")){
+        bd.classList.add("arm");
+        bd.textContent = LANG==="en" ? "Delete for real?" : "確定刪除？";
+        setTimeout(()=>{ bd.classList.remove("arm");
+          bd.textContent = LANG==="en" ? "Delete" : "刪除"; }, 4000);
+        return;
+      }
+      try{
+        const r = await fetch(API+"/api/personas/"+p.id+"/delete", {
+          method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
+          body: JSON.stringify({})});
+        if(!r.ok) throw new Error((await r.json()).detail || t("svcDown"));
+        await loadShelf(); renderStudio();
+      }catch(err){ showErr(err.message); }
+    });
+    grid.appendChild(leaf);
+  });
+}
+
 function closeChat(){
   $("chatlayer").classList.remove("open");
   document.body.style.overflow = "";
@@ -791,7 +957,9 @@ $("clclose").addEventListener("click", closeChat);
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
     if($("authmodal").classList.contains("open")) closeAuth();
+    else if($("pmodal").classList.contains("open")) $("pmodal").classList.remove("open");
     else if($("chatlayer").classList.contains("open")) closeChat();
+    else if($("studio").classList.contains("open")) closeStudio();
   }
 });
 function resetDelBtn(){
@@ -895,8 +1063,8 @@ async function loadShelf(){
   }catch(_){ state.twins = state.twins || []; }
   renderTwins();
 }
-loadShelf();
-refreshMe();
+loadShelf().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
+refreshMe().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
 
 async function loadBudget(){
   try{
