@@ -180,10 +180,7 @@ body.en div.lang-en{display:block}
   100%{transform:rotate(-6deg) scale(1);opacity:1}}
 
 /* ── 對話 ── */
-.chatbox{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;
-  height:430px;display:flex;flex-direction:column}
-.chathead{display:flex;align-items:center;gap:10px;padding:12px 16px;
-  border-bottom:1.5px solid var(--bdr)}
+.twinrow{display:flex;gap:10px;flex-wrap:wrap;min-height:44px}
 .chatseal{width:34px;height:34px;border:2.5px solid var(--seal);border-radius:6px;
   color:var(--seal);font-family:var(--serif);font-weight:900;font-size:.85rem;
   display:flex;align-items:center;justify-content:center;transform:rotate(-6deg);
@@ -218,18 +215,53 @@ body.en div.lang-en{display:block}
   transform:rotate(-6deg);color:var(--seal);font-family:var(--serif);font-weight:900;
   font-size:.6rem;display:flex;align-items:center;justify-content:center}
 
-/* ── 會員列 ── */
-.authbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;
-  background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;padding:12px 16px}
-.authbar .who{font-size:.85rem;color:var(--ink)}
-.authbar .who b{color:var(--pri)}
-.authbar input{padding:8px 12px;border:1.5px solid var(--bdr);border-radius:6px;
-  background:#fff;font-family:var(--sans);font-size:.88rem;min-width:0;flex:1;max-width:220px}
-.authbar .abtn{background:var(--pri);color:#fff;border:none;padding:8px 18px;
-  border-radius:6px;font-size:.88rem;font-weight:700}
-.authbar .abtn.ghost{background:none;border:1.5px solid var(--bdr);color:var(--mist)}
-.authbar .abtn.ghost:hover{border-color:var(--pri);color:var(--pri)}
-.authnote{font-size:.78rem;color:var(--mist);width:100%}
+/* ── 會員：topbar 狀態＋登入彈窗 ── */
+.authchip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--bdr);
+  background:var(--card);border-radius:8px;padding:7px 14px;font-size:.84rem;
+  color:var(--ink);font-weight:700}
+.authchip:hover{border-color:var(--pri);color:var(--pri)}
+.authchip .uname{color:var(--pri)}
+.authchip .out{border:none;background:none;color:var(--mist);font-size:.78rem;
+  padding:0 0 0 6px;text-decoration:underline}
+.authchip .out:hover{color:var(--seal)}
+.modal-veil{position:fixed;inset:0;background:rgba(25,29,43,.45);display:none;
+  align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal-veil.open{display:flex}
+.modal{background:var(--card);border:1.5px solid var(--bdr);border-radius:12px;
+  padding:26px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(25,29,43,.25)}
+.modal h3{font-family:var(--serif);font-weight:900;font-size:1.2rem;margin-bottom:4px}
+.modal .mnote{font-size:.8rem;color:var(--mist);margin-bottom:16px;line-height:1.6}
+.modal input{width:100%;padding:10px 13px;border:1.5px solid var(--bdr);border-radius:7px;
+  background:#fff;font-family:var(--sans);font-size:.92rem;margin-bottom:10px}
+.modal .abtn{width:100%;background:var(--pri);color:#fff;border:none;padding:11px;
+  border-radius:7px;font-size:.95rem;font-weight:700;margin-top:4px}
+.modal .abtn:hover{background:var(--pri-deep)}
+.modal .mswitch{background:none;border:none;color:var(--pri);font-size:.82rem;
+  margin-top:12px;text-decoration:underline;padding:0}
+.modal .mclose{position:absolute;top:14px;right:16px;background:none;border:none;
+  color:var(--mist);font-size:1.1rem;line-height:1;padding:4px}
+.modal-box{position:relative}
+.lockline{display:flex;align-items:center;gap:10px;justify-content:center;
+  padding:12px;color:var(--mist);font-size:.85rem}
+.lockline button{background:var(--pri);color:#fff;border:none;padding:8px 20px;
+  border-radius:6px;font-weight:700;font-size:.88rem}
+
+/* ── 對話 focus 介面（全螢幕層） ── */
+.chatlayer{position:fixed;inset:0;background:var(--paper);z-index:50;display:none;
+  flex-direction:column;
+  background-image:radial-gradient(rgba(44,62,107,.05) 1px,transparent 1px);
+  background-size:26px 26px}
+.chatlayer.open{display:flex}
+.cl-head{display:flex;align-items:center;gap:12px;padding:14px 22px;
+  border-bottom:1.5px solid var(--bdr);background:var(--card)}
+.cl-head-main{min-width:0}
+.cl-close{margin-left:8px;background:none;border:1.5px solid var(--bdr);color:var(--mist);
+  border-radius:6px;padding:6px 14px;font-size:.82rem;font-weight:700}
+.cl-close:hover{border-color:var(--pri);color:var(--pri)}
+.cl-msgs{flex:1;overflow-y:auto;padding:26px 20px}
+.cl-msgs-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:9px}
+.cl-in{border-top:1.5px solid var(--bdr);background:var(--card);padding:14px 20px}
+.cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
   border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
 .err{background:#fdf0ee;border:1.5px solid var(--seal);color:var(--seal);
@@ -258,6 +290,9 @@ footer a{color:var(--mist)}
     <svg width="11" height="13" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
     <span><span class="lang-zh">體驗額度</span><span class="lang-en">Free pool</span> <b id="poolval"></b></span>
   </div>
+  <button class="authchip" id="authchip">
+    <span id="authchip-label"><span class="lang-zh">登入／註冊</span><span class="lang-en">Sign in</span></span>
+  </button>
   <div class="langtoggle" role="group" aria-label="Language">
     <button id="btn-zh" type="button">中文</button>
     <button id="btn-en" type="button">EN</button>
@@ -276,18 +311,20 @@ footer a{color:var(--mist)}
   <span class="lang-zh">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</span>
   <span class="lang-en">aiwalkcorp's cerebellum lets an exoskeleton walk for you; CopyMe faithfully copies how you talk into an AI twin. Upload a LINE chat export, pick a person, and minutes later you're talking to their twin — rhythm, catchphrases, even the typos, all distilled from the corpus.</span>
 </p>
-<div class="authbar" id="authbar">
-  <span class="who" id="who" style="display:none"></span>
-  <input id="au-email" type="email" autocomplete="email" placeholder="email">
-  <input id="au-name" type="text" autocomplete="username" placeholder="username" style="display:none">
-  <input id="au-pass" type="password" autocomplete="current-password" placeholder="password">
-  <button class="abtn" id="au-go"><span class="lang-zh">登入</span><span class="lang-en">Sign in</span></button>
-  <button class="abtn ghost" id="au-mode"><span class="lang-zh">我要註冊</span><span class="lang-en">Register</span></button>
-  <button class="abtn ghost" id="au-out" style="display:none"><span class="lang-zh">登出</span><span class="lang-en">Sign out</span></button>
-  <span class="authnote">
-    <span class="lang-zh">與 Trailforge 共用同一組帳號。示範分身不用登入就能聊；登入後才能上傳蒸餾自己的，且只有你看得到。</span>
-    <span class="lang-en">One account across aiwalkcorp products. Demo twins are open to everyone; sign in to distill your own — visible only to you.</span>
-  </span>
+<div class="modal-veil" id="authmodal">
+  <div class="modal modal-box">
+    <button class="mclose" id="au-close" aria-label="Close">✕</button>
+    <h3 id="au-title"><span class="lang-zh">登入</span><span class="lang-en">Sign in</span></h3>
+    <p class="mnote">
+      <span class="lang-zh">與 Trailforge 共用同一組帳號。登入後蒸餾的分身只有你看得到。</span>
+      <span class="lang-en">One account across aiwalkcorp products. Twins you distill are visible only to you.</span>
+    </p>
+    <input id="au-email" type="email" autocomplete="email" placeholder="email">
+    <input id="au-name" type="text" autocomplete="username" placeholder="username" style="display:none">
+    <input id="au-pass" type="password" autocomplete="current-password" placeholder="password">
+    <button class="abtn" id="au-go"><span class="lang-zh">登入</span><span class="lang-en">Sign in</span></button>
+    <button class="mswitch" id="au-mode"><span class="lang-zh">還沒有帳號？我要註冊</span><span class="lang-en">No account yet? Register</span></button>
+  </div>
 </div>
 <div class="shelf" id="shelf"></div>
 
@@ -299,6 +336,10 @@ footer a{color:var(--mist)}
   <h2 class="sttitle"><span class="lang-zh">上傳聊天紀錄</span><span class="lang-en">Upload a chat export</span></h2>
   <p class="sthint"><span class="lang-zh">LINE App → 聊天室設定 → 傳送聊天紀錄 → 存成 .txt（需登入；你的分身只有你看得到）</span><span class="lang-en">LINE App → Chat settings → Export chat history → save as .txt (sign-in required; your twins stay private)</span></p>
   <div class="card">
+    <div class="lockline" id="lockline" style="display:none">
+      <span><span class="lang-zh">登入後即可上傳蒸餾（示範分身不用登入就能聊）</span><span class="lang-en">Sign in to upload & distill (demo twins are open to everyone)</span></span>
+      <button id="locklogin"><span class="lang-zh">登入／註冊</span><span class="lang-en">Sign in</span></button>
+    </div>
     <div class="drop" id="drop">
       <span id="droptext"><span class="lang-zh">把 .txt 拖到這裡，或</span><span class="lang-en">Drop the .txt here, or</span></span>
       <div><label class="filebtn"><span class="lang-zh">選擇檔案</span><span class="lang-en">Choose file</span><input type="file" id="file" accept=".txt,text/plain" hidden></label></div>
@@ -366,23 +407,27 @@ footer a{color:var(--mist)}
   <h2 class="sttitle"><span class="lang-zh">對話</span><span class="lang-en">Chat</span></h2>
   <p class="sthint"><span class="lang-zh">分身只知道語料裡的事；私人資訊它會裝傻</span><span class="lang-en">The twin only knows what's in the corpus; it plays dumb on private matters</span></p>
   <div class="card">
-    <div class="chatbox">
-      <div class="chathead">
-        <div class="chatseal" id="chatseal"></div>
-        <div>
-          <div class="chatname" id="chatname"></div>
-          <div class="chattag" id="chattag"></div>
-        </div>
-        <button class="delbtn" id="delbtn"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
-      </div>
-      <div class="msgs" id="msgs"></div>
-      <div class="chatin">
-        <input id="say" autocomplete="off">
-        <button id="send"><span class="lang-zh">送出</span><span class="lang-en">Send</span></button>
-      </div>
-    </div>
+    <div class="twinrow" id="twinrow"></div>
   </div>
 </section>
+
+<!-- 對話 focus 介面 -->
+<div class="chatlayer" id="chatlayer" role="dialog" aria-modal="true">
+  <div class="cl-head">
+    <div class="chatseal" id="chatseal"></div>
+    <div class="cl-head-main">
+      <div class="chatname" id="chatname"></div>
+      <div class="chattag" id="chattag"></div>
+    </div>
+    <button class="delbtn" id="delbtn"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
+    <button class="cl-close" id="clclose"><span class="lang-zh">關閉 Esc</span><span class="lang-en">Close Esc</span></button>
+  </div>
+  <div class="cl-msgs"><div class="cl-msgs-inner" id="msgs"></div></div>
+  <div class="cl-in"><div class="cl-in-inner">
+    <input id="say" autocomplete="off" class="chatin-input" style="flex:1;padding:11px 15px;border:1.5px solid var(--bdr);border-radius:8px;font-family:var(--sans);font-size:.95rem;background:#fff">
+    <button id="send" style="background:var(--pri);color:#fff;border:none;padding:0 24px;border-radius:8px;font-weight:700"><span class="lang-zh">送出</span><span class="lang-en">Send</span></button>
+  </div></div>
+</div>
 
 <footer>
   <span class="lang-zh">CopyMe 復刻 by <a href="https://aiwalkcorp.com">aiwalkcorp 智意行科技</a> · 蒸餾引擎 Claude API · 對話檔用完即刪、不做訓練、分身隨時可刪</span>
@@ -397,8 +442,16 @@ const API = (location.hostname.endsWith("fly.dev") || location.hostname === "loc
 const $ = id => document.getElementById(id);
 const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[] };
 
+/* 安全儲存層：無痕模式/嵌入情境 localStorage 可能直接 throw，退回記憶體 */
+const store = {
+  _m: {},
+  get(k){ try{ return localStorage.getItem(k); }catch(_){ return store._m[k] ?? null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(_){ store._m[k] = v; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(_){ delete store._m[k]; } },
+};
+
 /* ── 語言（沿用主站 aiwalk-lang 慣例） ── */
-let LANG = localStorage.getItem("aiwalk-lang") || "zh";
+let LANG = store.get("aiwalk-lang") || "zh";
 const T = {
   zh: {
     parsing:"上傳解析中…", dropback:"把 .txt 拖到這裡，或",
@@ -437,7 +490,7 @@ const t = key => T[LANG][key];
 
 function applyLang(l){
   LANG = l;
-  localStorage.setItem("aiwalk-lang", l);
+  store.set("aiwalk-lang", l);
   document.body.classList.toggle("en", l === "en");
   document.documentElement.lang = l === "en" ? "en" : "zh-Hant";
   $("btn-zh").classList.toggle("active", l === "zh");
@@ -449,7 +502,7 @@ $("btn-zh").addEventListener("click", ()=>applyLang("zh"));
 $("btn-en").addEventListener("click", ()=>applyLang("en"));
 
 /* ── 會員（與 Trailforge 共用 tf_access_token） ── */
-function token(){ return localStorage.getItem("tf_access_token") || ""; }
+function token(){ return store.get("tf_access_token") || ""; }
 function authHeaders(){ const t = token(); return t ? {"Authorization":"Bearer "+t} : {}; }
 let ME = null;
 async function refreshMe(){
@@ -458,35 +511,53 @@ async function refreshMe(){
     try{
       const r = await fetch(API+"/api/auth/me", {headers: authHeaders()});
       if(r.ok) ME = await r.json();
-      else if(r.status === 401) localStorage.removeItem("tf_access_token");
+      else if(r.status === 401) store.del("tf_access_token");
     }catch(_){}
   }
   renderAuth();
 }
 function renderAuth(){
   const on = !!ME;
-  $("who").style.display = on ? "inline" : "none";
-  $("au-out").style.display = on ? "inline-block" : "none";
-  ["au-email","au-name","au-pass","au-go","au-mode"].forEach(id=>
-    $(id).style.display = on ? "none" : (id==="au-name" && !regMode ? "none" : "inline-block"));
+  const chip = $("authchip");
+  chip.innerHTML = "";
   if(on){
-    $("who").innerHTML = "";
-    const b = document.createElement("b"); b.textContent = ME.username || ME.email;
-    $("who").append(document.createTextNode(LANG==="en"?"Signed in: ":"已登入："), b);
+    const u = document.createElement("span"); u.className = "uname";
+    u.textContent = ME.username || ME.email;
+    const out = document.createElement("button"); out.className = "out"; out.id = "au-out";
+    out.textContent = LANG==="en" ? "sign out" : "登出";
+    out.addEventListener("click", e=>{ e.stopPropagation();
+      ["tf_access_token","tf_refresh_token","tf_user"].forEach(k=>store.del(k));
+      ME = null; renderAuth(); loadShelf(); });
+    chip.append(u, out);
+  }else{
+    const l = document.createElement("span");
+    l.textContent = LANG==="en" ? "Sign in / Register" : "登入／註冊";
+    chip.append(l);
   }
-  $("st1").classList.toggle("on", on);
-  if(!on){ $("st1").classList.remove("done"); }
+  $("lockline").style.display = on ? "none" : "flex";
+  $("drop").style.display = on ? "" : "none";
+  $("st1").classList.toggle("on", on && !document.querySelector(".station.on:not(#st1)"));
+  if(!on){ $("st1").classList.add("on"); }
 }
+function openAuth(){ if(!ME) $("authmodal").classList.add("open"); $("au-email").focus(); }
+function closeAuth(){ $("authmodal").classList.remove("open"); }
+$("authchip").addEventListener("click", ()=>{ if(!ME) openAuth(); });
+$("locklogin").addEventListener("click", openAuth);
+$("au-close").addEventListener("click", closeAuth);
+$("authmodal").addEventListener("click", e=>{ if(e.target===$("authmodal")) closeAuth(); });
 let regMode = false;
 $("au-mode").addEventListener("click", ()=>{
   regMode = !regMode;
-  $("au-name").style.display = regMode ? "inline-block" : "none";
+  $("au-title").innerHTML = regMode
+    ? '<span class="lang-zh">註冊</span><span class="lang-en">Register</span>'
+    : '<span class="lang-zh">登入</span><span class="lang-en">Sign in</span>';
+  $("au-name").style.display = regMode ? "block" : "none";
   $("au-go").innerHTML = regMode
     ? '<span class="lang-zh">註冊並登入</span><span class="lang-en">Register & sign in</span>'
     : '<span class="lang-zh">登入</span><span class="lang-en">Sign in</span>';
   $("au-mode").innerHTML = regMode
-    ? '<span class="lang-zh">改為登入</span><span class="lang-en">Have an account?</span>'
-    : '<span class="lang-zh">我要註冊</span><span class="lang-en">Register</span>';
+    ? '<span class="lang-zh">已有帳號？改為登入</span><span class="lang-en">Have an account? Sign in</span>'
+    : '<span class="lang-zh">還沒有帳號？我要註冊</span><span class="lang-en">No account yet? Register</span>';
 });
 async function doAuth(){
   clearErr();
@@ -505,19 +576,16 @@ async function doAuth(){
       body: JSON.stringify({identifier: email, password: pass})});
     const j = await r.json();
     if(!r.ok || !j.access_token) throw new Error(t("authFail"));
-    localStorage.setItem("tf_access_token", j.access_token);
-    if(j.refresh_token) localStorage.setItem("tf_refresh_token", j.refresh_token);
-    if(j.user) localStorage.setItem("tf_user", JSON.stringify(j.user));
+    store.set("tf_access_token", j.access_token);
+    if(j.refresh_token) store.set("tf_refresh_token", j.refresh_token);
+    if(j.user) store.set("tf_user", JSON.stringify(j.user));
     $("au-pass").value = "";
+    closeAuth();
     await refreshMe(); loadShelf();
   }catch(err){ showErr(err.message); }
 }
 $("au-go").addEventListener("click", doAuth);
 $("au-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doAuth(); });
-$("au-out").addEventListener("click", ()=>{
-  ["tf_access_token","tf_refresh_token","tf_user"].forEach(k=>localStorage.removeItem(k));
-  ME = null; renderAuth(); loadShelf();
-});
 
 function showErr(msg){ const e=$("err"); e.textContent = msg; e.style.display="block";
   e.scrollIntoView({block:"center"}); }
@@ -701,9 +769,21 @@ function enterChat(pid, name){
   $("msgs").firstChild.textContent = t("hello")(name);
   const db = $("delbtn");
   db.classList.remove("arm"); resetDelBtn();
-  setStation(4);
+  $("chatlayer").classList.add("open");
+  document.body.style.overflow = "hidden";
   $("say").focus();
 }
+function closeChat(){
+  $("chatlayer").classList.remove("open");
+  document.body.style.overflow = "";
+}
+$("clclose").addEventListener("click", closeChat);
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape"){
+    if($("authmodal").classList.contains("open")) closeAuth();
+    else if($("chatlayer").classList.contains("open")) closeChat();
+  }
+});
 function resetDelBtn(){
   $("delbtn").innerHTML =
     '<span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span>';
@@ -722,11 +802,9 @@ $("delbtn").addEventListener("click", async ()=>{
       method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
       body: JSON.stringify({access_code:""})});
     if(!res.ok) throw new Error((await res.json()).detail || t("svcDown"));
-    $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
-    $("msgs").firstChild.textContent = t("deleted");
-    $("chatname").textContent = ""; $("chattag").textContent = "";
-    $("chatseal").textContent = ""; state.personaId = null; state.history = [];
+    state.personaId = null; state.history = [];
     db.classList.remove("arm"); resetDelBtn();
+    closeChat(); loadShelf();
   }catch(err){ showErr(err.message); }
 });
 
@@ -770,25 +848,37 @@ $("send").addEventListener("click", send);
 $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
 
 /* ── 分身書架（示範＋自己的） ── */
+function twinChip(p){
+  const b = document.createElement("button");
+  b.className = "shelfbtn";
+  b.innerHTML = `<span class="mini"></span><span class="nm"></span> <span class="rs"></span>`;
+  b.querySelector(".mini").textContent = sealText(p.name);
+  b.querySelector(".nm").textContent = p.name;
+  b.querySelector(".rs").textContent = t("resume");
+  if(p.demo){
+    const tag = document.createElement("span");
+    tag.className = "demo-badge"; tag.textContent = t("demo");
+    b.appendChild(tag);
+  }
+  b.addEventListener("click", ()=> enterChat(p.id, p.name));
+  return b;
+}
 async function loadShelf(){
-  const shelf = $("shelf"); shelf.innerHTML = "";
+  const shelf = $("shelf"), row = $("twinrow");
+  shelf.innerHTML = ""; row.innerHTML = "";
   try{
     const j = await (await fetch(API+"/api/personas", {headers: authHeaders()})).json();
-    (j.personas||[]).slice(0,8).forEach(p=>{
-      const b = document.createElement("button");
-      b.className = "shelfbtn";
-      b.innerHTML = `<span class="mini"></span><span class="nm"></span> <span class="rs"></span>`;
-      b.querySelector(".mini").textContent = sealText(p.name);
-      b.querySelector(".nm").textContent = p.name;
-      b.querySelector(".rs").textContent = t("resume");
-      if(p.demo){
-        const tag = document.createElement("span");
-        tag.className = "demo-badge"; tag.textContent = t("demo");
-        b.appendChild(tag);
-      }
-      b.addEventListener("click", ()=> enterChat(p.id, p.name));
-      shelf.appendChild(b);
-    });
+    const list = (j.personas||[]).slice(0,8);
+    list.forEach(p=>{ shelf.appendChild(twinChip(p)); row.appendChild(twinChip(p)); });
+    if(!list.length){
+      const empty = document.createElement("span");
+      empty.className = "msgs-empty";
+      empty.textContent = LANG==="en"
+        ? "No twins yet — distill one above."
+        : "還沒有分身——先在上面蒸一個。";
+      row.appendChild(empty);
+    }
+    if(list.length) $("st4").classList.add("on");
   }catch(_){/* 服務喚醒中，靜默 */}
 }
 loadShelf();
