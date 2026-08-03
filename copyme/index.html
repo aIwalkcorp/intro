@@ -466,6 +466,7 @@ const T = {
     delBtn:"刪除分身", delConfirm:"確定刪除？",
     say:"說點什麼…", resume:"續聊", demo:"示範", sendFail:(m)=>`（訊息沒送出去：${m}）`,
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
+    emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
     refuse:"（這題我不方便回）", svcDown:"服務暫時沒有回應",
   },
@@ -482,6 +483,7 @@ const T = {
     delBtn:"Delete twin", delConfirm:"Delete for real?",
     say:"Say something…", resume:"resume", demo:"demo", sendFail:(m)=>`(Message not sent: ${m})`,
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
+    emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
     refuse:"(I'd rather not answer that)", svcDown:"The service didn't respond",
   },
@@ -496,7 +498,15 @@ function applyLang(l){
   $("btn-zh").classList.toggle("active", l === "zh");
   $("btn-en").classList.toggle("active", l === "en");
   $("say").placeholder = t("say");
+  $("au-email").placeholder = t("emailPh");
+  $("au-name").placeholder = t("namePh");
+  $("au-pass").placeholder = t("passPh");
   buildStages();
+  if(typeof ME !== "undefined") renderAuth();
+  if(state.twins) renderTwins();
+  if(state.person && !$("distillbtn").disabled)
+    $("distillbtn").textContent = t("distillName")(state.person);
+  if(state.personaId) $("chattag").textContent = t("aiTag");
 }
 $("btn-zh").addEventListener("click", ()=>applyLang("zh"));
 $("btn-en").addEventListener("click", ()=>applyLang("en"));
@@ -863,23 +873,27 @@ function twinChip(p){
   b.addEventListener("click", ()=> enterChat(p.id, p.name));
   return b;
 }
-async function loadShelf(){
+function renderTwins(){
   const shelf = $("shelf"), row = $("twinrow");
   shelf.innerHTML = ""; row.innerHTML = "";
+  const list = state.twins || [];
+  list.forEach(p=>{ shelf.appendChild(twinChip(p)); row.appendChild(twinChip(p)); });
+  if(!list.length){
+    const empty = document.createElement("span");
+    empty.className = "msgs-empty";
+    empty.textContent = LANG==="en"
+      ? "No twins yet — distill one above."
+      : "還沒有分身——先在上面蒸一個。";
+    row.appendChild(empty);
+  }
+  if(list.length) $("st4").classList.add("on");
+}
+async function loadShelf(){
   try{
     const j = await (await fetch(API+"/api/personas", {headers: authHeaders()})).json();
-    const list = (j.personas||[]).slice(0,8);
-    list.forEach(p=>{ shelf.appendChild(twinChip(p)); row.appendChild(twinChip(p)); });
-    if(!list.length){
-      const empty = document.createElement("span");
-      empty.className = "msgs-empty";
-      empty.textContent = LANG==="en"
-        ? "No twins yet — distill one above."
-        : "還沒有分身——先在上面蒸一個。";
-      row.appendChild(empty);
-    }
-    if(list.length) $("st4").classList.add("on");
-  }catch(_){/* 服務喚醒中，靜默 */}
+    state.twins = (j.personas||[]).slice(0,8);
+  }catch(_){ state.twins = state.twins || []; }
+  renderTwins();
 }
 loadShelf();
 refreshMe();
