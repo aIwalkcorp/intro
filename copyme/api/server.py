@@ -24,7 +24,9 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import anthropic
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+import httpx
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
@@ -71,6 +73,46 @@ def budget_left() -> float:
 def check_budget() -> None:
     if budget_left() <= 0:
         raise HTTPException(402, "本站的體驗額度已用完，之後會再補充——晚點再來試試！")
+
+# ---- 會員：與 TrailForge 共用帳號（token 由 trailforge-api 簽發，這裡代理驗證）
+TF_API = os.environ.get("TF_API", "https://trailforge-api.fly.dev")
+TEAM_EMAILS = {e.strip().lower() for e in os.environ.get("PF_TEAM_EMAILS", "").split(",") if e.strip()}
+_auth_cache: dict = {}
+
+
+def resolve_user(authorization: str | None):
+    """Bearer token → trailforge /me 驗證（快取 10 分鐘）。無效回 None。"""
+    import time
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    tok = authorization[7:]
+    hit = _auth_cache.get(tok)
+    if hit and hit[0] > time.time():
+        return hit[1]
+    try:
+        r = httpx.get(f"{TF_API}/auth/me",
+                      headers={"Authorization": f"Bearer {tok}"}, timeout=8)
+        if r.status_code != 200:
+            return None
+        user = r.json()
+    except httpx.HTTPError:
+        return None
+    if len(_auth_cache) > 500:
+        _auth_cache.clear()
+    _auth_cache[tok] = (time.time() + 600, user)
+    return user
+
+
+def is_team(user) -> bool:
+    return bool(user) and user.get("email", "").lower() in TEAM_EMAILS
+
+
+def require_user(authorization: str | None):
+    user = resolve_user(authorization)
+    if not user:
+        raise HTTPException(401, "登入後才能上傳與蒸餾（示範分身不用登入就能聊）")
+    return user
+
 
 claude = anthropic.Anthropic()
 
@@ -321,6 +363,26 @@ def healthz():
     return {"ok": True, "model": MODEL, "personas": len(list(PERSONAS.glob("*/meta.json")))}
 
 
+@app.post("/api/auth/{action}")
+async def auth_proxy(action: str, payload: dict):
+    if action not in {"login", "register", "refresh"}:
+        raise HTTPException(404, "unknown auth action")
+    try:
+        r = httpx.post(f"{TF_API}/auth/{action}", json=payload, timeout=15)
+    except httpx.HTTPError:
+        raise HTTPException(502, "會員服務暫時沒有回應")
+    return JSONResponse(r.json(), status_code=r.status_code)
+
+
+@app.get("/api/auth/me")
+def auth_me(authorization: str | None = Header(None)):
+    user = resolve_user(authorization)
+    if not user:
+        raise HTTPException(401, "未登入")
+    return {"id": user["id"], "email": user["email"], "username": user.get("username"),
+            "team": is_team(user)}
+
+
 @app.get("/api/budget")
 def budget():
     return {"budget": BUDGET_USD, "spent": round(_spent(), 4),
@@ -342,8 +404,10 @@ def _purge_stale_uploads() -> None:
 
 
 @app.post("/api/upload")
-async def upload(file: UploadFile = File(...), access_code: str = Form("")):
+async def upload(file: UploadFile = File(...), access_code: str = Form(""),
+                 authorization: str | None = Header(None)):
     check_code(access_code)
+    require_user(authorization)
     _purge_stale_uploads()
     raw = (await file.read()).decode("utf-8", errors="replace")
     if len(raw) > 30_000_000:
@@ -369,8 +433,9 @@ async def upload(file: UploadFile = File(...), access_code: str = Form("")):
 
 
 @app.post("/api/distill")
-async def distill(payload: dict):
+async def distill(payload: dict, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
+    user = require_user(authorization)
     check_budget()
     uid, person = payload.get("upload_id", ""), payload.get("person", "")
     upath = UPLOADS / f"{re.sub(r'[^a-f0-9]', '', uid)}.json"
@@ -418,6 +483,8 @@ async def distill(payload: dict):
         (pdir / "meta.json").write_text(json.dumps({
             "id": pid, "name": person, "room": parsed["room"],
             "stats": stats,
+            "owner_id": user["id"], "owner_email": user["email"],
+            "demo": is_team(user),
             "created": datetime.now(TZ).isoformat(timespec="seconds"),
         }, ensure_ascii=False), encoding="utf-8")
         upath.unlink(missing_ok=True)  # 一次性承諾：蒸餾完成，原始對話檔立即刪除
@@ -427,38 +494,54 @@ async def distill(payload: dict):
                              headers={"Cache-Control": "no-cache"})
 
 
+def _visible(meta: dict, user) -> bool:
+    if meta.get("demo"):
+        return True
+    return bool(user) and meta.get("owner_id") == user.get("id")
+
+
 @app.get("/api/personas")
-def list_personas():
+def list_personas(authorization: str | None = Header(None)):
+    user = resolve_user(authorization)
     out = []
     for mp in sorted(PERSONAS.glob("*/meta.json"),
                      key=lambda p: p.stat().st_mtime, reverse=True):
-        out.append(json.loads(mp.read_text(encoding="utf-8")))
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        if _visible(meta, user):
+            meta.pop("owner_id", None); meta.pop("owner_email", None)
+            out.append(meta)
     return {"personas": out}
 
 
 @app.get("/api/personas/{pid}")
-def get_persona(pid: str):
+def get_persona(pid: str, authorization: str | None = Header(None)):
     pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
     if not (pdir / "meta.json").exists():
         raise HTTPException(404, "找不到這個人格")
-    return {"meta": json.loads((pdir / "meta.json").read_text(encoding="utf-8")),
-            "persona": (pdir / "persona.md").read_text(encoding="utf-8")}
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    if not _visible(meta, resolve_user(authorization)):
+        raise HTTPException(403, "這個分身不是公開示範，只有本人看得到")
+    return {"meta": meta, "persona": (pdir / "persona.md").read_text(encoding="utf-8")}
 
 
 @app.post("/api/personas/{pid}/delete")
-def delete_persona(pid: str, payload: dict):
-    """分身可隨時刪除：人格檔＋meta 一併移除。"""
+def delete_persona(pid: str, payload: dict, authorization: str | None = Header(None)):
+    """分身可隨時刪除：僅擁有者本人。"""
     check_code(payload.get("access_code"))
+    user = require_user(authorization)
     import shutil
     pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
     if not (pdir / "meta.json").exists():
         raise HTTPException(404, "找不到這個分身")
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    if meta.get("owner_id") != user.get("id"):
+        raise HTTPException(403, "只有擁有者能刪除這個分身")
     shutil.rmtree(pdir)
     return {"deleted": True}
 
 
 @app.post("/api/chat")
-async def chat(payload: dict):
+async def chat(payload: dict, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
     check_budget()
     pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
@@ -466,6 +549,8 @@ async def chat(payload: dict):
     if not (pdir / "persona.md").exists():
         raise HTTPException(404, "找不到這個人格，請先蒸餾")
     meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    if not _visible(meta, resolve_user(authorization)):
+        raise HTTPException(403, "這個分身不是公開示範，只有本人能對話")
     history = payload.get("messages", [])[-40:]
     if not history or history[-1].get("role") != "user":
         raise HTTPException(422, "缺少使用者訊息")

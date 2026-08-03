@@ -218,6 +218,20 @@ body.en div.lang-en{display:block}
   transform:rotate(-6deg);color:var(--seal);font-family:var(--serif);font-weight:900;
   font-size:.6rem;display:flex;align-items:center;justify-content:center}
 
+/* ── 會員列 ── */
+.authbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;
+  background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;padding:12px 16px}
+.authbar .who{font-size:.85rem;color:var(--ink)}
+.authbar .who b{color:var(--pri)}
+.authbar input{padding:8px 12px;border:1.5px solid var(--bdr);border-radius:6px;
+  background:#fff;font-family:var(--sans);font-size:.88rem;min-width:0;flex:1;max-width:220px}
+.authbar .abtn{background:var(--pri);color:#fff;border:none;padding:8px 18px;
+  border-radius:6px;font-size:.88rem;font-weight:700}
+.authbar .abtn.ghost{background:none;border:1.5px solid var(--bdr);color:var(--mist)}
+.authbar .abtn.ghost:hover{border-color:var(--pri);color:var(--pri)}
+.authnote{font-size:.78rem;color:var(--mist);width:100%}
+.demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
+  border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
 .err{background:#fdf0ee;border:1.5px solid var(--seal);color:var(--seal);
   border-radius:8px;padding:12px 16px;margin-top:14px;font-size:.9rem;display:none}
 footer{margin:60px 0 30px;color:var(--mist);font-size:.78rem;font-family:var(--mono)}
@@ -262,6 +276,19 @@ footer a{color:var(--mist)}
   <span class="lang-zh">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</span>
   <span class="lang-en">aiwalkcorp's cerebellum lets an exoskeleton walk for you; CopyMe faithfully copies how you talk into an AI twin. Upload a LINE chat export, pick a person, and minutes later you're talking to their twin — rhythm, catchphrases, even the typos, all distilled from the corpus.</span>
 </p>
+<div class="authbar" id="authbar">
+  <span class="who" id="who" style="display:none"></span>
+  <input id="au-email" type="email" autocomplete="email" placeholder="email">
+  <input id="au-name" type="text" autocomplete="username" placeholder="username" style="display:none">
+  <input id="au-pass" type="password" autocomplete="current-password" placeholder="password">
+  <button class="abtn" id="au-go"><span class="lang-zh">登入</span><span class="lang-en">Sign in</span></button>
+  <button class="abtn ghost" id="au-mode"><span class="lang-zh">我要註冊</span><span class="lang-en">Register</span></button>
+  <button class="abtn ghost" id="au-out" style="display:none"><span class="lang-zh">登出</span><span class="lang-en">Sign out</span></button>
+  <span class="authnote">
+    <span class="lang-zh">與 Trailforge 共用同一組帳號。示範分身不用登入就能聊；登入後才能上傳蒸餾自己的，且只有你看得到。</span>
+    <span class="lang-en">One account across aiwalkcorp products. Demo twins are open to everyone; sign in to distill your own — visible only to you.</span>
+  </span>
+</div>
 <div class="shelf" id="shelf"></div>
 
 <div class="err" id="err"></div>
@@ -270,7 +297,7 @@ footer a{color:var(--mist)}
 <section class="station on" id="st1">
   <div class="stno">01</div>
   <h2 class="sttitle"><span class="lang-zh">上傳聊天紀錄</span><span class="lang-en">Upload a chat export</span></h2>
-  <p class="sthint"><span class="lang-zh">LINE App → 聊天室設定 → 傳送聊天紀錄 → 存成 .txt</span><span class="lang-en">LINE App → Chat settings → Export chat history → save as .txt</span></p>
+  <p class="sthint"><span class="lang-zh">LINE App → 聊天室設定 → 傳送聊天紀錄 → 存成 .txt（需登入；你的分身只有你看得到）</span><span class="lang-en">LINE App → Chat settings → Export chat history → save as .txt (sign-in required; your twins stay private)</span></p>
   <div class="card">
     <div class="drop" id="drop">
       <span id="droptext"><span class="lang-zh">把 .txt 拖到這裡，或</span><span class="lang-en">Drop the .txt here, or</span></span>
@@ -384,7 +411,9 @@ const T = {
     aiTag:"AI 分身 · CopyMe 復刻", hello:(n)=>`跟「${n}」的分身打個招呼吧`,
     deleted:"分身已刪除，人格檔已從伺服器銷毀。",
     delBtn:"刪除分身", delConfirm:"確定刪除？",
-    say:"說點什麼…", resume:"續聊", sendFail:(m)=>`（訊息沒送出去：${m}）`,
+    say:"說點什麼…", resume:"續聊", demo:"示範", sendFail:(m)=>`（訊息沒送出去：${m}）`,
+    signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
+    regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
     refuse:"（這題我不方便回）", svcDown:"服務暫時沒有回應",
   },
   en: {
@@ -398,7 +427,9 @@ const T = {
     aiTag:"AI twin · CopyMe", hello:(n)=>`Say hi to ${n}'s twin`,
     deleted:"Twin deleted. Its persona file has been destroyed on the server.",
     delBtn:"Delete twin", delConfirm:"Delete for real?",
-    say:"Say something…", resume:"resume", sendFail:(m)=>`(Message not sent: ${m})`,
+    say:"Say something…", resume:"resume", demo:"demo", sendFail:(m)=>`(Message not sent: ${m})`,
+    signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
+    regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
     refuse:"(I'd rather not answer that)", svcDown:"The service didn't respond",
   },
 };
@@ -417,6 +448,77 @@ function applyLang(l){
 $("btn-zh").addEventListener("click", ()=>applyLang("zh"));
 $("btn-en").addEventListener("click", ()=>applyLang("en"));
 
+/* ── 會員（與 Trailforge 共用 tf_access_token） ── */
+function token(){ return localStorage.getItem("tf_access_token") || ""; }
+function authHeaders(){ const t = token(); return t ? {"Authorization":"Bearer "+t} : {}; }
+let ME = null;
+async function refreshMe(){
+  ME = null;
+  if(token()){
+    try{
+      const r = await fetch(API+"/api/auth/me", {headers: authHeaders()});
+      if(r.ok) ME = await r.json();
+      else if(r.status === 401) localStorage.removeItem("tf_access_token");
+    }catch(_){}
+  }
+  renderAuth();
+}
+function renderAuth(){
+  const on = !!ME;
+  $("who").style.display = on ? "inline" : "none";
+  $("au-out").style.display = on ? "inline-block" : "none";
+  ["au-email","au-name","au-pass","au-go","au-mode"].forEach(id=>
+    $(id).style.display = on ? "none" : (id==="au-name" && !regMode ? "none" : "inline-block"));
+  if(on){
+    $("who").innerHTML = "";
+    const b = document.createElement("b"); b.textContent = ME.username || ME.email;
+    $("who").append(document.createTextNode(LANG==="en"?"Signed in: ":"已登入："), b);
+  }
+  $("st1").classList.toggle("on", on);
+  if(!on){ $("st1").classList.remove("done"); }
+}
+let regMode = false;
+$("au-mode").addEventListener("click", ()=>{
+  regMode = !regMode;
+  $("au-name").style.display = regMode ? "inline-block" : "none";
+  $("au-go").innerHTML = regMode
+    ? '<span class="lang-zh">註冊並登入</span><span class="lang-en">Register & sign in</span>'
+    : '<span class="lang-zh">登入</span><span class="lang-en">Sign in</span>';
+  $("au-mode").innerHTML = regMode
+    ? '<span class="lang-zh">改為登入</span><span class="lang-en">Have an account?</span>'
+    : '<span class="lang-zh">我要註冊</span><span class="lang-en">Register</span>';
+});
+async function doAuth(){
+  clearErr();
+  const email = $("au-email").value.trim(), pass = $("au-pass").value;
+  if(!email || !pass) return;
+  try{
+    if(regMode){
+      const rr = await fetch(API+"/api/auth/register", {method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({email, username: $("au-name").value.trim() || email.split("@")[0], password: pass})});
+      if(!rr.ok){ const j = await rr.json();
+        throw new Error(j.error === "email_taken" ? (LANG==="en"?"Email already registered":"這個 email 已註冊過") : JSON.stringify(j.error||t("svcDown"))); }
+    }
+    const r = await fetch(API+"/api/auth/login", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({identifier: email, password: pass})});
+    const j = await r.json();
+    if(!r.ok || !j.access_token) throw new Error(t("authFail"));
+    localStorage.setItem("tf_access_token", j.access_token);
+    if(j.refresh_token) localStorage.setItem("tf_refresh_token", j.refresh_token);
+    if(j.user) localStorage.setItem("tf_user", JSON.stringify(j.user));
+    $("au-pass").value = "";
+    await refreshMe(); loadShelf();
+  }catch(err){ showErr(err.message); }
+}
+$("au-go").addEventListener("click", doAuth);
+$("au-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doAuth(); });
+$("au-out").addEventListener("click", ()=>{
+  ["tf_access_token","tf_refresh_token","tf_user"].forEach(k=>localStorage.removeItem(k));
+  ME = null; renderAuth(); loadShelf();
+});
+
 function showErr(msg){ const e=$("err"); e.textContent = msg; e.style.display="block";
   e.scrollIntoView({block:"center"}); }
 function clearErr(){ $("err").style.display="none"; }
@@ -433,7 +535,7 @@ function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分�
 /* ── SSE over fetch ── */
 async function sseFetch(url, body, onEvent){
   const res = await fetch(API+url, {method:"POST",
-    headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    headers:{"Content-Type":"application/json", ...authHeaders()}, body:JSON.stringify(body)});
   if(!res.ok){
     let d = t("svcDown");
     try{ d = (await res.json()).detail || d; }catch(_){}
@@ -471,7 +573,7 @@ async function upload(f){
   const fd = new FormData();
   fd.append("file", f); fd.append("access_code", "");
   try{
-    const res = await fetch(API+"/api/upload", {method:"POST", body:fd});
+    const res = await fetch(API+"/api/upload", {method:"POST", body:fd, headers: authHeaders()});
     const j = await res.json();
     if(!res.ok) throw new Error(j.detail || t("svcDown"));
     state.uploadId = j.upload_id;
@@ -617,7 +719,7 @@ $("delbtn").addEventListener("click", async ()=>{
   }
   try{
     const res = await fetch(API+`/api/personas/${state.personaId}/delete`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
+      method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
       body: JSON.stringify({access_code:""})});
     if(!res.ok) throw new Error((await res.json()).detail || t("svcDown"));
     $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
@@ -667,24 +769,30 @@ async function send(){
 $("send").addEventListener("click", send);
 $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
 
-/* ── 既有分身書架 ── */
-(async ()=>{
+/* ── 分身書架（示範＋自己的） ── */
+async function loadShelf(){
+  const shelf = $("shelf"); shelf.innerHTML = "";
   try{
-    const j = await (await fetch(API+"/api/personas")).json();
-    if(!j.personas?.length) return;
-    const shelf = $("shelf");
-    j.personas.slice(0,6).forEach(p=>{
+    const j = await (await fetch(API+"/api/personas", {headers: authHeaders()})).json();
+    (j.personas||[]).slice(0,8).forEach(p=>{
       const b = document.createElement("button");
       b.className = "shelfbtn";
       b.innerHTML = `<span class="mini"></span><span class="nm"></span> <span class="rs"></span>`;
       b.querySelector(".mini").textContent = sealText(p.name);
       b.querySelector(".nm").textContent = p.name;
       b.querySelector(".rs").textContent = t("resume");
+      if(p.demo){
+        const tag = document.createElement("span");
+        tag.className = "demo-badge"; tag.textContent = t("demo");
+        b.appendChild(tag);
+      }
       b.addEventListener("click", ()=> enterChat(p.id, p.name));
       shelf.appendChild(b);
     });
   }catch(_){/* 服務喚醒中，靜默 */}
-})();
+}
+loadShelf();
+refreshMe();
 
 async function loadBudget(){
   try{
