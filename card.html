@@ -1372,7 +1372,14 @@ const PEOPLE = [
       }
     },
     { id: 'tom',       zh: '潘語堂',          en: 'Tom Pan',               titleZh: '演算法工程師 — 動作捕捉',          titleEn: 'Algorithm Engineer – Motion Capture' },
-    { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師 — 外骨骼與肌電',        titleEn: 'Hardware Engineer – Exoskeleton & EMG' },
+    { id: 'timmy',     zh: '鄭樓溙',          en: 'Timmy Cheng',           titleZh: '硬體工程師',                       titleEn: 'Hardware Engineer',
+      profile: {
+        headshot: 'assets/headshot-timmy.jpg',
+        monogram: '鄭',
+        nameZh: '鄭樓溙', nameEn: 'Timmy Cheng',
+        titleZh: '硬體工程師', titleEn: 'Hardware Engineer',
+      }
+    },
     { id: 'jennifer',  zh: '吳沛蓁',          en: 'Jennifer Wu',           titleZh: '部署工程師',                       titleEn: 'Deployment Engineer',
       profile: {
         headshot: 'assets/headshot-jennifer.jpg',
@@ -1478,10 +1485,9 @@ function buildAck(p) {
 
 const GROUPS = [
   { num: '01', zh: '治理',     en: 'Governance',              ids: ['arthur', 'lin'] },
-  { num: '02', zh: '執行層',   en: 'Leadership',              ids: ['eddie', 'sean', 'jennifer'] },
+  { num: '02', zh: '執行層',   en: 'Leadership',              ids: ['eddie', 'sean', 'jennifer', 'timmy'] },
   { num: '03', zh: 'NTKCAP 動作捕捉', en: 'NTKCAP · Motion Capture', ids: ['tom', 'lewis'] },
-  { num: '04', zh: 'ExoPulse 外骨骼', en: 'ExoPulse · Exoskeleton',  ids: ['timmy'] },
-  { num: '05', zh: '致謝',     en: 'Acknowledgments',         ids: ['chen-youyin', 'eric', 'gokul', 'stephen'] },
+  { num: '04', zh: '致謝',     en: 'Acknowledgments',         ids: ['chen-youyin', 'eric', 'gokul', 'stephen'] },
 ];
 
 // ===== Visibility state (driven by admin panel, persisted in localStorage) =====
