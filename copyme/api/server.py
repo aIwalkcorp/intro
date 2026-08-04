@@ -498,9 +498,30 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
         upath.unlink(missing_ok=True)  # 一次性承諾：蒸餾完成，原始對話檔立即刪除
         return {"persona_id": pid, "name": person}
 
-    return StreamingResponse(
-        _distill_events(person, parsed["room"], corpus, stats, on_done),
-        media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+    return _detached_sse(_distill_events(person, parsed["room"], corpus, stats, on_done))
+
+
+def _detached_sse(events) -> StreamingResponse:
+    """在背景執行緒跑完整個事件流：手機切出去斷線，蒸餾照樣完成並存檔。"""
+    import queue, threading
+    q: queue.Queue = queue.Queue()
+
+    def work():
+        try:
+            for ev in events:
+                q.put(ev)
+        except Exception as e:  # 背景執行緒的最後防線，錯誤轉成 SSE 事件
+            q.put(sse("error", {"message": f"蒸餾中斷：{e}"}))
+        q.put(None)
+
+    threading.Thread(target=work, daemon=True).start()
+
+    def gen():
+        while (item := q.get()) is not None:
+            yield item
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache"})
 
 
 def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
@@ -585,9 +606,7 @@ async def distill_extend(payload: dict, authorization: str | None = Header(None)
         upath.unlink(missing_ok=True)  # 一次性承諾不變：整份聊天檔用完即刪
         return {"persona_id": pid, "name": name, "added": len(added), "stats": stats}
 
-    return StreamingResponse(
-        _distill_events(name, meta.get("room", ""), corpus, stats, on_done),
-        media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+    return _detached_sse(_distill_events(name, meta.get("room", ""), corpus, stats, on_done))
 
 
 def _visible(meta: dict, user) -> bool:

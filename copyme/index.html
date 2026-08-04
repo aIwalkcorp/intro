@@ -117,12 +117,19 @@ body.en div.lang-en{display:block}
 
 /* ── 蒸餾動畫 ── */
 .still{position:relative}
+.hero-flex{display:flex;gap:34px;align-items:center}
+.hero-text{flex:1;min-width:0}
+.hero-art{width:150px;flex-shrink:0;mix-blend-mode:multiply;opacity:.92;
+  transform:rotate(1.5deg)}
+@media(max-width:700px){.hero-art{display:none}}
 .viz{background:#fff;border:1.5px solid var(--bdr);border-radius:8px;
   min-height:340px;padding:26px 24px 20px;display:flex;flex-direction:column;
   align-items:center;gap:0;overflow:hidden;position:relative}
 /* 水墨蒸餾器（higgsfield 插畫）＋即時墨滴/印泥池 */
 .alembic{position:relative;width:190px;height:298px;flex-shrink:0}
-.alembic img{width:100%;height:100%;display:block;mix-blend-mode:multiply}
+.alembic img{width:100%;height:100%;display:block;mix-blend-mode:multiply;
+  opacity:.38;filter:saturate(.35);transition:opacity .6s,filter .6s}
+.viz.running .alembic img,.viz.done .alembic img{opacity:1;filter:none}
 .a-drop{position:absolute;left:43.9%;top:51%;width:7px;height:11px;margin-left:-3.5px;
   background:var(--seal);border-radius:50% 50% 60% 60%;opacity:0;
   animation:fall 1.4s cubic-bezier(.5,.05,.9,.4) infinite}
@@ -328,6 +335,12 @@ footer{margin:60px 0 30px;color:var(--mist);font-size:.78rem;font-family:var(--m
 footer a{color:var(--mist)}
 .gobtn.chatgo{display:none;margin-top:16px}
 @media(max-width:560px){
+  .topbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .homebtn{grid-column:1;grid-row:1;justify-self:start}
+  .langtoggle{grid-column:2;grid-row:1;justify-self:end}
+  .poolchip{grid-column:1;grid-row:2;margin-left:0;justify-self:start}
+  .authchip{grid-column:2;grid-row:2;justify-self:end}
+  .mytwins{grid-column:1 / -1;grid-row:3;justify-content:center}
   .station{padding-left:0}
   .stno{position:static;margin-bottom:8px}
   .station::before{display:none}
@@ -365,14 +378,19 @@ footer a{color:var(--mist)}
   <div class="wordmark">Copy<em>Me</em> 復刻</div>
   <div class="byline">aiwalkcorp product no.5</div>
 </header>
-<p class="lede">
-  <span class="lang-zh">我們不只打造你的小腦，還能<em>復刻</em>一個你。</span>
-  <span class="lang-en">We don't just build your cerebellum — we can <em>copy</em> you.</span>
-</p>
-<p class="sub">
-  <span class="lang-zh">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</span>
-  <span class="lang-en">aiwalkcorp's cerebellum lets an exoskeleton walk for you; CopyMe faithfully copies how you talk into an AI twin. Upload a LINE chat export, pick a person, and minutes later you're talking to their twin — rhythm, catchphrases, even the typos, all distilled from the corpus.</span>
-</p>
+<div class="hero-flex">
+  <div class="hero-text">
+    <p class="lede">
+      <span class="lang-zh">我們不只打造你的小腦，還能<em>復刻</em>一個你。</span>
+      <span class="lang-en">We don't just build your cerebellum — we can <em>copy</em> you.</span>
+    </p>
+    <p class="sub">
+      <span class="lang-zh">aiwalkcorp 的小腦讓外骨骼替你行走；CopyMe 把你說話的樣子忠實復刻成分身。上傳 LINE 聊天紀錄、選一個人，幾分鐘後直接跟他的 AI 分身對話——說話的節奏、口頭禪、錯字習慣，都是從語料裡蒸出來的。</span>
+      <span class="lang-en">aiwalkcorp's cerebellum lets an exoskeleton walk for you; CopyMe faithfully copies how you talk into an AI twin. Upload a LINE chat export, pick a person, and minutes later you're talking to their twin — rhythm, catchphrases, even the typos, all distilled from the corpus.</span>
+    </p>
+  </div>
+  <img class="hero-art" src="art/alembic.webp" alt="" aria-hidden="true">
+</div>
 <div class="modal-veil" id="authmodal">
   <div class="modal modal-box">
     <button class="mclose" id="au-close" aria-label="Close">✕</button>
@@ -428,8 +446,8 @@ footer a{color:var(--mist)}
   <p class="sthint"><span class="lang-zh">名單依發言量排序；至少要有 30 句文字訊息才蒸得出來</span><span class="lang-en">Sorted by message count; at least 30 text messages are needed</span></p>
   <div class="card">
     <div class="meta" id="uploadmeta"></div>
-    <div class="people" id="people"></div>
-    <button class="gobtn" id="distillbtn" disabled><span class="lang-zh">開始蒸餾</span><span class="lang-en">Start distilling</span></button>
+    <div class="people" id="people"><span class="msgs-empty"><span class="lang-zh">上傳聊天紀錄後，這裡會列出聊天室裡的人。</span><span class="lang-en">Upload a chat export and the people in it will appear here.</span></span></div>
+    <button class="gobtn" id="distillbtn" style="display:none" disabled><span class="lang-zh">開始蒸餾</span><span class="lang-en">Start distilling</span></button>
   </div>
 </section>
 
@@ -587,6 +605,8 @@ const T = {
     copied:"已複製", shareTitle:(n)=>`「${n}」的公開連結`,
     extTitle:(n)=>`擴充「${n}」的語料`, extUploading:"上傳解析中…", extPick:"這份檔案裡，哪一位是同一個人？",
     extRun:"合併蒸餾中…", extDone:(n,c)=>`完成！新增 ${n} 句，語料共 ${c} 句，人格已更新。`,
+    bgDistill:"連線中斷——蒸餾仍在雲端繼續，完成後會自動接上…",
+    histClear:"清除記錄",
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
@@ -607,6 +627,8 @@ const T = {
     copied:"Copied", shareTitle:(n)=>`Public link for ${n}`,
     extTitle:(n)=>`Extend ${n}'s corpus`, extUploading:"Uploading & parsing…", extPick:"Which person in this file is them?",
     extRun:"Merging & re-distilling…", extDone:(n,c)=>`Done! Added ${n} lines, corpus now ${c} lines. Persona updated.`,
+    bgDistill:"Connection lost — distilling continues in the cloud and will reconnect here…",
+    histClear:"Clear history",
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
@@ -810,6 +832,7 @@ async function upload(f){
 
 function renderPeople(people){
   const box = $("people"); box.innerHTML = "";
+  $("distillbtn").style.display = "";
   people.forEach(p=>{
     const b = document.createElement("button");
     b.className = "person";
@@ -871,6 +894,7 @@ $("distillbtn").addEventListener("click", async ()=>{
   $("viz").classList.add("running");
   $("pool").style.height = "5px";
   $("frag").innerHTML = ""; $("docfull").textContent = "";
+  $("viz").classList.remove("done");
   $("docwrap").style.display = "none"; $("docwrap").removeAttribute("open");
   $("sealslot").innerHTML = ""; $("chatbtn").style.display = "none";
   $("vizstatus").textContent = t("reading")(state.person);
@@ -895,7 +919,7 @@ $("distillbtn").addEventListener("click", async ()=>{
           state.personaId = d.persona_id; state.personaName = d.name;
           stageState = STAGE_KEYS.map(()=>true); buildStages();
           $("pool").style.height = "26px";
-          $("viz").classList.remove("running");
+          $("viz").classList.remove("running"); $("viz").classList.add("done");
           $("vizstatus").textContent = t("formed");
           $("docfull").textContent = acc;
           $("docwrap").style.display = "block";
@@ -905,16 +929,52 @@ $("distillbtn").addEventListener("click", async ()=>{
         }else if(ev==="error"){ throw new Error(d.message); }
       });
   }catch(err){
-    $("viz").classList.remove("running");
-    showErr(err.message); $("vizstatus").textContent = t("interrupted");
+    if(/fetch|network|load|abort/i.test(err.message) || err.name === "TypeError"){
+      $("vizstatus").textContent = t("bgDistill");
+      pollForTwin(state.person, acc);
+    }else{
+      $("viz").classList.remove("running");
+      showErr(err.message); $("vizstatus").textContent = t("interrupted");
+    }
   }
 });
+
+async function pollForTwin(person, acc){
+  const known = new Set((state.twins||[]).map(x=>x.id));
+  for(let i=0;i<60;i++){
+    await new Promise(r=>setTimeout(r, 5000));
+    try{ await loadShelf(); }catch(_){ continue; }
+    const tw = (state.twins||[]).find(x=>x.name===person && x.mine && !known.has(x.id));
+    if(tw){
+      state.personaId = tw.id; state.personaName = tw.name;
+      stageState = STAGE_KEYS.map(()=>true); buildStages();
+      $("pool").style.height = "26px";
+      $("viz").classList.remove("running"); $("viz").classList.add("done");
+      $("vizstatus").textContent = t("formed");
+      if(acc){ $("docfull").textContent = acc; $("docwrap").style.display = "block"; }
+      $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(tw.name)}</div>`;
+      $("chatbtn").style.display = "inline-block";
+      loadBudget();
+      return;
+    }
+  }
+  $("viz").classList.remove("running");
+  $("vizstatus").textContent = t("interrupted");
+}
 
 $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.personaName));
 
 /* ── 04 對話 ── */
+const HIST_MAX = 60;
+function histKey(pid){ return "pf_hist_" + pid; }
+function saveHist(){
+  if(state.personaId)
+    store.set(histKey(state.personaId), JSON.stringify(state.history.slice(-HIST_MAX)));
+}
 function enterChat(pid, name){
-  state.personaId = pid; state.personaName = name; state.history = [];
+  state.personaId = pid; state.personaName = name;
+  try{ state.history = JSON.parse(store.get(histKey(pid)) || "[]"); }
+  catch(_){ state.history = []; }
   const visitor = !!state.shareToken;
   const tw = (state.twins||[]).find(x=>x.id===pid);
   $("delbtn").style.display = visitor ? "none" : "";
@@ -924,8 +984,16 @@ function enterChat(pid, name){
   $("chatname").textContent = name;
   $("chattag").textContent = t("aiTag");
   $("chatseal").textContent = sealText(name);
-  $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
-  $("msgs").firstChild.textContent = t("hello")(name);
+  $("msgs").innerHTML = "";
+  if(state.history.length){
+    state.history.forEach(m=>{
+      if(m.role === "user") bubble("me", m.content);
+      else m.content.split("\n").map(x=>x.trim()).filter(Boolean).forEach(l=>bubble("ai", l));
+    });
+  }else{
+    $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
+    $("msgs").firstChild.textContent = t("hello")(name);
+  }
   const db = $("delbtn");
   db.classList.remove("arm"); resetDelBtn();
   $("chatlayer").classList.add("open");
@@ -1164,6 +1232,7 @@ $("delbtn").addEventListener("click", async ()=>{
       method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
       body: JSON.stringify({access_code:""})});
     if(!res.ok) throw new Error((await res.json()).detail || t("svcDown"));
+    store.del(histKey(state.personaId));
     state.personaId = null; state.history = [];
     db.classList.remove("arm"); resetDelBtn();
     closeChat();
@@ -1191,7 +1260,7 @@ async function send(){
   clearErr();
   input.value = ""; $("send").disabled = true;
   bubble("me", text);
-  state.history.push({role:"user", content:text});
+  state.history.push({role:"user", content:text}); saveHist();
   const live = bubble("ai", "…");
   let acc = "";
   try{
@@ -1203,7 +1272,7 @@ async function send(){
           $("msgs").scrollTop = $("msgs").scrollHeight; }
         else if(ev==="error"){ throw new Error(d.message); }
       });
-    state.history.push({role:"assistant", content:acc});
+    state.history.push({role:"assistant", content:acc}); saveHist();
     const lines = acc.split("\n").map(s=>s.trim()).filter(Boolean);
     if(lines.length > 1){
       live.remove();
