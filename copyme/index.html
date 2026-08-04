@@ -151,15 +151,29 @@ body.en div.lang-en{display:block}
   color:var(--pri-deep);animation:fragfade 2.6s ease both}
 @keyframes fragfade{0%{opacity:0;transform:translateY(8px);filter:blur(3px)}
   18%{opacity:1;transform:none;filter:none}82%{opacity:1}100%{opacity:0}}
-/* 六段成形軌 */
-.stages{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
-.stage-chip{display:inline-flex;align-items:center;gap:6px;
-  border:1.5px solid var(--bdr);border-radius:99px;padding:5px 13px;
-  font-size:.78rem;color:var(--mist);background:var(--card);transition:all .35s}
-.stage-chip svg{color:var(--bdr);transition:color .35s}
-.stage-chip.lit{border-color:var(--ok);color:var(--ok);background:rgba(62,107,99,.07)}
-.stage-chip.lit svg{color:var(--ok)}
-.stage-chip.now{border-color:var(--pri);color:var(--pri);background:rgba(44,62,107,.07)}
+/* 六方印章：未刻 → 奏刀 → 鈐蓋 */
+.stages{display:flex;flex-wrap:wrap;gap:14px 10px;justify-content:center;margin-top:16px}
+.stage-item{display:flex;flex-direction:column;align-items:center;gap:7px;width:62px}
+.ss{width:46px;height:46px;border:2px dashed var(--bdr);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-weight:900;font-size:.88rem;line-height:1.02;
+  color:var(--bdr);text-align:center;transition:border-color .35s,color .35s}
+.ss b{font-weight:900;width:1.05em;word-break:break-all}
+.ss b.latin{width:auto;word-break:normal;font-size:.62rem;letter-spacing:.02em}
+.ss-label{font-family:var(--mono);font-size:.64rem;color:var(--mist);
+  opacity:.55;transition:opacity .35s,color .35s;white-space:nowrap}
+.stage-item.now .ss{border-style:solid;border-color:var(--pri);color:var(--pri);
+  animation:carve 1.6s ease-in-out infinite}
+@keyframes carve{0%,100%{box-shadow:0 0 0 0 rgba(44,62,107,.16)}
+  50%{box-shadow:0 0 0 6px rgba(44,62,107,.05)}}
+.stage-item.lit .ss{border:2px solid transparent;background:var(--seal);color:#fff;
+  transform:rotate(var(--tilt,-3deg));mix-blend-mode:multiply;
+  box-shadow:inset 0 0 7px rgba(80,10,5,.35);animation:stamp .32s ease-out}
+@keyframes stamp{0%{transform:scale(1.4) rotate(var(--tilt,-3deg));opacity:0}
+  55%{transform:scale(.93) rotate(var(--tilt,-3deg));opacity:1}
+  100%{transform:scale(1) rotate(var(--tilt,-3deg))}}
+.stage-item.lit .ss-label{opacity:1;color:var(--ink)}
+@media(prefers-reduced-motion:reduce){.stage-item.now .ss,.stage-item.lit .ss{animation:none}}
 .vizstatus{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-top:14px;
   min-height:1.4em;text-align:center}
 /* 全文摺疊 */
@@ -275,6 +289,9 @@ body.en div.lang-en{display:block}
 .cl-msgs{flex:1;overflow-y:auto;padding:26px 20px}
 .cl-msgs-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:9px}
 .cl-in{border-top:1.5px solid var(--bdr);background:var(--card);padding:14px 20px}
+.memline{display:flex;align-items:center;gap:7px;max-width:720px;margin:0 auto 9px;
+  font-family:var(--mono);font-size:.7rem;color:var(--mist);cursor:pointer}
+.memline input{accent-color:var(--seal)}
 .cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
   border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
@@ -560,7 +577,9 @@ footer a{color:var(--mist)}
     <button class="cl-close" id="clclose"><span class="lang-zh">關閉 Esc</span><span class="lang-en">Close Esc</span></button>
   </div>
   <div class="cl-msgs"><div class="cl-msgs-inner" id="msgs"></div></div>
-  <div class="cl-in"><div class="cl-in-inner">
+  <div class="cl-in">
+  <label class="memline" id="memline" style="display:none"><input type="checkbox" id="memchk"><span class="lang-zh">記住並共享到這條連結（其他訪客也看得到）</span><span class="lang-en">Remember &amp; share to this link (visible to other visitors)</span></label>
+  <div class="cl-in-inner">
     <input id="say" autocomplete="off" class="chatin-input" style="flex:1;padding:11px 15px;border:1.5px solid var(--bdr);border-radius:8px;font-family:var(--sans);font-size:.95rem;background:#fff">
     <button id="send" style="background:var(--pri);color:#fff;border:none;padding:0 24px;border-radius:8px;font-weight:700"><span class="lang-zh">送出</span><span class="lang-en">Send</span></button>
   </div></div>
@@ -598,6 +617,7 @@ const T = {
     corpusInfo:(s)=>`語料 ${s.count} 句（取樣 ${s.sampled}）・跨度 ${s.span}`,
     formed:"蒸餾完成，人格已定調", interrupted:"蒸餾中斷",
     stages:["角色規則","身份卡","表達DNA","語氣例句","情境應對","誠實邊界"],
+    stageMarks:["角色","身份","DNA","語氣","情境","誠實"],
     aiTag:"AI 分身 · CopyMe 復刻", hello:(n)=>`跟「${n}」的分身打個招呼吧`,
     deleted:"分身已刪除，人格檔已從伺服器銷毀。",
     delBtn:"刪除分身", delConfirm:"確定刪除？",
@@ -607,6 +627,7 @@ const T = {
     extRun:"合併蒸餾中…", extDone:(n,c)=>`完成！新增 ${n} 句，語料共 ${c} 句，人格已更新。`,
     bgDistill:"連線中斷——蒸餾仍在雲端繼續，完成後會自動接上…",
     histClear:"清除記錄",
+    memShare:"記住並共享到這條連結（其他訪客也看得到）",
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
@@ -620,6 +641,7 @@ const T = {
     corpusInfo:(s)=>`${s.count} lines (sampled ${s.sampled}) · span ${s.span}`,
     formed:"Distillation complete — persona sealed", interrupted:"Distillation interrupted",
     stages:["Role rules","Identity","Expression DNA","Voice samples","Scenarios","Honest limits"],
+    stageMarks:["Role","ID","DNA","Voice","Scene","Limit"],
     aiTag:"AI twin · CopyMe", hello:(n)=>`Say hi to ${n}'s twin`,
     deleted:"Twin deleted. Its persona file has been destroyed on the server.",
     delBtn:"Delete twin", delConfirm:"Delete for real?",
@@ -629,6 +651,7 @@ const T = {
     extRun:"Merging & re-distilling…", extDone:(n,c)=>`Done! Added ${n} lines, corpus now ${c} lines. Persona updated.`,
     bgDistill:"Connection lost — distilling continues in the cloud and will reconnect here…",
     histClear:"Clear history",
+    memShare:"Remember & share to this link (visible to other visitors)",
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
@@ -855,14 +878,20 @@ function renderPeople(people){
 const STAGE_KEYS = ["角色扮演規則","身份卡","表達DNA","語氣例句","情境應對","誠實邊界"];
 let stageState = [];
 
+const TILTS = [-4, 3, -2, 4, -3, 2];
 function buildStages(){
   const box = $("stages"); box.innerHTML = "";
+  const marks = t("stageMarks");
   t("stages").forEach((label,i)=>{
-    const chip = document.createElement("span");
-    chip.className = "stage-chip" + (stageState[i] ? " lit" : "");
-    chip.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span></span>`;
-    chip.querySelector("span").textContent = label;
-    box.appendChild(chip);
+    const it = document.createElement("span");
+    it.className = "stage-item" + (stageState[i] ? " lit" : "");
+    it.style.setProperty("--tilt", TILTS[i % TILTS.length] + "deg");
+    it.innerHTML = `<span class="ss"><b></b></span><span class="ss-label"></span>`;
+    const b = it.querySelector("b");
+    b.textContent = marks[i];
+    if(/[A-Za-z]/.test(marks[i])) b.className = "latin";
+    it.querySelector(".ss-label").textContent = label;
+    box.appendChild(it);
   });
 }
 
@@ -968,14 +997,19 @@ $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.per
 const HIST_MAX = 60;
 function histKey(pid){ return "pf_hist_" + pid; }
 function saveHist(){
-  if(state.personaId)
+  if(state.personaId && !state.shareToken)
     store.set(histKey(state.personaId), JSON.stringify(state.history.slice(-HIST_MAX)));
 }
 function enterChat(pid, name){
   state.personaId = pid; state.personaName = name;
-  try{ state.history = JSON.parse(store.get(histKey(pid)) || "[]"); }
-  catch(_){ state.history = []; }
   const visitor = !!state.shareToken;
+  if(visitor){
+    state.history = (state.sharedHistory || []).slice();
+  }else{
+    try{ state.history = JSON.parse(store.get(histKey(pid)) || "[]"); }
+    catch(_){ state.history = []; }
+  }
+  $("memline").style.display = visitor ? "" : "none";
   const tw = (state.twins||[]).find(x=>x.id===pid);
   $("delbtn").style.display = visitor ? "none" : "";
   $("pfbtn").style.display = visitor ? "none" : "";
@@ -1179,6 +1213,7 @@ async function initShared(tok){
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     state.shareToken = tok;
+    state.sharedHistory = j.history || [];
     enterChat(j.id, j.name);
   }catch(err){ showErr(err.message); }
 }
@@ -1266,7 +1301,8 @@ async function send(){
   try{
     await sseFetch("/api/chat",
       {persona_id:state.personaId, messages:state.history, access_code:"",
-       share: state.shareToken || ""},
+       share: state.shareToken || "",
+       remember: !!(state.shareToken && $("memchk").checked)},
       (ev,d)=>{
         if(ev==="delta"){ acc += d.text; live.textContent = acc;
           $("msgs").scrollTop = $("msgs").scrollHeight; }

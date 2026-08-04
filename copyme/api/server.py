@@ -674,6 +674,7 @@ def share_persona(pid: str, payload: dict, authorization: str | None = Header(No
         meta["share"] = meta.get("share") or secrets.token_urlsafe(9)
     else:
         meta.pop("share", None)
+        (pdir / "shared_chat.json").unlink(missing_ok=True)
     mpath.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     return {"share": meta.get("share")}
 
@@ -686,8 +687,14 @@ def shared_info(token: str):
         for mp in PERSONAS.glob("*/meta.json"):
             meta = json.loads(mp.read_text(encoding="utf-8"))
             if meta.get("share") and secrets.compare_digest(meta["share"], token):
+                sc = mp.parent / "shared_chat.json"
+                try:
+                    hist = json.loads(sc.read_text(encoding="utf-8")) if sc.exists() else []
+                except ValueError:
+                    hist = []
                 return {"id": meta["id"], "name": meta["name"],
-                        "room": meta.get("room", ""), "stats": meta.get("stats", {})}
+                        "room": meta.get("room", ""), "stats": meta.get("stats", {}),
+                        "history": hist}
     raise HTTPException(404, "連結已失效或被擁有者停用")
 
 
@@ -718,7 +725,10 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
         {"type": "text", "text": CHAT_RULES.replace("{name}", meta["name"])},
     ]
 
+    remember = bool(payload.get("remember")) and share_ok
+
     def gen():
+        chunks: list[str] = []
         try:
             with claude.messages.stream(
                 model=MODEL,
@@ -728,6 +738,7 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
                 messages=[{"role": m["role"], "content": m["content"]} for m in history],
             ) as stream:
                 for text in stream.text_stream:
+                    chunks.append(text)
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
             track_usage(final.usage)
@@ -736,6 +747,15 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
         except anthropic.APIStatusError as e:
             yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
             return
+        if remember and chunks:
+            # ponytail: 整檔重寫，單機小流量夠用；量大再換 append log
+            sc = pdir / "shared_chat.json"
+            try:
+                log = json.loads(sc.read_text(encoding="utf-8")) if sc.exists() else []
+            except ValueError:
+                log = []
+            log += [history[-1], {"role": "assistant", "content": "".join(chunks)}]
+            sc.write_text(json.dumps(log[-200:], ensure_ascii=False), encoding="utf-8")
         yield sse("done", {})
 
     return StreamingResponse(gen(), media_type="text/event-stream",
