@@ -403,6 +403,17 @@ def _purge_stale_uploads() -> None:
             p.unlink(missing_ok=True)
 
 
+def _purge_empty_personas() -> None:
+    """persona.md 為空的分身無法對話（蒸餾失敗殘骸），啟動時清除。"""
+    import shutil
+    for pm in PERSONAS.glob("*/persona.md"):
+        if pm.stat().st_size == 0:
+            shutil.rmtree(pm.parent, ignore_errors=True)
+
+
+_purge_empty_personas()
+
+
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...), access_code: str = Form(""),
                  authorization: str | None = Header(None)):
@@ -461,7 +472,8 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
         try:
             with claude.messages.stream(
                 model=MODEL,
-                max_tokens=6000,
+                max_tokens=16000,
+                output_config={"effort": "medium"},
                 system=DISTILL_SYSTEM,
                 messages=[{"role": "user", "content": prompt}],
             ) as stream:
@@ -477,6 +489,9 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
             yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
             return
         persona_md = "".join(chunks)
+        if not persona_md.strip():
+            yield sse("error", {"message": "蒸餾結果是空的（模型沒有產出文字），請再按一次重新蒸餾"})
+            return
         pdir = PERSONAS / pid
         pdir.mkdir(parents=True, exist_ok=True)
         (pdir / "persona.md").write_text(persona_md, encoding="utf-8")
@@ -548,6 +563,9 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
     pdir = PERSONAS / pid
     if not (pdir / "persona.md").exists():
         raise HTTPException(404, "找不到這個人格，請先蒸餾")
+    persona_text = (pdir / "persona.md").read_text(encoding="utf-8")
+    if not persona_text.strip():
+        raise HTTPException(409, "這個分身的人格檔是空的（先前蒸餾失敗），請刪除後重新蒸餾")
     meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
     if not _visible(meta, resolve_user(authorization)):
         raise HTTPException(403, "這個分身不是公開示範，只有本人能對話")
@@ -556,7 +574,7 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
         raise HTTPException(422, "缺少使用者訊息")
     system = [
         {"type": "text",
-         "text": (pdir / "persona.md").read_text(encoding="utf-8"),
+         "text": persona_text,
          "cache_control": {"type": "ephemeral"}},
         {"type": "text", "text": CHAT_RULES.replace("{name}", meta["name"])},
     ]
