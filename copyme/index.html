@@ -286,7 +286,32 @@ body.en div.lang-en{display:block}
 .cl-close{margin-left:8px;background:none;border:1.5px solid var(--bdr);color:var(--mist);
   border-radius:6px;padding:6px 14px;font-size:.82rem;font-weight:700}
 .cl-close:hover{border-color:var(--pri);color:var(--pri)}
-.cl-msgs{flex:1;overflow-y:auto;padding:26px 20px}
+/* 分身鈐印浮水印＋訊息層 */
+.chatmark{position:absolute;inset:0 0 70px;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:0}
+.chatmark b{width:180px;height:180px;border:9px solid var(--seal);border-radius:16px;
+  transform:rotate(-8deg);display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-weight:900;font-size:3rem;line-height:1.05;
+  color:var(--seal);opacity:.06;text-align:center;padding:10px}
+.cl-msgs{flex:1;overflow-y:auto;padding:26px 20px;position:relative;z-index:1}
+.chatlayer{position:fixed}
+.chatlayer.docked{position:relative}
+.bub{animation:bubin .32s ease-out}
+@keyframes bubin{0%{opacity:0;transform:translateY(7px);filter:blur(2px)}
+  100%{opacity:1;transform:none;filter:none}}
+.chat-hello{display:flex;flex-direction:column;align-items:center;gap:16px;
+  margin:9vh auto 0;text-align:center;animation:bubin .5s ease-out}
+.hello-line{color:var(--mist);font-size:.95rem}
+.hello-chips{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;max-width:460px}
+.hello-chips button{border:1.5px solid var(--bdr);background:var(--card);border-radius:99px;
+  padding:8px 17px;font-size:.85rem;color:var(--pri-deep);transition:all .15s}
+.hello-chips button:hover{border-color:var(--seal);color:var(--seal);transform:translateY(-1px)}
+.tink i{width:6px;height:6px;border-radius:50%;background:var(--mist);
+  display:inline-block;margin:0 2.5px;animation:tb 1.2s ease-in-out infinite}
+.tink i:nth-child(2){animation-delay:.18s}
+.tink i:nth-child(3){animation-delay:.36s}
+@keyframes tb{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.bub,.chat-hello{animation:none}}
 .cl-msgs-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:9px}
 .cl-in{border-top:1.5px solid var(--bdr);background:var(--card);padding:14px 20px}
 .memline{display:flex;align-items:center;gap:7px;max-width:720px;margin:0 auto 9px;
@@ -564,6 +589,7 @@ footer a{color:var(--mist)}
 
 <!-- 對話 focus 介面 -->
 <div class="chatlayer" id="chatlayer" role="dialog" aria-modal="true">
+  <div class="chatmark" aria-hidden="true"><b id="chatmark-seal"></b></div>
   <div class="cl-head">
     <div class="chatseal" id="chatseal"></div>
     <div class="cl-head-main">
@@ -628,6 +654,7 @@ const T = {
     bgDistill:"連線中斷——蒸餾仍在雲端繼續，完成後會自動接上…",
     histClear:"清除記錄",
     memShare:"記住並共享到這條連結（其他訪客也看得到）",
+    openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
@@ -652,6 +679,7 @@ const T = {
     bgDistill:"Connection lost — distilling continues in the cloud and will reconnect here…",
     histClear:"Clear history",
     memShare:"Remember & share to this link (visible to other visitors)",
+    openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
@@ -1018,6 +1046,7 @@ function enterChat(pid, name){
   $("chatname").textContent = name;
   $("chattag").textContent = t("aiTag");
   $("chatseal").textContent = sealText(name);
+  $("chatmark-seal").textContent = sealText(name);
   $("msgs").innerHTML = "";
   if(state.history.length){
     state.history.forEach(m=>{
@@ -1025,8 +1054,18 @@ function enterChat(pid, name){
       else m.content.split("\n").map(x=>x.trim()).filter(Boolean).forEach(l=>bubble("ai", l));
     });
   }else{
-    $("msgs").innerHTML = `<div class="msgs-empty"></div>`;
-    $("msgs").firstChild.textContent = t("hello")(name);
+    const h = document.createElement("div");
+    h.className = "chat-hello";
+    h.innerHTML = `<div class="hello-line"></div><div class="hello-chips"></div>`;
+    h.querySelector(".hello-line").textContent = t("hello")(name);
+    const chips = h.querySelector(".hello-chips");
+    t("openers").forEach(txt=>{
+      const btn = document.createElement("button");
+      btn.textContent = txt;
+      btn.addEventListener("click", ()=>{ $("say").value = txt; send(); });
+      chips.appendChild(btn);
+    });
+    $("msgs").appendChild(h);
   }
   const db = $("delbtn");
   db.classList.remove("arm"); resetDelBtn();
@@ -1282,6 +1321,7 @@ $("delbtn").addEventListener("click", async ()=>{
 
 function bubble(cls, text){
   $("msgs").querySelector(".msgs-empty")?.remove();
+  $("msgs").querySelector(".chat-hello")?.remove();
   const b = document.createElement("div");
   b.className = "bub "+cls; b.textContent = text;
   $("msgs").appendChild(b);
@@ -1296,7 +1336,8 @@ async function send(){
   input.value = ""; $("send").disabled = true;
   bubble("me", text);
   state.history.push({role:"user", content:text}); saveHist();
-  const live = bubble("ai", "…");
+  const live = bubble("ai", "");
+  live.innerHTML = '<span class="tink"><i></i><i></i><i></i></span>';
   let acc = "";
   try{
     await sseFetch("/api/chat",
