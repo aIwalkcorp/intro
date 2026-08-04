@@ -389,6 +389,16 @@ def budget():
             "remaining": round(budget_left(), 4)}
 
 
+@app.get("/art/{fname}")
+def art(fname: str):
+    p = Path(__file__).parent / "art" / re.sub(r"[^\w.-]", "", fname)
+    if not p.exists():
+        raise HTTPException(404, "not found")
+    mt = {"webp": "image/webp", "png": "image/png", "svg": "image/svg+xml"}.get(
+        p.suffix.lstrip("."), "application/octet-stream")
+    return FileResponse(p, media_type=mt)
+
+
 @app.get("/")
 def index():
     return FileResponse(Path(__file__).parent / "index.html")

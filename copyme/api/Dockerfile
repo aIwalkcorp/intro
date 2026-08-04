@@ -6,6 +6,7 @@ RUN pip install --no-cache-dir fastapi uvicorn anthropic python-multipart
 
 COPY api/server.py /app/
 COPY index.html /app/
+COPY art/ /app/art/
 
 ENV PF_DATA=/data
 EXPOSE 8000
