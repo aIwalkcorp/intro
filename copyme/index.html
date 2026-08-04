@@ -492,6 +492,18 @@ footer a{color:var(--mist)}
   </div>
 </div>
 
+<div class="modal-veil" id="extmodal">
+  <div class="modal modal-box" style="max-width:480px">
+    <button class="mclose" id="ext-close" aria-label="Close">✕</button>
+    <h3 id="ext-title"></h3>
+    <p class="mnote">
+      <span class="lang-zh">再丟一份含這個人發言的 LINE 匯出 .txt——語料會合併去重後重新蒸餾。分身只保留這個人自己的發言（刪除分身即一併刪除），整份聊天檔仍然用完即刪。</span>
+      <span class="lang-en">Upload another LINE export .txt with this person's messages — lines are merged, deduplicated, and re-distilled. The twin keeps only this person's own lines (deleted with the twin); the full chat file is still deleted after use.</span>
+    </p>
+    <div id="ext-body"></div>
+  </div>
+</div>
+
 <div class="modal-veil" id="sharemodal">
   <div class="modal modal-box" style="max-width:480px">
     <button class="mclose" id="sh-close" aria-label="Close">✕</button>
@@ -524,7 +536,8 @@ footer a{color:var(--mist)}
       <div class="chatname" id="chatname"></div>
       <div class="chattag" id="chattag"></div>
     </div>
-    <button class="delbtn" id="linkbtn" style="margin-left:auto;display:none"><span class="lang-zh">公開連結</span><span class="lang-en">Public link</span></button>
+    <button class="delbtn" id="extbtn" style="margin-left:auto;display:none"><span class="lang-zh">擴充語料</span><span class="lang-en">Extend corpus</span></button>
+    <button class="delbtn" id="linkbtn" style="margin-left:0;display:none"><span class="lang-zh">公開連結</span><span class="lang-en">Public link</span></button>
     <button class="delbtn" id="pfbtn" style="margin-left:auto"><span class="lang-zh">人格檔</span><span class="lang-en">Persona file</span></button>
     <button class="delbtn" id="delbtn" style="margin-left:0"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
     <button class="cl-close" id="clclose"><span class="lang-zh">關閉 Esc</span><span class="lang-en">Close Esc</span></button>
@@ -573,6 +586,8 @@ const T = {
     delBtn:"刪除分身", delConfirm:"確定刪除？",
     say:"說點什麼…", resume:"續聊", demo:"示範", sendFail:(m)=>`（訊息沒送出去：${m}）`,
     copied:"已複製", shareTitle:(n)=>`「${n}」的公開連結`,
+    extTitle:(n)=>`擴充「${n}」的語料`, extUploading:"上傳解析中…", extPick:"這份檔案裡，哪一位是同一個人？",
+    extRun:"合併蒸餾中…", extDone:(n,c)=>`完成！新增 ${n} 句，語料共 ${c} 句，人格已更新。`,
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
@@ -591,6 +606,8 @@ const T = {
     delBtn:"Delete twin", delConfirm:"Delete for real?",
     say:"Say something…", resume:"resume", demo:"demo", sendFail:(m)=>`(Message not sent: ${m})`,
     copied:"Copied", shareTitle:(n)=>`Public link for ${n}`,
+    extTitle:(n)=>`Extend ${n}'s corpus`, extUploading:"Uploading & parsing…", extPick:"Which person in this file is them?",
+    extRun:"Merging & re-distilling…", extDone:(n,c)=>`Done! Added ${n} lines, corpus now ${c} lines. Persona updated.`,
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
@@ -904,6 +921,7 @@ function enterChat(pid, name){
   $("delbtn").style.display = visitor ? "none" : "";
   $("pfbtn").style.display = visitor ? "none" : "";
   $("linkbtn").style.display = (!visitor && tw && tw.mine) ? "" : "none";
+  $("extbtn").style.display = (visitor || (tw && tw.mine)) ? "" : "none";
   $("chatname").textContent = name;
   $("chattag").textContent = t("aiTag");
   $("chatseal").textContent = sealText(name);
@@ -994,6 +1012,62 @@ function renderStudio(){
   markSideActive();
 }
 
+$("extbtn").addEventListener("click", ()=>{
+  $("ext-title").textContent = t("extTitle")(state.personaName);
+  const b = $("ext-body");
+  b.innerHTML = `<input type="file" id="ext-file" accept=".txt" style="width:100%;margin:4px 0 2px">`;
+  $("ext-file").addEventListener("change", extUpload);
+  $("extmodal").classList.add("open");
+});
+async function extUpload(){
+  const f = $("ext-file").files[0];
+  if(!f) return;
+  const b = $("ext-body");
+  b.textContent = t("extUploading");
+  try{
+    const fd = new FormData();
+    fd.append("file", f); fd.append("access_code", "");
+    fd.append("share", state.shareToken || "");
+    const r = await fetch(API+"/api/upload", {method:"POST", headers: authHeaders(), body: fd});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    b.innerHTML = "";
+    const p = document.createElement("p");
+    p.className = "mnote"; p.textContent = t("extPick");
+    b.appendChild(p);
+    j.people.forEach(pp=>{
+      const btn = document.createElement("button");
+      btn.className = "shelfbtn"; btn.style.margin = "3px 6px 3px 0";
+      btn.textContent = `${pp.name}（${pp.count}）`;
+      btn.addEventListener("click", ()=> extRun(j.upload_id, pp.name));
+      b.appendChild(btn);
+    });
+  }catch(err){ b.textContent = err.message; }
+}
+async function extRun(uploadId, person){
+  const b = $("ext-body");
+  b.textContent = t("extRun");
+  let n = 0;
+  try{
+    await sseFetch("/api/distill/extend",
+      {persona_id: state.personaId, upload_id: uploadId, person,
+       share: state.shareToken || ""},
+      (ev,d)=>{
+        if(ev==="delta"){ n += d.text.length; b.textContent = t("extRun") + " " + n; }
+        else if(ev==="error"){ throw new Error(d.message); }
+        else if(ev==="done"){
+          b.textContent = t("extDone")(d.added, d.stats.count);
+          const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+          if(tw) tw.stats = d.stats;
+          if($("studio").classList.contains("open")) renderStudio();
+        }
+      });
+  }catch(err){ b.textContent = err.message; }
+  finally{ loadBudget(); }
+}
+$("ext-close").addEventListener("click", ()=> $("extmodal").classList.remove("open"));
+$("extmodal").addEventListener("click", e=>{ if(e.target===$("extmodal")) $("extmodal").classList.remove("open"); });
+
 async function setShare(enable){
   const r = await fetch(API+"/api/personas/"+state.personaId+"/share", {
     method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
@@ -1066,6 +1140,7 @@ $("clclose").addEventListener("click", closeChat);
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
     if($("authmodal").classList.contains("open")) closeAuth();
+    else if($("extmodal").classList.contains("open")) $("extmodal").classList.remove("open");
     else if($("sharemodal").classList.contains("open")) $("sharemodal").classList.remove("open");
     else if($("pmodal").classList.contains("open")) $("pmodal").classList.remove("open");
     else if($("chatlayer").classList.contains("open") && !$("chatlayer").classList.contains("docked")) closeChat();

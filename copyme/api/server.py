@@ -414,11 +414,23 @@ def _purge_empty_personas() -> None:
 _purge_empty_personas()
 
 
+def _share_valid(token: str) -> bool:
+    if len(token) < 8:
+        return False
+    for mp in PERSONAS.glob("*/meta.json"):
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        if meta.get("share") and secrets.compare_digest(meta["share"], token):
+            return True
+    return False
+
+
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...), access_code: str = Form(""),
+                 share: str = Form(""),
                  authorization: str | None = Header(None)):
     check_code(access_code)
-    require_user(authorization)
+    if not _share_valid(share):  # 公開連結訪客可為擴充語料上傳
+        require_user(authorization)
     _purge_stale_uploads()
     raw = (await file.read()).decode("utf-8", errors="replace")
     if len(raw) > 30_000_000:
@@ -459,42 +471,13 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
 
     pid = secrets.token_hex(6)
 
-    def gen():
-        yield sse("status", {"stage": "start", "stats": stats})
-        prompt = (
-            f"人名：{person}\n聊天室：{parsed['room'] or '（未知）'}\n"
-            f"語料統計：共 {stats['count']} 句（本次取樣 {stats['sampled']} 句），"
-            f"時間跨度 {stats['span']}，平均 {stats['avg_len']} 字/句，"
-            f"常用 emoji：{''.join(stats['top_emoji']) or '無'}\n\n"
-            f"以下是他/她的發言語料：\n\n{corpus}"
-        )
-        chunks: list[str] = []
-        try:
-            with claude.messages.stream(
-                model=MODEL,
-                max_tokens=16000,
-                output_config={"effort": "medium"},
-                system=DISTILL_SYSTEM,
-                messages=[{"role": "user", "content": prompt}],
-            ) as stream:
-                for text in stream.text_stream:
-                    chunks.append(text)
-                    yield sse("delta", {"text": text})
-                final = stream.get_final_message()
-            track_usage(final.usage)
-            if final.stop_reason == "refusal":
-                yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
-                return
-        except anthropic.APIStatusError as e:
-            yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
-            return
-        persona_md = "".join(chunks)
-        if not persona_md.strip():
-            yield sse("error", {"message": "蒸餾結果是空的（模型沒有產出文字），請再按一次重新蒸餾"})
-            return
+    def on_done(persona_md: str) -> dict:
         pdir = PERSONAS / pid
         pdir.mkdir(parents=True, exist_ok=True)
         (pdir / "persona.md").write_text(persona_md, encoding="utf-8")
+        # 保留該人物自己的發言作為分身語料庫（供日後擴充重蒸；刪除分身即一併刪除）
+        mine = [m for m in parsed["messages"] if m["sender"] == person]
+        (pdir / "corpus.json").write_text(json.dumps(mine, ensure_ascii=False), encoding="utf-8")
         (pdir / "meta.json").write_text(json.dumps({
             "id": pid, "name": person, "room": parsed["room"],
             "stats": stats,
@@ -503,10 +486,98 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
             "created": datetime.now(TZ).isoformat(timespec="seconds"),
         }, ensure_ascii=False), encoding="utf-8")
         upath.unlink(missing_ok=True)  # 一次性承諾：蒸餾完成，原始對話檔立即刪除
-        yield sse("done", {"persona_id": pid, "name": person})
+        return {"persona_id": pid, "name": person}
 
-    return StreamingResponse(gen(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache"})
+    return StreamingResponse(
+        _distill_events(person, parsed["room"], corpus, stats, on_done),
+        media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+
+
+def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
+    """共用蒸餾串流：yield SSE 事件，成功時呼叫 on_done(persona_md) 取得 done 載荷。"""
+    yield sse("status", {"stage": "start", "stats": stats})
+    prompt = (
+        f"人名：{person}\n聊天室：{room or '（未知）'}\n"
+        f"語料統計：共 {stats['count']} 句（本次取樣 {stats['sampled']} 句），"
+        f"時間跨度 {stats['span']}，平均 {stats['avg_len']} 字/句，"
+        f"常用 emoji：{''.join(stats['top_emoji']) or '無'}\n\n"
+        f"以下是他/她的發言語料：\n\n{corpus}"
+    )
+    chunks: list[str] = []
+    try:
+        with claude.messages.stream(
+            model=MODEL,
+            max_tokens=16000,
+            output_config={"effort": "medium"},
+            system=DISTILL_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+        ) as stream:
+            for text in stream.text_stream:
+                chunks.append(text)
+                yield sse("delta", {"text": text})
+            final = stream.get_final_message()
+        track_usage(final.usage)
+        if final.stop_reason == "refusal":
+            yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
+            return
+    except anthropic.APIStatusError as e:
+        yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
+        return
+    persona_md = "".join(chunks)
+    if not persona_md.strip():
+        yield sse("error", {"message": "蒸餾結果是空的（模型沒有產出文字），請再按一次重新蒸餾"})
+        return
+    yield sse("done", on_done(persona_md))
+
+
+@app.post("/api/distill/extend")
+async def distill_extend(payload: dict, authorization: str | None = Header(None)):
+    """擴充語料：擁有者或公開連結訪客丟新 txt，合併去重後重蒸同一個分身。"""
+    check_budget()
+    pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
+    pdir = PERSONAS / pid
+    if not (pdir / "meta.json").exists():
+        raise HTTPException(404, "找不到這個分身")
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    share_tok = str(payload.get("share") or "")
+    share_ok = bool(share_tok and meta.get("share")
+                    and secrets.compare_digest(meta["share"], share_tok))
+    user = resolve_user(authorization)
+    if not share_ok and not (user and meta.get("owner_id") == user.get("id")):
+        raise HTTPException(403, "只有擁有者或持公開連結者能擴充語料")
+
+    uid, person = payload.get("upload_id", ""), payload.get("person", "")
+    upath = UPLOADS / f"{re.sub(r'[^a-f0-9]', '', uid)}.json"
+    if not upath.exists():
+        raise HTTPException(404, "找不到這筆上傳，請重新上傳檔案")
+    parsed = json.loads(upath.read_text(encoding="utf-8"))
+    new_msgs = [m for m in parsed["messages"] if m["sender"] == person]
+    if not new_msgs:
+        raise HTTPException(422, f"這份檔案裡找不到「{person}」的發言")
+
+    name = meta["name"]
+    cpath = pdir / "corpus.json"
+    old = json.loads(cpath.read_text(encoding="utf-8")) if cpath.exists() else []
+    seen = {(m.get("date"), m["text"]) for m in old}
+    added = [{**m, "sender": name} for m in new_msgs
+             if (m.get("date"), m["text"]) not in seen]
+    merged = old + added
+    corpus, stats = sample_corpus(merged, name)
+    if stats["count"] < 30:
+        raise HTTPException(422, f"合併後只有 {stats['count']} 句文字訊息，太少無法蒸餾（至少 30 句）")
+
+    def on_done(persona_md: str) -> dict:
+        (pdir / "persona.md").write_text(persona_md, encoding="utf-8")
+        cpath.write_text(json.dumps(merged, ensure_ascii=False), encoding="utf-8")
+        meta["stats"] = stats
+        meta["updated"] = datetime.now(TZ).isoformat(timespec="seconds")
+        (pdir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+        upath.unlink(missing_ok=True)  # 一次性承諾不變：整份聊天檔用完即刪
+        return {"persona_id": pid, "name": name, "added": len(added), "stats": stats}
+
+    return StreamingResponse(
+        _distill_events(name, meta.get("room", ""), corpus, stats, on_done),
+        media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
 
 def _visible(meta: dict, user) -> bool:
