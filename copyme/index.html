@@ -207,7 +207,6 @@ body.en div.lang-en{display:block}
 .chatin button:disabled{background:var(--bdr)}
 
 /* ── 既有分身 ── */
-.shelf{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
 .shelfbtn{display:flex;gap:8px;align-items:center;background:#fff;
   border:1.5px solid var(--bdr);border-radius:8px;padding:7px 12px;font-size:.85rem}
 .shelfbtn:hover{border-color:var(--seal)}
@@ -252,6 +251,9 @@ body.en div.lang-en{display:block}
   background-image:radial-gradient(rgba(44,62,107,.05) 1px,transparent 1px);
   background-size:26px 26px}
 .chatlayer.open{display:flex}
+.chatlayer.docked{position:static;inset:auto;z-index:auto;flex:1;min-height:0;
+  background:transparent;background-image:none}
+.chatlayer.docked .cl-close{display:none}
 .cl-head{display:flex;align-items:center;gap:12px;padding:14px 22px;
   border-bottom:1.5px solid var(--bdr);background:var(--card)}
 .cl-head-main{min-width:0}
@@ -264,45 +266,49 @@ body.en div.lang-en{display:block}
 .cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
   border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
-/* ── 我的印譜（收藏頁） ── */
+/* ── 我的印譜（左側欄選人＋右側聊天） ── */
 .studio{position:fixed;inset:0;background:var(--paper);z-index:40;display:none;
-  overflow-y:auto;
   background-image:radial-gradient(rgba(44,62,107,.05) 1px,transparent 1px);
   background-size:26px 26px}
-.studio.open{display:block}
-.studio-wrap{max-width:880px;margin:0 auto;padding:26px 20px 60px}
-.studio-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
-  border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:26px}
-.studio-title{font-family:var(--serif);font-weight:900;font-size:1.6rem}
+.studio.open{display:flex}
+.studio-side{width:270px;flex-shrink:0;border-right:1.5px solid var(--bdr);
+  background:var(--card);display:flex;flex-direction:column;min-height:0}
+.side-head{padding:20px 18px 14px;border-bottom:2px solid var(--ink)}
+.studio-title{font-family:var(--serif);font-weight:900;font-size:1.35rem}
 .studio-title em{font-style:normal;color:var(--seal)}
-.studio-sub{font-family:var(--mono);font-size:.75rem;color:var(--mist)}
-.studio-back{margin-left:auto;background:none;border:1.5px solid var(--bdr);
-  color:var(--mist);border-radius:6px;padding:7px 16px;font-size:.84rem;font-weight:700}
-.studio-back:hover{border-color:var(--pri);color:var(--pri)}
-.albumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
-.leaf{background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;
-  padding:20px;display:flex;flex-direction:column;gap:10px;position:relative;
-  box-shadow:0 2px 0 rgba(25,29,43,.04)}
-.leaf-seal{width:64px;height:64px;border:3.5px solid var(--seal);border-radius:7px;
-  color:var(--seal);font-family:var(--serif);font-weight:900;font-size:1.15rem;
+.studio-sub{font-family:var(--mono);font-size:.72rem;color:var(--mist);margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:4px}
+.side-item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;
+  background:none;border:1.5px solid transparent;border-radius:8px;padding:9px 11px}
+.side-item:hover{background:rgba(44,62,107,.05)}
+.side-item.on{background:#fff;border-color:var(--bdr);box-shadow:0 2px 0 rgba(25,29,43,.05)}
+.si-seal{width:34px;height:34px;border:2.5px solid var(--seal);border-radius:6px;
+  color:var(--seal);font-family:var(--serif);font-weight:900;font-size:.7rem;
   display:flex;align-items:center;justify-content:center;text-align:center;
-  transform:rotate(-6deg);mix-blend-mode:multiply;background:rgba(179,56,44,.06);
-  transition:transform .15s}
-.leaf:hover .leaf-seal{transform:rotate(-6deg) scale(1.06)}
-.leaf-name{font-family:var(--serif);font-weight:900;font-size:1.1rem}
-.leaf-name .demo-badge{vertical-align:2px}
-.leaf-meta{font-family:var(--mono);font-size:.72rem;color:var(--mist);line-height:1.8}
-.leaf-actions{display:flex;gap:8px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
-.leaf-actions button{border-radius:6px;padding:7px 14px;font-size:.82rem;font-weight:700}
-.la-chat{background:var(--seal);color:#fff;border:none;flex:1}
-.la-chat:hover{filter:brightness(.92)}
-.la-view{background:none;border:1.5px solid var(--bdr);color:var(--mist)}
-.la-view:hover{border-color:var(--pri);color:var(--pri)}
-.la-del{background:none;border:1.5px solid var(--bdr);color:var(--mist)}
-.la-del:hover{border-color:var(--seal);color:var(--seal)}
-.la-del.arm{background:var(--seal);border-color:var(--seal);color:#fff}
-.studio-empty{text-align:center;color:var(--mist);padding:70px 20px;font-size:.95rem}
+  transform:rotate(-6deg);background:rgba(179,56,44,.06);flex-shrink:0}
+.si-body{min-width:0;flex:1}
+.si-name{display:block;font-family:var(--serif);font-weight:900;font-size:.94rem;
+  color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si-name .demo-badge{vertical-align:1px}
+.si-meta{display:block;font-family:var(--mono);font-size:.65rem;color:var(--mist);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-foot{padding:12px 14px;border-top:1.5px solid var(--bdr)}
+.studio-back{width:100%;background:none;border:1.5px solid var(--bdr);
+  color:var(--mist);border-radius:6px;padding:8px 14px;font-size:.84rem;font-weight:700}
+.studio-back:hover{border-color:var(--pri);color:var(--pri)}
+.studio-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.studio-empty{margin:auto;text-align:center;color:var(--mist);padding:40px 20px;font-size:.95rem}
 .studio-empty .gobtn{margin-top:18px}
+@media(max-width:700px){
+  .studio.open{flex-direction:column}
+  .studio-side{width:100%;flex-shrink:0;max-height:44vh;border-right:none;
+    border-bottom:1.5px solid var(--bdr)}
+  .side-head{padding:12px 14px 10px}
+  .side-list{flex:none;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px 10px}
+  .side-item{flex-shrink:0;width:auto}
+  .side-foot{padding:8px 10px}
+}
 .mytwins{display:none;align-items:center;gap:7px;border:1.5px solid var(--bdr);
   background:var(--card);border-radius:8px;padding:7px 14px;font-size:.84rem;
   font-weight:700;color:var(--ink)}
@@ -377,8 +383,6 @@ footer a{color:var(--mist)}
     <button class="mswitch" id="au-mode"><span class="lang-zh">還沒有帳號？我要註冊</span><span class="lang-en">No account yet? Register</span></button>
   </div>
 </div>
-<div class="shelf" id="shelf"></div>
-
 <div class="err" id="err"></div>
 
 <!-- 01 上傳 -->
@@ -464,15 +468,17 @@ footer a{color:var(--mist)}
 
 <!-- 我的印譜：登入後的分身收藏頁 -->
 <div class="studio" id="studio" role="dialog" aria-modal="true">
-  <div class="studio-wrap">
-    <div class="studio-head">
-      <div>
-        <div class="studio-title"><span class="lang-zh">我的<em>印譜</em></span><span class="lang-en">My <em>twins</em></span></div>
-        <div class="studio-sub" id="studio-sub"></div>
-      </div>
+  <aside class="studio-side">
+    <div class="side-head">
+      <div class="studio-title"><span class="lang-zh">我的<em>印譜</em></span><span class="lang-en">My <em>twins</em></span></div>
+      <div class="studio-sub" id="studio-sub"></div>
+    </div>
+    <div class="side-list" id="sidelist"></div>
+    <div class="side-foot">
       <button class="studio-back" id="studioback"><span class="lang-zh">← 回蒸餾所</span><span class="lang-en">← Back to distilling</span></button>
     </div>
-    <div class="albumgrid" id="albumgrid"></div>
+  </aside>
+  <div class="studio-main" id="studiomain">
     <div class="studio-empty" id="studioempty" style="display:none">
       <div><span class="lang-zh">印譜還是空的——蒸你的第一個分身吧。</span><span class="lang-en">Your album is empty — distill your first twin.</span></div>
       <button class="gobtn" id="emptygo"><span class="lang-zh">去蒸餾</span><span class="lang-en">Start distilling</span></button>
@@ -496,7 +502,8 @@ footer a{color:var(--mist)}
       <div class="chatname" id="chatname"></div>
       <div class="chattag" id="chattag"></div>
     </div>
-    <button class="delbtn" id="delbtn"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
+    <button class="delbtn" id="pfbtn" style="margin-left:auto"><span class="lang-zh">人格檔</span><span class="lang-en">Persona file</span></button>
+    <button class="delbtn" id="delbtn" style="margin-left:0"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
     <button class="cl-close" id="clclose"><span class="lang-zh">關閉 Esc</span><span class="lang-en">Close Esc</span></button>
   </div>
   <div class="cl-msgs"><div class="cl-msgs-inner" id="msgs"></div></div>
@@ -879,18 +886,38 @@ function enterChat(pid, name){
   $("say").focus();
 }
 /* ── 我的印譜 ── */
+function dockChat(){
+  const cl = $("chatlayer");
+  if(cl.parentElement !== $("studiomain")){
+    cl.classList.add("docked"); $("studiomain").appendChild(cl);
+  }
+}
+function undockChat(){
+  const cl = $("chatlayer");
+  cl.classList.remove("docked","open");
+  document.body.appendChild(cl);
+}
 function openStudio(){
   if(!ME){ openAuth(); return; }
+  dockChat();
   renderStudio();
   $("studio").classList.add("open");
+  document.body.style.overflow = "hidden";
+  const mine = state.twins || [];
+  if(mine.length && !$("chatlayer").classList.contains("open")){
+    enterChat(mine[0].id, mine[0].name); markSideActive();
+  }
   if(location.hash !== "#studio") history.pushState(null, "", "#studio");
 }
 function closeStudio(){
+  undockChat();
   $("studio").classList.remove("open");
+  document.body.style.overflow = "";
   if(location.hash === "#studio") history.pushState(null, "", location.pathname);
 }
 window.addEventListener("popstate", ()=>{
-  $("studio").classList.toggle("open", location.hash === "#studio" && !!ME);
+  if(location.hash === "#studio" && ME) openStudio();
+  else if($("studio").classList.contains("open")) closeStudio();
 });
 $("mytwins").addEventListener("click", openStudio);
 $("studioback").addEventListener("click", closeStudio);
@@ -898,81 +925,66 @@ $("emptygo").addEventListener("click", closeStudio);
 $("pm-close").addEventListener("click", ()=> $("pmodal").classList.remove("open"));
 $("pmodal").addEventListener("click", e=>{ if(e.target===$("pmodal")) $("pmodal").classList.remove("open"); });
 
+function markSideActive(){
+  $("sidelist").querySelectorAll(".side-item").forEach(b=>
+    b.classList.toggle("on", b.dataset.pid === state.personaId));
+}
 function renderStudio(){
-  const grid = $("albumgrid"), mine = (state.twins||[]);
-  grid.innerHTML = "";
+  const list = $("sidelist"), mine = (state.twins||[]);
+  list.innerHTML = "";
   $("studio-sub").textContent = (ME ? (ME.username || ME.email) + " ・ " : "") +
     (LANG==="en" ? mine.length + " twins" : mine.length + " 方");
   $("studioempty").style.display = mine.length ? "none" : "block";
   mine.forEach(p=>{
-    const leaf = document.createElement("div");
-    leaf.className = "leaf";
-    leaf.innerHTML = `<div class="leaf-seal"></div>
-      <div class="leaf-name"></div>
-      <div class="leaf-meta"></div>
-      <div class="leaf-actions">
-        <button class="la-chat"></button>
-        <button class="la-view"></button>
-        <button class="la-del"></button>
-      </div>`;
-    leaf.querySelector(".leaf-seal").textContent = sealText(p.name);
-    const nm = leaf.querySelector(".leaf-name");
+    const b = document.createElement("button");
+    b.className = "side-item";
+    b.dataset.pid = p.id;
+    b.innerHTML = `<span class="si-seal"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
+    b.querySelector(".si-seal").textContent = sealText(p.name);
+    const nm = b.querySelector(".si-name");
     nm.textContent = p.name;
     if(p.demo){
-      const b = document.createElement("span");
-      b.className = "demo-badge"; b.textContent = t("demo");
-      nm.append(" ", b);
+      const tag = document.createElement("span");
+      tag.className = "demo-badge"; tag.textContent = t("demo");
+      nm.append(" ", tag);
     }
     const st = p.stats || {};
-    leaf.querySelector(".leaf-meta").textContent =
-      (p.room ? p.room + "\n" : "") +
-      (st.count ? (LANG==="en" ? st.count + " lines" : st.count + " 句語料") + " ・ " : "") +
+    b.querySelector(".si-meta").textContent =
+      (p.room ? p.room + " ・ " : "") +
+      (st.count ? (LANG==="en" ? st.count + " lines" : st.count + " 句") + " ・ " : "") +
       (p.created || "").slice(0,10);
-    const [bc, bv, bd] = leaf.querySelectorAll("button");
-    bc.textContent = LANG==="en" ? "Chat" : "對話";
-    bv.textContent = LANG==="en" ? "Persona file" : "人格檔";
-    bd.textContent = LANG==="en" ? "Delete" : "刪除";
-    bc.addEventListener("click", ()=> enterChat(p.id, p.name));
-    bv.addEventListener("click", async ()=>{
-      try{
-        const r = await fetch(API+"/api/personas/"+p.id, {headers: authHeaders()});
-        const j = await r.json();
-        if(!r.ok) throw new Error(j.detail || t("svcDown"));
-        $("pm-title").textContent = p.name + (LANG==="en" ? " · persona file" : " · 人格檔");
-        $("pm-doc").textContent = j.persona;
-        $("pmodal").classList.add("open");
-      }catch(err){ showErr(err.message); }
+    b.addEventListener("click", ()=>{
+      if(state.personaId !== p.id || !$("chatlayer").classList.contains("open"))
+        enterChat(p.id, p.name);
+      markSideActive();
     });
-    bd.addEventListener("click", async ()=>{
-      if(!bd.classList.contains("arm")){
-        bd.classList.add("arm");
-        bd.textContent = LANG==="en" ? "Delete for real?" : "確定刪除？";
-        setTimeout(()=>{ bd.classList.remove("arm");
-          bd.textContent = LANG==="en" ? "Delete" : "刪除"; }, 4000);
-        return;
-      }
-      try{
-        const r = await fetch(API+"/api/personas/"+p.id+"/delete", {
-          method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
-          body: JSON.stringify({})});
-        if(!r.ok) throw new Error((await r.json()).detail || t("svcDown"));
-        await loadShelf(); renderStudio();
-      }catch(err){ showErr(err.message); }
-    });
-    grid.appendChild(leaf);
+    list.appendChild(b);
   });
+  markSideActive();
 }
+
+$("pfbtn").addEventListener("click", async ()=>{
+  if(!state.personaId) return;
+  try{
+    const r = await fetch(API+"/api/personas/"+state.personaId, {headers: authHeaders()});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    $("pm-title").textContent = state.personaName + (LANG==="en" ? " · persona file" : " · 人格檔");
+    $("pm-doc").textContent = j.persona;
+    $("pmodal").classList.add("open");
+  }catch(err){ showErr(err.message); }
+});
 
 function closeChat(){
   $("chatlayer").classList.remove("open");
-  document.body.style.overflow = "";
+  if(!$("studio").classList.contains("open")) document.body.style.overflow = "";
 }
 $("clclose").addEventListener("click", closeChat);
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
     if($("authmodal").classList.contains("open")) closeAuth();
     else if($("pmodal").classList.contains("open")) $("pmodal").classList.remove("open");
-    else if($("chatlayer").classList.contains("open")) closeChat();
+    else if($("chatlayer").classList.contains("open") && !$("chatlayer").classList.contains("docked")) closeChat();
     else if($("studio").classList.contains("open")) closeStudio();
   }
 });
@@ -996,7 +1008,13 @@ $("delbtn").addEventListener("click", async ()=>{
     if(!res.ok) throw new Error((await res.json()).detail || t("svcDown"));
     state.personaId = null; state.history = [];
     db.classList.remove("arm"); resetDelBtn();
-    closeChat(); loadShelf();
+    closeChat();
+    await loadShelf();
+    if($("studio").classList.contains("open")){
+      renderStudio();
+      const mine = state.twins || [];
+      if(mine.length){ enterChat(mine[0].id, mine[0].name); markSideActive(); }
+    }
   }catch(err){ showErr(err.message); }
 });
 
@@ -1056,10 +1074,10 @@ function twinChip(p){
   return b;
 }
 function renderTwins(){
-  const shelf = $("shelf"), row = $("twinrow");
-  shelf.innerHTML = ""; row.innerHTML = "";
+  const row = $("twinrow");
+  row.innerHTML = "";
   const list = state.twins || [];
-  list.forEach(p=>{ shelf.appendChild(twinChip(p)); row.appendChild(twinChip(p)); });
+  list.forEach(p=>{ row.appendChild(twinChip(p)); });
   if(!list.length){
     const empty = document.createElement("span");
     empty.className = "msgs-empty";
