@@ -523,7 +523,11 @@ def list_personas(authorization: str | None = Header(None)):
                      key=lambda p: p.stat().st_mtime, reverse=True):
         meta = json.loads(mp.read_text(encoding="utf-8"))
         if _visible(meta, user):
+            mine = bool(user) and meta.get("owner_id") == user.get("id")
             meta.pop("owner_id", None); meta.pop("owner_email", None)
+            if not mine:
+                meta.pop("share", None)  # 分享 token 只有擁有者看得到
+            meta["mine"] = mine
             out.append(meta)
     return {"personas": out}
 
@@ -555,6 +559,38 @@ def delete_persona(pid: str, payload: dict, authorization: str | None = Header(N
     return {"deleted": True}
 
 
+@app.post("/api/personas/{pid}/share")
+def share_persona(pid: str, payload: dict, authorization: str | None = Header(None)):
+    """公開連結開關：僅擁有者。token 即訪問能力，停用即失效。"""
+    user = require_user(authorization)
+    pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
+    if not (pdir / "meta.json").exists():
+        raise HTTPException(404, "找不到這個分身")
+    mpath = pdir / "meta.json"
+    meta = json.loads(mpath.read_text(encoding="utf-8"))
+    if meta.get("owner_id") != user.get("id"):
+        raise HTTPException(403, "只有擁有者能開關公開連結")
+    if payload.get("enable"):
+        meta["share"] = meta.get("share") or secrets.token_urlsafe(9)
+    else:
+        meta.pop("share", None)
+    mpath.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    return {"share": meta.get("share")}
+
+
+@app.get("/api/shared/{token}")
+def shared_info(token: str):
+    """憑分享 token 取得分身基本資訊（免登入）。"""
+    token = token.strip()
+    if len(token) >= 8:
+        for mp in PERSONAS.glob("*/meta.json"):
+            meta = json.loads(mp.read_text(encoding="utf-8"))
+            if meta.get("share") and secrets.compare_digest(meta["share"], token):
+                return {"id": meta["id"], "name": meta["name"],
+                        "room": meta.get("room", ""), "stats": meta.get("stats", {})}
+    raise HTTPException(404, "連結已失效或被擁有者停用")
+
+
 @app.post("/api/chat")
 async def chat(payload: dict, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
@@ -567,7 +603,10 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
     if not persona_text.strip():
         raise HTTPException(409, "這個分身的人格檔是空的（先前蒸餾失敗），請刪除後重新蒸餾")
     meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
-    if not _visible(meta, resolve_user(authorization)):
+    share_tok = str(payload.get("share") or "")
+    share_ok = bool(share_tok and meta.get("share")
+                    and secrets.compare_digest(meta["share"], share_tok))
+    if not share_ok and not _visible(meta, resolve_user(authorization)):
         raise HTTPException(403, "這個分身不是公開示範，只有本人能對話")
     history = payload.get("messages", [])[-40:]
     if not history or history[-1].get("role") != "user":

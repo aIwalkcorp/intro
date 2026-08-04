@@ -235,6 +235,12 @@ body.en div.lang-en{display:block}
 .modal .abtn{width:100%;background:var(--pri);color:#fff;border:none;padding:11px;
   border-radius:7px;font-size:.95rem;font-weight:700;margin-top:4px}
 .modal .abtn:hover{background:var(--pri-deep)}
+.sh-urlrow{display:flex;gap:8px;margin:12px 0}
+.sh-url{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:6px;
+  font-family:var(--mono);font-size:.72rem;background:#fff;color:var(--pri-deep)}
+.sh-copy{background:var(--pri);color:#fff;border:none;border-radius:6px;
+  padding:0 16px;font-weight:700;font-size:.84rem;white-space:nowrap}
+.si-share{color:var(--seal)}
 .modal .mswitch{background:none;border:none;color:var(--pri);font-size:.82rem;
   margin-top:12px;text-decoration:underline;padding:0}
 .modal .mclose{position:absolute;top:14px;right:16px;background:none;border:none;
@@ -486,6 +492,22 @@ footer a{color:var(--mist)}
   </div>
 </div>
 
+<div class="modal-veil" id="sharemodal">
+  <div class="modal modal-box" style="max-width:480px">
+    <button class="mclose" id="sh-close" aria-label="Close">✕</button>
+    <h3 id="sh-title"></h3>
+    <p class="mnote">
+      <span class="lang-zh">任何拿到這條連結的人都能直接與這個分身對話——不需登入、不會看到人格檔，用的是站方的體驗額度。停用後連結立即失效。</span>
+      <span class="lang-en">Anyone with this link can chat with this twin — no sign-in needed, the persona file stays hidden, and messages draw from the site's trial pool. Disable the link and it stops working immediately.</span>
+    </p>
+    <div class="sh-urlrow">
+      <input class="sh-url" id="sh-url" readonly>
+      <button class="sh-copy" id="sh-copy"><span class="lang-zh">複製</span><span class="lang-en">Copy</span></button>
+    </div>
+    <button class="mswitch" id="sh-revoke"><span class="lang-zh">停用連結</span><span class="lang-en">Disable link</span></button>
+  </div>
+</div>
+
 <div class="modal-veil" id="pmodal">
   <div class="modal modal-box" style="max-width:640px">
     <button class="mclose" id="pm-close" aria-label="Close">✕</button>
@@ -502,6 +524,7 @@ footer a{color:var(--mist)}
       <div class="chatname" id="chatname"></div>
       <div class="chattag" id="chattag"></div>
     </div>
+    <button class="delbtn" id="linkbtn" style="margin-left:auto;display:none"><span class="lang-zh">公開連結</span><span class="lang-en">Public link</span></button>
     <button class="delbtn" id="pfbtn" style="margin-left:auto"><span class="lang-zh">人格檔</span><span class="lang-en">Persona file</span></button>
     <button class="delbtn" id="delbtn" style="margin-left:0"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></button>
     <button class="cl-close" id="clclose"><span class="lang-zh">關閉 Esc</span><span class="lang-en">Close Esc</span></button>
@@ -524,7 +547,7 @@ footer a{color:var(--mist)}
 const API = (location.hostname.endsWith("fly.dev") || location.hostname === "localhost")
   ? "" : "https://copyme.fly.dev";
 const $ = id => document.getElementById(id);
-const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[] };
+const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null };
 
 /* 安全儲存層：無痕模式/嵌入情境 localStorage 可能直接 throw，退回記憶體 */
 const store = {
@@ -549,6 +572,7 @@ const T = {
     deleted:"分身已刪除，人格檔已從伺服器銷毀。",
     delBtn:"刪除分身", delConfirm:"確定刪除？",
     say:"說點什麼…", resume:"續聊", demo:"示範", sendFail:(m)=>`（訊息沒送出去：${m}）`,
+    copied:"已複製", shareTitle:(n)=>`「${n}」的公開連結`,
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
@@ -566,6 +590,7 @@ const T = {
     deleted:"Twin deleted. Its persona file has been destroyed on the server.",
     delBtn:"Delete twin", delConfirm:"Delete for real?",
     say:"Say something…", resume:"resume", demo:"demo", sendFail:(m)=>`(Message not sent: ${m})`,
+    copied:"Copied", shareTitle:(n)=>`Public link for ${n}`,
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
@@ -860,7 +885,7 @@ $("distillbtn").addEventListener("click", async ()=>{
           $("docwrap").style.display = "block";
           $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(d.name)}</div>`;
           $("chatbtn").style.display = "inline-block";
-          loadBudget();
+          loadBudget(); loadShelf();
         }else if(ev==="error"){ throw new Error(d.message); }
       });
   }catch(err){
@@ -874,6 +899,11 @@ $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.per
 /* ── 04 對話 ── */
 function enterChat(pid, name){
   state.personaId = pid; state.personaName = name; state.history = [];
+  const visitor = !!state.shareToken;
+  const tw = (state.twins||[]).find(x=>x.id===pid);
+  $("delbtn").style.display = visitor ? "none" : "";
+  $("pfbtn").style.display = visitor ? "none" : "";
+  $("linkbtn").style.display = (!visitor && tw && tw.mine) ? "" : "none";
   $("chatname").textContent = name;
   $("chattag").textContent = t("aiTag");
   $("chatseal").textContent = sealText(name);
@@ -950,6 +980,7 @@ function renderStudio(){
     }
     const st = p.stats || {};
     b.querySelector(".si-meta").textContent =
+      (p.share ? (LANG==="en" ? "public ・ " : "已公開 ・ ") : "") +
       (p.room ? p.room + " ・ " : "") +
       (st.count ? (LANG==="en" ? st.count + " lines" : st.count + " 句") + " ・ " : "") +
       (p.created || "").slice(0,10);
@@ -961,6 +992,58 @@ function renderStudio(){
     list.appendChild(b);
   });
   markSideActive();
+}
+
+async function setShare(enable){
+  const r = await fetch(API+"/api/personas/"+state.personaId+"/share", {
+    method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
+    body: JSON.stringify({enable})});
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.detail || t("svcDown"));
+  const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+  if(tw){ if(j.share) tw.share = j.share; else delete tw.share; }
+  return j.share;
+}
+$("linkbtn").addEventListener("click", async ()=>{
+  if(!state.personaId) return;
+  try{
+    const tok = await setShare(true);
+    $("sh-title").textContent = t("shareTitle")(state.personaName);
+    $("sh-url").value = location.origin + location.pathname + "#s/" + tok;
+    $("sharemodal").classList.add("open");
+    if($("studio").classList.contains("open")) renderStudio();
+  }catch(err){ showErr(err.message); }
+});
+$("sh-copy").addEventListener("click", async ()=>{
+  const url = $("sh-url").value;
+  try{ await navigator.clipboard.writeText(url); }
+  catch(_){ $("sh-url").select(); document.execCommand("copy"); }
+  const b = $("sh-copy");
+  b.textContent = t("copied");
+  setTimeout(()=>{ b.innerHTML = '<span class="lang-zh">複製</span><span class="lang-en">Copy</span>'; applyLang(LANG); }, 1600);
+});
+$("sh-revoke").addEventListener("click", async ()=>{
+  try{
+    await setShare(false);
+    $("sharemodal").classList.remove("open");
+    if($("studio").classList.contains("open")) renderStudio();
+  }catch(err){ showErr(err.message); }
+});
+$("sh-close").addEventListener("click", ()=> $("sharemodal").classList.remove("open"));
+$("sharemodal").addEventListener("click", e=>{ if(e.target===$("sharemodal")) $("sharemodal").classList.remove("open"); });
+
+async function initShared(tok){
+  try{
+    const r = await fetch(API+"/api/shared/"+tok);
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    state.shareToken = tok;
+    enterChat(j.id, j.name);
+  }catch(err){ showErr(err.message); }
+}
+{
+  const sm = location.hash.match(/^#s\/([\w-]+)$/);
+  if(sm) initShared(sm[1]);
 }
 
 $("pfbtn").addEventListener("click", async ()=>{
@@ -983,6 +1066,7 @@ $("clclose").addEventListener("click", closeChat);
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
     if($("authmodal").classList.contains("open")) closeAuth();
+    else if($("sharemodal").classList.contains("open")) $("sharemodal").classList.remove("open");
     else if($("pmodal").classList.contains("open")) $("pmodal").classList.remove("open");
     else if($("chatlayer").classList.contains("open") && !$("chatlayer").classList.contains("docked")) closeChat();
     else if($("studio").classList.contains("open")) closeStudio();
@@ -1038,7 +1122,8 @@ async function send(){
   let acc = "";
   try{
     await sseFetch("/api/chat",
-      {persona_id:state.personaId, messages:state.history, access_code:""},
+      {persona_id:state.personaId, messages:state.history, access_code:"",
+       share: state.shareToken || ""},
       (ev,d)=>{
         if(ev==="delta"){ acc += d.text; live.textContent = acc;
           $("msgs").scrollTop = $("msgs").scrollHeight; }
