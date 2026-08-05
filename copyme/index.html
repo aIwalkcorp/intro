@@ -1067,7 +1067,7 @@ $("distillbtn").addEventListener("click", async ()=>{
       {upload_id:state.uploadId, person:state.person, access_code:""},
       (ev, d)=>{
         if(ev==="status"){
-          $("vizstatus").textContent = t("corpusInfo")(d.stats);
+          $("vizstatus").textContent = d.stage==="retry" ? d.message : t("corpusInfo")(d.stats);
         }else if(ev==="delta"){
           acc += d.text;
           while(stageIdx < STAGE_KEYS.length && acc.includes(STAGE_KEYS[stageIdx])){
@@ -1303,6 +1303,7 @@ async function extRun(uploadId, person){
       (ev,d)=>{
         if(ev==="delta"){ n += d.text.length;
           bar.style.width = Math.min(95, n/5200*100).toFixed(1) + "%"; }
+        else if(ev==="status" && d.stage==="retry"){ b.querySelector("p").textContent = d.message; }
         else if(ev==="error"){ throw new Error(d.message); }
         else if(ev==="done"){
           bar.style.width = "100%";

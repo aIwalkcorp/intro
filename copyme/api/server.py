@@ -568,25 +568,39 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
         f"常用 emoji：{''.join(stats['top_emoji']) or '無'}\n\n"
         f"以下是他/她的發言語料：\n\n{corpus}"
     )
+    import time
     chunks: list[str] = []
-    try:
-        with claude.messages.stream(
-            model=MODEL,
-            max_tokens=16000,
-            output_config={"effort": "medium"},
-            system=DISTILL_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
-        ) as stream:
-            for text in stream.text_stream:
-                chunks.append(text)
-                yield sse("delta", {"text": text})
-            final = stream.get_final_message()
-        track_usage(final.usage)
-        if final.stop_reason == "refusal":
-            yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
+    final = None
+    for attempt in range(3):
+        chunks.clear()
+        try:
+            with claude.messages.stream(
+                model=MODEL,
+                max_tokens=16000,
+                output_config={"effort": "medium"},
+                system=DISTILL_SYSTEM,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                for text in stream.text_stream:
+                    chunks.append(text)
+                    yield sse("delta", {"text": text})
+                final = stream.get_final_message()
+            break
+        except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
+            status = getattr(e, "status_code", 0)
+            transient = status in (429, 500, 529) or isinstance(e, anthropic.APIConnectionError)
+            if transient and attempt < 2:
+                wait = 5 * (attempt + 1) * 3 // 2 or 5  # 5s, 15s
+                yield sse("status", {"stage": "retry",
+                    "message": f"模型壅塞，{wait} 秒後自動重試（{attempt+2}/3）…"})
+                time.sleep(wait)
+                continue
+            msg = "模型目前壅塞，已重試多次仍失敗——語料還在，稍等一兩分鐘再按一次就好" if transient                   else f"Claude API 錯誤：{getattr(e, 'message', e)}"
+            yield sse("error", {"message": msg})
             return
-    except anthropic.APIStatusError as e:
-        yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
+    track_usage(final.usage)
+    if final.stop_reason == "refusal":
+        yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
         return
     persona_md = "".join(chunks)
     if not persona_md.strip():
@@ -779,7 +793,10 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
             if final.stop_reason == "refusal":
                 yield sse("delta", {"text": "（這題我不方便回）"})
         except anthropic.APIStatusError as e:
-            yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
+            if getattr(e, "status_code", 0) in (429, 529):
+                yield sse("error", {"message": "模型目前壅塞，稍等幾秒再送一次"})
+            else:
+                yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
             return
         if remember and chunks:
             # ponytail: 整檔重寫，單機小流量夠用；量大再換 append log
