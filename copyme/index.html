@@ -263,6 +263,11 @@ body.en div.lang-en{display:block}
   border:1.5px solid var(--seal);color:var(--seal);border-radius:8px;height:38px;
   padding:0 15px;font-size:.85rem;font-weight:700;transition:all .15s;flex-shrink:0}
 .extpill:hover{background:var(--seal);color:#fff;transform:translateY(-1px)}
+.brandcta{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;
+  border:1.5px solid var(--pri);color:var(--pri);border-radius:8px;font-size:.85rem;
+  font-weight:700;text-decoration:none;flex-shrink:0;transition:all .15s}
+.brandcta:hover{background:var(--pri);color:#fff;transform:translateY(-1px)}
+@media(max-width:560px){.brandcta .cta-long{display:none}}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .delbtn{margin-left:auto;background:none;border:1.5px solid var(--bdr);color:var(--mist);
   border-radius:6px;padding:5px 12px;font-size:.78rem}
@@ -695,7 +700,10 @@ footer a{color:var(--mist)}
       <div class="chatname" id="chatname"></div>
       <div class="chattag" id="chattag"></div>
     </div>
-    <button class="extpill" id="extbtn" style="margin-left:auto;display:none">
+    <a class="brandcta" id="brandcta" href="https://aiwalkcorp.com/copyme/" style="margin-left:auto;display:none">
+      <span class="lang-zh">蒸一個<span class="cta-long">你自己的</span>分身 →</span>
+      <span class="lang-en">Make your own twin →</span></a>
+    <button class="extpill" id="extbtn" style="margin-left:0;display:none">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3C12 3 6 10 6 14a6 6 0 0 0 12 0c0-4-6-11-6-11Z"/><path d="M12 11v6M9 14h6"/></svg>
       <span class="lang-zh">擴充語料</span><span class="lang-en">Extend corpus</span></button>
     <button class="icobtn" id="linkbtn" style="display:none">
@@ -1160,6 +1168,8 @@ function enterChat(pid, name){
   $("pfbtn").style.display = visitor ? "none" : "";
   $("linkbtn").style.display = (!visitor && tw && tw.mine) ? "" : "none";
   $("extbtn").style.display = (visitor || (tw && tw.mine)) ? "" : "none";
+  $("brandcta").style.display = visitor ? "" : "none";
+  $("extbtn").style.marginLeft = visitor ? "0" : "auto";
   $("chatname").textContent = name;
   $("chattag").textContent = t("aiTag");
   $("chatseal").textContent = sealText(name);
@@ -1423,7 +1433,10 @@ function closeChat(){
   $("chatlayer").classList.remove("open");
   if(!$("studio").classList.contains("open")) document.body.style.overflow = "";
 }
-$("clclose").addEventListener("click", closeChat);
+$("clclose").addEventListener("click", ()=>{
+  if(state.shareToken){ location.href = "https://aiwalkcorp.com/copyme/"; return; }
+  closeChat();
+});
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
     if($("authmodal").classList.contains("open")) closeAuth();
