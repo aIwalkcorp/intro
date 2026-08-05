@@ -1333,7 +1333,7 @@ $("linkbtn").addEventListener("click", async ()=>{
   try{
     const tok = await setShare(true);
     $("sh-title").textContent = t("shareTitle")(state.personaName);
-    $("sh-url").value = (API || location.origin) + "/s/" + tok;
+    $("sh-url").value = "https://aiwalkcorp.com/copyme/s/" + tok;
     $("sharemodal").classList.add("open");
     if($("studio").classList.contains("open")) renderStudio();
   }catch(err){ showErr(err.message); }

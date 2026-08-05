@@ -1,3 +1,6 @@
 # Cloudflare Pages redirects.
 # Folder rename: jademountain/ → trailforge/. Keep old share links + PWA installs working.
 /jademountain/*  /trailforge/:splat  301
+
+# CopyMe share links: brand URL → fly backend (serves per-twin OG preview).
+/copyme/s/*  https://copyme.fly.dev/s/:splat  302
