@@ -763,7 +763,9 @@ const store = {
 };
 
 /* ── 語言（沿用主站 aiwalk-lang 慣例） ── */
-let LANG = store.get("aiwalk-lang") || "zh";
+const _qlang = new URLSearchParams(location.search).get("lang");
+let LANG = (_qlang === "en" || _qlang === "zh") ? _qlang : (store.get("aiwalk-lang") || "zh");
+if(_qlang === "en" || _qlang === "zh") store.set("aiwalk-lang", _qlang);
 const T = {
   zh: {
     parsing:"上傳解析中…", dropback:"把 .txt 拖到這裡，或",
@@ -833,6 +835,7 @@ function applyLang(l){
   $("btn-en").classList.toggle("active", l === "en");
   $("btn-zh2")?.classList.toggle("active", l === "zh");
   $("btn-en2")?.classList.toggle("active", l === "en");
+  $("brandcta").href = "https://aiwalkcorp.com/copyme/?lang=" + l;
   $("say").placeholder = t("say");
   $("au-email").placeholder = t("emailPh");
   $("au-name").placeholder = t("namePh");
