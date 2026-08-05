@@ -423,12 +423,23 @@ body.en div.lang-en{display:block}
 .studio-empty .gobtn{margin-top:18px}
 @media(max-width:700px){
   .studio.open{flex-direction:column}
-  .studio-side{width:100%;flex-shrink:0;max-height:44vh;border-right:none;
+  .studio-side{width:100%;flex-shrink:0;max-height:none;border-right:none;
     border-bottom:1.5px solid var(--bdr)}
-  .side-head{padding:12px 14px 10px}
-  .side-list{flex:none;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px 10px}
-  .side-item{flex-shrink:0;width:auto}
-  .side-foot{padding:8px 10px}
+  .side-head{padding:9px 14px 6px;display:flex;align-items:baseline;gap:10px}
+  .studio-title{font-size:1.05rem}
+  .side-list{flex:none;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:6px 10px;gap:6px}
+  .side-item{flex-shrink:0;width:auto;padding:6px 10px;max-width:180px}
+  .si-seal{width:26px;height:26px;font-size:.56rem;border-width:2px}
+  .si-name{font-size:.82rem}
+  .side-foot{padding:7px 10px}
+  .side-foot .studio-back{padding:6px 12px;font-size:.78rem}
+  .cl-head{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .chatseal{width:30px;height:30px}
+  .extpill,.brandcta{height:33px;padding:0 11px;font-size:.76rem;gap:5px}
+  .icobtn{width:33px;height:33px}
+  .memline{font-size:.62rem;margin-bottom:7px}
+  .cl-msgs{padding:16px 12px}
+  .cl-in{padding:10px 12px}
 }
 .mytwins{display:none;align-items:center;gap:7px;border:1.5px solid var(--bdr);
   background:var(--card);border-radius:8px;padding:7px 14px;font-size:.84rem;
@@ -775,6 +786,7 @@ const T = {
     memShare:"記住並共享到這條連結（其他訪客也看得到）",
     joinBar:(n)=>`這條連結已有 ${n} 串討論——點一串加入，或直接開聊`, joinBtn:"加入討論",
     threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
+    threadsTitle:"討論串", newChat:"＋ 新對話", privateTag:"（未共享）",
     openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
@@ -802,6 +814,7 @@ const T = {
     memShare:"Remember & share to this link (visible to other visitors)",
     joinBar:(n)=>`${n} discussion threads on this link — tap one to join, or just start chatting`, joinBtn:"Join in",
     threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
+    threadsTitle:"Threads", newChat:"＋ New chat", privateTag:"(not shared)",
     openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
@@ -875,7 +888,7 @@ function renderAuth(){
     chip.append(l);
   }
   $("mytwins").style.display = on ? "inline-flex" : "none";
-  if(!on) closeStudio();
+  if(!on && !state.shareToken) closeStudio();  // 訪客的討論串側欄不受登入狀態影響
   $("lockline").style.display = on ? "none" : "flex";
   $("drop").style.display = on ? "" : "none";
   $("st1").classList.toggle("on", on && !document.querySelector(".station.on:not(#st1)"));
@@ -1199,26 +1212,6 @@ function enterChat(pid, name){
       btn.addEventListener("click", ()=>{ $("say").value = txt; send(); });
       chips.appendChild(btn);
     });
-    if(visitor && (state.threads||[]).length){
-      const jb = document.createElement("div");
-      jb.className = "joinbar";
-      const lbl = document.createElement("span");
-      lbl.style.width = "100%";
-      lbl.textContent = t("joinBar")(state.threads.length);
-      jb.appendChild(lbl);
-      state.threads.forEach(th=>{
-        const btn = document.createElement("button");
-        btn.className = "shelfbtn";
-        btn.textContent = t("threadItem")(th.title, th.count);
-        btn.addEventListener("click", ()=> loadThread(th.id));
-        jb.appendChild(btn);
-      });
-      const hint = document.createElement("span");
-      hint.style.cssText = "width:100%;font-size:.72rem;opacity:.75";
-      hint.textContent = t("newThreadHint");
-      jb.appendChild(hint);
-      h.appendChild(jb);
-    }
     $("msgs").appendChild(h);
   }
   const db = $("delbtn");
@@ -1241,6 +1234,7 @@ function undockChat(){
 }
 function openStudio(){
   if(!ME){ openAuth(); return; }
+  $("studioback").style.display = "";
   dockChat();
   renderStudio();
   $("studio").classList.add("open");
@@ -1271,7 +1265,36 @@ function markSideActive(){
   $("sidelist").querySelectorAll(".side-item").forEach(b=>
     b.classList.toggle("on", b.dataset.pid === state.personaId));
 }
+function renderShareSide(){
+  const list = $("sidelist");
+  list.innerHTML = "";
+  $("studio-sub").textContent = state.personaName || "";
+  document.querySelector(".studio-title .lang-zh").textContent = t("threadsTitle");
+  document.querySelector(".studio-title .lang-en").textContent = t("threadsTitle");
+  const fresh = document.createElement("button");
+  fresh.className = "side-item" + (state.threadId ? "" : " on");
+  fresh.innerHTML = `<span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
+  fresh.querySelector(".si-name").textContent = t("newChat");
+  fresh.querySelector(".si-meta").textContent = t("privateTag");
+  fresh.addEventListener("click", ()=>{
+    state.threadId = ""; $("memchk").checked = false;
+    enterChat(state.personaId, state.personaName);
+    renderShareSide();
+  });
+  list.appendChild(fresh);
+  (state.threads||[]).forEach(th=>{
+    const b = document.createElement("button");
+    b.className = "side-item" + (state.threadId === th.id ? " on" : "");
+    b.innerHTML = `<span class="si-seal"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
+    b.querySelector(".si-seal").textContent = sealText(state.personaName || "");
+    b.querySelector(".si-name").textContent = th.title;
+    b.querySelector(".si-meta").textContent = LANG==="en" ? th.count + " lines" : th.count + " 句";
+    b.addEventListener("click", ()=>{ loadThread(th.id).then(renderShareSide); });
+    list.appendChild(b);
+  });
+}
 function renderStudio(){
+  if(state.shareToken){ renderShareSide(); return; }
   const list = $("sidelist"), mine = (state.twins||[]);
   list.innerHTML = "";
   $("studio-sub").textContent = (ME ? (ME.username || ME.email) + " ・ " : "") +
@@ -1435,7 +1458,12 @@ async function initShared(tok){
     state.threads = j.threads || [];
     state.threadId = "";
     document.title = (LANG==="en" ? `Chat with ${j.name}'s twin · CopyMe` : `跟「${j.name}」的分身聊聊 · CopyMe 復刻`);
+    dockChat();
+    $("studioback").style.display = "none";
+    $("studio").classList.add("open");
+    document.body.style.overflow = "hidden";
     enterChat(j.id, j.name);
+    renderShareSide();
   }catch(err){ showErr(err.message); }
 }
 {
@@ -1537,7 +1565,15 @@ async function send(){
       (ev,d)=>{
         if(ev==="delta"){ acc += d.text; live.textContent = acc;
           $("msgs").scrollTop = $("msgs").scrollHeight; }
-        else if(ev==="done" && d.thread){ state.threadId = d.thread; }
+        else if(ev==="done" && d.thread){
+          state.threadId = d.thread;
+          const th = (state.threads||[]).find(x=>x.id === d.thread);
+          if(th) th.count = state.history.length + 1;
+          else state.threads.unshift({id: d.thread,
+            title: (state.history[0]?.content || "").slice(0,24) || "討論",
+            count: state.history.length + 1});
+          if(state.shareToken) renderShareSide();
+        }
         else if(ev==="error"){ throw new Error(d.message); }
       });
     state.history.push({role:"assistant", content:acc}); saveHist();
