@@ -427,7 +427,7 @@ def share_landing(token: str, slug: str = ""):
         f'<meta property="og:description" content="{name} 的 AI 分身——從真實對話蒸餾而成，點開直接聊。">\n'
         f'<meta property="og:image" content="https://copyme.fly.dev/art/alembic.webp">\n'
         f'<meta name="twitter:card" content="summary">\n'
-        f'<script>history.replaceState(null,"","/#s/{token}")</script>\n</head>'
+        f'<base href="/">\n<script>window.__SHARE_TOKEN__="{token}"</script>\n</head>'
     )
     page = page.replace("</head>", inject, 1)
     return HTMLResponse(page)

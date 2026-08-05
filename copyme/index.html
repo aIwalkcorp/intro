@@ -1369,7 +1369,9 @@ async function initShared(tok){
 }
 {
   const sm = location.hash.match(/^#s\/([\w-]+)$/);
-  if(sm) initShared(sm[1]);
+  const tok = window.__SHARE_TOKEN__ || (sm && sm[1])
+    || (location.pathname.match(/^\/s\/([\w-]+)/) || [])[1];
+  if(tok) initShared(tok);
 }
 
 $("pfbtn").addEventListener("click", async ()=>{
