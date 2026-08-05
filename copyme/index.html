@@ -207,6 +207,16 @@ body.en div.lang-en{display:block}
   border:1.5px solid var(--bdr);border-radius:8px}
 .howto-steps{font-size:.78rem;color:var(--mist);margin-top:9px;line-height:1.8}
 .howto-steps b{color:var(--ink)}
+/* 彈窗內迷你蒸餾所（擴充語料） */
+.ext-viz{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:6px}
+.ext-viz .alembic{transform:scale(.72);transform-origin:top center;margin-bottom:-78px}
+.ext-viz .alembic img{opacity:1;filter:none}
+.ext-viz .a-drop{display:block;animation-play-state:running}
+.ext-viz .stages{margin-top:0;gap:8px 6px}
+.ext-viz .stage-item{width:52px}
+.ext-viz .ss{width:38px;height:38px;font-size:.74rem}
+.ext-viz .extbar{width:100%;margin-top:8px}
+@media(prefers-reduced-motion:reduce){.ext-viz .a-drop{display:none}}
 /* 擴充語料進度條 */
 .extbar{height:7px;background:rgba(44,62,107,.12);border-radius:99px;margin-top:12px;overflow:hidden}
 .extbar i{display:block;height:100%;width:3%;background:linear-gradient(90deg,var(--pri),var(--seal));
@@ -1013,12 +1023,12 @@ const STAGE_KEYS = ["角色扮演規則","身份卡","表達DNA","語氣例句",
 let stageState = [];
 
 const TILTS = [-4, 3, -2, 4, -3, 2];
-function buildStages(){
-  const box = $("stages"); box.innerHTML = "";
+function renderSeals(box, st){
+  box.innerHTML = "";
   const marks = t("stageMarks");
   t("stages").forEach((label,i)=>{
     const it = document.createElement("span");
-    it.className = "stage-item" + (stageState[i] ? " lit" : "");
+    it.className = "stage-item" + (st[i] ? " lit" : "");
     it.style.setProperty("--tilt", TILTS[i % TILTS.length] + "deg");
     it.innerHTML = `<span class="ss"><b></b></span><span class="ss-label"></span>`;
     const b = it.querySelector("b");
@@ -1028,6 +1038,7 @@ function buildStages(){
     box.appendChild(it);
   });
 }
+function buildStages(){ renderSeals($("stages"), stageState); }
 
 function lightStage(i){
   stageState[i] = true;
@@ -1292,22 +1303,43 @@ async function extUpload(){
 }
 async function extRun(uploadId, person){
   const b = $("ext-body");
-  b.innerHTML = `<p class="mnote" style="margin:0"></p><div class="extbar"><i></i></div>`;
+  b.innerHTML = `<div class="ext-viz">
+    <div class="alembic" aria-hidden="true">
+      <img src="art/alembic.webp" alt="">
+      <div class="a-pool" id="extpool"></div>
+      <div class="a-drop"></div>
+    </div>
+    <div class="stages" id="extstages"></div>
+    <div class="extbar"><i></i></div>
+    <p class="mnote" style="margin:4px 0 0"></p></div>`;
   b.querySelector("p").textContent = t("extRun");
   const bar = b.querySelector(".extbar i");
-  let n = 0;
+  const extState = STAGE_KEYS.map(()=>false);
+  renderSeals($("extstages"), extState);
+  const lightExt = ()=>{
+    renderSeals($("extstages"), extState);
+    $("extpool").style.height = `${5 + (extState.filter(Boolean).length/STAGE_KEYS.length)*21}px`;
+  };
+  let n = 0, acc = "", stageIdx = 0;
   try{
     await sseFetch("/api/distill/extend",
       {persona_id: state.personaId, upload_id: uploadId, person,
        share: state.shareToken || ""},
       (ev,d)=>{
-        if(ev==="delta"){ n += d.text.length;
-          bar.style.width = Math.min(95, n/5200*100).toFixed(1) + "%"; }
+        if(ev==="delta"){ n += d.text.length; acc += d.text;
+          bar.style.width = Math.min(95, n/5200*100).toFixed(1) + "%";
+          let lit = false;
+          while(stageIdx < STAGE_KEYS.length && acc.includes(STAGE_KEYS[stageIdx])){
+            extState[stageIdx] = true; stageIdx++; lit = true;
+          }
+          if(lit) lightExt(); }
         else if(ev==="status" && d.stage==="retry"){ b.querySelector("p").textContent = d.message; }
         else if(ev==="error"){ throw new Error(d.message); }
         else if(ev==="done"){
           bar.style.width = "100%";
-          b.textContent = t("extDone")(d.added, d.stats.count);
+          extState.fill(true); lightExt();
+          b.querySelector(".a-drop").style.display = "none";
+          b.querySelector("p").textContent = t("extDone")(d.added, d.stats.count);
           const tw = (state.twins||[]).find(x=>x.id===state.personaId);
           if(tw) tw.stats = d.stats;
           if($("studio").classList.contains("open")) renderStudio();
