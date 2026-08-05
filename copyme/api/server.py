@@ -38,6 +38,7 @@ for d in (UPLOADS, PERSONAS):
 
 ACCESS_CODE = os.environ.get("ACCESS_CODE", "")
 MODEL = os.environ.get("PF_MODEL", "claude-opus-5")
+FALLBACK_MODEL = os.environ.get("PF_FALLBACK_MODEL", "claude-sonnet-5")
 TZ = timezone(timedelta(hours=8))
 
 # ---- 體驗額度池：伺服器自己記帳（API 無法查帳戶餘額，且 key 與其他服務共用）
@@ -571,11 +572,12 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
     import time
     chunks: list[str] = []
     final = None
-    for attempt in range(3):
+    for attempt in range(4):
         chunks.clear()
+        use_model = MODEL if attempt < 3 else FALLBACK_MODEL
         try:
             with claude.messages.stream(
-                model=MODEL,
+                model=use_model,
                 max_tokens=16000,
                 output_config={"effort": "medium"},
                 system=DISTILL_SYSTEM,
@@ -592,10 +594,11 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
             transient = (status in (429, 500, 529)
                          or isinstance(e, anthropic.APIConnectionError)
                          or "overloaded" in txt or "rate limit" in txt or "timeout" in txt)
-            if transient and attempt < 2:
-                wait = 5 * (attempt + 1) * 3 // 2 or 5  # 5s, 15s
-                yield sse("status", {"stage": "retry",
-                    "message": f"模型壅塞，{wait} 秒後自動重試（{attempt+2}/3）…"})
+            if transient and attempt < 3:
+                wait = (7, 15, 30)[attempt]
+                note = (f"模型壅塞，{wait} 秒後自動重試（{attempt+2}/4）…" if attempt < 2
+                        else f"主模型持續壅塞，{wait} 秒後改用備援模型完成這次蒸餾…")
+                yield sse("status", {"stage": "retry", "message": note})
                 time.sleep(wait)
                 continue
             msg = "模型目前壅塞，已重試多次仍失敗——語料還在，稍等一兩分鐘再按一次就好" if transient                   else f"Claude API 錯誤：{getattr(e, 'message', e)}"
@@ -779,10 +782,11 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
     remember = bool(payload.get("remember")) and share_ok
 
     def gen():
+      for use_model in (MODEL, FALLBACK_MODEL):
         chunks: list[str] = []
         try:
             with claude.messages.stream(
-                model=MODEL,
+                model=use_model,
                 max_tokens=800,
                 output_config={"effort": "low"},
                 system=system,
@@ -797,7 +801,11 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
                 yield sse("delta", {"text": "（這題我不方便回）"})
         except anthropic.AnthropicError as e:
             txt = str(getattr(e, "message", "") or e).lower()
-            if getattr(e, "status_code", 0) in (429, 529) or "overloaded" in txt or "rate limit" in txt:
+            transient = (getattr(e, "status_code", 0) in (429, 529)
+                         or "overloaded" in txt or "rate limit" in txt)
+            if transient and use_model == MODEL and not chunks:
+                continue  # 主模型壅塞且尚未輸出 → 換備援模型重打
+            if transient:
                 yield sse("error", {"message": "模型目前壅塞，稍等幾秒再送一次"})
             else:
                 yield sse("error", {"message": f"Claude API 錯誤：{getattr(e, 'message', e)}"})
@@ -812,6 +820,7 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
             log += [history[-1], {"role": "assistant", "content": "".join(chunks)}]
             sc.write_text(json.dumps(log[-200:], ensure_ascii=False), encoding="utf-8")
         yield sse("done", {})
+        return
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache"})
