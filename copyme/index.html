@@ -368,6 +368,9 @@ body.en div.lang-en{display:block}
 .hello-chips button{border:1.5px solid var(--bdr);background:var(--card);border-radius:99px;
   padding:8px 17px;font-size:.85rem;color:var(--pri-deep);transition:all .15s}
 .hello-chips button:hover{border-color:var(--seal);color:var(--seal);transform:translateY(-1px)}
+.joinbar{display:flex;align-items:center;gap:12px;margin-top:18px;padding:12px 18px;
+  background:var(--card);border:1.5px dashed var(--bdr);border-radius:10px;
+  font-size:.85rem;color:var(--mist);flex-wrap:wrap;justify-content:center}
 .tink i{width:6px;height:6px;border-radius:50%;background:var(--mist);
   display:inline-block;margin:0 2.5px;animation:tb 1.2s ease-in-out infinite}
 .tink i:nth-child(2){animation-delay:.18s}
@@ -738,7 +741,7 @@ footer a{color:var(--mist)}
 const API = (location.hostname.endsWith("fly.dev") || location.hostname === "localhost")
   ? "" : "https://copyme.fly.dev";
 const $ = id => document.getElementById(id);
-const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null };
+const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"" };
 
 /* 安全儲存層：無痕模式/嵌入情境 localStorage 可能直接 throw，退回記憶體 */
 const store = {
@@ -770,6 +773,8 @@ const T = {
     bgDistill:"連線中斷——蒸餾仍在雲端繼續，完成後會自動接上…",
     histClear:"清除記錄",
     memShare:"記住並共享到這條連結（其他訪客也看得到）",
+    joinBar:(n)=>`這條連結已有 ${n} 串討論——點一串加入，或直接開聊`, joinBtn:"加入討論",
+    threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
     openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
@@ -795,6 +800,8 @@ const T = {
     bgDistill:"Connection lost — distilling continues in the cloud and will reconnect here…",
     histClear:"Clear history",
     memShare:"Remember & share to this link (visible to other visitors)",
+    joinBar:(n)=>`${n} discussion threads on this link — tap one to join, or just start chatting`, joinBtn:"Join in",
+    threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
     openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
@@ -1157,7 +1164,7 @@ function enterChat(pid, name){
   state.personaId = pid; state.personaName = name;
   const visitor = !!state.shareToken;
   if(visitor){
-    state.history = (state.sharedHistory || []).slice();
+    state.history = [];
   }else{
     try{ state.history = JSON.parse(store.get(histKey(pid)) || "[]"); }
     catch(_){ state.history = []; }
@@ -1192,6 +1199,26 @@ function enterChat(pid, name){
       btn.addEventListener("click", ()=>{ $("say").value = txt; send(); });
       chips.appendChild(btn);
     });
+    if(visitor && (state.threads||[]).length){
+      const jb = document.createElement("div");
+      jb.className = "joinbar";
+      const lbl = document.createElement("span");
+      lbl.style.width = "100%";
+      lbl.textContent = t("joinBar")(state.threads.length);
+      jb.appendChild(lbl);
+      state.threads.forEach(th=>{
+        const btn = document.createElement("button");
+        btn.className = "shelfbtn";
+        btn.textContent = t("threadItem")(th.title, th.count);
+        btn.addEventListener("click", ()=> loadThread(th.id));
+        jb.appendChild(btn);
+      });
+      const hint = document.createElement("span");
+      hint.style.cssText = "width:100%;font-size:.72rem;opacity:.75";
+      hint.textContent = t("newThreadHint");
+      jb.appendChild(hint);
+      h.appendChild(jb);
+    }
     $("msgs").appendChild(h);
   }
   const db = $("delbtn");
@@ -1405,7 +1432,8 @@ async function initShared(tok){
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     state.shareToken = tok;
-    state.sharedHistory = j.history || [];
+    state.threads = j.threads || [];
+    state.threadId = "";
     document.title = (LANG==="en" ? `Chat with ${j.name}'s twin · CopyMe` : `跟「${j.name}」的分身聊聊 · CopyMe 復刻`);
     enterChat(j.id, j.name);
   }catch(err){ showErr(err.message); }
@@ -1504,10 +1532,12 @@ async function send(){
     await sseFetch("/api/chat",
       {persona_id:state.personaId, messages:state.history, access_code:"",
        share: state.shareToken || "",
+       thread: state.threadId || "",
        remember: !!(state.shareToken && $("memchk").checked)},
       (ev,d)=>{
         if(ev==="delta"){ acc += d.text; live.textContent = acc;
           $("msgs").scrollTop = $("msgs").scrollHeight; }
+        else if(ev==="done" && d.thread){ state.threadId = d.thread; }
         else if(ev==="error"){ throw new Error(d.message); }
       });
     state.history.push({role:"assistant", content:acc}); saveHist();
@@ -1519,6 +1549,22 @@ async function send(){
   }catch(err){
     live.textContent = t("sendFail")(err.message);
   }finally{ $("send").disabled = false; input.focus(); loadBudget(); }
+}
+async function loadThread(tid){
+  try{
+    const r = await fetch(API+"/api/shared/"+state.shareToken+"/thread/"+tid);
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    state.threadId = tid;
+    state.history = j.msgs || [];
+    $("msgs").innerHTML = "";
+    state.history.forEach(m=>{
+      if(m.role === "user") bubble("me", m.content);
+      else m.content.split("\n").map(x=>x.trim()).filter(Boolean).forEach(l=>bubble("ai", l));
+    });
+    $("memchk").checked = true;
+    $("say").focus();
+  }catch(err){ showErr(err.message); }
 }
 $("send").addEventListener("click", send);
 $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });

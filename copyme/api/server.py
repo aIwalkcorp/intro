@@ -400,6 +400,36 @@ def art(fname: str):
     return FileResponse(p, media_type=mt)
 
 
+def _threads_dir(pdir: Path) -> Path:
+    d = pdir / "threads"
+    d.mkdir(exist_ok=True)
+    # 舊版單一 shared_chat.json → 遷移成一條討論串
+    legacy = pdir / "shared_chat.json"
+    if legacy.exists():
+        try:
+            msgs = json.loads(legacy.read_text(encoding="utf-8"))
+            if msgs:
+                tid = secrets.token_hex(4)
+                (d / f"{tid}.json").write_text(json.dumps(
+                    {"id": tid, "title": (msgs[0].get("content", "")[:24] or "討論"),
+                     "msgs": msgs}, ensure_ascii=False), encoding="utf-8")
+        except ValueError:
+            pass
+        legacy.unlink(missing_ok=True)
+    return d
+
+
+def _thread_list(pdir: Path) -> list[dict]:
+    out = []
+    for f in sorted(_threads_dir(pdir).glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            t = json.loads(f.read_text(encoding="utf-8"))
+            out.append({"id": t["id"], "title": t.get("title", "討論"), "count": len(t.get("msgs", []))})
+        except ValueError:
+            continue
+    return out[:20]
+
+
 def _find_shared(token: str):
     if len(token) >= 8:
         for mp in PERSONAS.glob("*/meta.json"):
@@ -432,6 +462,18 @@ def share_landing(token: str, slug: str = ""):
     )
     page = page.replace("</head>", inject, 1)
     return HTMLResponse(page)
+
+
+@app.get("/api/shared/{token}/thread/{tid}")
+def shared_thread(token: str, tid: str):
+    for mp in PERSONAS.glob("*/meta.json"):
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        if meta.get("share") and secrets.compare_digest(meta["share"], token.strip()):
+            f = _threads_dir(mp.parent) / f"{re.sub(r'[^a-f0-9]', '', tid)}.json"
+            if not f.exists():
+                raise HTTPException(404, "找不到這串討論")
+            return {"msgs": json.loads(f.read_text(encoding="utf-8")).get("msgs", [])}
+    raise HTTPException(404, "連結已失效")
 
 
 @app.get("/")
@@ -732,6 +774,8 @@ def share_persona(pid: str, payload: dict, authorization: str | None = Header(No
     else:
         meta.pop("share", None)
         (pdir / "shared_chat.json").unlink(missing_ok=True)
+        import shutil
+        shutil.rmtree(pdir / "threads", ignore_errors=True)
     mpath.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     return {"share": meta.get("share")}
 
@@ -744,14 +788,9 @@ def shared_info(token: str):
         for mp in PERSONAS.glob("*/meta.json"):
             meta = json.loads(mp.read_text(encoding="utf-8"))
             if meta.get("share") and secrets.compare_digest(meta["share"], token):
-                sc = mp.parent / "shared_chat.json"
-                try:
-                    hist = json.loads(sc.read_text(encoding="utf-8")) if sc.exists() else []
-                except ValueError:
-                    hist = []
                 return {"id": meta["id"], "name": meta["name"],
                         "room": meta.get("room", ""), "stats": meta.get("stats", {}),
-                        "history": hist}
+                        "threads": _thread_list(mp.parent)}
     raise HTTPException(404, "連結已失效或被擁有者停用")
 
 
@@ -783,6 +822,7 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
     ]
 
     remember = bool(payload.get("remember")) and share_ok
+    req_tid = re.sub(r"[^a-f0-9]", "", str(payload.get("thread") or ""))
 
     def gen():
       for use_model in (MODEL, FALLBACK_MODEL):
@@ -813,16 +853,23 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
             else:
                 yield sse("error", {"message": f"Claude API 錯誤：{getattr(e, 'message', e)}"})
             return
+        tid_out = ""
         if remember and chunks:
             # ponytail: 整檔重寫，單機小流量夠用；量大再換 append log
-            sc = pdir / "shared_chat.json"
+            d = _threads_dir(pdir)
+            tid_out = req_tid or secrets.token_hex(4)
+            f = d / f"{tid_out}.json"
             try:
-                log = json.loads(sc.read_text(encoding="utf-8")) if sc.exists() else []
+                t = json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
             except ValueError:
-                log = []
-            log += [history[-1], {"role": "assistant", "content": "".join(chunks)}]
-            sc.write_text(json.dumps(log[-200:], ensure_ascii=False), encoding="utf-8")
-        yield sse("done", {})
+                t = None
+            if t is None:
+                t = {"id": tid_out,
+                     "title": history[-1].get("content", "")[:24] or "討論", "msgs": []}
+            t["msgs"] = (t["msgs"] + [history[-1],
+                {"role": "assistant", "content": "".join(chunks)}])[-200:]
+            f.write_text(json.dumps(t, ensure_ascii=False), encoding="utf-8")
+        yield sse("done", {"thread": tid_out})
         return
 
     return StreamingResponse(gen(), media_type="text/event-stream",
