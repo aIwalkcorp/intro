@@ -546,6 +546,7 @@ def _detached_sse(events) -> StreamingResponse:
             for ev in events:
                 q.put(ev)
         except Exception as e:  # 背景執行緒的最後防線，錯誤轉成 SSE 事件
+            import traceback; traceback.print_exc()
             q.put(sse("error", {"message": f"蒸餾中斷：{e}"}))
         q.put(None)
 
@@ -591,6 +592,8 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
         except anthropic.AnthropicError as e:
             status = getattr(e, "status_code", 0) or 0
             txt = str(getattr(e, "message", "") or e).lower()
+            print(f"[distill] {person} attempt {attempt+1} model={use_model} "
+                  f"status={status} err={txt[:200]}", flush=True)
             transient = (status in (429, 500, 529)
                          or isinstance(e, anthropic.APIConnectionError)
                          or "overloaded" in txt or "rate limit" in txt or "timeout" in txt)
