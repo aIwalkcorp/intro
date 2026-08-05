@@ -1333,7 +1333,7 @@ $("linkbtn").addEventListener("click", async ()=>{
   try{
     const tok = await setShare(true);
     $("sh-title").textContent = t("shareTitle")(state.personaName);
-    $("sh-url").value = location.origin + location.pathname + "#s/" + tok;
+    $("sh-url").value = (API || location.origin) + "/s/" + tok;
     $("sharemodal").classList.add("open");
     if($("studio").classList.contains("open")) renderStudio();
   }catch(err){ showErr(err.message); }
@@ -1363,6 +1363,7 @@ async function initShared(tok){
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     state.shareToken = tok;
     state.sharedHistory = j.history || [];
+    document.title = (LANG==="en" ? `Chat with ${j.name}'s twin · CopyMe` : `跟「${j.name}」的分身聊聊 · CopyMe 復刻`);
     enterChat(j.id, j.name);
   }catch(err){ showErr(err.message); }
 }

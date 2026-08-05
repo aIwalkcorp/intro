@@ -399,6 +399,40 @@ def art(fname: str):
     return FileResponse(p, media_type=mt)
 
 
+def _find_shared(token: str):
+    if len(token) >= 8:
+        for mp in PERSONAS.glob("*/meta.json"):
+            meta = json.loads(mp.read_text(encoding="utf-8"))
+            if meta.get("share") and secrets.compare_digest(meta["share"], token):
+                return meta
+    return None
+
+
+@app.get("/s/{token}")
+@app.get("/s/{token}/{slug}")
+def share_landing(token: str, slug: str = ""):
+    """分享連結落地頁：注入分身名稱到 title/og 讓預覽一目了然，再交給前端。"""
+    from fastapi.responses import HTMLResponse, RedirectResponse
+    import html as _html
+    token = re.sub(r"[^\w-]", "", token)
+    meta = _find_shared(token)
+    if not meta:
+        return RedirectResponse("/")
+    name = _html.escape(meta["name"])
+    page = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
+    title = f"跟「{name}」的分身聊聊 · CopyMe 復刻"
+    page = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", page, count=1)
+    inject = (
+        f'<meta property="og:title" content="{title}">\n'
+        f'<meta property="og:description" content="{name} 的 AI 分身——從真實對話蒸餾而成，點開直接聊。">\n'
+        f'<meta property="og:image" content="https://copyme.fly.dev/art/alembic.webp">\n'
+        f'<meta name="twitter:card" content="summary">\n'
+        f'<script>history.replaceState(null,"","/#s/{token}")</script>\n</head>'
+    )
+    page = page.replace("</head>", inject, 1)
+    return HTMLResponse(page)
+
+
 @app.get("/")
 def index():
     return FileResponse(Path(__file__).parent / "index.html")
