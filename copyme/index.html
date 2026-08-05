@@ -182,12 +182,14 @@ body.en div.lang-en{display:block}
   list-style:none;display:inline-flex;align-items:center;gap:6px}
 .howto summary::before{content:"▸";transition:transform .2s}
 .howto[open] summary::before{transform:rotate(90deg)}
-.howto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:14px;margin-top:12px}
+.howto-grid{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;align-items:flex-start}
+.howto-grid .devcard:first-child{flex:0 1 262px}
+.howto-grid .devcard:last-child{flex:1 1 380px;min-width:0}
 .devcard{background:var(--card);border:1.5px solid var(--bdr);border-radius:10px;padding:14px}
 .devcard h4{font-size:.85rem;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .mock{border:1.5px solid var(--bdr);border-radius:8px;background:#fff;overflow:hidden;
-  font-size:.72rem;color:#555;user-select:none;pointer-events:none}
+  font-size:.72rem;color:#555;user-select:none;pointer-events:none;
+  max-width:215px;margin:0 auto}
 .mock-top{display:flex;justify-content:space-between;align-items:center;
   padding:7px 10px;border-bottom:1px solid #eee;background:#fafafa;font-weight:700;color:#333}
 .mock-msgs{padding:8px 10px;display:flex;flex-direction:column;gap:5px}
@@ -200,6 +202,9 @@ body.en div.lang-en{display:block}
 .nbadge{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
   border-radius:50%;background:var(--seal);color:#fff;font-size:.68rem;font-weight:700;
   font-family:var(--mono);margin-left:6px;vertical-align:1px}
+.howto-shots{display:flex;gap:10px;justify-content:center;align-items:stretch}
+.howto-shots img{height:248px;width:auto;max-width:100%;object-fit:contain;
+  border:1.5px solid var(--bdr);border-radius:8px}
 .howto-steps{font-size:.78rem;color:var(--mist);margin-top:9px;line-height:1.8}
 .howto-steps b{color:var(--ink)}
 /* 擴充語料進度條 */
@@ -427,6 +432,7 @@ footer a{color:var(--mist)}
   .poolchip{grid-column:1;grid-row:2;margin-left:0;justify-self:start}
   .authchip{grid-column:2;grid-row:2;justify-self:end}
   .mytwins{grid-column:1 / -1;grid-row:3;justify-content:center}
+  .howto-shots img{height:190px}
   .station{padding-left:0}
   .stno{position:static;margin-bottom:8px}
   .station::before{display:none}
@@ -531,19 +537,13 @@ footer a{color:var(--mist)}
           </div>
         </div>
         <div class="devcard">
-          <h4>💻 <span class="lang-zh">電腦版 LINE</span><span class="lang-en">LINE desktop</span></h4>
-          <div class="mock">
-            <div class="mock-top"><span>登山社雜談 (13)</span><span>🔍 ✆ <span class="hot" style="padding:1px 7px">⋮<span class="nbadge">1</span></span></span></div>
-            <div class="mock-msgs"><i style="width:52%"></i><i class="g"></i><i style="width:38%"></i></div>
-            <div class="mock-menu">
-              <span><span class="lang-zh">相簿</span><span class="lang-en">Albums</span></span>
-              <span><span class="lang-zh">檔案</span><span class="lang-en">Files</span></span>
-              <span class="hot"><span class="lang-zh">儲存聊天</span><span class="lang-en">Save chat</span><span class="nbadge">2</span></span>
-              <span><span class="lang-zh">設定</span><span class="lang-en">Settings</span></span>
-            </div>
+          <h4>💻 <span class="lang-zh">電腦版 LINE（實際畫面）</span><span class="lang-en">LINE desktop (actual UI)</span></h4>
+          <div class="howto-shots">
+            <img src="art/line_desk1.webp" alt="" loading="lazy">
+            <img src="art/line_desk2.webp" alt="" loading="lazy">
           </div>
           <div class="howto-steps">
-            <span class="lang-zh"><b>1</b> 點聊天視窗右上 ⋮ → <b>2</b>「儲存聊天」，.txt 直接下載</span>
+            <span class="lang-zh"><b>1</b> 點聊天視窗右上 ⋮ → <b>2</b>「Save chat／儲存聊天」，.txt 直接下載</span>
             <span class="lang-en"><b>1</b> Click ⋮ top-right of the chat window → <b>2</b> Save chat — the .txt downloads directly</span>
           </div>
         </div>
