@@ -586,9 +586,12 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
             break
-        except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
-            status = getattr(e, "status_code", 0)
-            transient = status in (429, 500, 529) or isinstance(e, anthropic.APIConnectionError)
+        except anthropic.AnthropicError as e:
+            status = getattr(e, "status_code", 0) or 0
+            txt = str(getattr(e, "message", "") or e).lower()
+            transient = (status in (429, 500, 529)
+                         or isinstance(e, anthropic.APIConnectionError)
+                         or "overloaded" in txt or "rate limit" in txt or "timeout" in txt)
             if transient and attempt < 2:
                 wait = 5 * (attempt + 1) * 3 // 2 or 5  # 5s, 15s
                 yield sse("status", {"stage": "retry",
@@ -792,11 +795,12 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
             track_usage(final.usage)
             if final.stop_reason == "refusal":
                 yield sse("delta", {"text": "（這題我不方便回）"})
-        except anthropic.APIStatusError as e:
-            if getattr(e, "status_code", 0) in (429, 529):
+        except anthropic.AnthropicError as e:
+            txt = str(getattr(e, "message", "") or e).lower()
+            if getattr(e, "status_code", 0) in (429, 529) or "overloaded" in txt or "rate limit" in txt:
                 yield sse("error", {"message": "模型目前壅塞，稍等幾秒再送一次"})
             else:
-                yield sse("error", {"message": f"Claude API 錯誤：{e.message}"})
+                yield sse("error", {"message": f"Claude API 錯誤：{getattr(e, 'message', e)}"})
             return
         if remember and chunks:
             # ponytail: 整檔重寫，單機小流量夠用；量大再換 append log
