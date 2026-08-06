@@ -721,7 +721,7 @@ footer a{color:var(--mist)}
       <span class="lang-zh">⚠ 目前為金流測試模式——刷卡頁是綠界測試環境，不會真正扣款（正式金流開通後自動切換）。</span>
       <span class="lang-en">⚠ Payment test mode — the checkout page is ECPay's sandbox; no real charge (switches automatically once live credentials land).</span>
     </p>
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:10px" id="tu-btns">
       <button class="gobtn" style="flex:1" data-amt="100">NT$100</button>
       <button class="gobtn" style="flex:1" data-amt="300">NT$300</button>
       <button class="gobtn" style="flex:1" data-amt="500">NT$500</button>
@@ -761,7 +761,7 @@ footer a{color:var(--mist)}
       </div>
       <div class="fuelbar"><i id="sh-fuelbar" style="width:0%"></i></div>
       <div class="fuel-btns">
-        <button disabled>+100</button><button disabled>+300</button><button disabled>+500</button>
+        <button disabled class="fuel-amt" data-twd="100">+100</button><button disabled class="fuel-amt" data-twd="300">+300</button><button disabled class="fuel-amt" data-twd="500">+500</button>
         <span class="fuel-soon"><span class="lang-zh">金流開通後即可注入</span><span class="lang-en">opens once payments go live</span></span>
       </div>
     </div>
@@ -827,7 +827,16 @@ footer a{color:var(--mist)}
 const API = (location.hostname.endsWith("fly.dev") || location.hostname === "localhost")
   ? "" : "https://copyme.fly.dev";
 const $ = id => document.getElementById(id);
-const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"opus" };
+const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"opus",
+  walletTwd:null, fuelTwd:0 };
+const TWD_PER_USD = 31;
+function fmtMoney(twd){
+  if(LANG === "en"){
+    const usd = twd / TWD_PER_USD;
+    return "US$" + usd.toFixed(usd < 10 ? 2 : 1);
+  }
+  return "NT$" + Math.round(twd);
+}
 
 /* 安全儲存層：無痕模式/嵌入情境 localStorage 可能直接 throw，退回記憶體 */
 const store = {
@@ -928,6 +937,7 @@ function applyLang(l){
     $("distillbtn").textContent = t("distillName")(state.person);
   if(state.personaId) $("chattag").textContent = t("aiTag");
   if($("studio").classList.contains("open")) renderStudio();
+  renderMoney();
   const tips = LANG==="en"
     ? {extbtn:"Extend corpus", linkbtn:"Public link", pfbtn:"Persona file", delbtn:"Delete twin", clclose:"Close (Esc)"}
     : {extbtn:"擴充語料：再丟一份 txt 合併重蒸", linkbtn:"公開連結", pfbtn:"人格檔", delbtn:"刪除分身", clclose:"關閉（Esc）"};
@@ -1512,7 +1522,7 @@ $("linkbtn").addEventListener("click", async ()=>{
     const tok = await setShare(true);
     $("sh-title").textContent = t("shareTitle")(state.personaName);
     $("sh-url").value = "https://copyme.aiwalkcorp.com/s/" + tok;
-    $("sh-fuelval").textContent = "NT$0";
+    renderMoney();
     $("sh-fuelbar").style.width = "0%";
     $("sharemodal").classList.add("open");
     if($("studio").classList.contains("open")) renderStudio();
@@ -1548,8 +1558,9 @@ async function initShared(tok){
     dockChat();
     $("studioback").style.display = "none";
     $("sidefuel").style.display = "";
-    $("sf-val").textContent = "NT$" + (j.pool ?? 0);
-    $("sf-bar").style.width = Math.min(100, (j.pool ?? 0) / 5) + "%";
+    state.fuelTwd = j.pool ?? 0;
+    renderMoney();
+    $("sf-bar").style.width = Math.min(100, state.fuelTwd / 5) + "%";
     $("studio").classList.add("open");
     document.body.style.overflow = "hidden";
     enterChat(j.id, j.name);
@@ -1693,11 +1704,25 @@ async function loadThread(tid){
     $("say").focus();
   }catch(err){ showErr(err.message); }
 }
+function renderMoney(){
+  if(state.walletTwd != null) $("walletval").textContent = fmtMoney(state.walletTwd);
+  $("sf-val").textContent = fmtMoney(state.fuelTwd);
+  $("sh-fuelval").textContent = fmtMoney(0);
+  document.querySelectorAll(".fuel-amt").forEach(b=>{
+    const twd = parseInt(b.dataset.twd);
+    b.textContent = LANG === "en" ? "+" + fmtMoney(twd).replace("US$","US$") : "+" + twd;
+  });
+  $("tu-btns").querySelectorAll("[data-amt]").forEach(b=>{
+    const twd = parseInt(b.dataset.amt);
+    b.textContent = LANG === "en" ? fmtMoney(twd) + " (NT$" + twd + ")" : "NT$" + twd;
+  });
+}
 async function loadWallet(){
   if(!ME){ $("walletchip").style.display = "none"; return; }
   try{
     const j = await (await fetch(API+"/api/wallet", {headers: authHeaders()})).json();
-    $("walletval").textContent = "NT$" + (j.twd ?? 0).toFixed(0);
+    state.walletTwd = j.twd ?? 0;
+    renderMoney();
     $("walletchip").style.display = "inline-flex";
     $("tu-test").style.display = j.test_mode ? "block" : "none";
   }catch(_){}
