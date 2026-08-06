@@ -665,6 +665,9 @@ footer a{color:var(--mist)}
       <div id="sealslot"></div>
     </div>
     <button class="gobtn chatgo" id="chatbtn"><span class="lang-zh">跟分身說話</span><span class="lang-en">Talk to the twin</span></button>
+    <label class="gobtn chatgo" id="avlabel" style="background:var(--pri);margin-left:10px">
+      <span id="avlabel-text"><span class="lang-zh">＋頭貼（選填）</span><span class="lang-en">+ Avatar (optional)</span></span>
+      <input type="file" id="avfile" accept="image/*" hidden></label>
   </div>
 </section>
 
@@ -1078,7 +1081,8 @@ function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分�
 function sealFill(el, p){
   if(p && p.avatar){
     el.classList.add("has-avatar");
-    el.innerHTML = `<img src="art/${p.avatar}" alt="">`;
+    const src = p.avatar.includes("/") ? API + "/" + p.avatar : "art/" + p.avatar;
+    el.innerHTML = `<img src="${src}" alt="">`;
   }else{
     el.classList.remove("has-avatar");
     el.textContent = sealText(p ? p.name : "");
@@ -1214,6 +1218,7 @@ $("distillbtn").addEventListener("click", async ()=>{
   $("viz").classList.remove("done");
   $("docwrap").style.display = "none"; $("docwrap").removeAttribute("open");
   $("sealslot").innerHTML = ""; $("chatbtn").style.display = "none";
+  $("avlabel").style.display = "none";
   $("vizstatus").textContent = t("reading")(state.person);
   let acc = "", stageIdx = 0;
   try{
@@ -1242,6 +1247,7 @@ $("distillbtn").addEventListener("click", async ()=>{
           $("docwrap").style.display = "block";
           $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(d.name)}</div>`;
           $("chatbtn").style.display = "inline-block";
+          $("avlabel").style.display = "inline-block";
           loadBudget(); loadShelf();
         }else if(ev==="error"){ throw new Error(d.message); }
       });
@@ -1271,6 +1277,7 @@ async function pollForTwin(person, acc){
       if(acc){ $("docfull").textContent = acc; $("docwrap").style.display = "block"; }
       $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(tw.name)}</div>`;
       $("chatbtn").style.display = "inline-block";
+      $("avlabel").style.display = "inline-block";
       loadBudget();
       return;
     }
@@ -1280,6 +1287,28 @@ async function pollForTwin(person, acc){
 }
 
 $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.personaName));
+
+/* 蒸餾完成後的選填頭貼：上傳成功即取代文字印章 */
+$("avfile").addEventListener("change", async ()=>{
+  const f = $("avfile").files[0];
+  if(!f || !state.personaId) return;
+  const txt = $("avlabel-text");
+  txt.textContent = LANG==="en" ? "Uploading…" : "上傳中…";
+  try{
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await fetch(API+"/api/personas/"+state.personaId+"/avatar",
+      {method:"POST", headers: authHeaders(), body: fd});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+    if(tw) tw.avatar = j.avatar;
+    renderTwins();
+    txt.textContent = LANG==="en" ? "Avatar set ✓" : "頭貼已設定 ✓";
+  }catch(err){
+    txt.textContent = (LANG==="en" ? "Failed: " : "失敗：") + err.message;
+  }
+});
 
 /* ── 04 對話 ── */
 const HIST_MAX = 60;

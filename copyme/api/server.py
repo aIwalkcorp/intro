@@ -888,6 +888,43 @@ def delete_persona(pid: str, payload: dict, authorization: str | None = Header(N
     return {"deleted": True}
 
 
+@app.post("/api/personas/{pid}/avatar")
+async def set_avatar(pid: str, file: UploadFile = File(...),
+                     authorization: str | None = Header(None)):
+    """分身頭貼（選填）：僅擁有者。有頭貼時前端以照片取代文字印章。"""
+    user = require_user(authorization)
+    pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
+    if not (pdir / "meta.json").exists():
+        raise HTTPException(404, "找不到這個分身")
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    if meta.get("owner_id") != user.get("id"):
+        raise HTTPException(403, "只有擁有者能設定頭貼")
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(422, "請上傳圖片檔")
+    raw = await file.read()
+    if len(raw) > 2_000_000:
+        raise HTTPException(413, "圖片太大（上限 2MB）")
+    (pdir / "avatar").write_bytes(raw)
+    meta["avatar"] = f"api/personas/{meta['id']}/avatar"
+    meta["avatar_ct"] = file.content_type
+    (pdir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    return {"avatar": meta["avatar"]}
+
+
+@app.get("/api/personas/{pid}/avatar")
+def get_avatar(pid: str):
+    pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
+    f = pdir / "avatar"
+    if not f.exists():
+        raise HTTPException(404, "no avatar")
+    ct = "image/webp"
+    try:
+        ct = json.loads((pdir / "meta.json").read_text(encoding="utf-8")).get("avatar_ct") or ct
+    except (OSError, ValueError):
+        pass
+    return FileResponse(f, media_type=ct)
+
+
 @app.post("/api/personas/{pid}/share")
 def share_persona(pid: str, payload: dict, authorization: str | None = Header(None)):
     """公開連結開關：僅擁有者。token 即訪問能力，停用即失效。"""
