@@ -566,10 +566,16 @@ body.en div.lang-en{display:block}
   .si-name{font-size:.82rem}
   .side-foot{padding:7px 10px}
   .side-foot .studio-back{padding:6px 12px;font-size:.78rem}
-  .cl-head{flex-wrap:wrap;gap:8px;padding:10px 12px}
-  .chatseal{width:30px;height:30px}
-  .extpill,.brandcta{height:33px;padding:0 11px;font-size:.76rem;gap:5px}
-  .icobtn{width:33px;height:33px}
+  /* 窄螢幕整列不換行：名字截斷、擴充語料只留圖示（英文長標籤才不會把刪除鍵擠到第二行） */
+  .cl-head{flex-wrap:nowrap;gap:6px;padding:10px 12px}
+  .cl-head-main{flex:1 1 auto;min-width:0}
+  .chatname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chattag{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chatseal{width:30px;height:30px;flex-shrink:0}
+  .extpill,.brandcta{height:33px;padding:0 9px;font-size:.76rem;gap:5px}
+  body .extpill .lang-zh,body .extpill .lang-en{display:none}
+  .icobtn{width:33px;height:33px;flex-shrink:0}
+  .cl-close{flex-shrink:0}
   .memline{font-size:.62rem;margin-bottom:7px}
   .cl-msgs{padding:16px 12px}
   .cl-in{padding:10px 12px}
