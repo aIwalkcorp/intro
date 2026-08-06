@@ -927,6 +927,34 @@ def get_avatar(pid: str):
     return FileResponse(f, media_type=ct)
 
 
+def _own_persona(pid: str, user) -> Path:
+    pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
+    if not (pdir / "meta.json").exists():
+        raise HTTPException(404, "找不到這個分身")
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    if meta.get("owner_id") != user.get("id"):
+        raise HTTPException(403, "只有擁有者能看這個分身的討論串")
+    return pdir
+
+
+@app.get("/api/personas/{pid}/threads")
+def persona_threads(pid: str, authorization: str | None = Header(None)):
+    """擁有者視角的討論串清單——訪客在公開連結上留下的對話，本人也要看得到。"""
+    user = require_user(authorization)
+    pdir = _own_persona(pid, user)
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    return {"share": bool(meta.get("share")), "threads": _thread_list(pdir)}
+
+
+@app.get("/api/personas/{pid}/threads/{tid}")
+def persona_thread(pid: str, tid: str, authorization: str | None = Header(None)):
+    pdir = _own_persona(pid, require_user(authorization))
+    f = _threads_dir(pdir) / f"{re.sub(r'[^a-f0-9]', '', tid)}.json"
+    if not f.exists():
+        raise HTTPException(404, "找不到這串討論")
+    return {"msgs": json.loads(f.read_text(encoding="utf-8")).get("msgs", [])}
+
+
 @app.post("/api/personas/{pid}/share")
 def share_persona(pid: str, payload: dict, authorization: str | None = Header(None)):
     """公開連結開關：僅擁有者。token 即訪問能力，停用即失效。"""
@@ -961,6 +989,269 @@ def shared_info(token: str):
                         "room": meta.get("room", ""), "stats": meta.get("stats", {}),
                         "threads": _thread_list(mp.parent)}
     raise HTTPException(404, "連結已失效或被擁有者停用")
+
+
+# ---------------------------------------------------------------- 群組：多分身有限接力
+# 防自聊的機關是排程，不是 prompt：使用者發一句話 → 後端最多跑 relay 個 agent 回合就
+# 硬停，且沒有新使用者發言時，累計自動回合到 AUTO_MAX 就拒絕再接力。前端擋不住也跑不掉。
+
+ROOMS = DATA / "rooms"
+ROOMS.mkdir(parents=True, exist_ok=True)
+
+RELAY_DEFAULT = int(os.environ.get("PF_RELAY_DEFAULT", "2"))   # 一次接力預設回合數
+RELAY_MAX = int(os.environ.get("PF_RELAY_MAX", "6"))           # 單次上限
+AUTO_MAX = int(os.environ.get("PF_ROOM_AUTO_MAX", "12"))       # 無人類發言時的累計上限
+ROOM_CTX = 30                                                  # 帶進模型的最近訊息數
+ROOM_MSG_KEEP = 400
+USER_LABEL = "使用者"
+PASS_MARK = "（沒什麼想補充）"
+
+GROUP_RULES = """
+--- 群組對話規則 ---
+- 這是群組聊天：成員有你（{me}）、{others}，還有真人使用者（標記為「{user_label}」）
+- 每則訊息前的「某某：」只是說話者標記；你回覆時直接說內容，不要自己加名字前綴
+- 只講你自己的話。絕對不要替 {others} 或使用者發言、不要幫他們接話、不要旁白
+- 一次只講 1-3 句，這是聊天不是演講
+- 不要每輪都反問把話丟回去；沒有新東西講就簡短附和或收尾
+- 這一輪你若真的沒什麼想說，就只回「{pass_mark}」五個字，不要硬掰"""
+
+
+def _rpath(rid: str) -> Path:
+    return ROOMS / f"{re.sub(r'[^a-f0-9]', '', rid)}.json"
+
+
+def _room_load(rid: str, user) -> dict:
+    p = _rpath(rid)
+    if not p.exists():
+        raise HTTPException(404, "找不到這個群組")
+    room = json.loads(p.read_text(encoding="utf-8"))
+    if room.get("owner_id") != user.get("id"):
+        raise HTTPException(403, "只有建立者能進這個群組")
+    return room
+
+
+def _room_save(room: dict) -> None:
+    room["msgs"] = room["msgs"][-ROOM_MSG_KEEP:]
+    _rpath(room["id"]).write_text(json.dumps(room, ensure_ascii=False), encoding="utf-8")
+
+
+def _room_brief(room: dict) -> dict:
+    return {"id": room["id"], "title": room["title"], "members": room["members"],
+            "count": len(room["msgs"]), "relay": room.get("relay", RELAY_DEFAULT),
+            "auto_since_user": room.get("auto_since_user", 0), "auto_max": AUTO_MAX,
+            "created": room.get("created", "")}
+
+
+def _speaker_msgs(msgs: list[dict], me_pid: str) -> list[dict]:
+    """把群組逐字稿攤成該分身視角的 user/assistant 交錯串（同 role 相鄰就合併）。"""
+    out: list[dict] = []
+    for m in msgs[-ROOM_CTX:]:
+        if m["role"] == "assistant" and m.get("pid") == me_pid:
+            role, text = "assistant", m["content"]
+        else:
+            who = m.get("name") or USER_LABEL if m["role"] == "assistant" else USER_LABEL
+            role, text = "user", f"{who}：{m['content']}"
+        if out and out[-1]["role"] == role:
+            out[-1]["content"] += "\n" + text
+        else:
+            out.append({"role": role, "content": text})
+    if not out or out[0]["role"] != "user":
+        out.insert(0, {"role": "user", "content": "（群組對話開始）"})
+    if out[-1]["role"] != "user":
+        out.append({"role": "user", "content": "（換你說一句）"})
+    return out
+
+
+def _mentioned(text: str, members: list[dict]):
+    """使用者訊息點名了誰 → 那個人先講。名字或 @名字 出現即算。"""
+    for m in members:
+        short = m["name"].split(" ")[0]
+        if m["name"] in text or f"@{short}" in text or (len(short) >= 2 and short in text):
+            return m
+    return None
+
+
+def _order(room: dict, first: dict | None, n: int) -> list[dict]:
+    """輪流發言序：點名者優先，否則接在上一個發言者後面；同一人不會連講兩次。"""
+    ring = room["members"]
+    if n <= 0 or not ring:
+        return []
+    last_pid = next((m.get("pid") for m in reversed(room["msgs"])
+                     if m["role"] == "assistant"), None)
+    if first:
+        start = next(i for i, m in enumerate(ring) if m["pid"] == first["pid"])
+    elif last_pid:
+        prev = next((i for i, m in enumerate(ring) if m["pid"] == last_pid), -1)
+        start = (prev + 1) % len(ring)
+    else:
+        start = 0
+    return [ring[(start + i) % len(ring)] for i in range(n)]
+
+
+def _room_turn(room: dict, member: dict, primary: str, bill_user):
+    """跑一個分身的回合：yield SSE 事件，最後 yield ("__done__", 文字)。"""
+    pdir = PERSONAS / member["pid"]
+    persona_text = (pdir / "persona.md").read_text(encoding="utf-8")
+    others = "、".join(m["name"] for m in room["members"] if m["pid"] != member["pid"])
+    system = [
+        {"type": "text", "text": persona_text, "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": CHAT_RULES.replace("{name}", member["name"])
+                                 + GROUP_RULES.format(me=member["name"], others=others,
+                                                      user_label=USER_LABEL,
+                                                      pass_mark=PASS_MARK)},
+    ]
+    history = _speaker_msgs(room["msgs"], member["pid"])
+    for use_model in (primary, FALLBACK_MODEL):
+        chunks: list[str] = []
+        try:
+            with claude.messages.stream(
+                model=use_model,
+                max_tokens=500,
+                output_config={"effort": "low"},
+                system=system,
+                messages=history,
+            ) as stream:
+                for text in stream.text_stream:
+                    chunks.append(text)
+                    yield sse("delta", {"text": text})
+                final = stream.get_final_message()
+            track_usage(final.usage, user=bill_user, model=use_model)
+            said = "".join(chunks).strip()
+            # 模型偶爾仍會自己加名字前綴，統一剝掉
+            said = re.sub(rf"^{re.escape(member['name'])}\s*[:：]\s*", "", said)
+            yield ("__done__", "" if final.stop_reason == "refusal" else said)
+            return
+        except anthropic.AnthropicError as e:
+            txt = str(getattr(e, "message", "") or e).lower()
+            transient = (getattr(e, "status_code", 0) in (429, 529)
+                         or "overloaded" in txt or "rate limit" in txt)
+            if transient and use_model != FALLBACK_MODEL and not chunks:
+                continue
+            yield sse("error", {"message": "模型目前壅塞，稍等幾秒再送一次" if transient
+                                else f"Claude API 錯誤：{getattr(e, 'message', e)}"})
+            yield ("__done__", None)
+            return
+
+
+@app.get("/api/rooms")
+def list_rooms(authorization: str | None = Header(None)):
+    user = require_user(authorization)
+    out = []
+    for f in sorted(ROOMS.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            room = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if room.get("owner_id") == user.get("id"):
+            out.append(_room_brief(room))
+    return {"rooms": out, "relay_default": RELAY_DEFAULT, "relay_max": RELAY_MAX}
+
+
+@app.post("/api/rooms")
+def create_room(payload: dict, authorization: str | None = Header(None)):
+    user = require_user(authorization)
+    pids = [re.sub(r"[^a-f0-9]", "", str(p)) for p in (payload.get("members") or [])]
+    pids = list(dict.fromkeys([p for p in pids if p]))
+    if not (2 <= len(pids) <= 4):
+        raise HTTPException(422, "一個群組要 2–4 個分身")
+    members = []
+    for pid in pids:
+        mp = PERSONAS / pid / "meta.json"
+        if not mp.exists():
+            raise HTTPException(404, "找不到其中一個分身")
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        if not _visible(meta, user):
+            raise HTTPException(403, f"「{meta['name']}」不是你的分身，不能拉進群組")
+        if not (PERSONAS / pid / "persona.md").read_text(encoding="utf-8").strip():
+            raise HTTPException(409, f"「{meta['name']}」的人格檔是空的，請重新蒸餾")
+        members.append({"pid": pid, "name": meta["name"]})
+    rid = secrets.token_hex(6)
+    room = {"id": rid,
+            "title": (str(payload.get("title") or "").strip()
+                      or "、".join(m["name"] for m in members))[:40],
+            "members": members, "owner_id": user["id"],
+            "relay": max(0, min(RELAY_MAX, int(payload.get("relay", RELAY_DEFAULT)))),
+            "auto_since_user": 0, "msgs": [],
+            "created": datetime.now(TZ).isoformat(timespec="seconds")}
+    _room_save(room)
+    return _room_brief(room)
+
+
+@app.get("/api/rooms/{rid}")
+def get_room(rid: str, authorization: str | None = Header(None)):
+    room = _room_load(rid, require_user(authorization))
+    return {**_room_brief(room), "msgs": room["msgs"][-120:]}
+
+
+@app.post("/api/rooms/{rid}/delete")
+def delete_room(rid: str, payload: dict, authorization: str | None = Header(None)):
+    _room_load(rid, require_user(authorization))
+    _rpath(rid).unlink(missing_ok=True)
+    return {"deleted": True}
+
+
+@app.post("/api/rooms/{rid}/chat")
+def room_chat(rid: str, payload: dict, request: Request,
+              authorization: str | None = Header(None)):
+    """一次呼叫 = 一段有限接力。content 有值＝人類發話（重置自動回合計數）；
+    content 空＝「再跑一輪」，只在未超過 AUTO_MAX 時允許。"""
+    check_code(payload.get("access_code"))
+    user = require_user(authorization)
+    check_budget(user)
+    room = _room_load(rid, user)
+    content = str(payload.get("content") or "").strip()
+    relay = max(0, min(RELAY_MAX, int(payload.get("relay", room.get("relay", RELAY_DEFAULT)))))
+
+    if content:
+        room["msgs"].append({"role": "user", "name": "", "pid": "", "content": content})
+        room["auto_since_user"] = 0
+    elif not room["msgs"]:
+        raise HTTPException(422, "先說一句話開場")
+    left = AUTO_MAX - room.get("auto_since_user", 0)
+    if left <= 0:
+        raise HTTPException(429, f"分身已經連續接力 {AUTO_MAX} 回合了——說句話再繼續吧")
+    turns = _order(room, _mentioned(content, room["members"]) if content else None,
+                   min(relay, left))
+    room["relay"] = relay
+    _room_save(room)
+    primary = {"opus": MODEL, "sonnet": FALLBACK_MODEL}.get(
+        str(payload.get("model") or ""), MODEL)
+
+    def gen():
+        stopped = "cap"
+        done = 0
+        for i, member in enumerate(turns):
+            yield sse("speaker", {"pid": member["pid"], "name": member["name"],
+                                  "i": i + 1, "total": len(turns)})
+            said = None
+            for ev in _room_turn(room, member, primary, user):
+                if isinstance(ev, tuple):
+                    said = ev[1]
+                else:
+                    yield ev
+            if said is None:            # API 錯誤，事件已送出
+                stopped = "error"
+                break
+            done += 1
+            room["auto_since_user"] = room.get("auto_since_user", 0) + 1
+            if not said or said.startswith("（沒") or said == PASS_MARK:
+                # 分身自己表示沒話講 → 提早結束接力（第二道防自聊機制）
+                yield sse("turn", {"pid": member["pid"], "name": member["name"],
+                                   "content": "", "passed": True})
+                _room_save(room)
+                stopped = "pass"
+                break
+            room["msgs"].append({"role": "assistant", "pid": member["pid"],
+                                 "name": member["name"], "content": said})
+            _room_save(room)
+            yield sse("turn", {"pid": member["pid"], "name": member["name"],
+                               "content": said, "passed": False})
+        yield sse("done", {"turns": done, "stopped": stopped,
+                           "auto_since_user": room.get("auto_since_user", 0),
+                           "auto_max": AUTO_MAX})
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache"})
 
 
 GUEST_MSG_CAP = int(os.environ.get("PF_GUEST_MSG_CAP", "3"))

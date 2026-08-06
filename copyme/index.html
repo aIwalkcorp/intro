@@ -285,6 +285,27 @@ body.en div.lang-en{display:block}
 .bub.ai{background:var(--paper);border:1px solid var(--bdr);align-self:flex-start;
   border-bottom-left-radius:3px}
 .bub.me{background:var(--pri);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+/* 群組：發言者標籤與接力控制 */
+.bub .who{display:block;font-family:var(--mono);font-size:.66rem;color:var(--seal);
+  letter-spacing:.04em;margin-bottom:3px}
+.bub.ai.passed{opacity:.6;font-style:italic}
+.relaybar{display:flex;align-items:center;gap:8px;max-width:720px;margin:0 auto 9px;
+  font-family:var(--mono);font-size:.68rem;color:var(--mist);flex-wrap:wrap}
+.relaybar select{font-family:var(--mono);font-size:.68rem;padding:3px 6px;
+  border:1.5px solid var(--bdr);border-radius:6px;background:#fff;color:var(--ink)}
+.relaybar .rb-note{margin-left:auto;text-align:right}
+.roundctl{display:flex;gap:8px;justify-content:center;padding:4px 0 2px}
+.roundctl button{font-family:var(--mono);font-size:.7rem;padding:5px 14px;
+  border:1.5px solid var(--bdr);border-radius:7px;background:#fff;color:var(--ink)}
+.roundctl button.go{border-color:var(--pri);color:var(--pri);font-weight:700}
+.roundctl button:disabled{opacity:.4}
+.side-sec{font-family:var(--mono);font-size:.62rem;color:var(--mist);letter-spacing:.08em;
+  padding:12px 11px 4px;border-top:1px dashed var(--bdr);margin-top:6px}
+.si-seal.grp{border-style:double;border-width:4px;transform:rotate(3deg)}
+.gpick{display:flex;flex-direction:column;gap:4px;margin:6px 0 10px;max-height:250px;overflow-y:auto}
+.gpick label{display:flex;gap:9px;align-items:center;padding:7px 9px;border:1.5px solid var(--bdr);
+  border-radius:7px;font-size:.88rem;background:#fff}
+.gpick input{accent-color:var(--seal)}
 .chatin{display:flex;gap:10px;padding:12px;border-top:1.5px solid var(--bdr)}
 .chatin input{flex:1;padding:10px 14px;border:1.5px solid var(--bdr);border-radius:8px;
   font-family:var(--sans);font-size:.95rem;background:var(--card)}
@@ -816,6 +837,23 @@ footer a{color:var(--mist)}
   </div>
 </div>
 
+<div class="modal-veil" id="groupmodal">
+  <div class="modal modal-box" style="max-width:460px">
+    <button class="mclose" id="g-close" aria-label="Close">✕</button>
+    <h3><span class="lang-zh">開一個群組</span><span class="lang-en">New group</span></h3>
+    <p class="mnote">
+      <span class="lang-zh">挑 2–4 個分身放進同一個聊天室。你發一句話後，分身之間最多自動接力你設定的回合數就會停下——不會自己一直聊下去。</span>
+      <span class="lang-en">Pick 2–4 twins for one room. After each message you send, the twins relay at most the number of turns you set, then stop — they never run away chatting.</span>
+    </p>
+    <div class="gpick" id="g-pick"></div>
+    <input id="g-title" autocomplete="off"
+      style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font-size:.9rem;background:#fff">
+    <button class="gobtn" id="g-go" style="width:100%;margin-top:10px">
+      <span class="lang-zh">建立群組</span><span class="lang-en">Create group</span></button>
+    <p class="mnote" id="g-err" style="color:var(--seal);margin:6px 0 0"></p>
+  </div>
+</div>
+
 <!-- 對話 focus 介面 -->
 <div class="chatlayer" id="chatlayer" role="dialog" aria-modal="true">
   <div class="chatmark" aria-hidden="true"><b id="chatmark-seal"></b></div>
@@ -841,11 +879,19 @@ footer a{color:var(--mist)}
     <button class="icobtn danger" id="delbtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
       <span class="vh"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></span></button>
+    <button class="icobtn danger" id="gdelbtn" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span class="vh"><span class="lang-zh">解散群組</span><span class="lang-en">Delete group</span></span></button>
     <button class="icobtn" id="clclose" aria-label="Close (Esc)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="cl-msgs"><div class="cl-msgs-inner" id="msgs"></div></div>
   <div class="cl-in">
+  <div class="relaybar" id="relaybar" style="display:none">
+    <span class="lang-zh">分身之間自動接力</span><span class="lang-en">Twins relay</span>
+    <select id="relaysel"></select>
+    <span class="rb-note" id="relaynote"></span>
+  </div>
   <div class="memline" style="justify-content:space-between">
   <label class="memline" id="memline" style="display:none;margin:0"><input type="checkbox" id="memchk"><span class="lang-zh">記住並共享到這條連結（其他訪客也看得到）</span><span class="lang-en">Remember &amp; share to this link (visible to other visitors)</span></label>
   <span class="modelpick" id="modelpick"><button data-m="opus" class="on"><span class="lang-zh">準・Opus</span><span class="lang-en">Sharp·Opus</span></button><button data-m="sonnet"><span class="lang-zh">快・Sonnet</span><span class="lang-en">Fast·Sonnet</span></button></span>
@@ -868,7 +914,9 @@ const API = (location.hostname.endsWith("fly.dev") || location.hostname === "loc
   ? "" : "https://copyme.fly.dev";
 const $ = id => document.getElementById(id);
 const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"opus",
-  walletTwd:null, fuelTwd:0 };
+  walletTwd:null, fuelTwd:0,
+  /* 群組：roomId 有值時，對話介面切成群組模式 */
+  rooms:[], roomId:null, room:null, relay:2, relayMax:6, roomBusy:false, roomAbort:null };
 const TWD_PER_USD = 31;
 function fmtMoney(twd){
   if(LANG === "en"){
@@ -921,6 +969,14 @@ const T = {
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
     refuse:"（這題我不方便回）", svcDown:"服務暫時沒有回應",
+    groupsTitle:"群組", newGroup:"＋ 開群組", groupPickTitle:"挑 2–4 個分身",
+    groupTitlePh:"群組名稱（可留空）", groupNeed:"至少挑 2 個、最多 4 個分身",
+    groupMembers:(n)=>`${n} 個分身`, groupHello:(n)=>`${n} 都在這裡了——你先開個話題吧`,
+    relayOff:"不接力（只有被點名的回）", relayN:(n)=>`${n} 回合`,
+    relayNote:(u,m)=>`本輪已接 ${u}/${m}（說句話就歸零）`,
+    capHit:"已達本輪上限", passedOut:(n)=>`${n} 沒有再接話`,
+    againBtn:"再跑一輪", stopBtn:"停", running:"接力中…",
+    delGroup:"解散群組", delGroupOK:"確定解散？",
   },
   en: {
     parsing:"Uploading & parsing…", dropback:"Drop the .txt here, or",
@@ -952,6 +1008,14 @@ const T = {
     emailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
     refuse:"(I'd rather not answer that)", svcDown:"The service didn't respond",
+    groupsTitle:"Groups", newGroup:"＋ New group", groupPickTitle:"Pick 2–4 twins",
+    groupTitlePh:"Group name (optional)", groupNeed:"Pick at least 2 twins, at most 4",
+    groupMembers:(n)=>`${n} twins`, groupHello:(n)=>`${n} are all here — start a topic`,
+    relayOff:"No relay (only the one you name)", relayN:(n)=>`${n} turn${n>1?"s":""}`,
+    relayNote:(u,m)=>`${u}/${m} auto turns used (resets when you speak)`,
+    capHit:"Relay cap reached", passedOut:(n)=>`${n} had nothing to add`,
+    againBtn:"One more round", stopBtn:"Stop", running:"Relaying…",
+    delGroup:"Delete group", delGroupOK:"Delete for real?",
   },
 };
 const t = key => T[LANG][key];
@@ -967,6 +1031,8 @@ function applyLang(l){
   $("btn-en2")?.classList.toggle("active", l === "en");
   $("brandcta").href = "https://aiwalkcorp.com/copyme/?lang=" + l;
   $("say").placeholder = t("say");
+  $("g-title").placeholder = t("groupTitlePh");
+  if(state.roomId) renderRelayBar();
   $("au-email").placeholder = t("emailPh");
   $("au-name").placeholder = t("namePh");
   $("au-pass").placeholder = t("passPh");
@@ -1133,8 +1199,8 @@ function sealFill(el, p){
 }
 
 /* ── SSE over fetch ── */
-async function sseFetch(url, body, onEvent){
-  const res = await fetch(API+url, {method:"POST",
+async function sseFetch(url, body, onEvent, signal){
+  const res = await fetch(API+url, {method:"POST", signal,
     headers:{"Content-Type":"application/json", ...authHeaders()}, body:JSON.stringify(body)});
   if(!res.ok){
     let d = t("svcDown");
@@ -1362,6 +1428,9 @@ function saveHist(){
 }
 function enterChat(pid, name){
   state.personaId = pid; state.personaName = name;
+  state.roomId = null; state.room = null;          // 離開群組模式
+  $("gdelbtn").style.display = "none";
+  $("relaybar").style.display = "none";
   const visitor = !!state.shareToken;
   if(visitor){
     state.history = [];
@@ -1403,6 +1472,7 @@ function enterChat(pid, name){
     });
     $("msgs").appendChild(h);
   }
+  if(!visitor && tw && tw.mine) loadOwnerThreads(pid);
   const db = $("delbtn");
   db.classList.remove("arm"); resetDelBtn();
   $("chatlayer").classList.add("open");
@@ -1426,6 +1496,7 @@ function openStudio(){
   $("studioback").style.display = "";
   dockChat();
   renderStudio();
+  loadRooms().then(renderStudio);
   $("studio").classList.add("open");
   document.body.style.overflow = "hidden";
   const mine = state.twins || [];
@@ -1476,7 +1547,9 @@ $("pmodal").addEventListener("click", e=>{ if(e.target===$("pmodal")) $("pmodal"
 
 function markSideActive(){
   $("sidelist").querySelectorAll(".side-item").forEach(b=>
-    b.classList.toggle("on", b.dataset.pid === state.personaId));
+    b.classList.toggle("on",
+      (!!b.dataset.pid && b.dataset.pid === state.personaId) ||
+      (!!b.dataset.rid && b.dataset.rid === state.roomId)));
 }
 function renderShareSide(){
   const list = $("sidelist");
@@ -1542,6 +1615,33 @@ function renderStudio(){
     });
     list.appendChild(b);
   });
+  if(ME){
+    const sec = document.createElement("div");
+    sec.className = "side-sec"; sec.textContent = t("groupsTitle");
+    list.appendChild(sec);
+    (state.rooms || []).forEach(r=>{
+      const b = document.createElement("button");
+      b.className = "side-item"; b.dataset.rid = r.id;
+      b.innerHTML = `<span class="si-seal grp"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
+      b.querySelector(".si-seal").textContent = LANG === "en" ? "GRP" : "群";
+      b.querySelector(".si-name").textContent = r.title;
+      b.querySelector(".si-meta").textContent =
+        r.members.map(m=>m.name).join(LANG==="en" ? ", " : "、");
+      b.addEventListener("click", ()=>{
+        if(state.roomId !== r.id || !$("chatlayer").classList.contains("open"))
+          enterRoom(r.id);
+        markSideActive();
+      });
+      list.appendChild(b);
+    });
+    const nb = document.createElement("button");
+    nb.className = "side-item";
+    nb.innerHTML = `<span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
+    nb.querySelector(".si-name").textContent = t("newGroup");
+    nb.querySelector(".si-meta").textContent = t("groupPickTitle");
+    nb.addEventListener("click", openGroupModal);
+    list.appendChild(nb);
+  }
   markSideActive();
 }
 
@@ -1718,6 +1818,7 @@ $("clclose").addEventListener("click", ()=>{
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
     if($("authmodal").classList.contains("open")) closeAuth();
+    else if($("groupmodal").classList.contains("open")) $("groupmodal").classList.remove("open");
     else if($("extmodal").classList.contains("open")) $("extmodal").classList.remove("open");
     else if($("sharemodal").classList.contains("open")) $("sharemodal").classList.remove("open");
     else if($("pmodal").classList.contains("open")) $("pmodal").classList.remove("open");
@@ -1770,6 +1871,13 @@ function bubble(cls, text){
 
 async function send(){
   const input = $("say"); const text = input.value.trim();
+  if(state.roomId){
+    if(!text || state.roomBusy) return;
+    input.value = "";
+    bubble("me", text);
+    roomBurst(text);
+    return;
+  }
   if(!text || !state.personaId) return;
   clearErr();
   input.value = ""; $("send").disabled = true;
@@ -1813,6 +1921,258 @@ async function send(){
     }
   }finally{ $("send").disabled = false; input.focus(); loadBudget(); }
 }
+/* ── 擁有者也看得到自己分身在公開連結上的討論串 ──
+   訪客留下的對話存在 personas/<pid>/threads/，過去只有 /s/<token> 頁面拿得到；
+   本人在印譜裡點自己的分身時同樣列出來，點一串即可讀回內容。 */
+async function loadOwnerThreads(pid){
+  try{
+    const r = await fetch(API+`/api/personas/${pid}/threads`, {headers: authHeaders()});
+    if(!r.ok) return;
+    const j = await r.json();
+    const list = j.threads || [];
+    if(!list.length || state.personaId !== pid) return;
+    const bar = document.createElement("div");
+    bar.className = "chat-hello";
+    bar.innerHTML = `<div class="hello-line"></div><div class="hello-chips"></div>`;
+    bar.querySelector(".hello-line").textContent = t("joinBar")(list.length);
+    const chips = bar.querySelector(".hello-chips");
+    list.forEach(th=>{
+      const b = document.createElement("button");
+      b.textContent = t("threadItem")(th.title, th.count);
+      b.addEventListener("click", ()=> openOwnerThread(pid, th.id));
+      chips.appendChild(b);
+    });
+    $("msgs").prepend(bar);
+  }catch(_){}
+}
+async function openOwnerThread(pid, tid){
+  try{
+    const r = await fetch(API+`/api/personas/${pid}/threads/${tid}`, {headers: authHeaders()});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    state.history = j.msgs || [];
+    $("msgs").innerHTML = "";
+    state.history.forEach(m=>{
+      if(m.role === "user") bubble("me", m.content);
+      else m.content.split("\n").map(x=>x.trim()).filter(Boolean).forEach(l=>bubble("ai", l));
+    });
+    saveHist();
+    $("say").focus();
+  }catch(err){ showErr(err.message); }
+}
+
+/* ── 群組：多分身有限接力 ────────────────────────────────────────────
+   規則寫在後端：使用者發一句話 → 分身最多接力 relay 回合就硬停；沒有新的人類
+   發言時，累計自動回合到 auto_max 也會被伺服器擋下。前端只負責呈現與續跑鈕。 */
+function roomBubble(name, text, passed){
+  const b = bubble("ai", "");
+  if(passed) b.classList.add("passed");
+  const who = document.createElement("b");
+  who.className = "who"; who.textContent = name;
+  const node = document.createTextNode(text || "");
+  b.appendChild(who); b.appendChild(node);
+  b.__node = node;
+  return b;
+}
+function relayOptions(){
+  const sel = $("relaysel"); sel.innerHTML = "";
+  for(let i=1;i<=state.relayMax;i++){
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = i === 1 ? t("relayOff") : t("relayN")(i);
+    if(i === state.relay) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+function renderRelayBar(){
+  if(!state.roomId){ $("relaybar").style.display = "none"; return; }
+  $("relaybar").style.display = "";
+  relayOptions();
+  const r = state.room || {};
+  $("relaynote").textContent = t("relayNote")(r.auto_since_user || 0, r.auto_max || 12);
+}
+$("relaysel").addEventListener("change", ()=>{
+  state.relay = Math.max(1, parseInt($("relaysel").value) || 1);
+});
+
+async function loadRooms(){
+  if(!ME){ state.rooms = []; return; }
+  try{
+    const j = await (await fetch(API+"/api/rooms", {headers: authHeaders()})).json();
+    state.rooms = j.rooms || [];
+    state.relayMax = j.relay_max ?? state.relayMax;
+    state.relay = Math.min(state.relay || (j.relay_default ?? 2), state.relayMax);
+  }catch(_){ state.rooms = state.rooms || []; }
+}
+
+async function enterRoom(rid){
+  try{
+    const r = await fetch(API+"/api/rooms/"+rid, {headers: authHeaders()});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    state.roomId = rid; state.room = j;
+    state.relay = Math.min(j.relay || state.relay, state.relayMax);
+    state.personaId = null; state.personaName = null; state.history = [];
+    ["extbtn","linkbtn","pfbtn","delbtn","brandcta","memline"].forEach(id=>
+      $(id).style.display = "none");
+    $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "auto";
+    $("chatname").textContent = j.title;
+    $("chattag").textContent = t("groupMembers")(j.members.length);
+    setWikiLink(null);
+    const seal = $("chatseal");
+    seal.classList.remove("has-avatar");
+    seal.textContent = LANG === "en" ? "GRP" : "群";
+    $("chatmark-seal").textContent = LANG === "en" ? "GRP" : "群";
+    $("msgs").innerHTML = "";
+    (j.msgs || []).forEach(m=>{
+      if(m.role === "user") bubble("me", m.content);
+      else roomBubble(m.name, m.content);
+    });
+    if(!(j.msgs || []).length){
+      const h = document.createElement("div");
+      h.className = "chat-hello";
+      h.innerHTML = `<div class="hello-line"></div>`;
+      h.querySelector(".hello-line").textContent =
+        t("groupHello")(j.members.map(m=>m.name).join(LANG==="en" ? ", " : "、"));
+      $("msgs").appendChild(h);
+    }
+    renderRelayBar();
+    $("gdelbtn").classList.remove("arm"); resetGDelBtn();
+    $("chatlayer").classList.add("open");
+    document.body.style.overflow = "hidden";
+    $("say").focus();
+    markSideActive();
+  }catch(err){ showErr(err.message); }
+}
+
+function showRoundCtl(d){
+  const row = document.createElement("div");
+  row.className = "roundctl";
+  const note = document.createElement("button");
+  note.disabled = true;
+  note.textContent = d.stopped === "pass" ? "…" : t("capHit");
+  const again = document.createElement("button");
+  again.className = "go"; again.textContent = t("againBtn");
+  if((d.auto_max - d.auto_since_user) <= 0) again.disabled = true;
+  again.addEventListener("click", ()=>{ row.remove(); roomBurst(""); });
+  row.appendChild(note); row.appendChild(again);
+  $("msgs").appendChild(row);
+  $("msgs").scrollTop = $("msgs").scrollHeight;
+}
+
+/* 一次呼叫＝一段有限接力。content 空字串＝「再跑一輪」 */
+async function roomBurst(content){
+  if(state.roomBusy || !state.roomId) return;
+  state.roomBusy = true; $("send").disabled = true;
+  clearErr();
+  $("msgs").querySelectorAll(".roundctl").forEach(x=>x.remove());
+  const ctl = new AbortController(); state.roomAbort = ctl;
+  const stopRow = document.createElement("div");
+  stopRow.className = "roundctl";
+  const running = document.createElement("button");
+  running.disabled = true; running.textContent = t("running");
+  const stop = document.createElement("button");
+  stop.textContent = t("stopBtn");
+  stop.addEventListener("click", ()=> ctl.abort());
+  stopRow.appendChild(running); stopRow.appendChild(stop);
+  $("msgs").appendChild(stopRow);
+  let live = null, acc = "";
+  try{
+    await sseFetch(`/api/rooms/${state.roomId}/chat`,
+      {content, relay: state.relay, model: state.model, access_code:""},
+      (ev,d)=>{
+        if(ev === "speaker"){
+          acc = "";
+          live = roomBubble(`${d.name}（${d.i}/${d.total}）`, "");
+          $("msgs").appendChild(stopRow);      // 控制列永遠留在最後
+          $("msgs").scrollTop = $("msgs").scrollHeight;
+        }else if(ev === "delta"){
+          acc += d.text;
+          if(live) live.__node.textContent = acc;
+          $("msgs").scrollTop = $("msgs").scrollHeight;
+        }else if(ev === "turn"){
+          if(d.passed && live){
+            live.classList.add("passed");
+            live.__node.textContent = t("passedOut")(d.name);
+          }
+          live = null;
+        }else if(ev === "done"){
+          if(state.room){
+            state.room.auto_since_user = d.auto_since_user;
+            state.room.auto_max = d.auto_max;
+          }
+          renderRelayBar();
+          stopRow.remove();
+          if(d.stopped !== "error") showRoundCtl(d);
+        }else if(ev === "error"){ throw new Error(d.message); }
+      }, ctl.signal);
+  }catch(err){
+    stopRow.remove();
+    if(err.name !== "AbortError") showErr(err.message);
+  }finally{
+    state.roomBusy = false; state.roomAbort = null;
+    $("send").disabled = false; $("say").focus(); loadBudget();
+  }
+}
+
+const GDEL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+  '<span class="vh"><span class="lang-zh">解散群組</span><span class="lang-en">Delete group</span></span>';
+function resetGDelBtn(){ $("gdelbtn").innerHTML = GDEL_ICON; }
+$("gdelbtn").addEventListener("click", async ()=>{
+  const b = $("gdelbtn");
+  if(!state.roomId) return;
+  if(!b.classList.contains("arm")){
+    b.classList.add("arm"); b.textContent = t("delGroupOK");
+    setTimeout(()=>{ b.classList.remove("arm"); resetGDelBtn(); }, 4000);
+    return;
+  }
+  try{
+    const r = await fetch(API+`/api/rooms/${state.roomId}/delete`, {method:"POST",
+      headers:{"Content-Type":"application/json", ...authHeaders()}, body:"{}"});
+    if(!r.ok) throw new Error((await r.json()).detail || t("svcDown"));
+    state.roomId = null; state.room = null;
+    b.classList.remove("arm"); resetGDelBtn();
+    closeChat();
+    await loadRooms();
+    if($("studio").classList.contains("open")) renderStudio();
+  }catch(err){ showErr(err.message); }
+});
+
+function openGroupModal(){
+  const box = $("g-pick"); box.innerHTML = "";
+  (state.twins || []).forEach(p=>{
+    const l = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.value = p.id;
+    const s = document.createElement("span");
+    s.textContent = twName(p);
+    l.appendChild(cb); l.appendChild(s);
+    box.appendChild(l);
+  });
+  $("g-err").textContent = "";
+  $("g-title").value = "";
+  $("g-title").placeholder = t("groupTitlePh");
+  $("groupmodal").classList.add("open");
+}
+$("g-close").addEventListener("click", ()=> $("groupmodal").classList.remove("open"));
+$("groupmodal").addEventListener("click", e=>{
+  if(e.target === $("groupmodal")) $("groupmodal").classList.remove("open"); });
+$("g-go").addEventListener("click", async ()=>{
+  const ids = [...$("g-pick").querySelectorAll("input:checked")].map(x=>x.value);
+  if(ids.length < 2 || ids.length > 4){ $("g-err").textContent = t("groupNeed"); return; }
+  try{
+    const r = await fetch(API+"/api/rooms", {method:"POST",
+      headers:{"Content-Type":"application/json", ...authHeaders()},
+      body: JSON.stringify({members: ids, title: $("g-title").value, relay: state.relay})});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    $("groupmodal").classList.remove("open");
+    await loadRooms();
+    renderStudio();
+    enterRoom(j.id);
+  }catch(err){ $("g-err").textContent = err.message; }
+});
+
 async function loadThread(tid){
   try{
     const r = await fetch(API+"/api/shared/"+state.shareToken+"/thread/"+tid);
