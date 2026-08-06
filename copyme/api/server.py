@@ -1000,7 +1000,8 @@ ROOMS.mkdir(parents=True, exist_ok=True)
 
 RELAY_DEFAULT = int(os.environ.get("PF_RELAY_DEFAULT", "2"))   # 一次接力預設回合數
 RELAY_MAX = int(os.environ.get("PF_RELAY_MAX", "6"))           # 單次上限
-AUTO_MAX = int(os.environ.get("PF_ROOM_AUTO_MAX", "12"))       # 無人類發言時的累計上限
+AUTO_MAX = int(os.environ.get("PF_ROOM_AUTO_MAX", "12"))       # 無人類發言時的累計上限（預設）
+AUTO_LIMIT = int(os.environ.get("PF_ROOM_AUTO_LIMIT", "16"))   # 使用者能調到的最大值
 ROOM_CTX = 30                                                  # 帶進模型的最近訊息數
 ROOM_MSG_KEEP = 400
 USER_LABEL = "使用者"
@@ -1035,11 +1036,23 @@ def _room_save(room: dict) -> None:
     _rpath(room["id"]).write_text(json.dumps(room, ensure_ascii=False), encoding="utf-8")
 
 
+def _clamp(v, lo, hi, fallback):
+    try:
+        return max(lo, min(hi, int(v)))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _auto_max(room: dict) -> int:
+    return _clamp(room.get("auto_max", AUTO_MAX), 1, AUTO_LIMIT, AUTO_MAX)
+
+
 def _room_brief(room: dict) -> dict:
     return {"id": room["id"], "title": room["title"], "members": room["members"],
             "count": len(room["msgs"]), "relay": room.get("relay", RELAY_DEFAULT),
-            "auto_since_user": room.get("auto_since_user", 0), "auto_max": AUTO_MAX,
-            "created": room.get("created", "")}
+            "auto_since_user": room.get("auto_since_user", 0),
+            "auto_max": _auto_max(room), "auto_limit": AUTO_LIMIT,
+            "relay_max": RELAY_MAX, "created": room.get("created", "")}
 
 
 def _speaker_msgs(msgs: list[dict], me_pid: str) -> list[dict]:
@@ -1170,7 +1183,8 @@ def create_room(payload: dict, authorization: str | None = Header(None)):
             "title": (str(payload.get("title") or "").strip()
                       or "、".join(m["name"] for m in members))[:40],
             "members": members, "owner_id": user["id"],
-            "relay": max(0, min(RELAY_MAX, int(payload.get("relay", RELAY_DEFAULT)))),
+            "relay": _clamp(payload.get("relay", RELAY_DEFAULT), 1, RELAY_MAX, RELAY_DEFAULT),
+            "auto_max": _clamp(payload.get("auto_max", AUTO_MAX), 1, AUTO_LIMIT, AUTO_MAX),
             "auto_since_user": 0, "msgs": [],
             "created": datetime.now(TZ).isoformat(timespec="seconds")}
     _room_save(room)
@@ -1181,6 +1195,21 @@ def create_room(payload: dict, authorization: str | None = Header(None)):
 def get_room(rid: str, authorization: str | None = Header(None)):
     room = _room_load(rid, require_user(authorization))
     return {**_room_brief(room), "msgs": room["msgs"][-120:]}
+
+
+@app.post("/api/rooms/{rid}/settings")
+def room_settings(rid: str, payload: dict, authorization: str | None = Header(None)):
+    """使用者自訂接力上限：relay＝每次接幾回，auto_max＝沒你插話時最多連續接幾回。"""
+    user = require_user(authorization)
+    room = _room_load(rid, user)
+    if "relay" in payload:
+        room["relay"] = _clamp(payload["relay"], 1, RELAY_MAX, room.get("relay", RELAY_DEFAULT))
+    if "auto_max" in payload:
+        room["auto_max"] = _clamp(payload["auto_max"], 1, AUTO_LIMIT, _auto_max(room))
+    if "title" in payload:
+        room["title"] = (str(payload["title"]).strip() or room["title"])[:40]
+    _room_save(room)
+    return _room_brief(room)
 
 
 @app.post("/api/rooms/{rid}/delete")
@@ -1200,16 +1229,20 @@ def room_chat(rid: str, payload: dict, request: Request,
     check_budget(user)
     room = _room_load(rid, user)
     content = str(payload.get("content") or "").strip()
-    relay = max(0, min(RELAY_MAX, int(payload.get("relay", room.get("relay", RELAY_DEFAULT)))))
+    relay = _clamp(payload.get("relay", room.get("relay", RELAY_DEFAULT)),
+                   1, RELAY_MAX, RELAY_DEFAULT)
+    if "auto_max" in payload:      # 使用者在對話中直接拉界線，順手存起來
+        room["auto_max"] = _clamp(payload["auto_max"], 1, AUTO_LIMIT, _auto_max(room))
+    auto_max = _auto_max(room)
 
     if content:
         room["msgs"].append({"role": "user", "name": "", "pid": "", "content": content})
         room["auto_since_user"] = 0
     elif not room["msgs"]:
         raise HTTPException(422, "先說一句話開場")
-    left = AUTO_MAX - room.get("auto_since_user", 0)
+    left = auto_max - room.get("auto_since_user", 0)
     if left <= 0:
-        raise HTTPException(429, f"分身已經連續接力 {AUTO_MAX} 回合了——說句話再繼續吧")
+        raise HTTPException(429, f"分身已經連續接力 {auto_max} 回合了——說句話再繼續吧")
     turns = _order(room, _mentioned(content, room["members"]) if content else None,
                    min(relay, left))
     room["relay"] = relay
@@ -1248,7 +1281,7 @@ def room_chat(rid: str, payload: dict, request: Request,
                                "content": said, "passed": False})
         yield sse("done", {"turns": done, "stopped": stopped,
                            "auto_since_user": room.get("auto_since_user", 0),
-                           "auto_max": AUTO_MAX})
+                           "auto_max": auto_max, "relay": relay})
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache"})

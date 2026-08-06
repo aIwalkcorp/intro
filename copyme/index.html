@@ -289,16 +289,56 @@ body.en div.lang-en{display:block}
 .bub .who{display:block;font-family:var(--mono);font-size:.66rem;color:var(--seal);
   letter-spacing:.04em;margin-bottom:3px}
 .bub.ai.passed{opacity:.6;font-style:italic}
-.relaybar{display:flex;align-items:center;gap:8px;max-width:720px;margin:0 auto 9px;
-  font-family:var(--mono);font-size:.68rem;color:var(--mist);flex-wrap:wrap}
-.relaybar select{font-family:var(--mono);font-size:.68rem;padding:3px 6px;
-  border:1.5px solid var(--bdr);border-radius:6px;background:#fff;color:var(--ink)}
-.relaybar .rb-note{margin-left:auto;text-align:right}
+/* 接力尺：一格＝分身的一回合。硃砂實印＝已接掉，空框＝還能接，
+   虛影＝界線之外。深藍那道豎線就是使用者自己拉的界。 */
+.relaybar{max-width:720px;margin:0 auto 9px;font-family:var(--mono);font-size:.68rem;
+  color:var(--mist)}
+.rl-row{display:flex;align-items:center;gap:10px}
+.rl-sub{margin-top:5px}
+.rl-label{flex-shrink:0;letter-spacing:.06em}
+.rl-track{position:relative;flex:1 1 auto;min-width:110px;height:24px;
+  display:flex;align-items:center}
+.rl-slots{position:absolute;inset:0 4px;display:flex;gap:3px;align-items:center;
+  pointer-events:none}
+.rl-slot{flex:1;max-width:17px;height:15px;border:1.5px solid var(--seal-soft);
+  border-radius:2px;transform:rotate(-6deg);
+  transition:background .18s ease,border-color .18s ease}
+.rl-slot.spent{background:var(--seal);border-color:var(--seal)}
+.rl-slot.beyond{border-style:dashed;border-color:var(--bdr);opacity:.4;transform:none}
+.rl-range{position:relative;width:100%;height:24px;margin:0;background:none;
+  -webkit-appearance:none;appearance:none;cursor:ew-resize}
+.rl-range::-webkit-slider-runnable-track{height:24px;background:none}
+.rl-range::-moz-range-track{height:24px;background:none}
+/* 界：一道深藍豎規，頭上壓一小塊帽，看得出是可以拖的牆 */
+.rl-range::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height:24px;border:none;
+  border-radius:2px 2px 1px 1px;background:var(--pri);cursor:ew-resize;
+  box-shadow:0 0 0 2px var(--card),inset 0 5px 0 var(--pri-deep)}
+.rl-range::-moz-range-thumb{width:8px;height:24px;border:none;border-radius:2px 2px 1px 1px;
+  background:var(--pri);cursor:ew-resize;
+  box-shadow:0 0 0 2px var(--card),inset 0 5px 0 var(--pri-deep)}
+.rl-range:hover::-webkit-slider-thumb{background:var(--pri-deep)}
+.rl-range:hover::-moz-range-thumb{background:var(--pri-deep)}
+.rl-range:focus-visible{outline:2px solid var(--pri);outline-offset:3px;border-radius:3px}
+.rl-read{flex-shrink:0;font-family:var(--serif);font-weight:900;font-size:.82rem;
+  color:var(--pri-deep);min-width:5.4em;text-align:right}
+.rl-read.done{color:var(--seal)}
+.rl-seg{display:inline-flex;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden}
+.rl-seg button{background:none;border:none;padding:3px 9px;font-family:var(--mono);
+  font-size:.68rem;color:var(--mist)}
+.rl-seg button.on{background:var(--pri);color:#fff}
+.rl-hint{margin:0 0 0 auto;text-align:right;font-size:.63rem;line-height:1.4}
+@media(max-width:640px){
+  .rl-hint{display:none}
+  .rl-read{min-width:4.6em;font-size:.76rem}
+}
+@media(prefers-reduced-motion:reduce){ .rl-slot{transition:none} }
 .roundctl{display:flex;gap:8px;justify-content:center;padding:4px 0 2px}
 .roundctl button{font-family:var(--mono);font-size:.7rem;padding:5px 14px;
   border:1.5px solid var(--bdr);border-radius:7px;background:#fff;color:var(--ink)}
 .roundctl button.go{border-color:var(--pri);color:var(--pri);font-weight:700}
 .roundctl button:disabled{opacity:.4}
+.rc-note{align-self:center;font-family:var(--mono);font-size:.66rem;color:var(--mist);
+  letter-spacing:.04em}
 .side-sec{font-family:var(--mono);font-size:.62rem;color:var(--mist);letter-spacing:.08em;
   padding:12px 11px 4px;border-top:1px dashed var(--bdr);margin-top:6px}
 .si-seal.grp{border-style:double;border-width:4px;transform:rotate(3deg)}
@@ -452,6 +492,8 @@ body.en div.lang-en{display:block}
   font-size:.66rem;color:var(--mist)}
 .modelpick button.on{background:var(--pri);color:#fff}
 .cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
+/* input 的 min-content 寬度會把送出鍵擠出畫面（窄螢幕上按不到）*/
+.cl-in-inner .chatin-input{min-width:0}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
   border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
 /* ── 我的印譜（左側欄選人＋右側聊天） ── */
@@ -888,11 +930,22 @@ footer a{color:var(--mist)}
   <div class="cl-msgs"><div class="cl-msgs-inner" id="msgs"></div></div>
   <div class="cl-in">
   <div class="relaybar" id="relaybar" style="display:none">
-    <span class="lang-zh">分身之間自動接力</span><span class="lang-en">Twins relay</span>
-    <select id="relaysel"></select>
-    <span class="rb-note" id="relaynote"></span>
+    <div class="rl-row">
+      <label class="rl-label" for="rl-range"><span class="lang-zh">接力界線</span><span class="lang-en">Relay limit</span></label>
+      <div class="rl-track" id="rl-track">
+        <div class="rl-slots" id="rl-slots" aria-hidden="true"></div>
+        <input type="range" class="rl-range" id="rl-range" min="1" max="16" step="1" value="12">
+      </div>
+      <b class="rl-read" id="rl-read"></b>
+    </div>
+    <div class="rl-row rl-sub">
+      <span class="rl-label"><span class="lang-zh">每則訊息接</span><span class="lang-en">Per message</span></span>
+      <span class="rl-seg" id="relayseg" role="group"></span>
+      <span class="rl-hint" id="rl-hint"></span>
+    </div>
   </div>
   <div class="memline" style="justify-content:space-between">
+  <label class="memline" id="saveline" style="display:none;margin:0"><input type="checkbox" id="savechk"><span class="lang-zh">記住這段對話（存在這台裝置）</span><span class="lang-en">Remember this chat (on this device)</span></label>
   <label class="memline" id="memline" style="display:none;margin:0"><input type="checkbox" id="memchk"><span class="lang-zh">記住並共享到這條連結（其他訪客也看得到）</span><span class="lang-en">Remember &amp; share to this link (visible to other visitors)</span></label>
   <span class="modelpick" id="modelpick"><button data-m="opus" class="on"><span class="lang-zh">準・Opus</span><span class="lang-en">Sharp·Opus</span></button><button data-m="sonnet"><span class="lang-zh">快・Sonnet</span><span class="lang-en">Fast·Sonnet</span></button></span>
   </div>
@@ -916,7 +969,8 @@ const $ = id => document.getElementById(id);
 const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"opus",
   walletTwd:null, fuelTwd:0,
   /* 群組：roomId 有值時，對話介面切成群組模式 */
-  rooms:[], roomId:null, room:null, relay:2, relayMax:6, roomBusy:false, roomAbort:null };
+  rooms:[], roomId:null, room:null, relay:2, relayMax:6, autoMax:12,
+  roomBusy:false, roomAbort:null, saveLocal:false };
 const TWD_PER_USD = 31;
 function fmtMoney(twd){
   if(LANG === "en"){
@@ -972,8 +1026,9 @@ const T = {
     groupsTitle:"群組", newGroup:"＋ 開群組", groupPickTitle:"挑 2–4 個分身",
     groupTitlePh:"群組名稱（可留空）", groupNeed:"至少挑 2 個、最多 4 個分身",
     groupMembers:(n)=>`${n} 個分身`, groupHello:(n)=>`${n} 都在這裡了——你先開個話題吧`,
-    relayOff:"不接力（只有被點名的回）", relayN:(n)=>`${n} 回合`,
-    relayNote:(u,m)=>`本輪已接 ${u}/${m}（說句話就歸零）`,
+    relayN:(n)=>`每則訊息接 ${n} 回合`,
+    relayLeft:(n)=>`還能接 ${n} 回`, relayDone:"換你說話了",
+    relayHint:"分身之間最多連續接這麼多回，你一說話就重新算",
     capHit:"已達本輪上限", passedOut:(n)=>`${n} 沒有再接話`,
     againBtn:"再跑一輪", stopBtn:"停", running:"接力中…",
     delGroup:"解散群組", delGroupOK:"確定解散？",
@@ -1011,8 +1066,9 @@ const T = {
     groupsTitle:"Groups", newGroup:"＋ New group", groupPickTitle:"Pick 2–4 twins",
     groupTitlePh:"Group name (optional)", groupNeed:"Pick at least 2 twins, at most 4",
     groupMembers:(n)=>`${n} twins`, groupHello:(n)=>`${n} are all here — start a topic`,
-    relayOff:"No relay (only the one you name)", relayN:(n)=>`${n} turn${n>1?"s":""}`,
-    relayNote:(u,m)=>`${u}/${m} auto turns used (resets when you speak)`,
+    relayN:(n)=>`${n} turn${n>1?"s":""} per message`,
+    relayLeft:(n)=>`${n} turn${n>1?"s":""} left`, relayDone:"Your turn to speak",
+    relayHint:"Twins relay at most this many turns in a row. Speaking resets it.",
     capHit:"Relay cap reached", passedOut:(n)=>`${n} had nothing to add`,
     againBtn:"One more round", stopBtn:"Stop", running:"Relaying…",
     delGroup:"Delete group", delGroupOK:"Delete for real?",
@@ -1086,7 +1142,8 @@ function renderAuth(){
     out.textContent = LANG==="en" ? "sign out" : "登出";
     out.addEventListener("click", e=>{ e.stopPropagation();
       ["tf_access_token","tf_refresh_token","tf_user"].forEach(k=>store.del(k));
-      ME = null; exitStudio(); renderAuth(); loadShelf(); });
+      ME = null; state.saveLocal = false; purgeGuestHist();
+      exitStudio(); renderAuth(); loadShelf(); });
     chip.append(u, out);
   }else{
     const l = document.createElement("span");
@@ -1157,6 +1214,10 @@ async function doAuth(){
     $("au-pass").value = "";
     closeAuth();
     await refreshMe(); await loadShelf();
+    if(ME && state.personaId && !state.shareToken){
+      // 剛才那句「想留下這段對話」的意圖，登入後就地兌現
+      state.saveLocal = true; $("savechk").checked = true; saveHist();
+    }
     if(location.hash === "#studio") openStudio();
   }catch(err){ showErr(err.message); }
 }
@@ -1422,22 +1483,46 @@ $("avfile").addEventListener("change", async ()=>{
 /* ── 04 對話 ── */
 const HIST_MAX = 60;
 function histKey(pid){ return "pf_hist_" + pid; }
+/* 未登入的示範對話是一次性的：關掉分頁就沒了。要留下來得先登入（或登入後
+   取消勾選就不留）。舊版本無條件寫入本機，purgeGuestHist() 負責清掉殘留。 */
 function saveHist(){
-  if(state.personaId && !state.shareToken)
-    store.set(histKey(state.personaId), JSON.stringify(state.history.slice(-HIST_MAX)));
+  if(!ME || !state.saveLocal || !state.personaId || state.shareToken) return;
+  store.set(histKey(state.personaId), JSON.stringify(state.history.slice(-HIST_MAX)));
 }
+function purgeGuestHist(){
+  try{
+    for(const k of Object.keys(localStorage))
+      if(k.startsWith("pf_hist_")) localStorage.removeItem(k);
+  }catch(_){}
+  for(const k of Object.keys(store._m))
+    if(k.startsWith("pf_hist_")) delete store._m[k];
+}
+$("savechk").addEventListener("change", ()=>{
+  if(!ME){                       // 想留紀錄就要有帳號——當場請他登入
+    $("savechk").checked = false;
+    if(!regMode) $("au-mode").click();
+    openAuth();
+    return;
+  }
+  state.saveLocal = $("savechk").checked;
+  if(state.saveLocal) saveHist();
+  else if(state.personaId) store.del(histKey(state.personaId));
+});
 function enterChat(pid, name){
   state.personaId = pid; state.personaName = name;
   state.roomId = null; state.room = null;          // 離開群組模式
   $("gdelbtn").style.display = "none";
   $("relaybar").style.display = "none";
   const visitor = !!state.shareToken;
-  if(visitor){
-    state.history = [];
+  if(visitor || !ME){
+    state.history = [];          // 未登入＝一次性，不從本機撈舊紀錄
   }else{
     try{ state.history = JSON.parse(store.get(histKey(pid)) || "[]"); }
     catch(_){ state.history = []; }
   }
+  state.saveLocal = !!ME;
+  $("savechk").checked = state.saveLocal;
+  $("saveline").style.display = visitor ? "none" : "";
   $("memline").style.display = visitor ? "" : "none";
   const tw = (state.twins||[]).find(x=>x.id===pid);
   $("delbtn").style.display = (!visitor && tw && tw.mine) ? "" : "none";
@@ -1974,25 +2059,71 @@ function roomBubble(name, text, passed){
   b.__node = node;
   return b;
 }
-function relayOptions(){
-  const sel = $("relaysel"); sel.innerHTML = "";
+/* 接力尺：既是控制器也是計量表——看得到牆在哪、還剩幾格 */
+function relaySeg(){
+  const box = $("relayseg"); box.innerHTML = "";
   for(let i=1;i<=state.relayMax;i++){
-    const o = document.createElement("option");
-    o.value = i;
-    o.textContent = i === 1 ? t("relayOff") : t("relayN")(i);
-    if(i === state.relay) o.selected = true;
-    sel.appendChild(o);
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = i;
+    b.className = i === state.relay ? "on" : "";
+    b.setAttribute("aria-label", t("relayN")(i));
+    b.setAttribute("aria-pressed", i === state.relay ? "true" : "false");
+    b.addEventListener("click", ()=>{
+      state.relay = i; relaySeg(); saveRoomSettings({relay: i});
+    });
+    box.appendChild(b);
   }
 }
 function renderRelayBar(){
   if(!state.roomId){ $("relaybar").style.display = "none"; return; }
-  $("relaybar").style.display = "";
-  relayOptions();
   const r = state.room || {};
-  $("relaynote").textContent = t("relayNote")(r.auto_since_user || 0, r.auto_max || 12);
+  const limit = r.auto_limit || 16;
+  const cap = Math.min(state.autoMax || r.auto_max || 12, limit);
+  const used = Math.min(r.auto_since_user || 0, limit);
+  $("relaybar").style.display = "";
+  const rg = $("rl-range");
+  rg.max = limit; rg.value = cap;
+  const left = Math.max(0, cap - used);
+  rg.setAttribute("aria-valuetext", left ? t("relayLeft")(left) : t("relayDone"));
+  // 軌道寬度貼齊印痕實際佔的寬——界線才會落在格與格之間，不會飄
+  $("rl-track").style.maxWidth = (limit * 17 + (limit - 1) * 3 + 8) + "px";
+  const box = $("rl-slots");
+  box.innerHTML = "";
+  for(let i=1;i<=limit;i++){
+    const s = document.createElement("i");
+    s.className = "rl-slot" + (i <= used ? " spent" : "") + (i > cap ? " beyond" : "");
+    box.appendChild(s);
+  }
+  const read = $("rl-read");
+  read.textContent = left ? t("relayLeft")(left) : t("relayDone");
+  read.classList.toggle("done", left === 0);
+  $("rl-hint").textContent = t("relayHint");
+  relaySeg();
 }
-$("relaysel").addEventListener("change", ()=>{
-  state.relay = Math.max(1, parseInt($("relaysel").value) || 1);
+let relaySaveTimer = null;
+function saveRoomSettings(patch){
+  if(!state.roomId) return;
+  const rid = state.roomId;
+  clearTimeout(relaySaveTimer);
+  relaySaveTimer = setTimeout(async ()=>{
+    try{
+      const r = await fetch(API+`/api/rooms/${rid}/settings`, {method:"POST",
+        headers:{"Content-Type":"application/json", ...authHeaders()},
+        body: JSON.stringify(patch)});
+      if(!r.ok) return;
+      const j = await r.json();
+      if(state.roomId !== rid) return;
+      state.room = {...state.room, ...j};
+      state.autoMax = j.auto_max; state.relay = j.relay;
+      const idx = (state.rooms||[]).findIndex(x=>x.id === rid);
+      if(idx >= 0) state.rooms[idx] = {...state.rooms[idx], ...j};
+    }catch(_){}
+  }, 400);
+}
+$("rl-range").addEventListener("input", ()=>{
+  state.autoMax = Math.max(1, parseInt($("rl-range").value) || 1);
+  renderRelayBar();
+  saveRoomSettings({auto_max: state.autoMax});
 });
 
 async function loadRooms(){
@@ -2011,9 +2142,11 @@ async function enterRoom(rid){
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     state.roomId = rid; state.room = j;
+    state.relayMax = j.relay_max || state.relayMax;
     state.relay = Math.min(j.relay || state.relay, state.relayMax);
+    state.autoMax = j.auto_max || state.autoMax;
     state.personaId = null; state.personaName = null; state.history = [];
-    ["extbtn","linkbtn","pfbtn","delbtn","brandcta","memline"].forEach(id=>
+    ["extbtn","linkbtn","pfbtn","delbtn","brandcta","memline","saveline"].forEach(id=>
       $(id).style.display = "none");
     $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "auto";
     $("chatname").textContent = j.title;
@@ -2048,8 +2181,8 @@ async function enterRoom(rid){
 function showRoundCtl(d){
   const row = document.createElement("div");
   row.className = "roundctl";
-  const note = document.createElement("button");
-  note.disabled = true;
+  const note = document.createElement("span");   // 這是說明不是動作，別做成按鈕
+  note.className = "rc-note";
   note.textContent = d.stopped === "pass" ? "…" : t("capHit");
   const again = document.createElement("button");
   again.className = "go"; again.textContent = t("againBtn");
@@ -2163,7 +2296,8 @@ $("g-go").addEventListener("click", async ()=>{
   try{
     const r = await fetch(API+"/api/rooms", {method:"POST",
       headers:{"Content-Type":"application/json", ...authHeaders()},
-      body: JSON.stringify({members: ids, title: $("g-title").value, relay: state.relay})});
+      body: JSON.stringify({members: ids, title: $("g-title").value,
+                            relay: state.relay, auto_max: state.autoMax})});
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     $("groupmodal").classList.remove("open");
@@ -2282,7 +2416,10 @@ async function loadShelf(){
   renderTwins();
 }
 loadShelf().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
-refreshMe().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
+refreshMe().then(()=>{
+  if(!ME) purgeGuestHist();     // 舊版無條件寫進本機的訪客紀錄，一併清掉
+  if(location.hash === "#studio" && ME) openStudio();
+});
 
 async function loadBudget(){ /* 體驗池改為幕後機制，不再展示 */ }
 loadBudget();
