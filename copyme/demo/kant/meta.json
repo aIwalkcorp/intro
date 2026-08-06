@@ -1,6 +1,7 @@
 {
   "id": "de3010cafe01",
   "name": "康德",
+  "name_en": "Kant",
   "room": "示範・純粹理性批判",
   "avatar": "kant.webp",
   "stats": {"count": 109, "avg_len": 0, "top_emoji": [], "span": "1724 ~ 1804", "sampled": 109},

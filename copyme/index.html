@@ -954,7 +954,11 @@ function applyLang(l){
   if(state.twins) renderTwins();
   if(state.person && !$("distillbtn").disabled)
     $("distillbtn").textContent = t("distillName")(state.person);
-  if(state.personaId) $("chattag").textContent = t("aiTag");
+  if(state.personaId){
+    $("chattag").textContent = t("aiTag");
+    const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+    if(tw) $("chatname").textContent = twName(tw);
+  }
   if($("studio").classList.contains("open")) renderStudio();
   renderMoney();
   const tips = LANG==="en"
@@ -994,7 +998,7 @@ function renderAuth(){
     out.textContent = LANG==="en" ? "sign out" : "登出";
     out.addEventListener("click", e=>{ e.stopPropagation();
       ["tf_access_token","tf_refresh_token","tf_user"].forEach(k=>store.del(k));
-      ME = null; closeStudio(); renderAuth(); loadShelf(); });
+      ME = null; exitStudio(); renderAuth(); loadShelf(); });
     chip.append(u, out);
   }else{
     const l = document.createElement("span");
@@ -1083,6 +1087,8 @@ function setStation(n){
   $("st"+n).scrollIntoView({block:"start"});
 }
 function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
+/* 分身顯示名：meta 有 name_en 時跟著介面語言切換（示範分身用） */
+function twName(p){ return (LANG === "en" && p && p.name_en) ? p.name_en : (p ? p.name : ""); }
 function sealFill(el, p){
   if(p && p.avatar){
     el.classList.add("has-avatar");
@@ -1339,10 +1345,11 @@ function enterChat(pid, name){
   $("extbtn").style.display = (visitor || (tw && tw.mine)) ? "" : "none";
   $("brandcta").style.display = visitor ? "" : "none";
   $("extbtn").style.marginLeft = visitor ? "0" : "auto";
-  $("chatname").textContent = name;
+  const disp = tw ? twName(tw) : name;
+  $("chatname").textContent = disp;
   $("chattag").textContent = t("aiTag");
   sealFill($("chatseal"), tw || {name});
-  $("chatmark-seal").textContent = sealText(name);
+  $("chatmark-seal").textContent = sealText(disp);
   $("msgs").innerHTML = "";
   if(state.history.length){
     state.history.forEach(m=>{
@@ -1353,7 +1360,7 @@ function enterChat(pid, name){
     const h = document.createElement("div");
     h.className = "chat-hello";
     h.innerHTML = `<div class="hello-line"></div><div class="hello-chips"></div>`;
-    h.querySelector(".hello-line").textContent = t("hello")(name);
+    h.querySelector(".hello-line").textContent = t("hello")(tw ? twName(tw) : name);
     const chips = h.querySelector(".hello-chips");
     t("openers").forEach(txt=>{
       const btn = document.createElement("button");
@@ -1392,7 +1399,7 @@ function openStudio(){
   if(mine.length && !$("chatlayer").classList.contains("open")){
     enterChat(mine[0].id, mine[0].name); markSideActive();
   }
-  if(location.hash !== "#studio") history.pushState(null, "", "#studio");
+  studioHash();
 }
 /* 從示範書架直接進 My twins 對話介面：不需登入；未登入時左側欄鎖定 */
 function openStudioAt(p){
@@ -1402,21 +1409,34 @@ function openStudioAt(p){
   $("studio").classList.add("open");
   document.body.style.overflow = "hidden";
   enterChat(p.id, p.name); markSideActive();
-  if(location.hash !== "#studio") history.pushState(null, "", "#studio");
+  studioHash();
+}
+/* 確保 #studio 底下永遠墊著一層 copyme 首頁紀錄，上一頁必能回首頁 */
+function studioHash(){
+  if(location.hash !== "#studio"){
+    history.pushState(null, "", "#studio");
+  }else{
+    history.replaceState(null, "", location.pathname);
+    history.pushState(null, "", "#studio");
+  }
 }
 function closeStudio(){
   undockChat();
   $("studio").classList.remove("open");
   document.body.style.overflow = "";
-  if(location.hash === "#studio") history.pushState(null, "", location.pathname);
+}
+/* 使用者主動關閉：走 history.back()，讓 popstate 統一收尾，不留重複紀錄 */
+function exitStudio(){
+  if(location.hash === "#studio") history.back();
+  else closeStudio();
 }
 window.addEventListener("popstate", ()=>{
   if(location.hash === "#studio" && ME) openStudio();
   else if($("studio").classList.contains("open")) closeStudio();
 });
 $("mytwins").addEventListener("click", openStudio);
-$("studioback").addEventListener("click", closeStudio);
-$("emptygo").addEventListener("click", closeStudio);
+$("studioback").addEventListener("click", exitStudio);
+$("emptygo").addEventListener("click", exitStudio);
 $("pm-close").addEventListener("click", ()=> $("pmodal").classList.remove("open"));
 $("pmodal").addEventListener("click", e=>{ if(e.target===$("pmodal")) $("pmodal").classList.remove("open"); });
 
@@ -1468,7 +1488,7 @@ function renderStudio(){
     b.innerHTML = `<span class="si-seal"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
     sealFill(b.querySelector(".si-seal"), p);
     const nm = b.querySelector(".si-name");
-    nm.textContent = p.name;
+    nm.textContent = twName(p);
     if(p.demo){
       const tag = document.createElement("span");
       tag.className = "demo-badge"; tag.textContent = t("demo");
@@ -1667,7 +1687,7 @@ document.addEventListener("keydown", e=>{
     else if($("sharemodal").classList.contains("open")) $("sharemodal").classList.remove("open");
     else if($("pmodal").classList.contains("open")) $("pmodal").classList.remove("open");
     else if($("chatlayer").classList.contains("open") && !$("chatlayer").classList.contains("docked")) closeChat();
-    else if($("studio").classList.contains("open")) closeStudio();
+    else if($("studio").classList.contains("open")) exitStudio();
   }
 });
 const DEL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>' +
@@ -1831,7 +1851,7 @@ function twinChip(p){
   b.innerHTML = `<span class="mini"></span><span class="nm"></span>`;
   sealFill(b.querySelector(".mini"), p);
   const nm = b.querySelector(".nm");
-  nm.textContent = p.name;
+  nm.textContent = twName(p);
   if(p.demo){
     const tag = document.createElement("span");
     tag.className = "demo-badge"; tag.textContent = t("demo");
