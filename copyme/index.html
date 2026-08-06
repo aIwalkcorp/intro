@@ -726,6 +726,14 @@ footer a{color:var(--mist)}
       <button class="gobtn" style="flex:1" data-amt="300">NT$300</button>
       <button class="gobtn" style="flex:1" data-amt="500">NT$500</button>
     </div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+      <input id="tu-custom" type="number" min="50" max="10000" step="10"
+        style="flex:1;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font-size:.9rem;background:#fff"
+        placeholder="">
+      <span id="tu-usd" style="font-family:var(--mono);font-size:.68rem;color:var(--mist)"></span>
+      <button class="gobtn" id="tu-go" style="padding:9px 18px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></button>
+    </div>
+    <p class="mnote" style="margin:6px 0 0;font-size:.68rem"><span class="lang-zh">自訂金額 NT$50–10,000</span><span class="lang-en">Custom amount NT$50–10,000</span></p>
   </div>
 </div>
 
@@ -930,6 +938,7 @@ function applyLang(l){
   $("au-email").placeholder = t("emailPh");
   $("au-name").placeholder = t("namePh");
   $("au-pass").placeholder = t("passPh");
+  $("tu-custom").placeholder = LANG==="en" ? "Custom (NT$)" : "自訂金額（NT$）";
   buildStages();
   if(typeof ME !== "undefined") renderAuth();
   if(state.twins) renderTwins();
@@ -1730,17 +1739,27 @@ async function loadWallet(){
 $("walletchip").addEventListener("click", ()=> $("topupmodal").classList.add("open"));
 $("tu-close").addEventListener("click", ()=> $("topupmodal").classList.remove("open"));
 $("topupmodal").addEventListener("click", e=>{ if(e.target===$("topupmodal")) $("topupmodal").classList.remove("open"); });
-$("topupmodal").querySelectorAll("[data-amt]").forEach(b=> b.addEventListener("click", async ()=>{
+$("topupmodal").querySelectorAll("[data-amt]").forEach(b=> b.addEventListener("click", ()=> doTopup(parseInt(b.dataset.amt))));
+async function doTopup(amt){
   try{
     const r = await fetch(API+"/api/topup", {method:"POST",
       headers:{"Content-Type":"application/json", ...authHeaders()},
-      body: JSON.stringify({amount: parseInt(b.dataset.amt)})});
+      body: JSON.stringify({amount: amt})});
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     const w = window.open("", "_blank");
     w.document.write(j.html);
   }catch(err){ showErr(err.message); }
-}));
+}
+$("tu-go").addEventListener("click", ()=>{
+  const v = parseInt($("tu-custom").value);
+  if(!v || v < 50 || v > 10000){ $("tu-custom").focus(); return; }
+  doTopup(v);
+});
+$("tu-custom").addEventListener("input", ()=>{
+  const v = parseInt($("tu-custom").value);
+  $("tu-usd").textContent = (v && LANG==="en") ? "≈US$" + (v/TWD_PER_USD).toFixed(2) : "";
+});
 $("modelpick").querySelectorAll("button").forEach(b=> b.addEventListener("click", ()=>{
   state.model = b.dataset.m;
   $("modelpick").querySelectorAll("button").forEach(x=> x.classList.toggle("on", x===b));

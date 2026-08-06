@@ -422,7 +422,7 @@ ECPAY_KEY = os.environ.get("PF_ECPAY_KEY", "5294y06JbISpM5x9")
 ECPAY_IV = os.environ.get("PF_ECPAY_IV", "v77hoKGq4kWxNNIS")
 ECPAY_URL = os.environ.get("PF_ECPAY_URL",
     "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5")
-TOPUP_AMOUNTS = {100, 300, 500}
+TOPUP_MIN, TOPUP_MAX = 50, 10000
 ECPAY_DONE = DATA / "ecpay_done.json"
 
 
@@ -447,9 +447,12 @@ def wallet_info(authorization: str | None = Header(None)):
 @app.post("/api/topup")
 def topup(payload: dict, authorization: str | None = Header(None)):
     user = require_user(authorization)
-    amt = int(payload.get("amount", 0))
-    if amt not in TOPUP_AMOUNTS:
-        raise HTTPException(422, "金額限 100 / 300 / 500")
+    try:
+        amt = int(payload.get("amount", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "金額格式錯誤")
+    if not (TOPUP_MIN <= amt <= TOPUP_MAX):
+        raise HTTPException(422, f"金額限 NT${TOPUP_MIN}–{TOPUP_MAX:,}")
     order = {
         "MerchantID": ECPAY_MID,
         "MerchantTradeNo": "PF" + secrets.token_hex(8)[:14],
