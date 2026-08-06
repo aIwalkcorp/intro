@@ -418,7 +418,13 @@ body.en div.lang-en{display:block}
 .studio-back{width:100%;background:none;border:1.5px solid var(--bdr);
   color:var(--mist);border-radius:6px;padding:8px 14px;font-size:.84rem;font-weight:700}
 .studio-back:hover{border-color:var(--pri);color:var(--pri)}
-.studio-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.studio-main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+/* 行動瀏覽器網址列：固定層以動態視口高度為準，輸入列不再被吃掉 */
+@supports (height:100dvh){
+  .chatlayer{height:100dvh;bottom:auto}
+  .studio{height:100dvh;bottom:auto}
+  .chatlayer.docked{height:auto;bottom:auto}
+}
 .studio-empty{margin:auto;text-align:center;color:var(--mist);padding:40px 20px;font-size:.95rem}
 .studio-empty .gobtn{margin-top:18px}
 @media(max-width:700px){
