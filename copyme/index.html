@@ -382,6 +382,10 @@ body.en div.lang-en{display:block}
 .memline{display:flex;align-items:center;gap:7px;max-width:720px;margin:0 auto 9px;
   font-family:var(--mono);font-size:.7rem;color:var(--mist);cursor:pointer}
 .memline input{accent-color:var(--seal)}
+.modelpick{display:inline-flex;border:1.5px solid var(--bdr);border-radius:7px;overflow:hidden;margin-left:auto}
+.modelpick button{background:none;border:none;padding:4px 10px;font-family:var(--mono);
+  font-size:.66rem;color:var(--mist)}
+.modelpick button.on{background:var(--pri);color:#fff}
 .cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
   border:1px solid var(--ok);border-radius:4px;padding:1px 5px;margin-left:2px}
@@ -488,6 +492,9 @@ footer a{color:var(--mist)}
     <svg width="11" height="13" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
     <span><span class="lang-zh">體驗額度</span><span class="lang-en">Free pool</span> <b id="poolval"></b></span>
   </div>
+  <button class="poolchip" id="walletchip" style="display:none">
+    <span>💰 <span class="lang-zh">錢包</span><span class="lang-en">Wallet</span> <b id="walletval"></b> ・ <u style="text-underline-offset:2px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></u></span>
+  </button>
   <button class="mytwins" id="mytwins">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
     <span class="lang-zh">我的印譜</span><span class="lang-en">My twins</span>
@@ -675,6 +682,26 @@ footer a{color:var(--mist)}
   </div>
 </div>
 
+<div class="modal-veil" id="topupmodal">
+  <div class="modal modal-box" style="max-width:420px">
+    <button class="mclose" id="tu-close" aria-label="Close">✕</button>
+    <h3><span class="lang-zh">錢包儲值</span><span class="lang-en">Top up wallet</span></h3>
+    <p class="mnote">
+      <span class="lang-zh">儲值後你的對話與蒸餾改扣自己的錢包（實際 API 成本 × 1.5），不受站方體驗池限制。刷卡由綠界 ECPay 處理，本站不經手卡號。</span>
+      <span class="lang-en">With a balance, your usage draws from your own wallet (actual API cost × 1.5). Cards are processed by ECPay — we never see your number.</span>
+    </p>
+    <p class="mnote" id="tu-test" style="display:none;color:var(--seal)">
+      <span class="lang-zh">⚠ 目前為金流測試模式——刷卡頁是綠界測試環境，不會真正扣款（正式金流開通後自動切換）。</span>
+      <span class="lang-en">⚠ Payment test mode — the checkout page is ECPay's sandbox; no real charge (switches automatically once live credentials land).</span>
+    </p>
+    <div style="display:flex;gap:10px">
+      <button class="gobtn" style="flex:1" data-amt="100">NT$100</button>
+      <button class="gobtn" style="flex:1" data-amt="300">NT$300</button>
+      <button class="gobtn" style="flex:1" data-amt="500">NT$500</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-veil" id="extmodal">
   <div class="modal modal-box" style="max-width:480px">
     <button class="mclose" id="ext-close" aria-label="Close">✕</button>
@@ -740,7 +767,10 @@ footer a{color:var(--mist)}
   </div>
   <div class="cl-msgs"><div class="cl-msgs-inner" id="msgs"></div></div>
   <div class="cl-in">
-  <label class="memline" id="memline" style="display:none"><input type="checkbox" id="memchk"><span class="lang-zh">記住並共享到這條連結（其他訪客也看得到）</span><span class="lang-en">Remember &amp; share to this link (visible to other visitors)</span></label>
+  <div class="memline" style="justify-content:space-between">
+  <label class="memline" id="memline" style="display:none;margin:0"><input type="checkbox" id="memchk"><span class="lang-zh">記住並共享到這條連結（其他訪客也看得到）</span><span class="lang-en">Remember &amp; share to this link (visible to other visitors)</span></label>
+  <span class="modelpick" id="modelpick"><button data-m="opus" class="on"><span class="lang-zh">準・Opus</span><span class="lang-en">Sharp·Opus</span></button><button data-m="sonnet"><span class="lang-zh">快・Sonnet</span><span class="lang-en">Fast·Sonnet</span></button></span>
+  </div>
   <div class="cl-in-inner">
     <input id="say" autocomplete="off" class="chatin-input" style="flex:1;padding:11px 15px;border:1.5px solid var(--bdr);border-radius:8px;font-family:var(--sans);font-size:.95rem;background:#fff">
     <button id="send" style="background:var(--pri);color:#fff;border:none;padding:0 24px;border-radius:8px;font-weight:700"><span class="lang-zh">送出</span><span class="lang-en">Send</span></button>
@@ -758,7 +788,7 @@ footer a{color:var(--mist)}
 const API = (location.hostname.endsWith("fly.dev") || location.hostname === "localhost")
   ? "" : "https://copyme.fly.dev";
 const $ = id => document.getElementById(id);
-const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"" };
+const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"opus" };
 
 /* 安全儲存層：無痕模式/嵌入情境 localStorage 可能直接 throw，退回記憶體 */
 const store = {
@@ -795,6 +825,9 @@ const T = {
     joinBar:(n)=>`這條連結已有 ${n} 串討論——點一串加入，或直接開聊`, joinBtn:"加入討論",
     threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
     threadsTitle:"討論串", newChat:"＋ 新對話", privateTag:"（未共享）",
+    walletLbl:"錢包", topup:"儲值", topupTitle:"錢包儲值",
+    topupNote:"儲值後你的對話與蒸餾改扣自己的錢包（實際 API 成本 × 1.5），不再受站方體驗池限制。刷卡由綠界 ECPay 處理，本站不經手卡號。",
+    modelFast:"快・Sonnet", modelSharp:"準・Opus",
     openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
     emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
@@ -823,6 +856,9 @@ const T = {
     joinBar:(n)=>`${n} discussion threads on this link — tap one to join, or just start chatting`, joinBtn:"Join in",
     threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
     threadsTitle:"Threads", newChat:"＋ New chat", privateTag:"(not shared)",
+    walletLbl:"Wallet", topup:"Top up", topupTitle:"Top up wallet",
+    topupNote:"With a balance, your chats and distillations draw from your own wallet (actual API cost × 1.5) instead of the site's trial pool. Cards are processed by ECPay — we never see your number.",
+    modelFast:"Fast · Sonnet", modelSharp:"Sharp · Opus",
     openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
     emailPh:"email", namePh:"username", passPh:"password",
@@ -877,6 +913,7 @@ async function refreshMe(){
     }catch(_){}
   }
   renderAuth();
+  loadWallet();
 }
 function renderAuth(){
   const on = !!ME;
@@ -1570,6 +1607,7 @@ async function send(){
       {persona_id:state.personaId, messages:state.history, access_code:"",
        share: state.shareToken || "",
        thread: state.threadId || "",
+       model: state.model,
        remember: !!(state.shareToken && $("memchk").checked)},
       (ev,d)=>{
         if(ev==="delta"){ acc += d.text; live.textContent = acc;
@@ -1611,6 +1649,33 @@ async function loadThread(tid){
     $("say").focus();
   }catch(err){ showErr(err.message); }
 }
+async function loadWallet(){
+  if(!ME){ $("walletchip").style.display = "none"; return; }
+  try{
+    const j = await (await fetch(API+"/api/wallet", {headers: authHeaders()})).json();
+    $("walletval").textContent = "NT$" + (j.twd ?? 0).toFixed(0);
+    $("walletchip").style.display = "inline-flex";
+    $("tu-test").style.display = j.test_mode ? "block" : "none";
+  }catch(_){}
+}
+$("walletchip").addEventListener("click", ()=> $("topupmodal").classList.add("open"));
+$("tu-close").addEventListener("click", ()=> $("topupmodal").classList.remove("open"));
+$("topupmodal").addEventListener("click", e=>{ if(e.target===$("topupmodal")) $("topupmodal").classList.remove("open"); });
+$("topupmodal").querySelectorAll("[data-amt]").forEach(b=> b.addEventListener("click", async ()=>{
+  try{
+    const r = await fetch(API+"/api/topup", {method:"POST",
+      headers:{"Content-Type":"application/json", ...authHeaders()},
+      body: JSON.stringify({amount: parseInt(b.dataset.amt)})});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    const w = window.open("", "_blank");
+    w.document.write(j.html);
+  }catch(err){ showErr(err.message); }
+}));
+$("modelpick").querySelectorAll("button").forEach(b=> b.addEventListener("click", ()=>{
+  state.model = b.dataset.m;
+  $("modelpick").querySelectorAll("button").forEach(x=> x.classList.toggle("on", x===b));
+}));
 $("send").addEventListener("click", send);
 $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
 

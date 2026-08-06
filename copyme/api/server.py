@@ -25,7 +25,8 @@ from pathlib import Path
 
 import anthropic
 import httpx
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi.responses import PlainTextResponse
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
@@ -44,8 +45,32 @@ TZ = timezone(timedelta(hours=8))
 # ---- 體驗額度池：伺服器自己記帳（API 無法查帳戶餘額，且 key 與其他服務共用）
 BUDGET_USD = float(os.environ.get("PF_BUDGET_USD", "5"))
 SPEND_FILE = DATA / "spend.json"
-# claude-opus-5 每百萬 token 價目：輸入 $5、輸出 $25、cache 寫 1.25x、cache 讀 0.1x
-_PRICE = {"in": 5.0, "out": 25.0, "cache_w": 6.25, "cache_r": 0.5}
+# 每百萬 token 價目（cache 寫 = in×1.25、cache 讀 = in×0.1）
+_PRICES = {
+    "claude-opus-5":   {"in": 5.0, "out": 25.0},
+    "claude-sonnet-5": {"in": 3.0, "out": 15.0},
+}
+TWD_PER_USD = float(os.environ.get("PF_TWD_PER_USD", "31"))
+MARGIN = float(os.environ.get("PF_MARGIN", "1.5"))  # 服務毛利倍率
+WALLETS = DATA / "wallets"
+WALLETS.mkdir(parents=True, exist_ok=True)
+
+
+def _wpath(uid: str) -> Path:
+    return WALLETS / f"{re.sub(r'[^\w-]', '', uid)}.json"
+
+
+def wallet_get(uid: str) -> float:
+    try:
+        return json.loads(_wpath(uid).read_text())["twd"]
+    except (OSError, ValueError, KeyError):
+        return 0.0
+
+
+def wallet_add(uid: str, twd: float) -> float:
+    bal = wallet_get(uid) + twd
+    _wpath(uid).write_text(json.dumps({"twd": round(bal, 2)}))
+    return bal
 
 
 def _spent() -> float:
@@ -55,13 +80,18 @@ def _spent() -> float:
         return 0.0
 
 
-def track_usage(usage) -> None:
+def track_usage(usage, user=None, model: str | None = None) -> None:
+    p = _PRICES.get(model or MODEL, _PRICES["claude-opus-5"])
     cost = (
-        usage.input_tokens * _PRICE["in"]
-        + usage.output_tokens * _PRICE["out"]
-        + (getattr(usage, "cache_creation_input_tokens", 0) or 0) * _PRICE["cache_w"]
-        + (getattr(usage, "cache_read_input_tokens", 0) or 0) * _PRICE["cache_r"]
+        usage.input_tokens * p["in"]
+        + usage.output_tokens * p["out"]
+        + (getattr(usage, "cache_creation_input_tokens", 0) or 0) * p["in"] * 1.25
+        + (getattr(usage, "cache_read_input_tokens", 0) or 0) * p["in"] * 0.1
     ) / 1e6
+    # 登入且錢包有餘額 → 扣個人錢包（成本×毛利倍率×匯率）；否則吃站方體驗池
+    if user and wallet_get(user["id"]) > 0:
+        wallet_add(user["id"], -cost * MARGIN * TWD_PER_USD)
+        return
     tmp = SPEND_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps({"usd": _spent() + cost}))
     tmp.replace(SPEND_FILE)
@@ -71,9 +101,11 @@ def budget_left() -> float:
     return max(0.0, BUDGET_USD - _spent())
 
 
-def check_budget() -> None:
+def check_budget(user=None) -> None:
+    if user and wallet_get(user["id"]) > 0:
+        return
     if budget_left() <= 0:
-        raise HTTPException(402, "本站的體驗額度已用完，之後會再補充——晚點再來試試！")
+        raise HTTPException(402, "站方體驗額度用完了——登入後儲值自己的錢包即可繼續，或晚點再來！")
 
 # ---- 會員：與 TrailForge 共用帳號（token 由 trailforge-api 簽發，這裡代理驗證）
 TF_API = os.environ.get("TF_API", "https://trailforge-api.fly.dev")
@@ -384,6 +416,83 @@ def auth_me(authorization: str | None = Header(None)):
             "team": is_team(user)}
 
 
+# ---- 綠界 ECPay 儲值（測試環境預設值為官方公開測試商店）
+ECPAY_MID = os.environ.get("PF_ECPAY_MID", "2000132")
+ECPAY_KEY = os.environ.get("PF_ECPAY_KEY", "5294y06JbISpM5x9")
+ECPAY_IV = os.environ.get("PF_ECPAY_IV", "v77hoKGq4kWxNNIS")
+ECPAY_URL = os.environ.get("PF_ECPAY_URL",
+    "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5")
+TOPUP_AMOUNTS = {100, 300, 500}
+ECPAY_DONE = DATA / "ecpay_done.json"
+
+
+def _cmv(params: dict) -> str:
+    import hashlib
+    from urllib.parse import quote_plus
+    s_ = "&".join(f"{k}={params[k]}" for k in sorted(params, key=lambda x: x.lower()))
+    raw = quote_plus(f"HashKey={ECPAY_KEY}&{s_}&HashIV={ECPAY_IV}").lower()
+    for a, b in (("%2d", "-"), ("%5f", "_"), ("%2e", "."), ("%21", "!"),
+                 ("%2a", "*"), ("%28", "("), ("%29", ")")):
+        raw = raw.replace(a, b)
+    return hashlib.sha256(raw.encode()).hexdigest().upper()
+
+
+@app.get("/api/wallet")
+def wallet_info(authorization: str | None = Header(None)):
+    user = require_user(authorization)
+    return {"twd": round(wallet_get(user["id"]), 2), "margin": MARGIN,
+            "twd_per_usd": TWD_PER_USD, "test_mode": ECPAY_MID == "2000132"}
+
+
+@app.post("/api/topup")
+def topup(payload: dict, authorization: str | None = Header(None)):
+    user = require_user(authorization)
+    amt = int(payload.get("amount", 0))
+    if amt not in TOPUP_AMOUNTS:
+        raise HTTPException(422, "金額限 100 / 300 / 500")
+    order = {
+        "MerchantID": ECPAY_MID,
+        "MerchantTradeNo": "PF" + secrets.token_hex(8)[:14],
+        "MerchantTradeDate": datetime.now(TZ).strftime("%Y/%m/%d %H:%M:%S"),
+        "PaymentType": "aio",
+        "TotalAmount": str(amt),
+        "TradeDesc": "CopyMe wallet topup",
+        "ItemName": f"CopyMe 錢包儲值 NT${amt}",
+        "ReturnURL": "https://copyme.fly.dev/api/ecpay/notify",
+        "ClientBackURL": "https://copyme.aiwalkcorp.com/?paid=1",
+        "ChoosePayment": "Credit",
+        "EncryptType": "1",
+        "CustomField1": user["id"],
+    }
+    order["CheckMacValue"] = _cmv(order)
+    fields = "".join(
+        f'<input type="hidden" name="{k}" value="{v}">' for k, v in order.items())
+    return {"html": f'<html><body><form id="f" method="post" action="{ECPAY_URL}">'
+                    f'{fields}</form><script>document.getElementById("f").submit()'
+                    f'</script></body></html>'}
+
+
+@app.post("/api/ecpay/notify")
+async def ecpay_notify(request: Request):
+    form = dict(await request.form())
+    mac = form.pop("CheckMacValue", "")
+    if _cmv(form) != mac:
+        return PlainTextResponse("0|CheckMacValue", status_code=400)
+    if form.get("RtnCode") != "1":
+        return PlainTextResponse("1|OK")
+    trade = form.get("TradeNo", "")
+    try:
+        done = set(json.loads(ECPAY_DONE.read_text()))
+    except (OSError, ValueError):
+        done = set()
+    if trade in done:
+        return PlainTextResponse("1|OK")
+    wallet_add(form.get("CustomField1", ""), float(form.get("TradeAmt", 0)))
+    done.add(trade)
+    ECPAY_DONE.write_text(json.dumps(sorted(done)[-500:]))
+    return PlainTextResponse("1|OK")
+
+
 @app.get("/api/budget")
 def budget():
     return {"budget": BUDGET_USD, "spent": round(_spent(), 4),
@@ -546,7 +655,7 @@ async def upload(file: UploadFile = File(...), access_code: str = Form(""),
 async def distill(payload: dict, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
     user = require_user(authorization)
-    check_budget()
+    check_budget(user)
     uid, person = payload.get("upload_id", ""), payload.get("person", "")
     upath = UPLOADS / f"{re.sub(r'[^a-f0-9]', '', uid)}.json"
     if not upath.exists():
@@ -575,7 +684,7 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
         upath.unlink(missing_ok=True)  # 一次性承諾：蒸餾完成，原始對話檔立即刪除
         return {"persona_id": pid, "name": person}
 
-    return _detached_sse(_distill_events(person, parsed["room"], corpus, stats, on_done))
+    return _detached_sse(_distill_events(person, parsed["room"], corpus, stats, on_done, bill_user=user))
 
 
 def _detached_sse(events) -> StreamingResponse:
@@ -602,7 +711,7 @@ def _detached_sse(events) -> StreamingResponse:
                              headers={"Cache-Control": "no-cache"})
 
 
-def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
+def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done, bill_user=None):
     """共用蒸餾串流：yield SSE 事件，成功時呼叫 on_done(persona_md) 取得 done 載荷。"""
     yield sse("status", {"stage": "start", "stats": stats})
     prompt = (
@@ -649,7 +758,7 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
             msg = "模型目前壅塞，已重試多次仍失敗——語料還在，稍等一兩分鐘再按一次就好" if transient                   else f"Claude API 錯誤：{getattr(e, 'message', e)}"
             yield sse("error", {"message": msg})
             return
-    track_usage(final.usage)
+    track_usage(final.usage, user=bill_user, model=use_model)
     if final.stop_reason == "refusal":
         yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
         return
@@ -663,7 +772,8 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done):
 @app.post("/api/distill/extend")
 async def distill_extend(payload: dict, authorization: str | None = Header(None)):
     """擴充語料：擁有者或公開連結訪客丟新 txt，合併去重後重蒸同一個分身。"""
-    check_budget()
+    ext_user = resolve_user(authorization)
+    check_budget(ext_user)
     pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
     pdir = PERSONAS / pid
     if not (pdir / "meta.json").exists():
@@ -672,7 +782,7 @@ async def distill_extend(payload: dict, authorization: str | None = Header(None)
     share_tok = str(payload.get("share") or "")
     share_ok = bool(share_tok and meta.get("share")
                     and secrets.compare_digest(meta["share"], share_tok))
-    user = resolve_user(authorization)
+    user = ext_user
     if not share_ok and not (user and meta.get("owner_id") == user.get("id")):
         raise HTTPException(403, "只有擁有者或持公開連結者能擴充語料")
 
@@ -705,7 +815,7 @@ async def distill_extend(payload: dict, authorization: str | None = Header(None)
         upath.unlink(missing_ok=True)  # 一次性承諾不變：整份聊天檔用完即刪
         return {"persona_id": pid, "name": name, "added": len(added), "stats": stats}
 
-    return _detached_sse(_distill_events(name, meta.get("room", ""), corpus, stats, on_done))
+    return _detached_sse(_distill_events(name, meta.get("room", ""), corpus, stats, on_done, bill_user=ext_user))
 
 
 def _visible(meta: dict, user) -> bool:
@@ -797,7 +907,8 @@ def shared_info(token: str):
 @app.post("/api/chat")
 async def chat(payload: dict, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
-    check_budget()
+    bill_user = resolve_user(authorization)
+    check_budget(bill_user)
     pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
     pdir = PERSONAS / pid
     if not (pdir / "persona.md").exists():
@@ -809,7 +920,7 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
     share_tok = str(payload.get("share") or "")
     share_ok = bool(share_tok and meta.get("share")
                     and secrets.compare_digest(meta["share"], share_tok))
-    if not share_ok and not _visible(meta, resolve_user(authorization)):
+    if not share_ok and not _visible(meta, bill_user):
         raise HTTPException(403, "這個分身不是公開示範，只有本人能對話")
     history = payload.get("messages", [])[-40:]
     if not history or history[-1].get("role") != "user":
@@ -823,9 +934,11 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
 
     remember = bool(payload.get("remember")) and share_ok
     req_tid = re.sub(r"[^a-f0-9]", "", str(payload.get("thread") or ""))
+    primary = {"opus": MODEL, "sonnet": FALLBACK_MODEL}.get(
+        str(payload.get("model") or ""), MODEL)
 
     def gen():
-      for use_model in (MODEL, FALLBACK_MODEL):
+      for use_model in (primary, FALLBACK_MODEL):
         chunks: list[str] = []
         try:
             with claude.messages.stream(
@@ -839,7 +952,7 @@ async def chat(payload: dict, authorization: str | None = Header(None)):
                     chunks.append(text)
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
-            track_usage(final.usage)
+            track_usage(final.usage, user=bill_user, model=use_model)
             if final.stop_reason == "refusal":
                 yield sse("delta", {"text": "（這題我不方便回）"})
         except anthropic.AnthropicError as e:
