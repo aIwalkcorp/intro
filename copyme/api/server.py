@@ -1104,7 +1104,14 @@ def _order(room: dict, first: dict | None, n: int) -> list[dict]:
 def _room_turn(room: dict, member: dict, primary: str, bill_user):
     """跑一個分身的回合：yield SSE 事件，最後 yield ("__done__", 文字)。"""
     pdir = PERSONAS / member["pid"]
-    persona_text = (pdir / "persona.md").read_text(encoding="utf-8")
+    try:
+        persona_text = (pdir / "persona.md").read_text(encoding="utf-8")
+    except OSError:
+        # 成員分身已被刪除 → 跳過這一位，接力繼續，不讓整條 SSE 掛掉
+        yield sse("turn", {"pid": member["pid"], "name": member["name"],
+                           "content": "", "passed": True})
+        yield ("__done__", "__SKIP__")
+        return
     others = "、".join(m["name"] for m in room["members"] if m["pid"] != member["pid"])
     system = [
         {"type": "text", "text": persona_text, "cache_control": {"type": "ephemeral"}},
@@ -1265,9 +1272,11 @@ def room_chat(rid: str, payload: dict, request: Request,
             if said is None:            # API 錯誤，事件已送出
                 stopped = "error"
                 break
+            if said == "__SKIP__":      # 成員已被刪除，換下一位
+                continue
             done += 1
             room["auto_since_user"] = room.get("auto_since_user", 0) + 1
-            if not said or said.startswith("（沒") or said == PASS_MARK:
+            if not said or said.startswith(PASS_MARK[:4]):
                 # 分身自己表示沒話講 → 提早結束接力（第二道防自聊機制）
                 yield sse("turn", {"pid": member["pid"], "name": member["name"],
                                    "content": "", "passed": True})
