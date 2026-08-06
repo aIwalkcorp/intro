@@ -994,7 +994,7 @@ function renderAuth(){
     out.textContent = LANG==="en" ? "sign out" : "登出";
     out.addEventListener("click", e=>{ e.stopPropagation();
       ["tf_access_token","tf_refresh_token","tf_user"].forEach(k=>store.del(k));
-      ME = null; renderAuth(); loadShelf(); });
+      ME = null; closeStudio(); renderAuth(); loadShelf(); });
     chip.append(u, out);
   }else{
     const l = document.createElement("span");
@@ -1002,7 +1002,7 @@ function renderAuth(){
     chip.append(l);
   }
   $("mytwins").style.display = on ? "inline-flex" : "none";
-  if(!on && !state.shareToken) closeStudio();  // 訪客的討論串側欄不受登入狀態影響
+  // 訪客也能從示範卡片進 studio（左欄鎖定），studio 的關閉只在登出時做（見上方 out handler）
   $("lockline").style.display = on ? "none" : "flex";
   $("drop").style.display = on ? "" : "none";
   $("st1").classList.toggle("on", on && !document.querySelector(".station.on:not(#st1)"));
