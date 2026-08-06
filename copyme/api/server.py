@@ -613,6 +613,23 @@ def _purge_empty_personas() -> None:
 _purge_empty_personas()
 
 
+def _seed_demos() -> None:
+    """隨映像檔內建的官方示範分身（demo/<slug>/persona.md+meta.json）：每次啟動覆寫，deploy 即更新。"""
+    demo_root = Path(__file__).parent / "demo"
+    if not demo_root.exists():
+        return
+    for mp in demo_root.glob("*/meta.json"):
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        pdir = PERSONAS / meta["id"]
+        pdir.mkdir(parents=True, exist_ok=True)
+        (pdir / "persona.md").write_text(
+            (mp.parent / "persona.md").read_text(encoding="utf-8"), encoding="utf-8")
+        (pdir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+
+
+_seed_demos()
+
+
 def _share_valid(token: str) -> bool:
     if len(token) < 8:
         return False

@@ -295,6 +295,11 @@ body.en div.lang-en{display:block}
 .shelfbtn .mini{width:20px;height:20px;border:2px solid var(--seal);border-radius:4px;
   transform:rotate(-6deg);color:var(--seal);font-family:var(--serif);font-weight:900;
   font-size:.6rem;display:flex;align-items:center;justify-content:center}
+/* 頭貼分身：印章框內放照片 */
+.has-avatar{padding:0;overflow:hidden;background:#fff}
+.has-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+/* 未登入時左側欄鎖定（示範分身仍可在右側聊） */
+.side-list.locked{pointer-events:none;opacity:.45}
 
 /* ── 會員：topbar 狀態＋登入彈窗 ── */
 .authchip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--bdr);
@@ -1069,6 +1074,15 @@ function setStation(n){
   $("st"+n).scrollIntoView({block:"start"});
 }
 function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
+function sealFill(el, p){
+  if(p && p.avatar){
+    el.classList.add("has-avatar");
+    el.innerHTML = `<img src="art/${p.avatar}" alt="">`;
+  }else{
+    el.classList.remove("has-avatar");
+    el.textContent = sealText(p ? p.name : "");
+  }
+}
 
 /* ── SSE over fetch ── */
 async function sseFetch(url, body, onEvent){
@@ -1284,7 +1298,7 @@ function enterChat(pid, name){
   }
   $("memline").style.display = visitor ? "" : "none";
   const tw = (state.twins||[]).find(x=>x.id===pid);
-  $("delbtn").style.display = visitor ? "none" : "";
+  $("delbtn").style.display = (!visitor && tw && tw.mine) ? "" : "none";
   $("pfbtn").style.display = visitor ? "none" : "";
   $("linkbtn").style.display = (!visitor && tw && tw.mine) ? "" : "none";
   $("extbtn").style.display = (visitor || (tw && tw.mine)) ? "" : "none";
@@ -1292,7 +1306,7 @@ function enterChat(pid, name){
   $("extbtn").style.marginLeft = visitor ? "0" : "auto";
   $("chatname").textContent = name;
   $("chattag").textContent = t("aiTag");
-  $("chatseal").textContent = sealText(name);
+  sealFill($("chatseal"), tw || {name});
   $("chatmark-seal").textContent = sealText(name);
   $("msgs").innerHTML = "";
   if(state.history.length){
@@ -1343,6 +1357,16 @@ function openStudio(){
   if(mine.length && !$("chatlayer").classList.contains("open")){
     enterChat(mine[0].id, mine[0].name); markSideActive();
   }
+  if(location.hash !== "#studio") history.pushState(null, "", "#studio");
+}
+/* 從示範書架直接進 My twins 對話介面：不需登入；未登入時左側欄鎖定 */
+function openStudioAt(p){
+  $("studioback").style.display = "";
+  dockChat();
+  renderStudio();
+  $("studio").classList.add("open");
+  document.body.style.overflow = "hidden";
+  enterChat(p.id, p.name); markSideActive();
   if(location.hash !== "#studio") history.pushState(null, "", "#studio");
 }
 function closeStudio(){
@@ -1397,15 +1421,17 @@ function renderStudio(){
   if(state.shareToken){ renderShareSide(); return; }
   const list = $("sidelist"), mine = (state.twins||[]);
   list.innerHTML = "";
-  $("studio-sub").textContent = (ME ? (ME.username || ME.email) + " ・ " : "") +
-    (LANG==="en" ? mine.length + " twins" : mine.length + " 方");
+  list.classList.toggle("locked", !ME);
+  $("studio-sub").textContent = ME
+    ? (ME.username || ME.email) + " ・ " + (LANG==="en" ? mine.length + " twins" : mine.length + " 方")
+    : (LANG==="en" ? "Sign in to distill your own" : "登入後才能蒸自己的分身");
   $("studioempty").style.display = mine.length ? "none" : "block";
   mine.forEach(p=>{
     const b = document.createElement("button");
     b.className = "side-item";
     b.dataset.pid = p.id;
     b.innerHTML = `<span class="si-seal"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
-    b.querySelector(".si-seal").textContent = sealText(p.name);
+    sealFill(b.querySelector(".si-seal"), p);
     const nm = b.querySelector(".si-name");
     nm.textContent = p.name;
     if(p.demo){
@@ -1768,7 +1794,7 @@ function twinChip(p){
   const b = document.createElement("button");
   b.className = "shelfbtn";
   b.innerHTML = `<span class="mini"></span><span class="nm"></span> <span class="rs"></span>`;
-  b.querySelector(".mini").textContent = sealText(p.name);
+  sealFill(b.querySelector(".mini"), p);
   b.querySelector(".nm").textContent = p.name;
   b.querySelector(".rs").textContent = t("resume");
   if(p.demo){
@@ -1776,7 +1802,7 @@ function twinChip(p){
     tag.className = "demo-badge"; tag.textContent = t("demo");
     b.appendChild(tag);
   }
-  b.addEventListener("click", ()=> enterChat(p.id, p.name));
+  b.addEventListener("click", ()=> openStudioAt(p));
   return b;
 }
 function renderTwins(){
