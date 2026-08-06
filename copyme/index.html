@@ -739,8 +739,8 @@ footer a{color:var(--mist)}
     <button class="mclose" id="tu-close" aria-label="Close">✕</button>
     <h3><span class="lang-zh">錢包儲值</span><span class="lang-en">Top up wallet</span></h3>
     <p class="mnote">
-      <span class="lang-zh">儲值後你的對話與蒸餾改扣自己的錢包（實際 API 成本 × 1.5），不受站方體驗池限制。刷卡由綠界 ECPay 處理，本站不經手卡號。</span>
-      <span class="lang-en">With a balance, your usage draws from your own wallet (actual API cost × 1.5). Cards are processed by ECPay — we never see your number.</span>
+      <span class="lang-zh">儲值後，對話與蒸餾按實際用量從你的錢包扣款，不受體驗額度限制、用多少算多少。刷卡由綠界 ECPay 處理，本站不經手卡號。</span>
+      <span class="lang-en">With a balance, chats and distillations draw from your wallet by actual usage — no trial limits, pay only for what you use. Cards are processed by ECPay — we never see your number.</span>
     </p>
     <p class="mnote" id="tu-test" style="display:none;color:var(--seal)">
       <span class="lang-zh">⚠ 目前為金流測試模式——刷卡頁是綠界測試環境，不會真正扣款（正式金流開通後自動切換）。</span>
@@ -908,7 +908,7 @@ const T = {
     threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
     threadsTitle:"討論串", newChat:"＋ 新對話", privateTag:"（未共享）",
     walletLbl:"錢包", topup:"儲值", topupTitle:"錢包儲值",
-    topupNote:"儲值後你的對話與蒸餾改扣自己的錢包（實際 API 成本 × 1.5），不再受站方體驗池限制。刷卡由綠界 ECPay 處理，本站不經手卡號。",
+    topupNote:"儲值後，對話與蒸餾按實際用量從你的錢包扣款，不受體驗額度限制、用多少算多少。刷卡由綠界 ECPay 處理，本站不經手卡號。",
     modelFast:"快・Sonnet", modelSharp:"準・Opus",
     openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
@@ -939,7 +939,7 @@ const T = {
     threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
     threadsTitle:"Threads", newChat:"＋ New chat", privateTag:"(not shared)",
     walletLbl:"Wallet", topup:"Top up", topupTitle:"Top up wallet",
-    topupNote:"With a balance, your chats and distillations draw from your own wallet (actual API cost × 1.5) instead of the site's trial pool. Cards are processed by ECPay — we never see your number.",
+    topupNote:"With a balance, chats and distillations draw from your wallet by actual usage — no trial limits, pay only for what you use. Cards are processed by ECPay — we never see your number.",
     modelFast:"Fast · Sonnet", modelSharp:"Sharp · Opus",
     openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
