@@ -536,7 +536,8 @@ def _thread_list(pdir: Path) -> list[dict]:
     for f in sorted(_threads_dir(pdir).glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         try:
             t = json.loads(f.read_text(encoding="utf-8"))
-            out.append({"id": t["id"], "title": t.get("title", "討論"), "count": len(t.get("msgs", []))})
+            out.append({"id": t["id"], "title": t.get("title", "討論"), "count": len(t.get("msgs", [])),
+                        "mtime": datetime.fromtimestamp(f.stat().st_mtime, TZ).strftime("%m/%d")})
         except ValueError:
             continue
     return out[:20]

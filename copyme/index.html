@@ -226,6 +226,22 @@ body.en div.lang-en{display:block}
 .extbar{height:7px;background:rgba(44,62,107,.12);border-radius:99px;margin-top:12px;overflow:hidden}
 .extbar i{display:block;height:100%;width:3%;background:linear-gradient(90deg,var(--pri),var(--seal));
   border-radius:99px;transition:width .5s ease}
+/* 訪客討論串摺疊面板（擁有者視角；沿用 docwrap 的 ▸ 摺疊語彙） */
+.threadpanel{max-width:720px;margin:0 auto 12px;background:var(--card);
+  border:1.5px solid var(--bdr);border-radius:10px;padding:10px 14px}
+.threadpanel summary{cursor:pointer;font-size:.85rem;color:var(--pri);font-weight:700;
+  list-style:none;display:inline-flex;align-items:center;gap:6px}
+.threadpanel summary::-webkit-details-marker{display:none}
+.threadpanel summary::before{content:"▸";transition:transform .2s}
+.threadpanel[open] summary::before{transform:rotate(90deg)}
+.tp-list{max-height:40vh;overflow-y:auto;margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.tp-row{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;
+  border:1.5px solid transparent;border-radius:7px;padding:7px 10px;font-family:var(--sans)}
+.tp-row:hover{background:rgba(44,62,107,.05);border-color:var(--bdr)}
+.tp-row.on{background:#fff;border-color:var(--bdr)}
+.tp-title{flex:1;min-width:0;font-size:.88rem;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-meta{font-family:var(--mono);font-size:.68rem;color:var(--mist);flex-shrink:0}
 /* 全文摺疊 */
 .docwrap{margin-top:14px;width:100%}
 .docwrap summary{cursor:pointer;font-size:.85rem;color:var(--pri);font-weight:700;
@@ -1013,6 +1029,7 @@ const T = {
     histClear:"清除記錄",
     memShare:"記住並共享到這條連結（其他訪客也看得到）",
     joinBar:(n)=>`這條連結已有 ${n} 串討論——點一串加入，或直接開聊`, joinBtn:"加入討論",
+    ownerThreads:(n)=>`訪客討論串（${n}）`, threadMeta:(c,d)=>`${c} 句 ・ ${d}`,
     threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
     threadsTitle:"討論串", newChat:"＋ 新對話", privateTag:"（未共享）",
     walletLbl:"錢包", topup:"儲值", topupTitle:"錢包儲值",
@@ -1053,6 +1070,7 @@ const T = {
     histClear:"Clear history",
     memShare:"Remember & share to this link (visible to other visitors)",
     joinBar:(n)=>`${n} discussion threads on this link — tap one to join, or just start chatting`, joinBtn:"Join in",
+    ownerThreads:(n)=>`Visitor threads (${n})`, threadMeta:(c,d)=>`${c} lines · ${d}`,
     threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
     threadsTitle:"Threads", newChat:"＋ New chat", privateTag:"(not shared)",
     walletLbl:"Wallet", topup:"Top up", topupTitle:"Top up wallet",
@@ -1557,6 +1575,7 @@ function enterChat(pid, name){
     });
     $("msgs").appendChild(h);
   }
+  document.querySelector(".threadpanel")?.remove();
   if(!visitor && tw && tw.mine) loadOwnerThreads(pid);
   const db = $("delbtn");
   db.classList.remove("arm"); resetDelBtn();
@@ -2010,24 +2029,33 @@ async function send(){
    訪客留下的對話存在 personas/<pid>/threads/，過去只有 /s/<token> 頁面拿得到；
    本人在印譜裡點自己的分身時同樣列出來，點一串即可讀回內容。 */
 async function loadOwnerThreads(pid){
+  document.querySelector(".threadpanel")?.remove();
   try{
     const r = await fetch(API+`/api/personas/${pid}/threads`, {headers: authHeaders()});
     if(!r.ok) return;
     const j = await r.json();
     const list = j.threads || [];
     if(!list.length || state.personaId !== pid) return;
-    const bar = document.createElement("div");
-    bar.className = "chat-hello";
-    bar.innerHTML = `<div class="hello-line"></div><div class="hello-chips"></div>`;
-    bar.querySelector(".hello-line").textContent = t("joinBar")(list.length);
-    const chips = bar.querySelector(".hello-chips");
+    const panel = document.createElement("details");
+    panel.className = "threadpanel";
+    panel.innerHTML = `<summary></summary><div class="tp-list"></div>`;
+    panel.querySelector("summary").textContent = t("ownerThreads")(list.length);
+    const box = panel.querySelector(".tp-list");
     list.forEach(th=>{
       const b = document.createElement("button");
-      b.textContent = t("threadItem")(th.title, th.count);
-      b.addEventListener("click", ()=> openOwnerThread(pid, th.id));
-      chips.appendChild(b);
+      b.className = "tp-row";
+      b.innerHTML = `<span class="tp-title"></span><span class="tp-meta"></span>`;
+      b.querySelector(".tp-title").textContent = th.title;
+      b.querySelector(".tp-meta").textContent = t("threadMeta")(th.count, th.mtime || "");
+      b.addEventListener("click", ()=>{
+        box.querySelectorAll(".tp-row").forEach(x=>x.classList.remove("on"));
+        b.classList.add("on");
+        openOwnerThread(pid, th.id);
+      });
+      box.appendChild(b);
     });
-    $("msgs").prepend(bar);
+    // 放在訊息容器外層：切換討論串時不會被聊天內容清掉
+    document.querySelector(".cl-msgs").insertBefore(panel, $("msgs"));
   }catch(_){}
 }
 async function openOwnerThread(pid, tid){
