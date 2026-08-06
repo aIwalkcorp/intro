@@ -343,6 +343,12 @@ body.en div.lang-en{display:block}
   font-size:.68rem;color:var(--mist)}
 .rl-seg button.on{background:var(--pri);color:#fff}
 .rl-hint{margin:0 0 0 auto;text-align:right;font-size:.63rem;line-height:1.4}
+.rl-fuel{font-family:var(--mono);font-weight:600;color:var(--pri-deep)}
+.rl-fuel.out{color:var(--seal)}
+.rl-fuelin{width:64px;padding:2px 6px;border:1.5px solid var(--bdr);border-radius:5px;
+  background:#fff;font-family:var(--mono);font-size:.68rem}
+.rl-auto{display:inline-flex;align-items:center;gap:5px;margin-left:auto;cursor:pointer}
+.rl-auto input{accent-color:var(--seal)}
 @media(max-width:640px){
   .rl-hint{display:none}
   .rl-read{min-width:4.6em;font-size:.76rem}
@@ -965,6 +971,14 @@ footer a{color:var(--mist)}
       <span class="rl-seg" id="relayseg" role="group"></span>
       <span class="rl-hint" id="rl-hint"></span>
     </div>
+    <div class="rl-row rl-sub">
+      <span class="rl-label"><span class="lang-zh">燃料</span><span class="lang-en">Fuel</span></span>
+      <b class="rl-fuel" id="rl-fuel"></b>
+      <input type="number" class="rl-fuelin" id="rl-fuelin" min="1" max="1000" step="1"
+        aria-label="Fuel budget (NT$)">
+      <label class="rl-auto"><input type="checkbox" id="autorun">
+        <span class="lang-zh">自動接力（額度內讓他們自己聊）</span><span class="lang-en">Auto-relay (within fuel)</span></label>
+    </div>
   </div>
   <div class="memline" style="justify-content:space-between">
   <label class="memline" id="saveline" style="display:none;margin:0"><input type="checkbox" id="savechk"><span class="lang-zh">記住這段對話（存在這台裝置）</span><span class="lang-en">Remember this chat (on this device)</span></label>
@@ -1053,6 +1067,7 @@ const T = {
     relayLeft:(n)=>`還能接 ${n} 回`, relayDone:"換你說話了",
     relayHint:"分身之間最多連續接這麼多回，你一說話就重新算",
     capHit:"已達本輪上限", passedOut:(n)=>`${n} 沒有再接話`,
+    fuelOut:"燃料燒完了——調高上面的額度再繼續", allPassed:"大家都沒話講了——說句話點個火吧",
     againBtn:"再跑一輪", stopBtn:"停", running:"接力中…",
     delGroup:"解散群組", delGroupOK:"確定解散？",
   },
@@ -1094,6 +1109,7 @@ const T = {
     relayLeft:(n)=>`${n} turn${n>1?"s":""} left`, relayDone:"Your turn to speak",
     relayHint:"Twins relay at most this many turns in a row. Speaking resets it.",
     capHit:"Relay cap reached", passedOut:(n)=>`${n} had nothing to add`,
+    fuelOut:"Fuel spent — raise the budget above to continue", allPassed:"Everyone's out of words — say something to spark it",
     againBtn:"One more round", stopBtn:"Stop", running:"Relaying…",
     delGroup:"Delete group", delGroupOK:"Delete for real?",
   },
@@ -2132,8 +2148,20 @@ function renderRelayBar(){
   read.textContent = left ? t("relayLeft")(left) : t("relayDone");
   read.classList.toggle("done", left === 0);
   $("rl-hint").textContent = t("relayHint");
+  const fuel = r.fuel_twd ?? 10, fUsed = r.fuel_used_twd ?? 0;
+  const fEl = $("rl-fuel");
+  fEl.textContent = `NT$${fUsed.toFixed(fUsed < 10 ? 1 : 0)} / ${Math.round(fuel)}`;
+  fEl.classList.toggle("out", fUsed >= fuel);
+  const fin = $("rl-fuelin");
+  if(document.activeElement !== fin) fin.value = Math.round(fuel);
   relaySeg();
 }
+$("rl-fuelin").addEventListener("change", ()=>{
+  const v = Math.max(1, Math.min(1000, parseInt($("rl-fuelin").value) || 10));
+  if(state.room) state.room.fuel_twd = v;
+  renderRelayBar();
+  saveRoomSettings({fuel_twd: v});
+});
 let relaySaveTimer = null;
 function saveRoomSettings(patch){
   if(!state.roomId) return;
@@ -2217,7 +2245,8 @@ function showRoundCtl(d){
   row.className = "roundctl";
   const note = document.createElement("span");   // 這是說明不是動作，別做成按鈕
   note.className = "rc-note";
-  note.textContent = d.stopped === "pass" ? "…" : t("capHit");
+  note.textContent = d.stopped === "fuel" ? t("fuelOut")
+                   : d.stopped === "pass" ? t("allPassed") : t("capHit");
   const again = document.createElement("button");
   again.className = "go"; again.textContent = t("againBtn");
   if((d.auto_max - d.auto_since_user) <= 0) again.disabled = true;
@@ -2267,10 +2296,23 @@ async function roomBurst(content){
           if(state.room){
             state.room.auto_since_user = d.auto_since_user;
             state.room.auto_max = d.auto_max;
+            state.room.fuel_twd = d.fuel_twd ?? state.room.fuel_twd;
+            state.room.fuel_used_twd = d.fuel_used_twd ?? state.room.fuel_used_twd;
           }
           renderRelayBar();
           stopRow.remove();
-          if(d.stopped !== "error") showRoundCtl(d);
+          // 自動接力：額度（回合＋燃料）都還有、且這輪有人講話 → 停一拍再續跑
+          const quota = (d.auto_max - d.auto_since_user) > 0
+                     && (d.fuel_twd - d.fuel_used_twd) > 0;
+          if($("autorun").checked && d.stopped === "cap" && quota){
+            const rid = state.roomId;
+            setTimeout(()=>{
+              if($("autorun").checked && state.roomId === rid && !state.roomBusy)
+                roomBurst("");
+            }, 1400);
+          }else if(d.stopped !== "error"){
+            showRoundCtl(d);
+          }
         }else if(ev === "error"){ throw new Error(d.message); }
       }, ctl.signal);
   }catch(err){

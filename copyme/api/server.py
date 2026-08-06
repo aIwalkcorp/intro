@@ -80,7 +80,8 @@ def _spent() -> float:
         return 0.0
 
 
-def track_usage(usage, user=None, model: str | None = None) -> None:
+def track_usage(usage, user=None, model: str | None = None) -> float:
+    """記帳並回傳這次呼叫的 USD 成本（供群組燃料等額度機制使用）。"""
     p = _PRICES.get(model or MODEL, _PRICES["claude-opus-5"])
     cost = (
         usage.input_tokens * p["in"]
@@ -91,10 +92,11 @@ def track_usage(usage, user=None, model: str | None = None) -> None:
     # 登入且錢包有餘額 → 扣個人錢包（成本×毛利倍率×匯率）；否則吃站方體驗池
     if user and wallet_get(user["id"]) > 0:
         wallet_add(user["id"], -cost * MARGIN * TWD_PER_USD)
-        return
+        return cost
     tmp = SPEND_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps({"usd": _spent() + cost}))
     tmp.replace(SPEND_FILE)
+    return cost
 
 
 def budget_left() -> float:
@@ -1018,6 +1020,21 @@ GROUP_RULES = """
 - 這一輪你若真的沒什麼想說，就只回「{pass_mark}」五個字，不要硬掰"""
 
 
+FUEL_DEFAULT = float(os.environ.get("PF_ROOM_FUEL_TWD", "10"))    # 每室預設燃料（NT$，可動態調）
+FUEL_LIMIT = float(os.environ.get("PF_ROOM_FUEL_LIMIT", "1000"))  # 使用者能調到的最大值
+
+
+def _fuel_left(room: dict) -> float:
+    return room.get("fuel_twd", FUEL_DEFAULT) - room.get("fuel_used_twd", 0.0)
+
+
+def _fclamp(v) -> float:
+    try:
+        return max(1.0, min(FUEL_LIMIT, float(v)))
+    except (TypeError, ValueError):
+        return FUEL_DEFAULT
+
+
 def _rpath(rid: str) -> Path:
     return ROOMS / f"{re.sub(r'[^a-f0-9]', '', rid)}.json"
 
@@ -1053,7 +1070,10 @@ def _room_brief(room: dict) -> dict:
             "count": len(room["msgs"]), "relay": room.get("relay", RELAY_DEFAULT),
             "auto_since_user": room.get("auto_since_user", 0),
             "auto_max": _auto_max(room), "auto_limit": AUTO_LIMIT,
-            "relay_max": RELAY_MAX, "created": room.get("created", "")}
+            "relay_max": RELAY_MAX, "created": room.get("created", ""),
+            "fuel_twd": room.get("fuel_twd", FUEL_DEFAULT),
+            "fuel_used_twd": round(room.get("fuel_used_twd", 0.0), 2),
+            "fuel_limit": FUEL_LIMIT}
 
 
 def _speaker_msgs(msgs: list[dict], me_pid: str) -> list[dict]:
@@ -1077,11 +1097,14 @@ def _speaker_msgs(msgs: list[dict], me_pid: str) -> list[dict]:
 
 
 def _mentioned(text: str, members: list[dict]):
-    """使用者訊息點名了誰 → 那個人先講。名字或 @名字 出現即算。"""
+    """使用者訊息點名了誰 → 那個人先講。全名、@任一名字片段、或任一 ≥2 字的名字片段出現即算。"""
+    low = text.lower()
     for m in members:
-        short = m["name"].split(" ")[0]
-        if m["name"] in text or f"@{short}" in text or (len(short) >= 2 and short in text):
+        if m["name"] in text:
             return m
+        for tok in m["name"].replace("-", " ").split():
+            if len(tok) >= 2 and (f"@{tok.lower()}" in low or tok.lower() in low):
+                return m
     return None
 
 
@@ -1111,7 +1134,7 @@ def _room_turn(room: dict, member: dict, primary: str, bill_user):
         # 成員分身已被刪除 → 跳過這一位，接力繼續，不讓整條 SSE 掛掉
         yield sse("turn", {"pid": member["pid"], "name": member["name"],
                            "content": "", "passed": True})
-        yield ("__done__", "__SKIP__")
+        yield ("__done__", "__SKIP__", 0.0)
         return
     others = "、".join(m["name"] for m in room["members"] if m["pid"] != member["pid"])
     system = [
@@ -1136,11 +1159,12 @@ def _room_turn(room: dict, member: dict, primary: str, bill_user):
                     chunks.append(text)
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
-            track_usage(final.usage, user=bill_user, model=use_model)
+            usd = track_usage(final.usage, user=bill_user, model=use_model)
             said = "".join(chunks).strip()
             # 模型偶爾仍會自己加名字前綴，統一剝掉
             said = re.sub(rf"^{re.escape(member['name'])}\s*[:：]\s*", "", said)
-            yield ("__done__", "" if final.stop_reason == "refusal" else said)
+            yield ("__done__", "" if final.stop_reason == "refusal" else said,
+                   usd * MARGIN * TWD_PER_USD)
             return
         except anthropic.AnthropicError as e:
             txt = str(getattr(e, "message", "") or e).lower()
@@ -1150,7 +1174,7 @@ def _room_turn(room: dict, member: dict, primary: str, bill_user):
                 continue
             yield sse("error", {"message": "模型目前壅塞，稍等幾秒再送一次" if transient
                                 else f"Claude API 錯誤：{getattr(e, 'message', e)}"})
-            yield ("__done__", None)
+            yield ("__done__", None, 0.0)
             return
 
 
@@ -1193,6 +1217,8 @@ def create_room(payload: dict, authorization: str | None = Header(None)):
             "members": members, "owner_id": user["id"],
             "relay": _clamp(payload.get("relay", RELAY_DEFAULT), 1, RELAY_MAX, RELAY_DEFAULT),
             "auto_max": _clamp(payload.get("auto_max", AUTO_MAX), 1, AUTO_LIMIT, AUTO_MAX),
+            "fuel_twd": _fclamp(payload.get("fuel_twd", FUEL_DEFAULT)),
+            "fuel_used_twd": 0.0,
             "auto_since_user": 0, "msgs": [],
             "created": datetime.now(TZ).isoformat(timespec="seconds")}
     _room_save(room)
@@ -1214,6 +1240,8 @@ def room_settings(rid: str, payload: dict, authorization: str | None = Header(No
         room["relay"] = _clamp(payload["relay"], 1, RELAY_MAX, room.get("relay", RELAY_DEFAULT))
     if "auto_max" in payload:
         room["auto_max"] = _clamp(payload["auto_max"], 1, AUTO_LIMIT, _auto_max(room))
+    if "fuel_twd" in payload:      # 燃料額度隨時可加可減——這就是「動態調控」的旋鈕
+        room["fuel_twd"] = _fclamp(payload["fuel_twd"])
     if "title" in payload:
         room["title"] = (str(payload["title"]).strip() or room["title"])[:40]
     _room_save(room)
@@ -1243,11 +1271,17 @@ def room_chat(rid: str, payload: dict, request: Request,
         room["auto_max"] = _clamp(payload["auto_max"], 1, AUTO_LIMIT, _auto_max(room))
     auto_max = _auto_max(room)
 
+    if "fuel_twd" in payload:      # 對話中直接調燃料額度
+        room["fuel_twd"] = _fclamp(payload["fuel_twd"])
     if content:
         room["msgs"].append({"role": "user", "name": "", "pid": "", "content": content})
         room["auto_since_user"] = 0
     elif not room["msgs"]:
         raise HTTPException(422, "先說一句話開場")
+    if _fuel_left(room) <= 0:
+        _room_save(room)
+        raise HTTPException(402, f"這個群組的燃料額度（NT${room.get('fuel_twd', FUEL_DEFAULT):.0f}）"
+                                 "燒完了——調高額度就能繼續")
     left = auto_max - room.get("auto_since_user", 0)
     if left <= 0:
         raise HTTPException(429, f"分身已經連續接力 {auto_max} 回合了——說句話再繼續吧")
@@ -1260,38 +1294,47 @@ def room_chat(rid: str, payload: dict, request: Request,
 
     def gen():
         stopped = "cap"
-        done = 0
+        done = spoke = 0
         for i, member in enumerate(turns):
             yield sse("speaker", {"pid": member["pid"], "name": member["name"],
                                   "i": i + 1, "total": len(turns)})
-            said = None
+            said, cost_twd = None, 0.0
             for ev in _room_turn(room, member, primary, user):
                 if isinstance(ev, tuple):
-                    said = ev[1]
+                    said, cost_twd = ev[1], ev[2]
                 else:
                     yield ev
             if said is None:            # API 錯誤，事件已送出
                 stopped = "error"
                 break
+            room["fuel_used_twd"] = room.get("fuel_used_twd", 0.0) + cost_twd
             if said == "__SKIP__":      # 成員已被刪除，換下一位
                 continue
             done += 1
             room["auto_since_user"] = room.get("auto_since_user", 0) + 1
             if not said or said.startswith(PASS_MARK[:4]):
-                # 分身自己表示沒話講 → 提早結束接力（第二道防自聊機制）
+                # 這位真的沒話講 → 跳過換下一位；別讓一個有禮貌的成員擋死全隊
                 yield sse("turn", {"pid": member["pid"], "name": member["name"],
                                    "content": "", "passed": True})
                 _room_save(room)
-                stopped = "pass"
-                break
+                continue
+            spoke += 1
             room["msgs"].append({"role": "assistant", "pid": member["pid"],
                                  "name": member["name"], "content": said})
             _room_save(room)
             yield sse("turn", {"pid": member["pid"], "name": member["name"],
                                "content": said, "passed": False})
+            if _fuel_left(room) <= 0:   # 燃料在接力中途燒完 → 立即停
+                stopped = "fuel"
+                break
+        if stopped == "cap" and spoke == 0 and done > 0:
+            stopped = "pass"            # 全員都沒話講——別再自動續跑
+        _room_save(room)
         yield sse("done", {"turns": done, "stopped": stopped,
                            "auto_since_user": room.get("auto_since_user", 0),
-                           "auto_max": auto_max, "relay": relay})
+                           "auto_max": auto_max, "relay": relay,
+                           "fuel_twd": room.get("fuel_twd", FUEL_DEFAULT),
+                           "fuel_used_twd": round(room.get("fuel_used_twd", 0.0), 2)})
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache"})
