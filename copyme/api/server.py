@@ -590,7 +590,9 @@ def shared_thread(token: str, tid: str):
 
 @app.get("/")
 def index():
-    return FileResponse(Path(__file__).parent / "index.html")
+    # no-cache：瀏覽器每次都向伺服器驗證，改版即生效（曾發生使用者卡舊快取）
+    return FileResponse(Path(__file__).parent / "index.html",
+                        headers={"Cache-Control": "no-cache"})
 
 
 def _purge_stale_uploads() -> None:
