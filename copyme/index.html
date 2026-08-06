@@ -802,7 +802,8 @@ footer a{color:var(--mist)}
     <div class="chatseal" id="chatseal"></div>
     <div class="cl-head-main">
       <div class="chatname" id="chatname"></div>
-      <div class="chattag" id="chattag"></div>
+      <div class="chattag"><span id="chattag"></span> <a id="wikilink" target="_blank" rel="noopener"
+        style="display:none;color:var(--pri);text-decoration:underline;text-underline-offset:2px"></a></div>
     </div>
     <a class="brandcta" id="brandcta" href="https://aiwalkcorp.com/copyme/" style="margin-left:auto;display:none">
       <span class="lang-zh">蒸一個<span class="cta-long">你自己的</span>分身 →</span>
@@ -957,7 +958,7 @@ function applyLang(l){
   if(state.personaId){
     $("chattag").textContent = t("aiTag");
     const tw = (state.twins||[]).find(x=>x.id===state.personaId);
-    if(tw) $("chatname").textContent = twName(tw);
+    if(tw){ $("chatname").textContent = twName(tw); setWikiLink(tw); }
   }
   if($("studio").classList.contains("open")) renderStudio();
   renderMoney();
@@ -1089,6 +1090,16 @@ function setStation(n){
 function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
 /* 分身顯示名：meta 有 name_en 時跟著介面語言切換（示範分身用） */
 function twName(p){ return (LANG === "en" && p && p.name_en) ? p.name_en : (p ? p.name : ""); }
+/* 示範分身的維基連結（查證入口）：meta 有 wiki/wiki_en 才顯示 */
+function setWikiLink(tw){
+  const wl = $("wikilink");
+  const url = tw && ((LANG === "en" ? tw.wiki_en : tw.wiki) || tw.wiki || tw.wiki_en);
+  if(url){
+    wl.href = url;
+    wl.textContent = LANG === "en" ? "Wikipedia ↗" : "維基百科 ↗";
+    wl.style.display = "";
+  }else wl.style.display = "none";
+}
 function sealFill(el, p){
   if(p && p.avatar){
     el.classList.add("has-avatar");
@@ -1348,6 +1359,7 @@ function enterChat(pid, name){
   const disp = tw ? twName(tw) : name;
   $("chatname").textContent = disp;
   $("chattag").textContent = t("aiTag");
+  setWikiLink(tw);
   sealFill($("chatseal"), tw || {name});
   $("chatmark-seal").textContent = sealText(disp);
   $("msgs").innerHTML = "";

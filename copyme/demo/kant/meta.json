@@ -2,6 +2,8 @@
   "id": "de3010cafe01",
   "name": "康德",
   "name_en": "Kant",
+  "wiki": "https://zh.wikipedia.org/zh-tw/%E4%BC%8A%E6%9B%BC%E5%8A%AA%E5%9F%83%E7%88%BE%C2%B7%E5%BA%B7%E5%BE%B7",
+  "wiki_en": "https://en.wikipedia.org/wiki/Immanuel_Kant",
   "room": "示範・純粹理性批判",
   "avatar": "kant.webp",
   "stats": {"count": 109, "avg_len": 0, "top_emoji": [], "span": "1724 ~ 1804", "sampled": 109},
