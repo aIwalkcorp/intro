@@ -103,6 +103,7 @@ body.en div.lang-en{display:block}
 /* ── 選人 ── */
 .meta{font-family:var(--mono);font-size:.78rem;color:var(--mist);margin-bottom:14px}
 .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.people .msgs-empty{grid-column:1/-1;padding:22px 0;text-align:center;max-width:none}
 .person{text-align:left;background:#fff;border:1.5px solid var(--bdr);border-radius:8px;
   padding:14px;transition:all .15s;font-family:var(--sans)}
 .person:hover{border-color:var(--pri);transform:translateY(-1px)}
@@ -112,8 +113,11 @@ body.en div.lang-en{display:block}
 .psample{font-size:.78rem;color:var(--mist);line-height:1.5;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .gobtn{margin-top:16px;background:var(--seal);color:#fff;border:none;
-  padding:11px 28px;border-radius:6px;font-size:1rem;font-weight:700;letter-spacing:.06em}
-.gobtn:hover{filter:brightness(.92)}
+  padding:11px 28px;border-radius:6px;font-size:1rem;font-weight:700;letter-spacing:.06em;
+  transition:filter .15s,transform .15s,box-shadow .15s}
+.gobtn:hover{filter:brightness(.94);transform:translateY(-1px);
+  box-shadow:0 3px 10px rgba(179,56,44,.25)}
+.gobtn:active{transform:none;box-shadow:none}
 .gobtn:disabled{background:var(--bdr);color:var(--mist);cursor:not-allowed}
 
 /* ── 蒸餾動畫 ── */
@@ -326,7 +330,7 @@ body.en div.lang-en{display:block}
 .modal{background:var(--card);border:1.5px solid var(--bdr);border-radius:12px;
   padding:26px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(25,29,43,.25);
   transform:translateY(16px) scale(.96);opacity:0;
-  transition:transform .3s cubic-bezier(.2,.9,.3,1.15),opacity .22s ease}
+  transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .22s ease}
 .modal-veil.open .modal{transform:none;opacity:1}
 .modal input{transition:border-color .15s,box-shadow .15s}
 .modal input:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(44,62,107,.13)}
@@ -501,7 +505,8 @@ body.en div.lang-en{display:block}
   background:#fff;border:1.5px solid var(--bdr);border-radius:8px;padding:14px 16px}
 .err{background:#fdf0ee;border:1.5px solid var(--seal);color:var(--seal);
   border-radius:8px;padding:12px 16px;margin-top:14px;font-size:.9rem;display:none}
-footer{margin:60px 0 30px;color:var(--mist);font-size:.78rem;font-family:var(--mono)}
+footer{margin:64px 0 30px;padding-top:18px;border-top:1.5px solid var(--bdr);
+  color:var(--mist);font-size:.78rem;font-family:var(--mono)}
 footer a{color:var(--mist)}
 .gobtn.chatgo{display:none;margin-top:16px}
 @media(max-width:560px){
@@ -529,7 +534,8 @@ footer a{color:var(--mist)}
     <span class="lang-zh">aiwalkcorp 公司主頁</span><span class="lang-en">aiwalkcorp Home</span>
   </a>
   <button class="poolchip" id="walletchip" style="display:none">
-    <span>💰 <span class="lang-zh">錢包</span><span class="lang-en">Wallet</span> <b id="walletval"></b> ・ <u style="text-underline-offset:2px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></u></span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+    <span><span class="lang-zh">錢包</span><span class="lang-en">Wallet</span> <b id="walletval"></b> ・ <u style="text-underline-offset:2px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></u></span>
   </button>
   <button class="mytwins" id="mytwins">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
@@ -596,7 +602,7 @@ footer a{color:var(--mist)}
       <summary><span class="lang-zh">怎麼從 LINE 匯出 .txt？圖解教學</span><span class="lang-en">How do I export a .txt from LINE? Illustrated guide</span></summary>
       <div class="howto-grid">
         <div class="devcard">
-          <h4>📱 <span class="lang-zh">手機版 LINE</span><span class="lang-en">LINE mobile</span></h4>
+          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg> <span class="lang-zh">手機版 LINE</span><span class="lang-en">LINE mobile</span></h4>
           <div class="mock">
             <div class="mock-top"><span>‹ &nbsp;登山社雜談</span><span class="hot" style="padding:1px 7px">☰<span class="nbadge">1</span></span></div>
             <div class="mock-msgs"><i style="width:60%"></i><i class="g"></i><i style="width:45%"></i></div>
@@ -615,7 +621,7 @@ footer a{color:var(--mist)}
           </div>
         </div>
         <div class="devcard">
-          <h4>💻 <span class="lang-zh">電腦版 LINE（實際畫面）</span><span class="lang-en">LINE desktop (actual UI)</span></h4>
+          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9"/><path d="M22 19H2l2-3h16Z"/></svg> <span class="lang-zh">電腦版 LINE（實際畫面）</span><span class="lang-en">LINE desktop (actual UI)</span></h4>
           <div class="howto-shots">
             <img src="art/line_desk1.webp" alt="" loading="lazy">
             <img src="art/line_desk2.webp" alt="" loading="lazy">
@@ -716,7 +722,7 @@ footer a{color:var(--mist)}
         <b id="sf-val">NT$0</b>
       </div>
       <div class="fuelbar"><i id="sf-bar" style="width:0%"></i></div>
-      <button class="fuel-go" disabled>⛽ <span class="lang-zh">幫這條連結加油（即將開放）</span><span class="lang-en">Fuel this link (soon)</span></button>
+      <button class="fuel-go" disabled><svg width="9" height="11" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true" style="vertical-align:-1px"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg> <span class="lang-zh">幫這條連結加油（即將開放）</span><span class="lang-en">Fuel this link (soon)</span></button>
     </div>
     <div class="side-foot">
       <button class="studio-back" id="studioback"><span class="lang-zh">← 回蒸餾所</span><span class="lang-en">← Back to distilling</span></button>
