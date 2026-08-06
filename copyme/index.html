@@ -506,10 +506,6 @@ footer a{color:var(--mist)}
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     <span class="lang-zh">aiwalkcorp 公司主頁</span><span class="lang-en">aiwalkcorp Home</span>
   </a>
-  <div class="poolchip" id="poolchip" style="display:none">
-    <svg width="11" height="13" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
-    <span><span class="lang-zh">體驗額度</span><span class="lang-en">Free pool</span> <b id="poolval"></b></span>
-  </div>
   <button class="poolchip" id="walletchip" style="display:none">
     <span>💰 <span class="lang-zh">錢包</span><span class="lang-en">Wallet</span> <b id="walletval"></b> ・ <u style="text-underline-offset:2px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></u></span>
   </button>
@@ -1808,20 +1804,7 @@ async function loadShelf(){
 loadShelf().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
 refreshMe().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
 
-async function loadBudget(){
-  try{
-    const j = await (await fetch(API+"/api/budget")).json();
-    const chip = $("poolchip");
-    chip.style.display = "inline-flex";
-    if(j.remaining <= 0){
-      chip.classList.add("empty");
-      $("poolval").textContent = LANG==="en" ? "empty, refills soon" : "用罄，稍後補充";
-    }else{
-      chip.classList.remove("empty");
-      $("poolval").textContent = "$" + j.remaining.toFixed(2);
-    }
-  }catch(_){/* 喚醒中，靜默 */}
-}
+async function loadBudget(){ /* 體驗池改為幕後機制，不再展示 */ }
 loadBudget();
 
 applyLang(LANG);
