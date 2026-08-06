@@ -317,6 +317,24 @@ body.en div.lang-en{display:block}
 .modal .abtn{width:100%;background:var(--pri);color:#fff;border:none;padding:11px;
   border-radius:7px;font-size:.95rem;font-weight:700;margin-top:4px}
 .modal .abtn:hover{background:var(--pri-deep)}
+.fuel{margin:14px 0 4px;padding:12px 14px;background:rgba(44,62,107,.045);
+  border-radius:8px}
+.fuel-head{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--ink);
+  font-weight:700}
+.fuel-head b{margin-left:auto;font-family:var(--mono);font-weight:600;color:var(--pri-deep)}
+.fuelbar{height:8px;background:rgba(44,62,107,.14);border-radius:99px;margin:8px 0 10px;
+  overflow:hidden}
+.fuelbar i{display:block;height:100%;background:linear-gradient(90deg,var(--pri-deep),var(--pri));
+  border-radius:99px;transition:width .5s}
+.fuel-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fuel-btns button{border:1.5px solid var(--bdr);background:var(--card);border-radius:7px;
+  padding:6px 14px;font-size:.8rem;font-weight:700;color:var(--mist)}
+.fuel-btns button[disabled]{opacity:.55;cursor:not-allowed}
+.fuel-soon{font-family:var(--mono);font-size:.64rem;color:var(--seal)}
+.side-fuel{padding:10px 14px;border-top:1.5px solid var(--bdr);font-size:.74rem;color:var(--mist)}
+.side-fuel .fuelbar{margin:6px 0}
+.side-fuel .fuel-go{width:100%;border:1.5px dashed var(--bdr);background:none;border-radius:7px;
+  padding:6px 10px;font-size:.76rem;font-weight:700;color:var(--mist)}
 .sh-urlrow{display:flex;gap:8px;margin:12px 0}
 .sh-url{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:6px;
   font-family:var(--mono);font-size:.72rem;background:#fff;color:var(--pri-deep)}
@@ -666,6 +684,15 @@ footer a{color:var(--mist)}
       <div class="studio-sub" id="studio-sub"></div>
     </div>
     <div class="side-list" id="sidelist"></div>
+    <div class="side-fuel" id="sidefuel" style="display:none">
+      <div class="fuel-head" style="font-size:.72rem">
+        <svg width="10" height="12" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true" style="color:var(--pri)"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
+        <span class="lang-zh">連結墨水</span><span class="lang-en">Link ink</span>
+        <b id="sf-val">NT$0</b>
+      </div>
+      <div class="fuelbar"><i id="sf-bar" style="width:0%"></i></div>
+      <button class="fuel-go" disabled>⛽ <span class="lang-zh">幫這條連結加油（即將開放）</span><span class="lang-en">Fuel this link (soon)</span></button>
+    </div>
     <div class="side-foot">
       <button class="studio-back" id="studioback"><span class="lang-zh">← 回蒸餾所</span><span class="lang-en">← Back to distilling</span></button>
       <div class="langtoggle" role="group" aria-label="Language">
@@ -725,6 +752,18 @@ footer a{color:var(--mist)}
     <div class="sh-urlrow">
       <input class="sh-url" id="sh-url" readonly>
       <button class="sh-copy" id="sh-copy"><span class="lang-zh">複製</span><span class="lang-en">Copy</span></button>
+    </div>
+    <div class="fuel">
+      <div class="fuel-head">
+        <svg width="12" height="14" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true" style="color:var(--pri)"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
+        <span class="lang-zh">連結墨水——訪客的對話優先燒這裡</span><span class="lang-en">Link ink — visitors draw from this first</span>
+        <b id="sh-fuelval">NT$0</b>
+      </div>
+      <div class="fuelbar"><i id="sh-fuelbar" style="width:0%"></i></div>
+      <div class="fuel-btns">
+        <button disabled>+100</button><button disabled>+300</button><button disabled>+500</button>
+        <span class="fuel-soon"><span class="lang-zh">金流開通後即可注入</span><span class="lang-en">opens once payments go live</span></span>
+      </div>
     </div>
     <button class="mswitch" id="sh-revoke"><span class="lang-zh">停用連結</span><span class="lang-en">Disable link</span></button>
   </div>
@@ -1473,6 +1512,8 @@ $("linkbtn").addEventListener("click", async ()=>{
     const tok = await setShare(true);
     $("sh-title").textContent = t("shareTitle")(state.personaName);
     $("sh-url").value = "https://copyme.aiwalkcorp.com/s/" + tok;
+    $("sh-fuelval").textContent = "NT$0";
+    $("sh-fuelbar").style.width = "0%";
     $("sharemodal").classList.add("open");
     if($("studio").classList.contains("open")) renderStudio();
   }catch(err){ showErr(err.message); }
@@ -1506,6 +1547,9 @@ async function initShared(tok){
     document.title = (LANG==="en" ? `Chat with ${j.name}'s twin · CopyMe` : `跟「${j.name}」的分身聊聊 · CopyMe 復刻`);
     dockChat();
     $("studioback").style.display = "none";
+    $("sidefuel").style.display = "";
+    $("sf-val").textContent = "NT$" + (j.pool ?? 0);
+    $("sf-bar").style.width = Math.min(100, (j.pool ?? 0) / 5) + "%";
     $("studio").classList.add("open");
     document.body.style.overflow = "hidden";
     enterChat(j.id, j.name);
