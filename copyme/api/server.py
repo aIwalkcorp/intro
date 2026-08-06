@@ -963,11 +963,34 @@ def shared_info(token: str):
     raise HTTPException(404, "連結已失效或被擁有者停用")
 
 
+GUEST_MSG_CAP = int(os.environ.get("PF_GUEST_MSG_CAP", "3"))
+GUEST_FILE = DATA / "guest_counts.json"
+
+
+def check_guest_cap(request: Request) -> None:
+    """未登入玩示範分身：每 IP 每天 3 則免費，之後引導註冊。"""
+    ip = request.headers.get("fly-client-ip") or (request.client.host if request.client else "?")
+    today = datetime.now(TZ).strftime("%Y-%m-%d")
+    try:
+        counts = json.loads(GUEST_FILE.read_text())
+    except (OSError, ValueError):
+        counts = {}
+    if counts.get("_date") != today:
+        counts = {"_date": today}
+    used = counts.get(ip, 0)
+    if used >= GUEST_MSG_CAP:
+        raise HTTPException(402, f"免費體驗 {GUEST_MSG_CAP} 則已用完——註冊登入就能繼續聊，還能蒸一個你自己的分身")
+    counts[ip] = used + 1
+    GUEST_FILE.write_text(json.dumps(counts))
+
+
 @app.post("/api/chat")
-async def chat(payload: dict, authorization: str | None = Header(None)):
+async def chat(payload: dict, request: Request, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
     bill_user = resolve_user(authorization)
     check_budget(bill_user)
+    if bill_user is None and not payload.get("share"):
+        check_guest_cap(request)
     pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
     pdir = PERSONAS / pid
     if not (pdir / "persona.md").exists():

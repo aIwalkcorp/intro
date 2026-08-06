@@ -304,8 +304,11 @@ body.en div.lang-en{display:block}
 .shelfbtn .mini.has-avatar{transform:none}
 .chatseal.has-avatar{width:42px;height:42px}
 .si-seal.has-avatar{width:38px;height:38px}
-/* 未登入時左側欄鎖定（示範分身仍可在右側聊） */
+/* 未登入時左側欄鎖定（示範分身仍可在右側聊）＋註冊 CTA */
 .side-list.locked{pointer-events:none;opacity:.45}
+.side-cta{padding:14px;border-top:1.5px dashed var(--bdr)}
+.side-cta .gobtn{width:100%;margin-top:0;padding:11px 10px;font-size:.9rem}
+.side-cta p{font-size:.74rem;color:var(--mist);margin-bottom:9px;line-height:1.6}
 
 /* ── 會員：topbar 狀態＋登入彈窗 ── */
 .authchip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--bdr);
@@ -316,11 +319,19 @@ body.en div.lang-en{display:block}
 .authchip .out{border:none;background:none;color:var(--mist);font-size:.78rem;
   padding:0 0 0 6px;text-decoration:underline}
 .authchip .out:hover{color:var(--seal)}
-.modal-veil{position:fixed;inset:0;background:rgba(25,29,43,.45);display:none;
-  align-items:center;justify-content:center;z-index:60;padding:20px}
-.modal-veil.open{display:flex}
+.modal-veil{position:fixed;inset:0;background:rgba(25,29,43,.45);display:flex;
+  align-items:center;justify-content:center;z-index:60;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .22s ease}
+.modal-veil.open{opacity:1;pointer-events:auto}
 .modal{background:var(--card);border:1.5px solid var(--bdr);border-radius:12px;
-  padding:26px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(25,29,43,.25)}
+  padding:26px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(25,29,43,.25);
+  transform:translateY(16px) scale(.96);opacity:0;
+  transition:transform .3s cubic-bezier(.2,.9,.3,1.15),opacity .22s ease}
+.modal-veil.open .modal{transform:none;opacity:1}
+.modal input{transition:border-color .15s,box-shadow .15s}
+.modal input:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(44,62,107,.13)}
+.modal .abtn{transition:background .15s,transform .12s}
+.modal .abtn:active{transform:scale(.98)}
 .modal h3{font-family:var(--serif);font-weight:900;font-size:1.2rem;margin-bottom:4px}
 .modal .mnote{font-size:.8rem;color:var(--mist);margin-bottom:16px;line-height:1.6}
 .modal input{width:100%;padding:10px 13px;border:1.5px solid var(--bdr);border-radius:7px;
@@ -694,6 +705,10 @@ footer a{color:var(--mist)}
       <div class="studio-sub" id="studio-sub"></div>
     </div>
     <div class="side-list" id="sidelist"></div>
+    <div class="side-cta" id="sidecta" style="display:none">
+      <p><span class="lang-zh">喜歡這個示範？上傳你的 LINE 聊天紀錄，蒸一個會用你朋友口吻說話的分身。</span><span class="lang-en">Like the demo? Upload your LINE chat export and distill a twin that talks like your friend.</span></p>
+      <button class="gobtn" id="sidecta-go"><span class="lang-zh">免費註冊，蒸自己的分身</span><span class="lang-en">Sign up free &amp; distill yours</span></button>
+    </div>
     <div class="side-fuel" id="sidefuel" style="display:none">
       <div class="fuel-head" style="font-size:.72rem">
         <svg width="10" height="12" viewBox="0 0 12 15" fill="currentColor" aria-hidden="true" style="color:var(--pri)"><path d="M6 0C6 0 1 6.3 1 9.5a5 5 0 0 0 10 0C11 6.3 6 0 6 0Z"/></svg>
@@ -1447,6 +1462,7 @@ window.addEventListener("popstate", ()=>{
   else if($("studio").classList.contains("open")) closeStudio();
 });
 $("mytwins").addEventListener("click", openStudio);
+$("sidecta-go").addEventListener("click", ()=>{ if(!regMode) $("au-mode").click(); openAuth(); });
 $("studioback").addEventListener("click", exitStudio);
 $("emptygo").addEventListener("click", exitStudio);
 $("pm-close").addEventListener("click", ()=> $("pmodal").classList.remove("open"));
@@ -1489,6 +1505,7 @@ function renderStudio(){
   const list = $("sidelist"), mine = (state.twins||[]);
   list.innerHTML = "";
   list.classList.toggle("locked", !ME);
+  $("sidecta").style.display = ME ? "none" : "";
   $("studio-sub").textContent = ME
     ? (ME.username || ME.email) + " ・ " + (LANG==="en" ? mine.length + " twins" : mine.length + " 方")
     : (LANG==="en" ? "Sign in to distill your own" : "登入後才能蒸自己的分身");
@@ -1784,6 +1801,10 @@ async function send(){
     }
   }catch(err){
     live.textContent = t("sendFail")(err.message);
+    if(/免費體驗|Sign up|註冊/.test(err.message) && !ME){
+      if(!regMode) $("au-mode").click();
+      openAuth();
+    }
   }finally{ $("send").disabled = false; input.focus(); loadBudget(); }
 }
 async function loadThread(tid){
