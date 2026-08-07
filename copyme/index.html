@@ -451,6 +451,13 @@ body.en div.lang-en{display:block}
 .modal input:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(44,62,107,.13)}
 .modal .abtn{transition:background .15s,transform .12s}
 .modal .abtn:active{transform:scale(.98)}
+.modal .abtn:disabled{opacity:.75;cursor:progress}
+/* 冷啟動轉圈：fly 免費方案喚醒要幾秒，給等待一個交代 */
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;vertical-align:-2px;margin-right:8px;
+  animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:1.6s}}
 .modal h3{font-family:var(--serif);font-weight:900;font-size:1.2rem;margin-bottom:4px}
 .modal .mnote{font-size:.8rem;color:var(--mist);margin-bottom:16px;line-height:1.6}
 .modal input{width:100%;padding:10px 13px;border:1.5px solid var(--bdr);border-radius:7px;
@@ -1300,6 +1307,15 @@ async function doAuth(){
     if(pass.length < 6){ showErr(authErrMsg("invalid_input")); return; }
     if(!/^[a-zA-Z0-9_-]{3,32}$/.test(uname)){ showErr(authErrMsg("invalid_input")); return; }
   }
+  // 冷啟動時第一個請求要等機器喚醒：按鈕轉圈，拖久了說明原因
+  const go = $("au-go");
+  const goPrev = go.innerHTML;
+  go.disabled = true;
+  go.innerHTML = '<span class="spin"></span>' + (LANG==="en" ? "Signing in…" : "登入中…");
+  const wakeTimer = setTimeout(()=>{
+    go.innerHTML = '<span class="spin"></span>' +
+      (LANG==="en" ? "Waking the service, a few more seconds…" : "喚醒服務中，再等幾秒…");
+  }, 2500);
   try{
     if(regMode){
       const rr = await fetch(API+"/api/auth/register", {method:"POST",
@@ -1325,6 +1341,12 @@ async function doAuth(){
     }
     if(location.hash === "#studio") openStudio();
   }catch(err){ showErr(err.message); }
+  finally{
+    clearTimeout(wakeTimer);
+    go.disabled = false;
+    go.innerHTML = goPrev;
+    applyLang(LANG);
+  }
 }
 $("au-go").addEventListener("click", doAuth);
 $("au-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doAuth(); });
