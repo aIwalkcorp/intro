@@ -2163,7 +2163,11 @@ $("linkbtn").addEventListener("click", async ()=>{
       tok = await setShare(true);
       $("sh-title").textContent = t("shareTitle")(state.personaName);
     }else return;
-    $("sh-url").value = "https://copyme.aiwalkcorp.com/s/" + tok;
+    // 名稱掛在 token 後當裝飾 slug——伺服器只認 token，改名不會讓舊連結失效
+    const slugSrc = state.roomId ? (state.room?.title || "") : (state.personaName || "");
+    const slug = encodeURIComponent(
+      slugSrc.trim().replace(/\s+/g, "-").replace(/[\/?#%&+=]/g, "").slice(0, 24));
+    $("sh-url").value = "https://copyme.aiwalkcorp.com/s/" + tok + (slug ? "/" + slug : "");
     // 連結墨水只屬於分身連結；群組的天花板是房間燃料，不重複顯示
     const tw = (state.twins||[]).find(x=>x.id===state.personaId);
     document.querySelector("#sharemodal .fuel").style.display = state.roomId ? "none" : "";
