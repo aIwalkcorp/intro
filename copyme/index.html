@@ -393,10 +393,19 @@ body.en div.lang-en{display:block}
 /* 頭貼分身：印章框內放照片 */
 .has-avatar{padding:0;overflow:hidden;background:#fff}
 .has-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .chatseal.editable{cursor:pointer}
-.chatseal.editable:hover{box-shadow:0 0 0 3px var(--seal-soft)}
 .chatname.editable{cursor:pointer}
-.chatname.editable:hover{text-decoration:underline dotted var(--mist);text-underline-offset:3px}
+/* hover 樣式只給真滑鼠：iOS 對有 hover 的元素會「第一下模擬 hover、第二下才點」 */
+@media(hover:hover){
+  .chatseal.editable:hover{box-shadow:0 0 0 3px var(--seal-soft)}
+  .chatname.editable:hover{text-decoration:underline dotted var(--mist);text-underline-offset:3px}
+}
+.rename-ic{background:none;border:none;color:var(--mist);cursor:pointer;
+  padding:5px;margin-left:2px;min-width:30px;min-height:30px;border-radius:6px;
+  display:none;align-items:center;justify-content:center;flex-shrink:0}
+.rename-ic.show{display:inline-flex}
+@media(hover:hover){.rename-ic:hover{color:var(--pri);background:rgba(44,62,107,.07)}}
 .chatname .namein{font:inherit;font-weight:700;color:var(--ink);background:#fff;
   border:1.5px solid var(--pri);border-radius:6px;padding:1px 8px;width:11em;max-width:60vw}
 /* 選人時附上照片：蒸餾開始會被吸進蒸餾器 */
@@ -1012,7 +1021,12 @@ footer a{color:var(--mist)}
   <div class="cl-head">
     <div class="chatseal" id="chatseal"></div>
     <div class="cl-head-main">
-      <div class="chatname" id="chatname"></div>
+      <div style="display:flex;align-items:center;min-width:0">
+        <div class="chatname" id="chatname"></div>
+        <button class="rename-ic" id="renamebtn" aria-label="Rename twin">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </div>
       <div class="chattag"><span id="chattag"></span> <a id="wikilink" target="_blank" rel="noopener"
         style="display:none;color:var(--pri);text-decoration:underline;text-underline-offset:2px"></a></div>
     </div>
@@ -1373,6 +1387,22 @@ function setStation(n){
     el.classList.toggle("done", i<n);
   });
   $("st"+n).scrollIntoView({block:"start"});
+}
+/* iOS/iPad 的 body overflow:hidden 擋不住觸控捲動——開遮罩時把 body 釘住並記捲動位置 */
+let _lockY = 0;
+function lockScroll(on){
+  const b = document.body;
+  if(on){
+    if(b.classList.contains("locked")) return;
+    _lockY = window.scrollY;
+    b.classList.add("locked");
+    b.style.top = (-_lockY) + "px";
+  }else{
+    if(!b.classList.contains("locked")) return;
+    b.classList.remove("locked");
+    b.style.top = "";
+    window.scrollTo(0, _lockY);
+  }
 }
 function sealText(name){ return (name||"").replace(/\s/g,"").slice(0,2) || "分身"; }
 /* 分身顯示名：meta 有 name_en 時跟著介面語言切換（示範分身用） */
@@ -1771,8 +1801,8 @@ $("chatseal").addEventListener("click", ()=>{
   const tw = (state.twins||[]).find(x=>x.id===state.personaId);
   if(tw && tw.mine) $("avfile").click();
 });
-/* 點名字改名（自己的分身）：Enter 存、Esc 取消、失焦即存 */
-$("chatname").addEventListener("click", ()=>{
+/* 改名（自己的分身）：點名字或鉛筆都行；Enter 存、Esc 取消、失焦即存 */
+function startRename(){
   if(state.roomId || state.shareToken) return;
   const tw = (state.twins||[]).find(x=>x.id===state.personaId);
   if(!tw || !tw.mine || $("chatname").querySelector("input")) return;
@@ -1810,7 +1840,9 @@ $("chatname").addEventListener("click", ()=>{
     e.stopPropagation();
   });
   inp.addEventListener("blur", ()=> done(true));
-});
+}
+$("chatname").addEventListener("click", startRename);
+$("renamebtn").addEventListener("click", startRename);
 
 $("gavfile").addEventListener("change", async ()=>{
   let f = $("gavfile").files[0];
@@ -1894,6 +1926,7 @@ function enterChat(pid, name){
   $("chatseal").title = sealEditable ? (LANG==="en" ? "Change avatar" : "點擊更換頭貼") : "";
   $("chatname").classList.toggle("editable", sealEditable);
   $("chatname").title = sealEditable ? (LANG==="en" ? "Click to rename" : "點擊改名") : "";
+  $("renamebtn").classList.toggle("show", sealEditable);
   $("chatmark-seal").textContent = sealText(disp);
   $("msgs").innerHTML = "";
   if(state.history.length){
@@ -1920,7 +1953,7 @@ function enterChat(pid, name){
   const db = $("delbtn");
   db.classList.remove("arm"); resetDelBtn();
   $("chatlayer").classList.add("open");
-  document.body.style.overflow = "hidden";
+  lockScroll(true);
   $("say").focus();
 }
 /* ── 我的印譜 ── */
@@ -1942,7 +1975,7 @@ function openStudio(){
   renderStudio();
   loadRooms().then(renderStudio);
   $("studio").classList.add("open");
-  document.body.style.overflow = "hidden";
+  lockScroll(true);
   const mine = state.twins || [];
   if(mine.length && !$("chatlayer").classList.contains("open")){
     enterChat(mine[0].id, mine[0].name); markSideActive();
@@ -1955,7 +1988,7 @@ function openStudioAt(p){
   dockChat();
   renderStudio();
   $("studio").classList.add("open");
-  document.body.style.overflow = "hidden";
+  lockScroll(true);
   enterChat(p.id, p.name); markSideActive();
   studioHash();
 }
@@ -1971,7 +2004,7 @@ function studioHash(){
 function closeStudio(){
   undockChat();
   $("studio").classList.remove("open");
-  document.body.style.overflow = "";
+  lockScroll(false);
 }
 /* 使用者主動關閉：走 history.back()，讓 popstate 統一收尾，不留重複紀錄 */
 function exitStudio(){
@@ -2253,7 +2286,7 @@ async function initShared(tok){
     renderMoney();
     $("sf-bar").style.width = Math.min(100, state.fuelTwd * 10) + "%";
     $("studio").classList.add("open");
-    document.body.style.overflow = "hidden";
+    lockScroll(true);
     enterChat(j.id, j.name);
     renderShareSide();
   }catch(err){ showErr(err.message); }
@@ -2272,7 +2305,7 @@ async function initSharedRoom(tok){
       $(id).style.display = "none");
     $("brandcta").style.display = "";
     $("relaybar").style.display = "none";   // 訪客不調界線；伺服器照樣強制
-    $("chatname").textContent = j.title;
+    $("chatname").textContent = j.title; $("renamebtn").classList.remove("show");
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
     sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
@@ -2284,7 +2317,7 @@ async function initSharedRoom(tok){
       else roomBubble(m.name, m.content);
     });
     $("chatlayer").classList.add("open");
-    document.body.style.overflow = "hidden";
+    lockScroll(true);
     $("say").focus();
   }catch(err){ showErr(err.message); }
 }
@@ -2310,7 +2343,7 @@ $("pfbtn").addEventListener("click", async ()=>{
 
 function closeChat(){
   $("chatlayer").classList.remove("open");
-  if(!$("studio").classList.contains("open")) document.body.style.overflow = "";
+  if(!$("studio").classList.contains("open")) lockScroll(false);
 }
 $("clclose").addEventListener("click", ()=>{
   if(state.shareToken){ location.href = "https://aiwalkcorp.com/copyme/"; return; }
@@ -2598,7 +2631,7 @@ async function enterRoom(rid){
       $(id).style.display = "none");
     $("linkbtn").style.display = ""; $("linkbtn").style.marginLeft = "auto";
     $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "0";
-    $("chatname").textContent = j.title;
+    $("chatname").textContent = j.title; $("renamebtn").classList.remove("show");
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
     sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
@@ -2621,7 +2654,7 @@ async function enterRoom(rid){
     renderRelayBar();
     $("gdelbtn").classList.remove("arm"); resetGDelBtn();
     $("chatlayer").classList.add("open");
-    document.body.style.overflow = "hidden";
+    lockScroll(true);
     $("say").focus();
     markSideActive();
   }catch(err){ showErr(err.message); }
