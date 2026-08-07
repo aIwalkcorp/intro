@@ -477,7 +477,9 @@ def topup(payload: dict, authorization: str | None = Header(None)):
         "ItemName": (f"CopyMe 連結墨水 NT${amt}" if ink_pid else f"CopyMe 錢包儲值 NT${amt}"),
         "ReturnURL": "https://copyme.fly.dev/api/ecpay/notify",
         "ClientBackURL": "https://copyme.aiwalkcorp.com/?paid=1",
-        "ChoosePayment": "Credit",
+        # ALL＝顯示商店當下已開通的全部付款方式。新綠界商店的信用卡要另外申請，
+        # 審核期間指定 Credit 會變成「無任何付款方式」（10300023）
+        "ChoosePayment": os.environ.get("PF_ECPAY_PAY", "ALL"),
         "EncryptType": "1",
         "CustomField1": user["id"],
         "CustomField2": ink_pid,
