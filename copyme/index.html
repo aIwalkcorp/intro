@@ -226,15 +226,20 @@ body.en div.lang-en{display:block}
 .extbar{height:7px;background:rgba(44,62,107,.12);border-radius:99px;margin-top:12px;overflow:hidden}
 .extbar i{display:block;height:100%;width:3%;background:linear-gradient(90deg,var(--pri),var(--seal));
   border-radius:99px;transition:width .5s ease}
-/* 訪客討論串摺疊面板（擁有者視角；沿用 docwrap 的 ▸ 摺疊語彙） */
-.threadpanel{max-width:720px;margin:0 auto 12px;background:var(--card);
-  border:1.5px solid var(--bdr);border-radius:10px;padding:10px 14px}
-.threadpanel summary{cursor:pointer;font-size:.85rem;color:var(--pri);font-weight:700;
-  list-style:none;display:inline-flex;align-items:center;gap:6px}
+/* 歷史對話：分隔線式收合列——左右細線夾小字標籤，融入紙面而非另立卡片 */
+.threadpanel{max-width:720px;margin:0 auto 14px}
+.threadpanel summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;
+  font-family:var(--mono);font-size:.7rem;color:var(--mist);padding:4px 0;
+  transition:color .15s}
+.threadpanel summary:hover{color:var(--pri)}
 .threadpanel summary::-webkit-details-marker{display:none}
-.threadpanel summary::before{content:"▸";transition:transform .2s}
-.threadpanel[open] summary::before{transform:rotate(90deg)}
-.tp-list{max-height:40vh;overflow-y:auto;margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.threadpanel summary::before,.threadpanel summary::after{content:"";flex:1;height:1px;
+  background:var(--bdr)}
+.tp-lab{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tp-arr{display:inline-block;transition:transform .2s}
+.threadpanel[open] .tp-arr{transform:rotate(90deg)}
+.tp-list{max-height:40vh;overflow-y:auto;margin-top:10px;display:flex;flex-direction:column;
+  gap:3px;background:var(--card);border:1.5px dashed var(--bdr);border-radius:10px;padding:8px}
 .tp-row{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;
   border:1.5px solid transparent;border-radius:7px;padding:7px 10px;font-family:var(--sans)}
 .tp-row:hover{background:rgba(44,62,107,.05);border-color:var(--bdr)}
@@ -1196,6 +1201,7 @@ function applyLang(l){
     $("chattag").textContent = t("aiTag");
     const tw = (state.twins||[]).find(x=>x.id===state.personaId);
     if(tw){ $("chatname").textContent = twName(tw); setWikiLink(tw); }
+    if(document.querySelector(".threadpanel")) renderThreadPanel();
   }
   if($("studio").classList.contains("open")) renderStudio();
   renderMoney();
@@ -2335,34 +2341,44 @@ async function send(){
 /* ── 擁有者也看得到自己分身在公開連結上的討論串 ──
    訪客留下的對話存在 personas/<pid>/threads/，過去只有 /s/<token> 頁面拿得到；
    本人在印譜裡點自己的分身時同樣列出來，點一串即可讀回內容。 */
+function renderThreadPanel(){
+  const old = document.querySelector(".threadpanel");
+  const wasOpen = !!old?.hasAttribute("open");
+  old?.remove();
+  const pid = state.ownerThreadsPid, list = state.ownerThreads || [];
+  if(!list.length || state.personaId !== pid) return;
+  const panel = document.createElement("details");
+  panel.className = "threadpanel";
+  if(wasOpen) panel.setAttribute("open", "");
+  panel.innerHTML = `<summary><span class="tp-lab"><span class="tp-arr">▸</span><span class="tp-txt"></span></span></summary><div class="tp-list"></div>`;
+  panel.querySelector(".tp-txt").textContent = t("ownerThreads")(list.length);
+  const box = panel.querySelector(".tp-list");
+  list.forEach(th=>{
+    const b = document.createElement("button");
+    b.className = "tp-row" + (state.ownerThreadSel === th.id ? " on" : "");
+    b.innerHTML = `<span class="tp-title"></span><span class="tp-meta"></span>`;
+    b.querySelector(".tp-title").textContent = th.title;
+    b.querySelector(".tp-meta").textContent = t("threadMeta")(th.count, th.mtime || "");
+    b.addEventListener("click", ()=>{
+      state.ownerThreadSel = th.id;
+      box.querySelectorAll(".tp-row").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      openOwnerThread(pid, th.id);
+    });
+    box.appendChild(b);
+  });
+  // 放在訊息容器外層：切換討論串時不會被聊天內容清掉
+  document.querySelector(".cl-msgs").insertBefore(panel, $("msgs"));
+}
 async function loadOwnerThreads(pid){
   document.querySelector(".threadpanel")?.remove();
+  state.ownerThreads = []; state.ownerThreadsPid = pid; state.ownerThreadSel = null;
   try{
     const r = await fetch(API+`/api/personas/${pid}/threads`, {headers: authHeaders()});
     if(!r.ok) return;
     const j = await r.json();
-    const list = j.threads || [];
-    if(!list.length || state.personaId !== pid) return;
-    const panel = document.createElement("details");
-    panel.className = "threadpanel";
-    panel.innerHTML = `<summary></summary><div class="tp-list"></div>`;
-    panel.querySelector("summary").textContent = t("ownerThreads")(list.length);
-    const box = panel.querySelector(".tp-list");
-    list.forEach(th=>{
-      const b = document.createElement("button");
-      b.className = "tp-row";
-      b.innerHTML = `<span class="tp-title"></span><span class="tp-meta"></span>`;
-      b.querySelector(".tp-title").textContent = th.title;
-      b.querySelector(".tp-meta").textContent = t("threadMeta")(th.count, th.mtime || "");
-      b.addEventListener("click", ()=>{
-        box.querySelectorAll(".tp-row").forEach(x=>x.classList.remove("on"));
-        b.classList.add("on");
-        openOwnerThread(pid, th.id);
-      });
-      box.appendChild(b);
-    });
-    // 放在訊息容器外層：切換討論串時不會被聊天內容清掉
-    document.querySelector(".cl-msgs").insertBefore(panel, $("msgs"));
+    state.ownerThreads = j.threads || [];
+    renderThreadPanel();
   }catch(_){}
 }
 async function openOwnerThread(pid, tid){
