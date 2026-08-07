@@ -811,6 +811,7 @@ footer a{color:var(--mist)}
     <label class="gobtn chatgo" id="avlabel" style="background:var(--pri);margin-left:10px">
       <span id="avlabel-text"><span class="lang-zh">＋頭貼（選填）</span><span class="lang-en">+ Avatar (optional)</span></span>
       <input type="file" id="avfile" accept="image/*" hidden></label>
+    <input type="file" id="gavfile" accept="image/*" hidden>
   </div>
 </section>
 
@@ -1717,11 +1718,34 @@ $("avfile").addEventListener("change", async ()=>{
     txt.textContent = (LANG==="en" ? "Failed: " : "失敗：") + err.message;
   }finally{ $("avfile").value = ""; }
 });
-/* 點聊天室的印章（自己的分身）直接換頭貼 */
+/* 點聊天室的印章直接換頭貼：分身走 avfile，群組走 gavfile（訪客不可） */
 $("chatseal").addEventListener("click", ()=>{
-  if(state.roomId) return;
+  if(state.roomId){
+    if(!state.roomShare) $("gavfile").click();
+    return;
+  }
   const tw = (state.twins||[]).find(x=>x.id===state.personaId);
   if(tw && tw.mine) $("avfile").click();
+});
+$("gavfile").addEventListener("change", async ()=>{
+  let f = $("gavfile").files[0];
+  $("gavfile").value = "";
+  if(!f || !state.roomId || state.roomShare) return;
+  f = await openCropper(f);
+  if(!f) return;
+  try{
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await fetch(API+`/api/rooms/${state.roomId}/avatar`,
+      {method:"POST", headers: authHeaders(), body: fd});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    if(state.room) state.room.avatar = j.avatar;
+    const idx = (state.rooms||[]).findIndex(x=>x.id === state.roomId);
+    if(idx >= 0) state.rooms[idx].avatar = j.avatar;
+    sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
+    if($("studio").classList.contains("open")) renderStudio();
+  }catch(err){ showErr(err.message); }
 });
 
 /* ── 04 對話 ── */
@@ -1956,7 +1980,7 @@ function renderStudio(){
       const b = document.createElement("button");
       b.className = "side-item"; b.dataset.rid = r.id;
       b.innerHTML = `<span class="si-seal grp"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
-      b.querySelector(".si-seal").textContent = LANG === "en" ? "GRP" : "群";
+      sealFill(b.querySelector(".si-seal"), {name: LANG === "en" ? "GRP" : "群", avatar: r.avatar});
       b.querySelector(".si-name").textContent = r.title;
       b.querySelector(".si-meta").textContent =
         r.members.map(m=>m.name).join(LANG==="en" ? ", " : "、");
@@ -2160,9 +2184,8 @@ async function initSharedRoom(tok){
     $("chatname").textContent = j.title;
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
-    const seal = $("chatseal");
-    seal.classList.remove("has-avatar");
-    seal.textContent = LANG === "en" ? "GRP" : "群";
+    sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
+    $("chatseal").classList.remove("editable"); $("chatseal").title = "";
     $("chatmark-seal").textContent = LANG === "en" ? "GRP" : "群";
     $("msgs").innerHTML = "";
     (j.msgs || []).forEach(m=>{
@@ -2477,9 +2500,9 @@ async function enterRoom(rid){
     $("chatname").textContent = j.title;
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
-    const seal = $("chatseal");
-    seal.classList.remove("has-avatar");
-    seal.textContent = LANG === "en" ? "GRP" : "群";
+    sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
+    $("chatseal").classList.add("editable");
+    $("chatseal").title = LANG === "en" ? "Change group avatar" : "點擊更換群組頭貼";
     $("chatmark-seal").textContent = LANG === "en" ? "GRP" : "群";
     $("msgs").innerHTML = "";
     (j.msgs || []).forEach(m=>{

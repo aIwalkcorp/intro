@@ -1118,7 +1118,7 @@ def _room_brief(room: dict) -> dict:
             "relay_max": RELAY_MAX, "created": room.get("created", ""),
             "fuel_twd": room.get("fuel_twd", FUEL_DEFAULT),
             "fuel_used_twd": round(room.get("fuel_used_twd", 0.0), 2),
-            "fuel_limit": FUEL_LIMIT}
+            "fuel_limit": FUEL_LIMIT, "avatar": room.get("avatar")}
 
 
 def _speaker_msgs(msgs: list[dict], me_pid: str) -> list[dict]:
@@ -1293,6 +1293,37 @@ def room_settings(rid: str, payload: dict, authorization: str | None = Header(No
     return _room_brief(room)
 
 
+@app.post("/api/rooms/{rid}/avatar")
+async def set_room_avatar(rid: str, file: UploadFile = File(...),
+                          authorization: str | None = Header(None)):
+    """群組頭貼（選填）：僅建立者。鏡射分身頭貼的做法。"""
+    room = _room_load(rid, require_user(authorization))
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(422, "請上傳圖片檔")
+    raw = await file.read()
+    if len(raw) > 2_000_000:
+        raise HTTPException(413, "圖片太大（上限 2MB）")
+    (ROOMS / f"{room['id']}.avatar").write_bytes(raw)
+    room["avatar"] = f"api/rooms/{room['id']}/avatar"
+    room["avatar_ct"] = file.content_type
+    _room_save(room)
+    return {"avatar": room["avatar"]}
+
+
+@app.get("/api/rooms/{rid}/avatar")
+def get_room_avatar(rid: str):
+    rid = re.sub(r"[^a-f0-9]", "", rid)
+    f = ROOMS / f"{rid}.avatar"
+    if not f.exists():
+        raise HTTPException(404, "no avatar")
+    ct = "image/jpeg"
+    try:
+        ct = json.loads(_rpath(rid).read_text(encoding="utf-8")).get("avatar_ct") or ct
+    except (OSError, ValueError):
+        pass
+    return FileResponse(f, media_type=ct)
+
+
 @app.post("/api/rooms/{rid}/share")
 def share_room(rid: str, payload: dict, authorization: str | None = Header(None)):
     """群組公開連結開關：僅建立者。訪客的對話燒這一室的燃料額度，額度即天花板。"""
@@ -1319,6 +1350,7 @@ def shared_room_info(token: str):
 def delete_room(rid: str, payload: dict, authorization: str | None = Header(None)):
     _room_load(rid, require_user(authorization))
     _rpath(rid).unlink(missing_ok=True)
+    (ROOMS / f"{re.sub(r'[^a-f0-9]', '', rid)}.avatar").unlink(missing_ok=True)
     return {"deleted": True}
 
 
