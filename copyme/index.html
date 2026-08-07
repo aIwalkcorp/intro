@@ -452,6 +452,10 @@ body.en div.lang-en{display:block}
 .modal .abtn{transition:background .15s,transform .12s}
 .modal .abtn:active{transform:scale(.98)}
 .modal .abtn:disabled{opacity:.75;cursor:progress}
+/* 儲值彈窗：窄螢幕不溢出——按鈕可縮、整體可捲 */
+.modal{max-height:88vh;overflow-y:auto}
+#tu-btns .gobtn{min-width:0;padding:10px 4px;letter-spacing:0;font-size:.92rem}
+#topupmodal input{min-width:0}
 /* 金流資安說明列 */
 .paysec{display:flex;gap:9px;margin-top:14px;padding:11px 13px;border-radius:8px;
   background:rgba(62,107,99,.07);border:1.5px solid rgba(62,107,99,.25);
