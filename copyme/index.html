@@ -457,6 +457,7 @@ body.en div.lang-en{display:block}
   border-top-color:#fff;border-radius:50%;vertical-align:-2px;margin-right:8px;
   animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.spin.ink{border-color:rgba(44,62,107,.22);border-top-color:var(--pri)}
 @media(prefers-reduced-motion:reduce){.spin{animation-duration:1.6s}}
 .modal h3{font-family:var(--serif);font-weight:900;font-size:1.2rem;margin-bottom:4px}
 .modal .mnote{font-size:.8rem;color:var(--mist);margin-bottom:16px;line-height:1.6}
@@ -2862,6 +2863,15 @@ function renderTwins(){
   if(list.length) $("st4").classList.add("on");
 }
 async function loadShelf(){
+  if(!state.twins){          // 首次載入＝可能正在喚醒 fly 機器，給個交代
+    const row = $("twinrow");
+    row.innerHTML = "";
+    const l = document.createElement("span");
+    l.className = "msgs-empty";
+    l.innerHTML = '<span class="spin ink"></span>' +
+      (LANG==="en" ? "Waking the studio…" : "喚醒蒸餾所中…");
+    row.appendChild(l);
+  }
   try{
     const j = await (await fetch(API+"/api/personas", {headers: authHeaders()})).json();
     state.twins = (j.personas||[]).slice(0,8);
