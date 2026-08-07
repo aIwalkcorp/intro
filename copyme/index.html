@@ -1049,7 +1049,7 @@ const T = {
     histClear:"清除記錄",
     memShare:"記住並共享到這條連結（其他訪客也看得到）",
     joinBar:(n)=>`這條連結已有 ${n} 串討論——點一串加入，或直接開聊`, joinBtn:"加入討論",
-    ownerThreads:(n)=>`訪客討論串（${n}）`, threadMeta:(c,d)=>`${c} 句 ・ ${d}`,
+    ownerThreads:(n)=>`歷史對話（${n}）`, threadMeta:(c,d)=>`${c} 句 ・ ${d}`,
     threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
     threadsTitle:"討論串", newChat:"＋ 新對話", privateTag:"（未共享）",
     walletLbl:"錢包", topup:"儲值", topupTitle:"錢包儲值",
@@ -1091,7 +1091,7 @@ const T = {
     histClear:"Clear history",
     memShare:"Remember & share to this link (visible to other visitors)",
     joinBar:(n)=>`${n} discussion threads on this link — tap one to join, or just start chatting`, joinBtn:"Join in",
-    ownerThreads:(n)=>`Visitor threads (${n})`, threadMeta:(c,d)=>`${c} lines · ${d}`,
+    ownerThreads:(n)=>`History (${n})`, threadMeta:(c,d)=>`${c} lines · ${d}`,
     threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
     threadsTitle:"Threads", newChat:"＋ New chat", privateTag:"(not shared)",
     walletLbl:"Wallet", topup:"Top up", topupTitle:"Top up wallet",
@@ -1550,7 +1550,7 @@ $("savechk").addEventListener("change", ()=>{
 });
 function enterChat(pid, name){
   state.personaId = pid; state.personaName = name;
-  state.roomId = null; state.room = null;          // 離開群組模式
+  state.roomId = null; state.room = null; state.roomShare = null; // 離開群組模式
   $("gdelbtn").style.display = "none";
   $("relaybar").style.display = "none";
   const visitor = !!state.shareToken;
@@ -1864,10 +1864,21 @@ async function setShare(enable){
   return j.share;
 }
 $("linkbtn").addEventListener("click", async ()=>{
-  if(!state.personaId) return;
   try{
-    const tok = await setShare(true);
-    $("sh-title").textContent = t("shareTitle")(state.personaName);
+    let tok;
+    if(state.roomId){                       // 群組的公開連結
+      const r = await fetch(API+`/api/rooms/${state.roomId}/share`, {method:"POST",
+        headers:{"Content-Type":"application/json", ...authHeaders()},
+        body: JSON.stringify({enable:true})});
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.detail || t("svcDown"));
+      tok = j.share;
+      if(state.room) state.room.share = tok;
+      $("sh-title").textContent = t("shareTitle")(state.room?.title || "");
+    }else if(state.personaId){
+      tok = await setShare(true);
+      $("sh-title").textContent = t("shareTitle")(state.personaName);
+    }else return;
     $("sh-url").value = "https://copyme.aiwalkcorp.com/s/" + tok;
     renderMoney();
     $("sh-fuelbar").style.width = "0%";
@@ -1885,7 +1896,14 @@ $("sh-copy").addEventListener("click", async ()=>{
 });
 $("sh-revoke").addEventListener("click", async ()=>{
   try{
-    await setShare(false);
+    if(state.roomId){
+      await fetch(API+`/api/rooms/${state.roomId}/share`, {method:"POST",
+        headers:{"Content-Type":"application/json", ...authHeaders()},
+        body: JSON.stringify({enable:false})});
+      if(state.room) delete state.room.share;
+    }else{
+      await setShare(false);
+    }
     $("sharemodal").classList.remove("open");
     if($("studio").classList.contains("open")) renderStudio();
   }catch(err){ showErr(err.message); }
@@ -1914,11 +1932,43 @@ async function initShared(tok){
     renderShareSide();
   }catch(err){ showErr(err.message); }
 }
+/* 群組公開連結的訪客視角：可圍觀、可插話；界線與燃料只有建立者能調 */
+async function initSharedRoom(tok){
+  try{
+    const r = await fetch(API+"/api/shared-room/"+tok);
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    state.roomShare = tok;
+    state.roomId = j.id; state.room = j;
+    state.relay = j.relay; state.autoMax = j.auto_max;
+    document.title = (LANG==="en" ? `Watch "${j.title}" · CopyMe` : `圍觀「${j.title}」的分身群聊 · CopyMe 復刻`);
+    ["extbtn","linkbtn","pfbtn","delbtn","gdelbtn","memline","saveline"].forEach(id=>
+      $(id).style.display = "none");
+    $("brandcta").style.display = "";
+    $("relaybar").style.display = "none";   // 訪客不調界線；伺服器照樣強制
+    $("chatname").textContent = j.title;
+    $("chattag").textContent = t("groupMembers")(j.members.length);
+    setWikiLink(null);
+    const seal = $("chatseal");
+    seal.classList.remove("has-avatar");
+    seal.textContent = LANG === "en" ? "GRP" : "群";
+    $("chatmark-seal").textContent = LANG === "en" ? "GRP" : "群";
+    $("msgs").innerHTML = "";
+    (j.msgs || []).forEach(m=>{
+      if(m.role === "user") bubble("me", m.content);
+      else roomBubble(m.name, m.content);
+    });
+    $("chatlayer").classList.add("open");
+    document.body.style.overflow = "hidden";
+    $("say").focus();
+  }catch(err){ showErr(err.message); }
+}
 {
   const sm = location.hash.match(/^#s\/([\w-]+)$/);
   const tok = window.__SHARE_TOKEN__ || (sm && sm[1])
     || (location.pathname.match(/^\/s\/([\w-]+)/) || [])[1];
-  if(tok) initShared(tok);
+  if(window.__SHARE_ROOM__) initSharedRoom(window.__SHARE_ROOM__);
+  else if(tok) initShared(tok);
 }
 
 $("pfbtn").addEventListener("click", async ()=>{
@@ -2125,7 +2175,7 @@ function relaySeg(){
   }
 }
 function renderRelayBar(){
-  if(!state.roomId){ $("relaybar").style.display = "none"; return; }
+  if(!state.roomId || state.roomShare){ $("relaybar").style.display = "none"; return; }
   const r = state.room || {};
   const limit = r.auto_limit || 16;
   const cap = Math.min(state.autoMax || r.auto_max || 12, limit);
@@ -2208,9 +2258,10 @@ async function enterRoom(rid){
     state.relay = Math.min(j.relay || state.relay, state.relayMax);
     state.autoMax = j.auto_max || state.autoMax;
     state.personaId = null; state.personaName = null; state.history = [];
-    ["extbtn","linkbtn","pfbtn","delbtn","brandcta","memline","saveline"].forEach(id=>
+    ["extbtn","pfbtn","delbtn","brandcta","memline","saveline"].forEach(id=>
       $(id).style.display = "none");
-    $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "auto";
+    $("linkbtn").style.display = ""; $("linkbtn").style.marginLeft = "auto";
+    $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "0";
     $("chatname").textContent = j.title;
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
@@ -2275,7 +2326,8 @@ async function roomBurst(content){
   let live = null, acc = "";
   try{
     await sseFetch(`/api/rooms/${state.roomId}/chat`,
-      {content, relay: state.relay, model: state.model, access_code:""},
+      {content, relay: state.relay, model: state.model, access_code:"",
+       share: state.roomShare || ""},
       (ev,d)=>{
         if(ev === "speaker"){
           acc = "";

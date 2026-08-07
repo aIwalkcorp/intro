@@ -554,13 +554,36 @@ def _find_shared(token: str):
     return None
 
 
+def _find_shared_room(token: str):
+    if len(token) >= 8:
+        for f in ROOMS.glob("*.json"):
+            try:
+                room = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            if room.get("share") and secrets.compare_digest(room["share"], token):
+                return room
+    return None
+
+
 @app.get("/s/{token}")
 @app.get("/s/{token}/{slug}")
 def share_landing(token: str, slug: str = ""):
-    """分享連結落地頁：注入分身名稱到 title/og 讓預覽一目了然，再交給前端。"""
+    """分享連結落地頁：注入名稱到 title/og 讓預覽一目了然，再交給前端。分身與群組共用 /s/。"""
     from fastapi.responses import HTMLResponse, RedirectResponse
     import html as _html
     token = re.sub(r"[^\w-]", "", token)
+    room = _find_shared_room(token)
+    if room:
+        title = f"圍觀「{_html.escape(room['title'])}」的分身群聊 · CopyMe 復刻"
+        page = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
+        page = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", page, count=1)
+        inject = (
+            f'<meta property="og:title" content="{title}">\n'
+            f'<meta property="og:description" content="幾個 AI 分身在群組裡接力聊天——點開圍觀或插話。">\n'
+            f'<base href="/">\n<script>window.__SHARE_ROOM__="{token}"</script>\n</head>'
+        )
+        return HTMLResponse(page.replace("</head>", inject, 1))
     meta = _find_shared(token)
     if not meta:
         return RedirectResponse("/")
@@ -1248,6 +1271,28 @@ def room_settings(rid: str, payload: dict, authorization: str | None = Header(No
     return _room_brief(room)
 
 
+@app.post("/api/rooms/{rid}/share")
+def share_room(rid: str, payload: dict, authorization: str | None = Header(None)):
+    """群組公開連結開關：僅建立者。訪客的對話燒這一室的燃料額度，額度即天花板。"""
+    room = _room_load(rid, require_user(authorization))
+    if payload.get("enable"):
+        room["share"] = room.get("share") or secrets.token_urlsafe(9)
+    else:
+        room.pop("share", None)
+    _room_save(room)
+    return {"share": room.get("share")}
+
+
+@app.get("/api/shared-room/{token}")
+def shared_room_info(token: str):
+    """憑分享 token 取得群組資訊與逐字稿（免登入）。"""
+    room = _find_shared_room(re.sub(r"[^\w-]", "", token))
+    if not room:
+        raise HTTPException(404, "連結已失效或被建立者停用")
+    return {**{k: v for k, v in _room_brief(room).items()},
+            "msgs": room["msgs"][-120:]}
+
+
 @app.post("/api/rooms/{rid}/delete")
 def delete_room(rid: str, payload: dict, authorization: str | None = Header(None)):
     _room_load(rid, require_user(authorization))
@@ -1261,20 +1306,32 @@ def room_chat(rid: str, payload: dict, request: Request,
     """一次呼叫 = 一段有限接力。content 有值＝人類發話（重置自動回合計數）；
     content 空＝「再跑一輪」，只在未超過 AUTO_MAX 時允許。"""
     check_code(payload.get("access_code"))
-    user = require_user(authorization)
+    share_tok = re.sub(r"[^\w-]", "", str(payload.get("share") or ""))
+    if share_tok:
+        # 訪客憑公開連結參與：用量計到建立者頭上，燃料額度就是訪客的天花板
+        room = _find_shared_room(share_tok)
+        if not room or room["id"] != re.sub(r"[^a-f0-9]", "", rid):
+            raise HTTPException(404, "連結已失效或被建立者停用")
+        user = {"id": room.get("owner_id", "")}
+        guest = True
+    else:
+        user = require_user(authorization)
+        room = _room_load(rid, user)
+        guest = False
     check_budget(user)
-    room = _room_load(rid, user)
     content = str(payload.get("content") or "").strip()
-    relay = _clamp(payload.get("relay", room.get("relay", RELAY_DEFAULT)),
-                   1, RELAY_MAX, RELAY_DEFAULT)
-    if "auto_max" in payload:      # 使用者在對話中直接拉界線，順手存起來
+    relay = room.get("relay", RELAY_DEFAULT) if guest else \
+        _clamp(payload.get("relay", room.get("relay", RELAY_DEFAULT)),
+               1, RELAY_MAX, RELAY_DEFAULT)
+    if not guest and "auto_max" in payload:   # 界線只有建立者能調
         room["auto_max"] = _clamp(payload["auto_max"], 1, AUTO_LIMIT, _auto_max(room))
     auto_max = _auto_max(room)
 
-    if "fuel_twd" in payload:      # 對話中直接調燃料額度
+    if not guest and "fuel_twd" in payload:   # 燃料額度也只有建立者能調
         room["fuel_twd"] = _fclamp(payload["fuel_twd"])
     if content:
-        room["msgs"].append({"role": "user", "name": "", "pid": "", "content": content})
+        room["msgs"].append({"role": "user", "name": "訪客" if guest else "", "pid": "",
+                             "content": content})
         room["auto_since_user"] = 0
     elif not room["msgs"]:
         raise HTTPException(422, "先說一句話開場")
