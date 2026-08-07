@@ -428,7 +428,7 @@ ECPAY_KEY = os.environ.get("PF_ECPAY_KEY", "5294y06JbISpM5x9")
 ECPAY_IV = os.environ.get("PF_ECPAY_IV", "v77hoKGq4kWxNNIS")
 ECPAY_URL = os.environ.get("PF_ECPAY_URL",
     "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5")
-TOPUP_MIN, TOPUP_MAX = 1, 100000  # 下限交給綠界的卡別底線；上限僅防呆
+TOPUP_MIN, TOPUP_MAX = 5, 100000  # 綠界信用卡單筆最低 NT$5——低於它付款頁會空（錯誤 10300023）
 ECPAY_DONE = DATA / "ecpay_done.json"
 
 
