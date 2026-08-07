@@ -1801,24 +1801,57 @@ $("chatseal").addEventListener("click", ()=>{
   const tw = (state.twins||[]).find(x=>x.id===state.personaId);
   if(tw && tw.mine) $("avfile").click();
 });
-/* 改名（自己的分身）：點名字或鉛筆都行；Enter 存、Esc 取消、失焦即存 */
-function startRename(){
-  if(state.roomId || state.shareToken) return;
-  const tw = (state.twins||[]).find(x=>x.id===state.personaId);
-  if(!tw || !tw.mine || $("chatname").querySelector("input")) return;
+/* 通用行內編輯器：Enter 存、Esc 取消、失焦即存。分身改名與群組改名共用 */
+function inlineEdit(current, maxLen, onSave){
+  if($("chatname").querySelector("input")) return;
   const inp = document.createElement("input");
-  inp.className = "namein"; inp.maxLength = 24; inp.value = tw.name;
+  inp.className = "namein"; inp.maxLength = maxLen; inp.value = current;
   $("chatname").textContent = "";
   $("chatname").appendChild(inp);
   inp.focus(); inp.select();
   let finished = false;
-  const done = async (save)=>{
+  const done = (save)=>{
     if(finished) return;
     finished = true;
     const v = inp.value.trim();
     inp.remove();
+    onSave(save && v && v !== current ? v : null);
+  };
+  inp.addEventListener("keydown", e=>{
+    if(e.key === "Enter") done(true);
+    else if(e.key === "Escape") done(false);
+    e.stopPropagation();
+  });
+  inp.addEventListener("blur", ()=> done(true));
+}
+function startRename(){
+  if(state.shareToken || state.roomShare) return;
+  if(state.roomId){                       // 群組改名：走既有的 settings 端點
+    const room = state.room;
+    if(!room) return;
+    inlineEdit(room.title, 40, async v=>{
+      $("chatname").textContent = room.title;
+      if(!v) return;
+      try{
+        const r = await fetch(API+`/api/rooms/${state.roomId}/settings`, {method:"POST",
+          headers:{"Content-Type":"application/json", ...authHeaders()},
+          body: JSON.stringify({title: v})});
+        const j = await r.json();
+        if(!r.ok) throw new Error(j.detail || t("svcDown"));
+        room.title = j.title;
+        const idx = (state.rooms||[]).findIndex(x=>x.id === state.roomId);
+        if(idx >= 0) state.rooms[idx].title = j.title;
+        $("chatname").textContent = j.title;
+        if($("studio").classList.contains("open")) renderStudio();
+      }catch(err){ showErr(err.message); }
+    });
+    return;
+  }
+  const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+  if(!tw || !tw.mine) return;
+  inlineEdit(tw.name, 24, async v=>{
     $("chatname").textContent = twName(tw);
-    if(!save || !v || v === tw.name) return;
+    if(!v) return;
     try{
       const r = await fetch(API+`/api/personas/${state.personaId}/rename`, {method:"POST",
         headers:{"Content-Type":"application/json", ...authHeaders()},
@@ -1833,13 +1866,7 @@ function startRename(){
       if($("studio").classList.contains("open")) renderStudio();
       loadRooms();          // 群組成員名單已在伺服器端同步，這裡刷新快取
     }catch(err){ showErr(err.message); }
-  };
-  inp.addEventListener("keydown", e=>{
-    if(e.key === "Enter") done(true);
-    else if(e.key === "Escape") done(false);
-    e.stopPropagation();
   });
-  inp.addEventListener("blur", ()=> done(true));
 }
 $("chatname").addEventListener("click", startRename);
 $("renamebtn").addEventListener("click", startRename);
@@ -2305,7 +2332,9 @@ async function initSharedRoom(tok){
       $(id).style.display = "none");
     $("brandcta").style.display = "";
     $("relaybar").style.display = "none";   // 訪客不調界線；伺服器照樣強制
-    $("chatname").textContent = j.title; $("renamebtn").classList.remove("show");
+    $("chatname").textContent = j.title;
+    $("renamebtn").classList.remove("show");
+    $("chatname").classList.remove("editable");
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
     sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
@@ -2631,7 +2660,9 @@ async function enterRoom(rid){
       $(id).style.display = "none");
     $("linkbtn").style.display = ""; $("linkbtn").style.marginLeft = "auto";
     $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "0";
-    $("chatname").textContent = j.title; $("renamebtn").classList.remove("show");
+    $("chatname").textContent = j.title;
+    $("renamebtn").classList.add("show");           // 建立者可改群組名
+    $("chatname").classList.add("editable");
     $("chattag").textContent = t("groupMembers")(j.members.length);
     setWikiLink(null);
     sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
