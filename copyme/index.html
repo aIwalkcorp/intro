@@ -388,6 +388,22 @@ body.en div.lang-en{display:block}
 /* 頭貼分身：印章框內放照片 */
 .has-avatar{padding:0;overflow:hidden;background:#fff}
 .has-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.chatseal.editable{cursor:pointer}
+.chatseal.editable:hover{box-shadow:0 0 0 3px var(--seal-soft)}
+/* 選人時附上照片：蒸餾開始會被吸進蒸餾器 */
+.avpick-row{margin-top:12px;display:none;align-items:center;gap:10px;color:var(--mist)}
+.avpick-row.show{display:flex}
+.avpick-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;
+  border:2px solid var(--seal);transform:rotate(-3deg);display:none}
+.suck-img{position:absolute;left:50%;top:-34px;width:88px;height:88px;object-fit:cover;
+  border-radius:10px;border:2.5px solid var(--seal);z-index:3;
+  box-shadow:0 6px 18px rgba(25,29,43,.28);
+  animation:suckin 1.9s cubic-bezier(.6,-.08,.9,.5) forwards}
+@keyframes suckin{
+  0%{transform:translate(-50%,0) scale(1) rotate(0deg);opacity:1}
+  50%{transform:translate(-50%,58px) scale(.8) rotate(140deg);opacity:1}
+  100%{transform:translate(-50%,118px) scale(.04) rotate(560deg);opacity:0}}
+@media(prefers-reduced-motion:reduce){.suck-img{animation:none;display:none}}
 .shelfbtn .mini.has-avatar{transform:none}
 .chatseal.has-avatar{width:42px;height:42px}
 .si-seal.has-avatar{width:38px;height:38px}
@@ -667,7 +683,7 @@ footer a{color:var(--mist)}
       <span class="lang-zh">與 Trailforge 共用同一組帳號。登入後蒸餾的分身只有你看得到。密碼至少 6 個字元。</span>
       <span class="lang-en">One account across aiwalkcorp products. Twins you distill are visible only to you. Password: 6+ characters.</span>
     </p>
-    <input id="au-email" type="email" autocomplete="email" placeholder="email">
+    <input id="au-email" type="text" autocomplete="username" placeholder="email / ID">
     <input id="au-name" type="text" autocomplete="username" placeholder="username" style="display:none">
     <input id="au-pass" type="password" autocomplete="current-password" placeholder="password">
     <button class="abtn" id="au-go"><span class="lang-zh">登入</span><span class="lang-en">Sign in</span></button>
@@ -750,6 +766,12 @@ footer a{color:var(--mist)}
   <div class="card">
     <div class="meta" id="uploadmeta"></div>
     <div class="people" id="people"><span class="msgs-empty"><span class="lang-zh">上傳聊天紀錄後，這裡會列出聊天室裡的人。</span><span class="lang-en">Upload a chat export and the people in it will appear here.</span></span></div>
+    <div class="avpick-row" id="avpickrow">
+      <label class="filebtn" style="margin:0;padding:7px 14px;font-size:.82rem">
+        <span class="lang-zh">＋照片（選填，會一起蒸進去）</span><span class="lang-en">+ Photo (optional — distilled in)</span>
+        <input type="file" id="avpick" accept="image/*" hidden></label>
+      <img class="avpick-thumb" id="avpickthumb" alt="">
+    </div>
     <button class="gobtn" id="distillbtn" style="display:none" disabled><span class="lang-zh">開始蒸餾</span><span class="lang-en">Start distilling</span></button>
   </div>
 </section>
@@ -1061,7 +1083,7 @@ const T = {
     modelFast:"快・Sonnet", modelSharp:"準・Opus",
     openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
-    emailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
+    emailPh:"電子郵件或使用者 ID", regEmailPh:"電子郵件", namePh:"使用者名稱", passPh:"密碼",
     regFirst:"註冊成功，正在登入…", authFail:"帳號或密碼不對",
     refuse:"（這題我不方便回）", svcDown:"服務暫時沒有回應",
     groupsTitle:"群組", newGroup:"＋ 開群組", groupPickTitle:"挑 2–4 個分身",
@@ -1103,7 +1125,7 @@ const T = {
     modelFast:"Fast · Sonnet", modelSharp:"Sharp · Opus",
     openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",
-    emailPh:"email", namePh:"username", passPh:"password",
+    emailPh:"email or username", regEmailPh:"email", namePh:"username", passPh:"password",
     regFirst:"Registered — signing you in…", authFail:"Wrong email or password",
     refuse:"(I'd rather not answer that)", svcDown:"The service didn't respond",
     groupsTitle:"Groups", newGroup:"＋ New group", groupPickTitle:"Pick 2–4 twins",
@@ -1220,6 +1242,7 @@ $("au-mode").addEventListener("click", ()=>{
   $("au-mode").innerHTML = regMode
     ? '<span class="lang-zh">已有帳號？改為登入</span><span class="lang-en">Have an account? Sign in</span>'
     : '<span class="lang-zh">還沒有帳號？我要註冊</span><span class="lang-en">No account yet? Register</span>';
+  $("au-email").placeholder = t(regMode ? "regEmailPh" : "emailPh");
 });
 function authErrMsg(code){
   const zh = {invalid_input:"輸入格式不對——密碼至少 6 個字元；使用者名稱 3-32 位，只能用英數、_、-",
@@ -1374,9 +1397,52 @@ function renderPeople(people){
       b.classList.add("sel");
       $("distillbtn").disabled = false;
       $("distillbtn").textContent = t("distillName")(p.name);
+      $("avpickrow").classList.add("show");
     });
     box.appendChild(b);
   });
+}
+/* 選填照片：蒸餾開始時被吸進蒸餾器，完成後自動成為分身頭貼 */
+$("avpick").addEventListener("change", ()=>{
+  const f = $("avpick").files[0];
+  if(!f) return;
+  if(state.pendingAvatarURL) URL.revokeObjectURL(state.pendingAvatarURL);
+  state.pendingAvatar = f;
+  state.pendingAvatarURL = URL.createObjectURL(f);
+  const th = $("avpickthumb");
+  th.src = state.pendingAvatarURL;
+  th.style.display = "block";
+});
+function suckInPhoto(){
+  if(!state.pendingAvatarURL) return;
+  const img = document.createElement("img");
+  img.className = "suck-img";
+  img.src = state.pendingAvatarURL;
+  $("viz").querySelector(".alembic").appendChild(img);
+  setTimeout(()=> img.remove(), 2100);
+}
+async function uploadPendingAvatar(){
+  const f = state.pendingAvatar;
+  if(!f || !state.personaId) return;
+  try{
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await fetch(API+"/api/personas/"+state.personaId+"/avatar",
+      {method:"POST", headers: authHeaders(), body: fd});
+    const j = await r.json();
+    if(r.ok){
+      const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+      if(tw) tw.avatar = j.avatar;
+      renderTwins();
+      $("avlabel").style.display = "none";   // 照片已一起蒸進去，不必再選
+      $("sealslot").innerHTML = `<div class="seal-stamp has-avatar"><img src="${API}/${j.avatar}" alt=""></div>`;
+    }
+  }catch(_){}
+  state.pendingAvatar = null;
+  if(state.pendingAvatarURL){ URL.revokeObjectURL(state.pendingAvatarURL); state.pendingAvatarURL = null; }
+  $("avpickthumb").style.display = "none";
+  $("avpick").value = "";
+  $("avpickrow").classList.remove("show");
 }
 
 /* ── 03 蒸餾動畫（真實串流驅動） ── */
@@ -1434,6 +1500,7 @@ $("distillbtn").addEventListener("click", async ()=>{
   $("sealslot").innerHTML = ""; $("chatbtn").style.display = "none";
   $("avlabel").style.display = "none";
   $("vizstatus").textContent = t("reading")(state.person);
+  suckInPhoto();   // 有附照片的話：吸進蒸餾器
   let acc = "", stageIdx = 0;
   try{
     await sseFetch("/api/distill",
@@ -1462,7 +1529,7 @@ $("distillbtn").addEventListener("click", async ()=>{
           $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(d.name)}</div>`;
           $("chatbtn").style.display = "inline-block";
           $("avlabel").style.display = "inline-block";
-          loadBudget(); loadShelf();
+          loadBudget(); loadShelf().then(uploadPendingAvatar);
         }else if(ev==="error"){ throw new Error(d.message); }
       });
   }catch(err){
@@ -1492,7 +1559,7 @@ async function pollForTwin(person, acc){
       $("sealslot").innerHTML = `<div class="seal-stamp">${sealText(tw.name)}</div>`;
       $("chatbtn").style.display = "inline-block";
       $("avlabel").style.display = "inline-block";
-      loadBudget();
+      loadBudget(); uploadPendingAvatar();
       return;
     }
   }
@@ -1518,10 +1585,18 @@ $("avfile").addEventListener("change", async ()=>{
     const tw = (state.twins||[]).find(x=>x.id===state.personaId);
     if(tw) tw.avatar = j.avatar;
     renderTwins();
+    if(tw && $("chatlayer").classList.contains("open")) sealFill($("chatseal"), tw);
+    if($("studio").classList.contains("open")) renderStudio();
     txt.textContent = LANG==="en" ? "Avatar set ✓" : "頭貼已設定 ✓";
   }catch(err){
     txt.textContent = (LANG==="en" ? "Failed: " : "失敗：") + err.message;
-  }
+  }finally{ $("avfile").value = ""; }
+});
+/* 點聊天室的印章（自己的分身）直接換頭貼 */
+$("chatseal").addEventListener("click", ()=>{
+  if(state.roomId) return;
+  const tw = (state.twins||[]).find(x=>x.id===state.personaId);
+  if(tw && tw.mine) $("avfile").click();
 });
 
 /* ── 04 對話 ── */
@@ -1580,6 +1655,9 @@ function enterChat(pid, name){
   $("chattag").textContent = t("aiTag");
   setWikiLink(tw);
   sealFill($("chatseal"), tw || {name});
+  const sealEditable = !visitor && !!(tw && tw.mine);
+  $("chatseal").classList.toggle("editable", sealEditable);
+  $("chatseal").title = sealEditable ? (LANG==="en" ? "Change avatar" : "點擊更換頭貼") : "";
   $("chatmark-seal").textContent = sealText(disp);
   $("msgs").innerHTML = "";
   if(state.history.length){
