@@ -900,6 +900,8 @@ def list_personas(authorization: str | None = Header(None)):
     for mp in sorted(PERSONAS.glob("*/meta.json"),
                      key=lambda p: p.stat().st_mtime, reverse=True):
         meta = json.loads(mp.read_text(encoding="utf-8"))
+        if user and meta.get("demo") and meta.get("owner_id") != user.get("id"):
+            continue   # 示範分身是給訪客試玩的；登入者的書架只放自己的
         if _visible(meta, user):
             mine = bool(user) and meta.get("owner_id") == user.get("id")
             meta.pop("owner_id", None); meta.pop("owner_email", None)
@@ -935,6 +937,36 @@ def delete_persona(pid: str, payload: dict, authorization: str | None = Header(N
         raise HTTPException(403, "只有擁有者能刪除這個分身")
     shutil.rmtree(pdir)
     return {"deleted": True}
+
+
+@app.post("/api/personas/{pid}/rename")
+def rename_persona(pid: str, payload: dict, authorization: str | None = Header(None)):
+    """分身改名：僅擁有者。顯示層改名——人格檔內文不動，群組成員名單同步更新。"""
+    user = require_user(authorization)
+    pdir = PERSONAS / re.sub(r"[^a-f0-9]", "", pid)
+    if not (pdir / "meta.json").exists():
+        raise HTTPException(404, "找不到這個分身")
+    meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8"))
+    if meta.get("owner_id") != user.get("id"):
+        raise HTTPException(403, "只有擁有者能改名")
+    name = str(payload.get("name") or "").strip()[:24]
+    if not name:
+        raise HTTPException(422, "名稱不能是空的")
+    meta["name"] = name
+    (pdir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    for f in ROOMS.glob("*.json"):   # 群組成員名單存的是快照，跟著改
+        try:
+            room = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        hit = False
+        for m in room.get("members", []):
+            if m.get("pid") == meta["id"]:
+                m["name"] = name
+                hit = True
+        if hit:
+            f.write_text(json.dumps(room, ensure_ascii=False), encoding="utf-8")
+    return {"name": name}
 
 
 @app.post("/api/personas/{pid}/avatar")
