@@ -80,15 +80,19 @@ def _spent() -> float:
         return 0.0
 
 
-def track_usage(usage, user=None, model: str | None = None) -> float:
-    """記帳並回傳這次呼叫的 USD 成本（供群組燃料等額度機制使用）。"""
+def _usd(usage, model: str | None = None) -> float:
     p = _PRICES.get(model or MODEL, _PRICES["claude-opus-5"])
-    cost = (
+    return (
         usage.input_tokens * p["in"]
         + usage.output_tokens * p["out"]
         + (getattr(usage, "cache_creation_input_tokens", 0) or 0) * p["in"] * 1.25
         + (getattr(usage, "cache_read_input_tokens", 0) or 0) * p["in"] * 0.1
     ) / 1e6
+
+
+def track_usage(usage, user=None, model: str | None = None) -> float:
+    """記帳並回傳這次呼叫的 USD 成本（供群組燃料等額度機制使用）。"""
+    cost = _usd(usage, model)
     # 登入且錢包有餘額 → 扣個人錢包（成本×毛利倍率×匯率）；否則吃站方體驗池
     if user and wallet_get(user["id"]) > 0:
         wallet_add(user["id"], -cost * MARGIN * TWD_PER_USD)
@@ -448,6 +452,7 @@ def wallet_info(authorization: str | None = Header(None)):
 
 @app.post("/api/topup")
 def topup(payload: dict, authorization: str | None = Header(None)):
+    """儲值錢包；帶 ink=<pid> 則改注入該分身公開連結的「連結墨水」（訪客對話優先燒它）。"""
     user = require_user(authorization)
     try:
         amt = int(payload.get("amount", 0))
@@ -455,19 +460,27 @@ def topup(payload: dict, authorization: str | None = Header(None)):
         raise HTTPException(422, "金額格式錯誤")
     if not (TOPUP_MIN <= amt <= TOPUP_MAX):
         raise HTTPException(422, f"金額限 NT${TOPUP_MIN}–{TOPUP_MAX:,}")
+    ink_pid = re.sub(r"[^a-f0-9]", "", str(payload.get("ink") or ""))
+    if ink_pid:
+        mp = PERSONAS / ink_pid / "meta.json"
+        if not mp.exists():
+            raise HTTPException(404, "找不到這個分身")
+        if json.loads(mp.read_text(encoding="utf-8")).get("owner_id") != user["id"]:
+            raise HTTPException(403, "只有擁有者能注入連結墨水")
     order = {
         "MerchantID": ECPAY_MID,
         "MerchantTradeNo": "PF" + secrets.token_hex(8)[:14],
         "MerchantTradeDate": datetime.now(TZ).strftime("%Y/%m/%d %H:%M:%S"),
         "PaymentType": "aio",
         "TotalAmount": str(amt),
-        "TradeDesc": "CopyMe wallet topup",
-        "ItemName": f"CopyMe 錢包儲值 NT${amt}",
+        "TradeDesc": "CopyMe link ink" if ink_pid else "CopyMe wallet topup",
+        "ItemName": (f"CopyMe 連結墨水 NT${amt}" if ink_pid else f"CopyMe 錢包儲值 NT${amt}"),
         "ReturnURL": "https://copyme.fly.dev/api/ecpay/notify",
         "ClientBackURL": "https://copyme.aiwalkcorp.com/?paid=1",
         "ChoosePayment": "Credit",
         "EncryptType": "1",
         "CustomField1": user["id"],
+        "CustomField2": ink_pid,
     }
     order["CheckMacValue"] = _cmv(order)
     fields = "".join(
@@ -492,7 +505,15 @@ async def ecpay_notify(request: Request):
         done = set()
     if trade in done:
         return PlainTextResponse("1|OK")
-    wallet_add(form.get("CustomField1", ""), float(form.get("TradeAmt", 0)))
+    ink_pid = re.sub(r"[^a-f0-9]", "", form.get("CustomField2", "") or "")
+    amt = float(form.get("TradeAmt", 0))
+    mp = PERSONAS / ink_pid / "meta.json" if ink_pid else None
+    if mp and mp.exists():
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        meta["ink_twd"] = round(meta.get("ink_twd", 0.0) + amt, 2)
+        mp.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    else:
+        wallet_add(form.get("CustomField1", ""), amt)
     done.add(trade)
     ECPAY_DONE.write_text(json.dumps(sorted(done)[-500:]))
     return PlainTextResponse("1|OK")
@@ -1013,6 +1034,7 @@ def shared_info(token: str):
             if meta.get("share") and secrets.compare_digest(meta["share"], token):
                 return {"id": meta["id"], "name": meta["name"],
                         "room": meta.get("room", ""), "stats": meta.get("stats", {}),
+                        "pool": round(meta.get("ink_twd", 0.0), 2),
                         "threads": _thread_list(mp.parent)}
     raise HTTPException(404, "連結已失效或被擁有者停用")
 
@@ -1468,7 +1490,18 @@ async def chat(payload: dict, request: Request, authorization: str | None = Head
                     chunks.append(text)
                     yield sse("delta", {"text": text})
                 final = stream.get_final_message()
-            track_usage(final.usage, user=bill_user, model=use_model)
+            # 公開連結的對話優先燒「連結墨水」；墨水乾了才落到訪客原本的計費路徑
+            ink_billed = False
+            if share_ok:
+                mpath = pdir / "meta.json"
+                m2 = json.loads(mpath.read_text(encoding="utf-8"))
+                if m2.get("ink_twd", 0.0) > 0:
+                    m2["ink_twd"] = round(
+                        m2["ink_twd"] - _usd(final.usage, use_model) * MARGIN * TWD_PER_USD, 2)
+                    mpath.write_text(json.dumps(m2, ensure_ascii=False), encoding="utf-8")
+                    ink_billed = True
+            if not ink_billed:
+                track_usage(final.usage, user=bill_user, model=use_model)
             if final.stop_reason == "refusal":
                 yield sse("delta", {"text": "（這題我不方便回）"})
         except anthropic.AnthropicError as e:
