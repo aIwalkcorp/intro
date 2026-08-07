@@ -395,6 +395,13 @@ body.en div.lang-en{display:block}
 .avpick-row.show{display:flex}
 .avpick-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;
   border:2px solid var(--seal);transform:rotate(-3deg);display:none}
+/* 頭貼裁剪：正方框＝最終頭貼；拖曳移動、滑桿/滾輪縮放 */
+.crop-box{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:10px;
+  border:2.5px solid var(--seal);background:#fff;touch-action:none;cursor:grab;margin-top:4px}
+.crop-box:active{cursor:grabbing}
+.crop-box img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none;
+  user-select:none;pointer-events:none}
+.crop-zoom{width:100%;margin-top:14px;accent-color:var(--seal);height:22px}
 .suck-img{position:absolute;left:50%;top:-34px;width:88px;height:88px;object-fit:cover;
   border-radius:10px;border:2.5px solid var(--seal);z-index:3;
   box-shadow:0 6px 18px rgba(25,29,43,.28);
@@ -925,6 +932,26 @@ footer a{color:var(--mist)}
   </div>
 </div>
 
+<div class="modal-veil" id="cropmodal">
+  <div class="modal modal-box" style="max-width:380px">
+    <button class="mclose" id="cr-close" aria-label="Close">✕</button>
+    <h3><span class="lang-zh">裁剪頭貼</span><span class="lang-en">Crop avatar</span></h3>
+    <p class="mnote" style="margin-bottom:10px">
+      <span class="lang-zh">拖曳調整位置、滑桿縮放——方框內就是頭貼。</span>
+      <span class="lang-en">Drag to position, slide to zoom — the square is your avatar.</span>
+    </p>
+    <div class="crop-box" id="cropbox"><img id="cropimg" alt="" draggable="false"></div>
+    <input type="range" class="crop-zoom" id="cropzoom" min="100" max="300" value="100"
+      aria-label="Zoom">
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="studio-back" id="cr-cancel" style="flex:1;padding:11px">
+        <span class="lang-zh">取消</span><span class="lang-en">Cancel</span></button>
+      <button class="gobtn" id="cr-apply" style="flex:1;margin:0;padding:11px">
+        <span class="lang-zh">套用</span><span class="lang-en">Apply</span></button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-veil" id="pmodal">
   <div class="modal modal-box" style="max-width:640px">
     <button class="mclose" id="pm-close" aria-label="Close">✕</button>
@@ -1402,9 +1429,105 @@ function renderPeople(people){
     box.appendChild(b);
   });
 }
-/* 選填照片：蒸餾開始時被吸進蒸餾器，完成後自動成為分身頭貼 */
-$("avpick").addEventListener("change", ()=>{
-  const f = $("avpick").files[0];
+/* ── 頭貼裁剪器：方框即成品，拖曳移動＋滑桿/滾輪縮放，輸出 512² JPEG ── */
+const crop = {img:null, url:"", scale:1, min:1, tx:0, ty:0, natW:0, natH:0, resolve:null};
+function cropBoxSize(){ return $("cropbox").clientWidth; }
+function cropClamp(){
+  const B = cropBoxSize();
+  crop.tx = Math.min(0, Math.max(B - crop.natW * crop.scale, crop.tx));
+  crop.ty = Math.min(0, Math.max(B - crop.natH * crop.scale, crop.ty));
+}
+function cropRender(){
+  const el = $("cropimg");
+  el.style.width = (crop.natW * crop.scale) + "px";
+  el.style.height = (crop.natH * crop.scale) + "px";
+  el.style.transform = `translate(${crop.tx}px,${crop.ty}px)`;
+}
+function cropSetScale(s, cx, cy){        // 以 (cx,cy) 為錨點縮放，錨點下的像素不動
+  const ns = Math.max(crop.min, Math.min(crop.min * 3, s));
+  const k = ns / crop.scale;
+  crop.tx = cx - (cx - crop.tx) * k;
+  crop.ty = cy - (cy - crop.ty) * k;
+  crop.scale = ns;
+  cropClamp(); cropRender();
+}
+function openCropper(file){
+  return new Promise(resolve=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      crop.resolve = resolve; crop.url = url; crop.img = img;
+      crop.natW = img.naturalWidth; crop.natH = img.naturalHeight;
+      $("cropimg").src = url;
+      $("cropmodal").classList.add("open");
+      requestAnimationFrame(()=>{        // 等 modal 佈局完成才量得到方框尺寸
+        const B = cropBoxSize();
+        crop.min = Math.max(B / crop.natW, B / crop.natH);
+        crop.scale = crop.min;
+        crop.tx = (B - crop.natW * crop.scale) / 2;
+        crop.ty = (B - crop.natH * crop.scale) / 2;
+        $("cropzoom").value = 100;
+        cropClamp(); cropRender();
+      });
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+function cropFinish(result){
+  $("cropmodal").classList.remove("open");
+  if(crop.url) URL.revokeObjectURL(crop.url);
+  const r = crop.resolve;
+  crop.resolve = null; crop.url = ""; crop.img = null;
+  if(r) r(result);
+}
+$("cr-cancel").addEventListener("click", ()=> cropFinish(null));
+$("cr-close").addEventListener("click", ()=> cropFinish(null));
+$("cr-apply").addEventListener("click", ()=>{
+  if(!crop.img) return;
+  const B = cropBoxSize(), out = 512;
+  const c = document.createElement("canvas");
+  c.width = c.height = out;
+  c.getContext("2d").drawImage(crop.img,
+    -crop.tx / crop.scale, -crop.ty / crop.scale, B / crop.scale, B / crop.scale,
+    0, 0, out, out);
+  c.toBlob(b=> cropFinish(b ? new File([b], "avatar.jpg", {type:"image/jpeg"}) : null),
+    "image/jpeg", .88);
+});
+{
+  const box = $("cropbox");
+  let drag = null;
+  box.addEventListener("pointerdown", e=>{
+    box.setPointerCapture(e.pointerId);
+    drag = {x:e.clientX, y:e.clientY, tx:crop.tx, ty:crop.ty};
+  });
+  box.addEventListener("pointermove", e=>{
+    if(!drag) return;
+    crop.tx = drag.tx + (e.clientX - drag.x);
+    crop.ty = drag.ty + (e.clientY - drag.y);
+    cropClamp(); cropRender();
+  });
+  ["pointerup","pointercancel"].forEach(x=> box.addEventListener(x, ()=> drag = null));
+  // ponytail: 桌機滾輪＋滑桿縮放；手機雙指縮放先不做，滑桿已覆蓋，需求出現再加
+  box.addEventListener("wheel", e=>{
+    e.preventDefault();
+    const rect = box.getBoundingClientRect();
+    cropSetScale(crop.scale * (e.deltaY < 0 ? 1.08 : .93),
+                 e.clientX - rect.left, e.clientY - rect.top);
+    $("cropzoom").value = Math.round(crop.scale / crop.min * 100);
+  }, {passive:false});
+  $("cropzoom").addEventListener("input", ()=>{
+    const B = cropBoxSize();
+    cropSetScale(crop.min * ($("cropzoom").value / 100), B / 2, B / 2);
+  });
+}
+
+/* 選填照片：先裁剪，蒸餾開始時被吸進蒸餾器，完成後自動成為分身頭貼 */
+$("avpick").addEventListener("change", async ()=>{
+  let f = $("avpick").files[0];
+  $("avpick").value = "";
+  if(!f) return;
+  f = await openCropper(f);
   if(!f) return;
   if(state.pendingAvatarURL) URL.revokeObjectURL(state.pendingAvatarURL);
   state.pendingAvatar = f;
@@ -1571,8 +1694,10 @@ $("chatbtn").addEventListener("click", ()=> enterChat(state.personaId, state.per
 
 /* 蒸餾完成後的選填頭貼：上傳成功即取代文字印章 */
 $("avfile").addEventListener("change", async ()=>{
-  const f = $("avfile").files[0];
+  let f = $("avfile").files[0];
   if(!f || !state.personaId) return;
+  f = await openCropper(f);
+  if(!f){ $("avfile").value = ""; return; }
   const txt = $("avlabel-text");
   txt.textContent = LANG==="en" ? "Uploading…" : "上傳中…";
   try{
@@ -2079,7 +2204,8 @@ $("clclose").addEventListener("click", ()=>{
 });
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){
-    if($("authmodal").classList.contains("open")) closeAuth();
+    if($("cropmodal").classList.contains("open")) cropFinish(null);
+    else if($("authmodal").classList.contains("open")) closeAuth();
     else if($("groupmodal").classList.contains("open")) $("groupmodal").classList.remove("open");
     else if($("extmodal").classList.contains("open")) $("extmodal").classList.remove("open");
     else if($("sharemodal").classList.contains("open")) $("sharemodal").classList.remove("open");
