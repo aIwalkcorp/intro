@@ -452,9 +452,8 @@ body.en div.lang-en{display:block}
 .modal .abtn{transition:background .15s,transform .12s}
 .modal .abtn:active{transform:scale(.98)}
 .modal .abtn:disabled{opacity:.75;cursor:progress}
-/* 儲值彈窗：窄螢幕不溢出——按鈕可縮、整體可捲 */
+/* 儲值彈窗：窄螢幕不溢出——整體可捲、輸入可縮 */
 .modal{max-height:88vh;overflow-y:auto}
-#tu-btns .gobtn{min-width:0;padding:10px 4px;letter-spacing:0;font-size:.92rem}
 #topupmodal input{min-width:0}
 /* 金流資安說明列 */
 .paysec{display:flex;gap:9px;margin-top:14px;padding:11px 13px;border-radius:8px;
@@ -901,13 +900,8 @@ footer a{color:var(--mist)}
       <span class="lang-zh">⚠ 目前為金流測試模式——刷卡頁是綠界測試環境，不會真正扣款（正式金流開通後自動切換）。</span>
       <span class="lang-en">⚠ Payment test mode — the checkout page is ECPay's sandbox; no real charge (switches automatically once live credentials land).</span>
     </p>
-    <div style="display:flex;gap:10px" id="tu-btns">
-      <button class="gobtn" style="flex:1" data-amt="100">NT$100</button>
-      <button class="gobtn" style="flex:1" data-amt="300">NT$300</button>
-      <button class="gobtn" style="flex:1" data-amt="500">NT$500</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-      <input id="tu-custom" type="number" min="5" step="1"
+    <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+      <input id="tu-custom" type="number" min="5" step="1" value="100"
         style="flex:1;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font-size:.9rem;background:#fff"
         placeholder="">
       <span id="tu-usd" style="font-family:var(--mono);font-size:.68rem;color:var(--mist)"></span>
@@ -2797,10 +2791,6 @@ function renderMoney(){
   if(state.walletTwd != null) $("walletval").textContent = fmtMoney(state.walletTwd);
   $("sf-val").textContent = fmtMoney(state.fuelTwd);
   $("sh-fuelval").textContent = fmtMoney(state.shInk || 0);
-  $("tu-btns").querySelectorAll("[data-amt]").forEach(b=>{
-    const twd = parseInt(b.dataset.amt);
-    b.textContent = LANG === "en" ? fmtMoney(twd) + " (NT$" + twd + ")" : "NT$" + twd;
-  });
 }
 async function loadWallet(){
   if(!ME){ $("walletchip").style.display = "none"; return; }
@@ -2815,7 +2805,6 @@ async function loadWallet(){
 $("walletchip").addEventListener("click", ()=> $("topupmodal").classList.add("open"));
 $("tu-close").addEventListener("click", ()=> $("topupmodal").classList.remove("open"));
 $("topupmodal").addEventListener("click", e=>{ if(e.target===$("topupmodal")) $("topupmodal").classList.remove("open"); });
-$("topupmodal").querySelectorAll("[data-amt]").forEach(b=> b.addEventListener("click", ()=> doTopup(parseInt(b.dataset.amt))));
 async function doTopup(amt, inkPid){
   try{
     const r = await fetch(API+"/api/topup", {method:"POST",
@@ -2823,9 +2812,20 @@ async function doTopup(amt, inkPid){
       body: JSON.stringify({amount: amt, ink: inkPid || ""})});
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
-    // 同分頁跳轉綠界（開新視窗會被手機的彈窗攔截擋掉）；付完 ClientBackURL 自動帶回
-    document.open(); document.write(j.html); document.close();
-  }catch(err){ showErr(err.message); }
+    // 把綠界的自動送出表單插進目前頁面直接 submit：同分頁跳轉，
+    // 不用 window.open（手機彈窗攔截）也不用 document.write（部分瀏覽器不執行內嵌 script）
+    const holder = document.createElement("div");
+    holder.innerHTML = (j.html.match(/<form[\s\S]*?<\/form>/) || [""])[0];
+    const form = holder.querySelector("form");
+    if(!form) throw new Error(t("svcDown"));
+    form.style.display = "none";
+    document.body.appendChild(form);
+    form.submit();
+  }catch(err){
+    $("topupmodal").classList.remove("open");   // 錯誤別藏在遮罩後面
+    $("sharemodal").classList.remove("open");
+    showErr(err.message);
+  }
 }
 $("sh-inkgo").addEventListener("click", ()=>{
   const v = parseInt($("sh-inkamt").value);
