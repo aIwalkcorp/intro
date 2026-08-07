@@ -393,7 +393,8 @@ body.en div.lang-en{display:block}
 /* 頭貼分身：印章框內放照片 */
 .has-avatar{padding:0;overflow:hidden;background:#fff}
 .has-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+html{overscroll-behavior:none;background:var(--paper)}
+body.locked{position:fixed;left:0;right:0;width:100%;height:100%;overflow:hidden}
 .chatseal.editable{cursor:pointer}
 .chatname.editable{cursor:pointer}
 /* hover 樣式只給真滑鼠：iOS 對有 hover 的元素會「第一下模擬 hover、第二下才點」 */
