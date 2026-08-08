@@ -156,6 +156,32 @@ body.en div.lang-en{display:block}
   border-radius:50% 50% 40% 40% / 60% 60% 35% 35%;
   transition:height .8s ease;min-height:3px;opacity:.85;mix-blend-mode:multiply}
 @media(prefers-reduced-motion:reduce){.a-drop{display:none !important}}
+/* 果汁機（第二台機器）：頭貼碎片掉入攪拌杯→朱紅漩渦→旁邊的杯注滿果汁 */
+.b-swirl{position:absolute;left:37%;top:18%;width:27%;height:20%;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(179,56,44,.5),transparent 40%,rgba(179,56,44,.3) 60%,transparent);
+  mix-blend-mode:multiply;opacity:0;animation:bspin 1.1s linear infinite paused}
+.viz.running .b-swirl,.ext-viz .b-swirl{opacity:.35;animation-play-state:running}
+@keyframes bspin{to{transform:rotate(360deg)}}
+.b-shards{position:absolute;inset:0;pointer-events:none}
+.b-shards i{position:absolute;top:3%;width:11px;height:11px;border-radius:2px;
+  background:var(--seal) center/cover;opacity:0;mix-blend-mode:multiply;
+  animation:bfall 1.5s cubic-bezier(.5,.05,.85,.4) infinite paused}
+.b-shards i:nth-child(1){left:44%;animation-delay:0s;background-color:var(--pri)}
+.b-shards i:nth-child(2){left:50%;animation-delay:.25s}
+.b-shards i:nth-child(3){left:47%;animation-delay:.5s;background-color:var(--pri-deep)}
+.b-shards i:nth-child(4){left:53%;animation-delay:.75s}
+.b-shards i:nth-child(5){left:41%;animation-delay:1s;background-color:var(--mist)}
+.b-shards i:nth-child(6){left:56%;animation-delay:1.25s}
+.viz.running .b-shards i,.ext-viz .b-shards i{animation-play-state:running}
+.viz:not(.running) .b-shards i{display:none}
+@keyframes bfall{0%{transform:translateY(-14px) rotate(0);opacity:0}
+  12%{opacity:.95}70%{opacity:.95}
+  100%{transform:translateY(118px) rotate(200deg) scale(.4);opacity:0}}
+.b-juice{position:absolute;left:21%;width:15%;bottom:13%;height:0;min-height:3px;
+  background:linear-gradient(180deg,#c9503f,var(--seal) 70%,#8f2b21);
+  border-radius:3px 3px 40% 40% / 3px 3px 22% 22%;opacity:.85;mix-blend-mode:multiply;
+  transition:height .8s ease}
+@media(prefers-reduced-motion:reduce){.b-shards i,.b-swirl{display:none !important}}
 /* 浮現的語氣片段 */
 .frag{min-height:54px;display:flex;align-items:center;justify-content:center;
   text-align:center;max-width:52ch;margin:10px 0 4px}
@@ -878,7 +904,7 @@ footer a{color:var(--mist)}
   <p class="sthint"><span class="lang-zh">人格檔正在成形</span><span class="lang-en">The persona is taking shape</span></p>
   <div class="card still">
     <div class="viz" id="viz">
-      <div class="alembic" aria-hidden="true">
+      <div class="alembic" id="machine" aria-hidden="true">
         <img src="art/alembic.webp" alt="">
         <div class="a-pool" id="pool"></div>
         <div class="a-drop"></div>
@@ -1473,6 +1499,24 @@ function setWikiLink(tw){
     wl.style.display = "";
   }else wl.style.display = "none";
 }
+/* 兩台機器：蒸餾器（滴漏＋墨池）與果汁機（碎片＋漩渦＋果汁杯）。poolId 沿用原本的液面元素 id。 */
+function machineHTML(kind, poolId){
+  return kind === "blender"
+    ? `<img src="art/blender.webp" alt="">
+       <div class="b-swirl"></div>
+       <div class="b-shards"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+       <div class="b-juice" id="${poolId}"></div>`
+    : `<img src="art/alembic.webp" alt="">
+       <div class="a-pool" id="${poolId}"></div>
+       <div class="a-drop"></div>`;
+}
+function shardAvatars(root, p){
+  if(!p || !p.avatar) return;
+  const src = p.avatar.includes("/") ? API + "/" + p.avatar : "art/" + p.avatar;
+  root.querySelectorAll(".b-shards i").forEach(i=>{
+    i.style.backgroundImage = `url(${src})`;
+  });
+}
 function sealFill(el, p){
   if(p && p.avatar){
     el.classList.add("has-avatar");
@@ -1777,6 +1821,8 @@ $("distillbtn").addEventListener("click", async ()=>{
   clearErr(); setStation(3);
   stageState = STAGE_KEYS.map(()=>false);
   buildStages();
+  // 今天蒸餾所開哪台機器：一半機率蒸餾器、一半果汁機
+  $("machine").innerHTML = machineHTML(Math.random() < .5 ? "blender" : "alembic", "pool");
   $("viz").classList.add("running");
   $("pool").style.height = "5px";
   $("frag").innerHTML = ""; $("docfull").textContent = "";
@@ -2272,14 +2318,11 @@ async function extUpload(){
 async function extRun(uploadId, person){
   const b = $("ext-body");
   b.innerHTML = `<div class="ext-viz">
-    <div class="alembic" aria-hidden="true">
-      <img src="art/alembic.webp" alt="">
-      <div class="a-pool" id="extpool"></div>
-      <div class="a-drop"></div>
-    </div>
+    <div class="alembic" aria-hidden="true">${machineHTML("blender", "extpool")}</div>
     <div class="stages" id="extstages"></div>
     <div class="extbar"><i></i></div>
     <p class="mnote" style="margin:4px 0 0"></p></div>`;
+  shardAvatars(b, (state.twins||[]).find(x=>x.id===state.personaId));
   b.querySelector("p").textContent = t("extRun");
   const bar = b.querySelector(".extbar i");
   const extState = STAGE_KEYS.map(()=>false);
@@ -2306,7 +2349,7 @@ async function extRun(uploadId, person){
         else if(ev==="done"){
           bar.style.width = "100%";
           extState.fill(true); lightExt();
-          b.querySelector(".a-drop").style.display = "none";
+          b.querySelectorAll(".a-drop,.b-shards,.b-swirl").forEach(el=> el.style.display = "none");
           b.querySelector("p").textContent = t("extDone")(d.added, d.stats.count);
           const tw = (state.twins||[]).find(x=>x.id===state.personaId);
           if(tw) tw.stats = d.stats;

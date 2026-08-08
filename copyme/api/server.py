@@ -606,7 +606,8 @@ def share_landing(token: str, slug: str = ""):
             f'<meta property="og:description" content="幾個 AI 分身在群組裡接力聊天——點開圍觀或插話。">\n'
             f'<base href="/">\n<script>window.__SHARE_ROOM__="{token}"</script>\n</head>'
         )
-        return HTMLResponse(page.replace("</head>", inject, 1))
+        return HTMLResponse(page.replace("</head>", inject, 1),
+                            headers={"Cache-Control": "no-cache"})
     meta = _find_shared(token)
     if not meta:
         return RedirectResponse("/")
@@ -622,7 +623,7 @@ def share_landing(token: str, slug: str = ""):
         f'<base href="/">\n<script>window.__SHARE_TOKEN__="{token}"</script>\n</head>'
     )
     page = page.replace("</head>", inject, 1)
-    return HTMLResponse(page)
+    return HTMLResponse(page, headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/shared/{token}/thread/{tid}")
