@@ -376,10 +376,25 @@ body.en div.lang-en{display:block}
 .side-sec{font-family:var(--mono);font-size:.62rem;color:var(--mist);letter-spacing:.08em;
   padding:12px 11px 4px;border-top:1px dashed var(--bdr);margin-top:6px}
 .si-seal.grp{border-style:double;border-width:4px;transform:rotate(3deg)}
-.gpick{display:flex;flex-direction:column;gap:4px;margin:6px 0 10px;max-height:250px;overflow-y:auto}
-.gpick label{display:flex;gap:9px;align-items:center;padding:7px 9px;border:1.5px solid var(--bdr);
-  border-radius:7px;font-size:.88rem;background:#fff}
-.gpick input{accent-color:var(--seal)}
+/* 群組選人：印章卡片格——點選＝蓋印 */
+.gpick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 12px;
+  max-height:264px;overflow-y:auto;padding:2px}
+.gpick label{position:relative;display:flex;gap:10px;align-items:center;padding:9px 11px;
+  border:1.5px solid var(--bdr);border-radius:8px;font-size:.88rem;font-weight:700;
+  background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+.gpick label:hover{border-color:var(--pri)}
+.gpick label.on{border-color:var(--seal);box-shadow:0 0 0 2px var(--seal-soft);
+  background:rgba(179,56,44,.04)}
+.gpick input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;
+  margin:0;padding:0;border:none}
+.gpick label:has(input:focus-visible){outline:3px solid var(--pri);outline-offset:2px}
+.gp-seal{width:32px;height:32px;border:2px solid var(--seal);border-radius:6px;flex-shrink:0;
+  transform:rotate(-4deg);color:var(--seal);font-family:var(--serif);font-weight:900;
+  font-size:.6rem;line-height:1.05;display:flex;align-items:center;justify-content:center;
+  text-align:center;background:rgba(179,56,44,.06);transition:transform .15s}
+.gpick label.on .gp-seal{transform:rotate(-4deg) scale(1.06)}
+.gp-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:430px){.gpick{grid-template-columns:1fr}}
 .chatin{display:flex;gap:10px;padding:12px;border-top:1.5px solid var(--bdr)}
 .chatin input{flex:1;padding:10px 14px;border:1.5px solid var(--bdr);border-radius:8px;
   font-family:var(--sans);font-size:.95rem;background:var(--card)}
@@ -2858,9 +2873,15 @@ function openGroupModal(editRoom){
     const cb = document.createElement("input");
     cb.type = "checkbox"; cb.value = p.id;
     cb.checked = checked.has(p.id);
+    const seal = document.createElement("span");
+    seal.className = "gp-seal";
+    sealFill(seal, p);
     const s = document.createElement("span");
+    s.className = "gp-name";
     s.textContent = twName(p);
-    l.appendChild(cb); l.appendChild(s);
+    l.classList.toggle("on", cb.checked);
+    cb.addEventListener("change", ()=> l.classList.toggle("on", cb.checked));
+    l.append(cb, seal, s);
     box.appendChild(l);
   });
   $("g-err").textContent = "";
