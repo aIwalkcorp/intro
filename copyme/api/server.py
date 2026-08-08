@@ -596,11 +596,17 @@ def share_landing(token: str, slug: str = ""):
     from fastapi.responses import HTMLResponse, RedirectResponse
     import html as _html
     token = re.sub(r"[^\w-]", "", token)
+
+    def _page_for(title: str) -> str:
+        page = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
+        page = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", page, count=1)
+        # 拆掉靜態 head 的 og 標籤——爬蟲只取第一組，留著會蓋掉分享專屬的標題
+        return re.sub(r'<meta property="og:(?:title|description)" content="[^"]*"\s*/?>\s*', "", page)
+
     room = _find_shared_room(token)
     if room:
         title = f"圍觀「{_html.escape(room['title'])}」的分身群聊 · CopyMe 復刻"
-        page = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
-        page = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", page, count=1)
+        page = _page_for(title)
         inject = (
             f'<meta property="og:title" content="{title}">\n'
             f'<meta property="og:description" content="幾個 AI 分身在群組裡接力聊天——點開圍觀或插話。">\n'
@@ -612,9 +618,8 @@ def share_landing(token: str, slug: str = ""):
     if not meta:
         return RedirectResponse("/")
     name = _html.escape(meta["name"])
-    page = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
     title = f"跟「{name}」的分身聊聊 · CopyMe 復刻"
-    page = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", page, count=1)
+    page = _page_for(title)
     inject = (
         f'<meta property="og:title" content="{title}">\n'
         f'<meta property="og:description" content="{name} 的 AI 分身——從真實對話蒸餾而成，點開直接聊。">\n'
