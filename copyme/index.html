@@ -311,7 +311,8 @@ body.en div.lang-en{display:block}
   flex-shrink:0;overflow:hidden;padding:1px;text-align:center;line-height:1}
 .chatname{font-weight:700}
 .chattag{font-family:var(--mono);font-size:.7rem;color:var(--mist);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw;cursor:default}
+.chattag.full{white-space:normal;max-width:none}
 .icobtn{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;
   flex-shrink:0;background:none;border:1.5px solid var(--bdr);border-radius:8px;
   color:var(--mist);transition:all .15s;padding:0}
@@ -3089,6 +3090,8 @@ $("modelpick").querySelectorAll("button").forEach(b=> b.addEventListener("click"
   state.model = b.dataset.m;
   $("modelpick").querySelectorAll("button").forEach(x=> x.classList.toggle("on", x===b));
 }));
+// 手機沒有 hover：點成員列展開/收合完整名單
+$("chattag").addEventListener("click", ()=> $("chattag").classList.toggle("full"));
 $("send").addEventListener("click", send);
 $("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
 

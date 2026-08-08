@@ -1194,20 +1194,18 @@ def _mentioned(text: str, members: list[dict]):
 
 
 def _order(room: dict, first: dict | None, n: int) -> list[dict]:
-    """輪流發言序：點名者優先，否則接在上一個發言者後面；同一人不會連講兩次。"""
+    """輪流發言序：點名者優先，其餘按「最久沒發言」排——接力數小於成員數時也不會有人被輪空。"""
     ring = room["members"]
     if n <= 0 or not ring:
         return []
-    last_pid = next((m.get("pid") for m in reversed(room["msgs"])
-                     if m["role"] == "assistant"), None)
-    if first:
-        start = next(i for i, m in enumerate(ring) if m["pid"] == first["pid"])
-    elif last_pid:
-        prev = next((i for i, m in enumerate(ring) if m["pid"] == last_pid), -1)
-        start = (prev + 1) % len(ring)
-    else:
-        start = 0
-    return [ring[(start + i) % len(ring)] for i in range(n)]
+    last_at: dict[str, int] = {}
+    for i, m in enumerate(room["msgs"]):
+        if m["role"] == "assistant" and m.get("pid"):
+            last_at[m["pid"]] = i
+    rest = [m for m in ring if not first or m["pid"] != first["pid"]]
+    rest.sort(key=lambda m: last_at.get(m["pid"], -1))  # 沒講過話的最優先
+    seq = ([first] if first else []) + rest
+    return [seq[i % len(seq)] for i in range(n)]
 
 
 def _room_turn(room: dict, member: dict, primary: str, bill_user):
