@@ -1822,7 +1822,8 @@ $("distillbtn").addEventListener("click", async ()=>{
   stageState = STAGE_KEYS.map(()=>false);
   buildStages();
   // 今天蒸餾所開哪台機器：一半機率蒸餾器、一半果汁機
-  $("machine").innerHTML = machineHTML(Math.random() < .5 ? "blender" : "alembic", "pool");
+  const kind = Math.random() < .5 ? "blender" : "alembic";
+  $("machine").innerHTML = machineHTML(kind, "pool");
   $("viz").classList.add("running");
   $("pool").style.height = "5px";
   $("frag").innerHTML = ""; $("docfull").textContent = "";
@@ -1831,7 +1832,13 @@ $("distillbtn").addEventListener("click", async ()=>{
   $("sealslot").innerHTML = ""; $("chatbtn").style.display = "none";
   $("avlabel").style.display = "none";
   $("vizstatus").textContent = t("reading")(state.person);
-  suckInPhoto();   // 有附照片的話：吸進蒸餾器
+  if(kind === "alembic"){
+    suckInPhoto();   // 有附照片的話：融化吸進蒸餾器
+  }else if(state.pendingAvatarURL){
+    // 果汁機模式：照片直接打碎成落下的碎片
+    $("machine").querySelectorAll(".b-shards i").forEach(i=>
+      i.style.backgroundImage = `url(${state.pendingAvatarURL})`);
+  }
   let acc = "", stageIdx = 0;
   try{
     await sseFetch("/api/distill",
