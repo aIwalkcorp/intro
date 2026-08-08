@@ -2293,8 +2293,29 @@ function renderStudio(){
 }
 
 $("extbtn").addEventListener("click", ()=>{
-  $("ext-title").textContent = t("extTitle")(state.personaName);
   const b = $("ext-body");
+  if(state.roomId && state.room){
+    // 群組模式：先選要補語料的成員，確保打進正確目標
+    state.extTarget = null;
+    $("ext-title").textContent = LANG==="en" ? "Extend whose corpus?" : "要補充哪一位的語料？";
+    b.innerHTML = "";
+    state.room.members.forEach(m=>{
+      const btn = document.createElement("button");
+      btn.className = "shelfbtn"; btn.style.margin = "3px 6px 3px 0";
+      btn.textContent = m.name;
+      btn.addEventListener("click", ()=>{
+        state.extTarget = {pid: m.pid, name: m.name};
+        $("ext-title").textContent = t("extTitle")(m.name);
+        b.innerHTML = `<input type="file" id="ext-file" accept=".txt" style="width:100%;margin:4px 0 2px">`;
+        $("ext-file").addEventListener("change", extUpload);
+      });
+      b.appendChild(btn);
+    });
+    $("extmodal").classList.add("open");
+    return;
+  }
+  state.extTarget = null;
+  $("ext-title").textContent = t("extTitle")(state.personaName);
   b.innerHTML = `<input type="file" id="ext-file" accept=".txt" style="width:100%;margin:4px 0 2px">`;
   $("ext-file").addEventListener("change", extUpload);
   $("extmodal").classList.add("open");
@@ -2307,7 +2328,7 @@ async function extUpload(){
   try{
     const fd = new FormData();
     fd.append("file", f); fd.append("access_code", "");
-    fd.append("share", state.shareToken || "");
+    fd.append("share", state.shareToken || state.roomShare || "");
     const r = await fetch(API+"/api/upload", {method:"POST", headers: authHeaders(), body: fd});
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
@@ -2343,7 +2364,9 @@ async function extRun(uploadId, person){
   let n = 0, acc = "", stageIdx = 0;
   try{
     await sseFetch("/api/distill/extend",
-      {persona_id: state.personaId, upload_id: uploadId, person,
+      {persona_id: (state.extTarget && state.extTarget.pid) || state.personaId,
+       upload_id: uploadId, person,
+       room_share: state.roomShare || "",
        share: state.shareToken || ""},
       (ev,d)=>{
         if(ev==="delta"){ n += d.text.length; acc += d.text;
@@ -2468,10 +2491,11 @@ async function initSharedRoom(tok){
     state.roomId = j.id; state.room = j;
     state.relay = j.relay; state.autoMax = j.auto_max;
     document.title = (LANG==="en" ? `Watch "${j.title}" · CopyMe` : `圍觀「${j.title}」的分身群聊 · CopyMe 復刻`);
-    ["extbtn","linkbtn","pfbtn","delbtn","gdelbtn","gmembtn","memline","saveline"].forEach(id=>
+    ["linkbtn","pfbtn","delbtn","gdelbtn","gmembtn","memline","saveline"].forEach(id=>
       $(id).style.display = "none");
+    $("extbtn").style.display = ""; $("extbtn").style.marginLeft = "0";
     $("brandcta").style.display = "";
-    $("relaybar").style.display = "none";   // 訪客不調界線；伺服器照樣強制
+    renderRelayBar();   // 訪客可調接力界線／每則訊息接；燃料與自動接力仍鎖建立者
     $("chatname").textContent = j.title;
     $("renamebtn").classList.remove("show");
     $("chatname").classList.remove("editable");
@@ -2715,7 +2739,11 @@ function relaySeg(){
   }
 }
 function renderRelayBar(){
-  if(!state.roomId || state.roomShare){ $("relaybar").style.display = "none"; return; }
+  if(!state.roomId){ $("relaybar").style.display = "none"; return; }
+  // 訪客也能調接力界線與每則訊息接幾回；燃料額度與自動接力只留給建立者
+  const visitor = !!state.roomShare;
+  $("rl-fuelin").style.display = visitor ? "none" : "";
+  document.querySelector(".rl-auto").style.display = visitor ? "none" : "";
   const r = state.room || {};
   const limit = r.auto_limit || 16;
   const cap = Math.min(state.autoMax || r.auto_max || 12, limit);
@@ -2761,7 +2789,7 @@ function saveRoomSettings(patch){
     try{
       const r = await fetch(API+`/api/rooms/${rid}/settings`, {method:"POST",
         headers:{"Content-Type":"application/json", ...authHeaders()},
-        body: JSON.stringify(patch)});
+        body: JSON.stringify({...patch, share: state.roomShare || ""})});
       if(!r.ok) return;
       const j = await r.json();
       if(state.roomId !== rid) return;
@@ -2798,8 +2826,9 @@ async function enterRoom(rid){
     state.relay = Math.min(j.relay || state.relay, state.relayMax);
     state.autoMax = j.auto_max || state.autoMax;
     state.personaId = null; state.personaName = null; state.history = [];
-    ["extbtn","pfbtn","delbtn","brandcta","memline","saveline"].forEach(id=>
+    ["pfbtn","delbtn","brandcta","memline","saveline"].forEach(id=>
       $(id).style.display = "none");
+    $("extbtn").style.display = ""; $("extbtn").style.marginLeft = "0";
     $("linkbtn").style.display = ""; $("linkbtn").style.marginLeft = "auto";
     $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "0";
     $("gmembtn").style.display = "";

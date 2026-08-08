@@ -694,7 +694,7 @@ def _share_valid(token: str) -> bool:
         meta = json.loads(mp.read_text(encoding="utf-8"))
         if meta.get("share") and secrets.compare_digest(meta["share"], token):
             return True
-    return False
+    return _find_shared_room(token) is not None  # 群組分享連結的訪客也能上傳擴充語料
 
 
 @app.post("/api/upload")
@@ -788,7 +788,8 @@ def _detached_sse(events) -> StreamingResponse:
                              headers={"Cache-Control": "no-cache"})
 
 
-def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done, bill_user=None):
+def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done,
+                    bill_user=None, on_cost=None):
     """共用蒸餾串流：yield SSE 事件，成功時呼叫 on_done(persona_md) 取得 done 載荷。"""
     yield sse("status", {"stage": "start", "stats": stats})
     prompt = (
@@ -835,7 +836,9 @@ def _distill_events(person: str, room: str, corpus: str, stats: dict, on_done, b
             msg = "模型目前壅塞，已重試多次仍失敗——語料還在，稍等一兩分鐘再按一次就好" if transient                   else f"Claude API 錯誤：{getattr(e, 'message', e)}"
             yield sse("error", {"message": msg})
             return
-    track_usage(final.usage, user=bill_user, model=use_model)
+    usd = track_usage(final.usage, user=bill_user, model=use_model)
+    if on_cost:
+        on_cost(usd)
     if final.stop_reason == "refusal":
         yield sse("error", {"message": "這份語料被安全機制擋下，無法蒸餾"})
         return
@@ -859,6 +862,15 @@ async def distill_extend(payload: dict, authorization: str | None = Header(None)
     share_tok = str(payload.get("share") or "")
     share_ok = bool(share_tok and meta.get("share")
                     and secrets.compare_digest(meta["share"], share_tok))
+    # 群組分享連結：目標分身必須是該群組成員——語料只會補進正確的目標
+    bill_room = None
+    room_tok = re.sub(r"[^\w-]", "", str(payload.get("room_share") or ""))
+    if not share_ok and room_tok:
+        rm = _find_shared_room(room_tok)
+        if rm and any(m["pid"] == pid for m in rm["members"]):
+            if _fuel_left(rm) <= 0:
+                raise HTTPException(402, "這條連結的燃料用完了——請群組建立者補充")
+            share_ok, bill_room = True, rm
     user = ext_user
     if not share_ok and not (user and meta.get("owner_id") == user.get("id")):
         raise HTTPException(403, "只有擁有者或持公開連結者能擴充語料")
@@ -892,7 +904,14 @@ async def distill_extend(payload: dict, authorization: str | None = Header(None)
         upath.unlink(missing_ok=True)  # 一次性承諾不變：整份聊天檔用完即刪
         return {"persona_id": pid, "name": name, "added": len(added), "stats": stats}
 
-    return _detached_sse(_distill_events(name, meta.get("room", ""), corpus, stats, on_done, bill_user=ext_user))
+    def on_cost(usd: float) -> None:
+        if bill_room is not None:  # 訪客經群組連結擴充：成本記到連結燃料
+            bill_room["fuel_used_twd"] = round(
+                bill_room.get("fuel_used_twd", 0) + usd * MARGIN * TWD_PER_USD, 2)
+            _room_save(bill_room)
+
+    return _detached_sse(_distill_events(name, meta.get("room", ""), corpus, stats, on_done,
+                                         bill_user=ext_user, on_cost=on_cost))
 
 
 def _visible(meta: dict, user) -> bool:
@@ -1316,9 +1335,16 @@ def get_room(rid: str, authorization: str | None = Header(None)):
 
 @app.post("/api/rooms/{rid}/settings")
 def room_settings(rid: str, payload: dict, authorization: str | None = Header(None)):
-    """使用者自訂接力上限：relay＝每次接幾回，auto_max＝沒你插話時最多連續接幾回。"""
-    user = require_user(authorization)
-    room = _room_load(rid, user)
+    """使用者自訂接力上限：relay＝每次接幾回，auto_max＝沒你插話時最多連續接幾回。
+    訪客（持群組分享連結）只能調 relay / auto_max；燃料額度與標題仍限建立者。"""
+    share_tok = re.sub(r"[^\w-]", "", str(payload.get("share") or ""))
+    visitor_room = _find_shared_room(share_tok) if share_tok else None
+    if visitor_room and visitor_room["id"] == re.sub(r"[^a-f0-9]", "", rid):
+        room = visitor_room
+        payload = {k: v for k, v in payload.items() if k in ("relay", "auto_max")}
+    else:
+        user = require_user(authorization)
+        room = _room_load(rid, user)
     if "relay" in payload:
         room["relay"] = _clamp(payload["relay"], 1, RELAY_MAX, room.get("relay", RELAY_DEFAULT))
     if "auto_max" in payload:
