@@ -1067,6 +1067,9 @@ footer a{color:var(--mist)}
     <button class="icobtn danger" id="delbtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
       <span class="vh"><span class="lang-zh">刪除分身</span><span class="lang-en">Delete twin</span></span></button>
+    <button class="icobtn" id="gmembtn" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-3.5 3-6 7-6s7 2.5 7 6"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+      <span class="vh"><span class="lang-zh">管理成員</span><span class="lang-en">Manage members</span></span></button>
     <button class="icobtn danger" id="gdelbtn" style="display:none">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       <span class="vh"><span class="lang-zh">解散群組</span><span class="lang-en">Delete group</span></span></button>
@@ -1964,6 +1967,7 @@ function enterChat(pid, name){
   state.personaId = pid; state.personaName = name;
   state.roomId = null; state.room = null; state.roomShare = null; // 離開群組模式
   $("gdelbtn").style.display = "none";
+  $("gmembtn").style.display = "none";
   $("relaybar").style.display = "none";
   const visitor = !!state.shareToken;
   if(visitor || !ME){
@@ -2368,7 +2372,7 @@ async function initSharedRoom(tok){
     state.roomId = j.id; state.room = j;
     state.relay = j.relay; state.autoMax = j.auto_max;
     document.title = (LANG==="en" ? `Watch "${j.title}" · CopyMe` : `圍觀「${j.title}」的分身群聊 · CopyMe 復刻`);
-    ["extbtn","linkbtn","pfbtn","delbtn","gdelbtn","memline","saveline"].forEach(id=>
+    ["extbtn","linkbtn","pfbtn","delbtn","gdelbtn","gmembtn","memline","saveline"].forEach(id=>
       $(id).style.display = "none");
     $("brandcta").style.display = "";
     $("relaybar").style.display = "none";   // 訪客不調界線；伺服器照樣強制
@@ -2700,6 +2704,7 @@ async function enterRoom(rid){
       $(id).style.display = "none");
     $("linkbtn").style.display = ""; $("linkbtn").style.marginLeft = "auto";
     $("gdelbtn").style.display = ""; $("gdelbtn").style.marginLeft = "0";
+    $("gmembtn").style.display = "";
     $("chatname").textContent = j.title;
     $("renamebtn").classList.add("show");           // 建立者可改群組名
     $("chatname").classList.add("editable");
@@ -2839,22 +2844,36 @@ $("gdelbtn").addEventListener("click", async ()=>{
   }catch(err){ showErr(err.message); }
 });
 
-function openGroupModal(){
+function openGroupModal(editRoom){
+  state.groupEdit = editRoom ? editRoom.id : null;
   const box = $("g-pick"); box.innerHTML = "";
-  (state.twins || []).forEach(p=>{
+  // 編輯模式：名單＝我的分身 ∪ 現有成員（現任成員可能是示範分身，登入書架上看不到）
+  const pool = [...(state.twins || [])];
+  (editRoom?.members || []).forEach(m=>{
+    if(!pool.some(p=>p.id === m.pid)) pool.push({id: m.pid, name: m.name});
+  });
+  const checked = new Set((editRoom?.members || []).map(m=>m.pid));
+  pool.forEach(p=>{
     const l = document.createElement("label");
     const cb = document.createElement("input");
     cb.type = "checkbox"; cb.value = p.id;
+    cb.checked = checked.has(p.id);
     const s = document.createElement("span");
     s.textContent = twName(p);
     l.appendChild(cb); l.appendChild(s);
     box.appendChild(l);
   });
   $("g-err").textContent = "";
-  $("g-title").value = "";
+  $("g-title").value = editRoom ? editRoom.title : "";
   $("g-title").placeholder = t("groupTitlePh");
+  $("g-go").innerHTML = editRoom
+    ? '<span class="lang-zh">更新成員</span><span class="lang-en">Update members</span>'
+    : '<span class="lang-zh">建立群組</span><span class="lang-en">Create group</span>';
   $("groupmodal").classList.add("open");
 }
+$("gmembtn").addEventListener("click", ()=>{
+  if(state.roomId && state.room && !state.roomShare) openGroupModal(state.room);
+});
 $("g-close").addEventListener("click", ()=> $("groupmodal").classList.remove("open"));
 $("groupmodal").addEventListener("click", e=>{
   if(e.target === $("groupmodal")) $("groupmodal").classList.remove("open"); });
@@ -2862,12 +2881,28 @@ $("g-go").addEventListener("click", async ()=>{
   const ids = [...$("g-pick").querySelectorAll("input:checked")].map(x=>x.value);
   if(ids.length < 2 || ids.length > 4){ $("g-err").textContent = t("groupNeed"); return; }
   try{
-    const r = await fetch(API+"/api/rooms", {method:"POST",
-      headers:{"Content-Type":"application/json", ...authHeaders()},
-      body: JSON.stringify({members: ids, title: $("g-title").value,
-                            relay: state.relay, auto_max: state.autoMax})});
-    const j = await r.json();
-    if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    let j;
+    if(state.groupEdit){                 // 編輯模式：更新成員（＋順手存標題）
+      const r = await fetch(API+`/api/rooms/${state.groupEdit}/members`, {method:"POST",
+        headers:{"Content-Type":"application/json", ...authHeaders()},
+        body: JSON.stringify({members: ids})});
+      j = await r.json();
+      if(!r.ok) throw new Error(j.detail || t("svcDown"));
+      const title = $("g-title").value.trim();
+      if(title && title !== j.title){
+        const r2 = await fetch(API+`/api/rooms/${state.groupEdit}/settings`, {method:"POST",
+          headers:{"Content-Type":"application/json", ...authHeaders()},
+          body: JSON.stringify({title})});
+        if(r2.ok) j = await r2.json();
+      }
+    }else{
+      const r = await fetch(API+"/api/rooms", {method:"POST",
+        headers:{"Content-Type":"application/json", ...authHeaders()},
+        body: JSON.stringify({members: ids, title: $("g-title").value,
+                              relay: state.relay, auto_max: state.autoMax})});
+      j = await r.json();
+      if(!r.ok) throw new Error(j.detail || t("svcDown"));
+    }
     $("groupmodal").classList.remove("open");
     await loadRooms();
     renderStudio();

@@ -1327,6 +1327,36 @@ def room_settings(rid: str, payload: dict, authorization: str | None = Header(No
     return _room_brief(room)
 
 
+@app.post("/api/rooms/{rid}/members")
+def room_members(rid: str, payload: dict, authorization: str | None = Header(None)):
+    """動態調整群組成員：傳完整名單（2–4 位）取代現有名單。留下的成員保留原名快照；
+    退出者的歷史發言不動（訊息上已存名字）。僅建立者可調。"""
+    user = require_user(authorization)
+    room = _room_load(rid, user)
+    pids = [re.sub(r"[^a-f0-9]", "", str(p)) for p in (payload.get("members") or [])]
+    pids = list(dict.fromkeys([p for p in pids if p]))
+    if not (2 <= len(pids) <= 4):
+        raise HTTPException(422, "一個群組要 2–4 個分身")
+    old = {m["pid"]: m for m in room.get("members", [])}
+    members = []
+    for pid in pids:
+        if pid in old:
+            members.append(old[pid])
+            continue
+        mp = PERSONAS / pid / "meta.json"
+        if not mp.exists():
+            raise HTTPException(404, "找不到其中一個分身")
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        if not _visible(meta, user):
+            raise HTTPException(403, f"「{meta['name']}」不是你的分身，不能拉進群組")
+        if not (PERSONAS / pid / "persona.md").read_text(encoding="utf-8").strip():
+            raise HTTPException(409, f"「{meta['name']}」的人格檔是空的，請重新蒸餾")
+        members.append({"pid": pid, "name": meta["name"]})
+    room["members"] = members
+    _room_save(room)
+    return _room_brief(room)
+
+
 @app.post("/api/rooms/{rid}/avatar")
 async def set_room_avatar(rid: str, file: UploadFile = File(...),
                           authorization: str | None = Header(None)):
