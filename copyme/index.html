@@ -415,11 +415,22 @@ body.locked{position:fixed;left:0;right:0;width:100%;height:100%;overflow:hidden
 @media(hover:hover){.rename-ic:hover{color:var(--pri);background:rgba(44,62,107,.07)}}
 .chatname .namein{font:inherit;font-weight:700;color:var(--ink);background:#fff;
   border:1.5px solid var(--pri);border-radius:6px;padding:1px 8px;width:11em;max-width:60vw}
-/* 選人時附上照片：蒸餾開始會被吸進蒸餾器 */
-.avpick-row{margin-top:12px;display:none;align-items:center;gap:10px;color:var(--mist)}
+/* 選人時附上照片：空相框自己說話——放了照片會被吸進蒸餾器 */
+.avpick-row{margin-top:14px;display:none;align-items:center;gap:11px}
 .avpick-row.show{display:flex}
-.avpick-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;
-  border:2px solid var(--seal);transform:rotate(-3deg);display:none}
+.avpick-drop{position:relative;width:64px;height:64px;border:2px dashed var(--bdr);
+  border-radius:10px;background:#fff;cursor:pointer;color:var(--mist);
+  display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s}
+@media(hover:hover){.avpick-drop:hover{border-color:var(--seal);color:var(--seal)}}
+.avpick-plus{position:absolute;right:-7px;bottom:-7px;width:21px;height:21px;border-radius:50%;
+  background:var(--seal);color:#fff;font-size:.8rem;line-height:21px;text-align:center;
+  font-weight:700}
+.avpick-drop .avpick-thumb{position:absolute;inset:0;width:100%;height:100%;
+  border-radius:8px;object-fit:cover;display:none}
+.avpick-drop.has .avpick-thumb{display:block}
+.avpick-drop.has{border-style:solid;border-color:var(--seal)}
+.avpick-drop.has .avpick-ph{visibility:hidden}
+.avpick-cap{font-family:var(--mono);font-size:.64rem;color:var(--mist)}
 /* 頭貼裁剪：正方框＝最終頭貼；拖曳移動、滑桿/滾輪縮放 */
 .crop-box{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:10px;
   border:2.5px solid var(--seal);background:#fff;touch-action:none;cursor:grab;margin-top:4px}
@@ -820,15 +831,18 @@ footer a{color:var(--mist)}
 <section class="station" id="st2">
   <div class="stno">02</div>
   <h2 class="sttitle"><span class="lang-zh">選擇要復刻的人</span><span class="lang-en">Pick who to copy</span></h2>
-  <p class="sthint"><span class="lang-zh">名單依發言量排序；至少要有 30 句文字訊息才蒸得出來。選定後可附一張他的照片（選填）——會被吸進蒸餾器，成為分身頭貼</span><span class="lang-en">Sorted by message count; at least 30 text messages needed. After picking, add a photo (optional) — it gets pulled into the still and becomes the twin's avatar</span></p>
+  <p class="sthint"><span class="lang-zh">名單依發言量排序；至少要有 30 句文字訊息才蒸得出來</span><span class="lang-en">Sorted by message count; at least 30 text messages are needed</span></p>
   <div class="card">
     <div class="meta" id="uploadmeta"></div>
     <div class="people" id="people"><span class="msgs-empty"><span class="lang-zh">上傳聊天紀錄後，這裡會列出聊天室裡的人。</span><span class="lang-en">Upload a chat export and the people in it will appear here.</span></span></div>
     <div class="avpick-row" id="avpickrow">
-      <label class="filebtn" style="margin:0;padding:7px 14px;font-size:.82rem">
-        <span class="lang-zh">＋照片（選填，會一起蒸進去）</span><span class="lang-en">+ Photo (optional — distilled in)</span>
-        <input type="file" id="avpick" accept="image/*" hidden></label>
-      <img class="avpick-thumb" id="avpickthumb" alt="">
+      <label class="avpick-drop" id="avpickdrop" aria-label="上傳頭貼（選填） / Upload avatar (optional)">
+        <svg class="avpick-ph" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="avpick-plus" aria-hidden="true">＋</span>
+        <img class="avpick-thumb" id="avpickthumb" alt="">
+        <input type="file" id="avpick" accept="image/*" hidden>
+      </label>
+      <span class="avpick-cap"><span class="lang-zh">頭貼・選填</span><span class="lang-en">avatar · optional</span></span>
     </div>
     <button class="gobtn" id="distillbtn" style="display:none" disabled><span class="lang-zh">開始蒸餾</span><span class="lang-en">Start distilling</span></button>
   </div>
@@ -1623,9 +1637,8 @@ $("avpick").addEventListener("change", async ()=>{
   if(state.pendingAvatarURL) URL.revokeObjectURL(state.pendingAvatarURL);
   state.pendingAvatar = f;
   state.pendingAvatarURL = URL.createObjectURL(f);
-  const th = $("avpickthumb");
-  th.src = state.pendingAvatarURL;
-  th.style.display = "block";
+  $("avpickthumb").src = state.pendingAvatarURL;
+  $("avpickdrop").classList.add("has");
 });
 function suckInPhoto(){
   if(!state.pendingAvatarURL) return;
@@ -1654,7 +1667,7 @@ async function uploadPendingAvatar(){
   }catch(_){}
   state.pendingAvatar = null;
   if(state.pendingAvatarURL){ URL.revokeObjectURL(state.pendingAvatarURL); state.pendingAvatarURL = null; }
-  $("avpickthumb").style.display = "none";
+  $("avpickdrop").classList.remove("has");
   $("avpick").value = "";
   $("avpickrow").classList.remove("show");
 }
