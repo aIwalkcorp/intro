@@ -1139,7 +1139,7 @@ footer a{color:var(--mist)}
   <div class="cl-in">
   <div class="relaybar" id="relaybar" style="display:none">
     <div class="rl-row">
-      <label class="rl-label" for="rl-range"><span class="lang-zh">接力界線</span><span class="lang-en">Relay limit</span></label>
+      <label class="rl-label" for="rl-range"><span class="lang-zh">你不說話時，最多自動聊</span><span class="lang-en">While you're away, they chat up to</span></label>
       <div class="rl-track" id="rl-track">
         <div class="rl-slots" id="rl-slots" aria-hidden="true"></div>
         <input type="range" class="rl-range" id="rl-range" min="1" max="16" step="1" value="12">
@@ -1147,7 +1147,7 @@ footer a{color:var(--mist)}
       <b class="rl-read" id="rl-read"></b>
     </div>
     <div class="rl-row rl-sub">
-      <span class="rl-label"><span class="lang-zh">每則訊息接</span><span class="lang-en">Per message</span></span>
+      <span class="rl-label"><span class="lang-zh">你每說一句，分身回</span><span class="lang-en">Each message you send gets</span></span>
       <span class="rl-seg" id="relayseg" role="group"></span>
       <span class="rl-hint" id="rl-hint"></span>
     </div>
@@ -1243,9 +1243,9 @@ const T = {
     groupsTitle:"群組", newGroup:"＋ 開群組", groupPickTitle:"挑 2–4 個分身",
     groupTitlePh:"群組名稱（可留空）", groupNeed:"至少挑 2 個、最多 4 個分身",
     groupMembers:(n)=>`${n} 個分身`, groupHello:(n)=>`${n} 都在這裡了——你先開個話題吧`,
-    relayN:(n)=>`每則訊息接 ${n} 回合`,
-    relayLeft:(n)=>`還能接 ${n} 回`, relayDone:"換你說話了",
-    relayHint:"分身之間最多連續接這麼多回，你一說話就重新算",
+    relayN:(n)=>`你每說一句，分身回 ${n} 則`,
+    relayLeft:(n)=>`還可自動接 ${n} 則`, relayDone:"額度用完，換你說話了",
+    relayHint:"則回覆（想找誰，訊息裡喊他名字就會優先接）",
     capHit:"已達本輪上限", passedOut:(n)=>`${n} 沒有再接話`,
     fuelOut:"燃料燒完了——調高上面的額度再繼續", allPassed:"大家都沒話講了——說句話點個火吧",
     againBtn:"再跑一輪", stopBtn:"停", running:"接力中…",
@@ -1285,9 +1285,9 @@ const T = {
     groupsTitle:"Groups", newGroup:"＋ New group", groupPickTitle:"Pick 2–4 twins",
     groupTitlePh:"Group name (optional)", groupNeed:"Pick at least 2 twins, at most 4",
     groupMembers:(n)=>`${n} twins`, groupHello:(n)=>`${n} are all here — start a topic`,
-    relayN:(n)=>`${n} turn${n>1?"s":""} per message`,
-    relayLeft:(n)=>`${n} turn${n>1?"s":""} left`, relayDone:"Your turn to speak",
-    relayHint:"Twins relay at most this many turns in a row. Speaking resets it.",
+    relayN:(n)=>`${n} repl${n>1?"ies":"y"} per message`,
+    relayLeft:(n)=>`${n} auto repl${n>1?"ies":"y"} left`, relayDone:"Budget spent — your turn",
+    relayHint:"replies (name a twin in your message and they answer first)",
     capHit:"Relay cap reached", passedOut:(n)=>`${n} had nothing to add`,
     fuelOut:"Fuel spent — raise the budget above to continue", allPassed:"Everyone's out of words — say something to spark it",
     againBtn:"One more round", stopBtn:"Stop", running:"Relaying…",
