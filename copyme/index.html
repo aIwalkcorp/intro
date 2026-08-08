@@ -310,7 +310,8 @@ body.en div.lang-en{display:block}
   display:flex;align-items:center;justify-content:center;transform:rotate(-6deg);
   flex-shrink:0;overflow:hidden;padding:1px;text-align:center;line-height:1}
 .chatname{font-weight:700}
-.chattag{font-family:var(--mono);font-size:.7rem;color:var(--mist)}
+.chattag{font-family:var(--mono);font-size:.7rem;color:var(--mist);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
 .icobtn{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;
   flex-shrink:0;background:none;border:1.5px solid var(--bdr);border-radius:8px;
   color:var(--mist);transition:all .15s;padding:0}
@@ -2473,7 +2474,9 @@ async function initSharedRoom(tok){
     $("chatname").textContent = j.title;
     $("renamebtn").classList.remove("show");
     $("chatname").classList.remove("editable");
-    $("chattag").textContent = t("groupMembers")(j.members.length);
+    const memberNames = j.members.map(m=>m.name).join(LANG==="en" ? ", " : "、");
+    $("chattag").textContent = `${t("groupMembers")(j.members.length)}｜${memberNames}`;
+    $("chattag").title = memberNames;
     setWikiLink(null);
     sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
     $("chatseal").classList.remove("editable"); $("chatseal").title = "";
@@ -2802,7 +2805,9 @@ async function enterRoom(rid){
     $("chatname").textContent = j.title;
     $("renamebtn").classList.add("show");           // 建立者可改群組名
     $("chatname").classList.add("editable");
-    $("chattag").textContent = t("groupMembers")(j.members.length);
+    const memberNames = j.members.map(m=>m.name).join(LANG==="en" ? ", " : "、");
+    $("chattag").textContent = `${t("groupMembers")(j.members.length)}｜${memberNames}`;
+    $("chattag").title = memberNames;
     setWikiLink(null);
     sealFill($("chatseal"), {name: LANG === "en" ? "GRP" : "群", avatar: j.avatar});
     $("chatseal").classList.add("editable");
