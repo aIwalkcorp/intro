@@ -55,6 +55,54 @@ MARGIN = float(os.environ.get("PF_MARGIN", "1.5"))  # 服務毛利倍率
 WALLETS = DATA / "wallets"
 WALLETS.mkdir(parents=True, exist_ok=True)
 
+# ---- 計費參數可在 /data/billing.json 動態覆寫（官方價目會變動，不必重新部署）
+BILLING_FILE = DATA / "billing.json"
+USAGE_LOG = DATA / "usage.jsonl"
+
+
+def _billing() -> dict:
+    try:
+        return json.loads(BILLING_FILE.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def cur_margin() -> float:
+    return float(_billing().get("margin", MARGIN))
+
+
+def cur_rate() -> float:
+    return float(_billing().get("twd_per_usd", TWD_PER_USD))
+
+
+def cur_prices() -> dict:
+    p = dict(_PRICES)
+    for k, v in _billing().get("prices", {}).items():
+        if isinstance(v, dict) and "in" in v and "out" in v:
+            p[k] = {"in": float(v["in"]), "out": float(v["out"])}
+    return p
+
+
+def _log_usage(usage, model: str | None, usd: float, twd: float, src: str, uid: str | None):
+    """每次模型呼叫記一行 JSONL：實際成本 vs 實收台幣，供 /api/admin/billing 分析。"""
+    try:
+        row = {
+            "ts": datetime.now(TZ).isoformat(timespec="seconds"),
+            "model": model or MODEL,
+            "in": usage.input_tokens,
+            "out": usage.output_tokens,
+            "cw": getattr(usage, "cache_creation_input_tokens", 0) or 0,
+            "cr": getattr(usage, "cache_read_input_tokens", 0) or 0,
+            "usd": round(usd, 6),
+            "twd": round(twd, 4),
+            "src": src,  # wallet / pool / ink / fuel
+            "uid": uid,
+        }
+        with USAGE_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
 
 def _wpath(uid: str) -> Path:
     return WALLETS / f"{re.sub(r'[^\w-]', '', uid)}.json"
@@ -81,7 +129,8 @@ def _spent() -> float:
 
 
 def _usd(usage, model: str | None = None) -> float:
-    p = _PRICES.get(model or MODEL, _PRICES["claude-opus-5"])
+    prices = cur_prices()
+    p = prices.get(model or MODEL, prices["claude-opus-5"])
     return (
         usage.input_tokens * p["in"]
         + usage.output_tokens * p["out"]
@@ -95,11 +144,14 @@ def track_usage(usage, user=None, model: str | None = None) -> float:
     cost = _usd(usage, model)
     # 登入且錢包有餘額 → 扣個人錢包（成本×毛利倍率×匯率）；否則吃站方體驗池
     if user and wallet_get(user["id"]) > 0:
-        wallet_add(user["id"], -cost * MARGIN * TWD_PER_USD)
+        twd = cost * cur_margin() * cur_rate()
+        wallet_add(user["id"], -twd)
+        _log_usage(usage, model, cost, twd, "wallet", user["id"])
         return cost
     tmp = SPEND_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps({"usd": _spent() + cost}))
     tmp.replace(SPEND_FILE)
+    _log_usage(usage, model, cost, 0.0, "pool", user["id"] if user else None)
     return cost
 
 
@@ -446,8 +498,111 @@ def _cmv(params: dict) -> str:
 @app.get("/api/wallet")
 def wallet_info(authorization: str | None = Header(None)):
     user = require_user(authorization)
-    return {"twd": round(wallet_get(user["id"]), 2), "margin": MARGIN,
-            "twd_per_usd": TWD_PER_USD, "test_mode": ECPAY_MID == "2000132"}
+    return {"twd": round(wallet_get(user["id"]), 2), "margin": cur_margin(),
+            "twd_per_usd": cur_rate(), "test_mode": ECPAY_MID == "2000132"}
+
+
+def _usage_stats() -> dict:
+    """讀 usage.jsonl 彙總 24h / 7d / 全期：token 量、實際 USD 成本、實收 TWD、有效倍率。"""
+    now = datetime.now(TZ)
+    wins = {"24h": now - timedelta(hours=24), "7d": now - timedelta(days=7), "all": None}
+    agg = {k: {"calls": 0, "in": 0, "out": 0, "cw": 0, "cr": 0,
+               "usd": 0.0, "twd": 0.0, "twd_free": 0.0} for k in wins}
+    try:
+        with USAGE_LOG.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                    ts = datetime.fromisoformat(r["ts"])
+                except (ValueError, KeyError):
+                    continue
+                for k, since in wins.items():
+                    if since is not None and ts < since:
+                        continue
+                    a = agg[k]
+                    a["calls"] += 1
+                    for fld in ("in", "out", "cw", "cr"):
+                        a[fld] += r.get(fld, 0)
+                    a["usd"] += r.get("usd", 0.0)
+                    if r.get("src") == "pool":
+                        a["twd_free"] += r.get("usd", 0.0) * cur_rate()
+                    else:
+                        a["twd"] += r.get("twd", 0.0)
+    except OSError:
+        pass
+    for a in agg.values():
+        billed_usd_equiv = a["twd"] / cur_rate() if a["twd"] else 0.0
+        paid_usd = a["usd"] - (a["twd_free"] / cur_rate())  # 扣掉免費池吃掉的成本
+        a["eff_margin"] = round(billed_usd_equiv / paid_usd, 3) if paid_usd > 0.005 else None
+        a["usd"] = round(a["usd"], 4)
+        a["twd"] = round(a["twd"], 2)
+        a["twd_free"] = round(a["twd_free"], 2)
+    return agg
+
+
+@app.get("/api/admin/billing")
+def admin_billing(authorization: str | None = Header(None)):
+    user = require_user(authorization)
+    if not is_team(user):
+        raise HTTPException(403, "團隊限定")
+    stats = _usage_stats()
+    wallets = {}
+    for p in WALLETS.glob("*.json"):
+        try:
+            wallets[p.stem] = json.loads(p.read_text())["twd"]
+        except (OSError, ValueError, KeyError):
+            pass
+    total_wallet = round(sum(wallets.values()), 2)
+    day = stats["7d"]
+    burn_twd_day = round((day["twd"] + day["twd_free"]) / 7, 2)
+    burn_usd_day = round(day["usd"] / 7, 4)
+    return {
+        "params": {"margin": cur_margin(), "twd_per_usd": cur_rate(),
+                   "prices": cur_prices(),
+                   "overrides": _billing()},   # billing.json 目前的覆寫內容
+        "pool": {"budget_usd": BUDGET_USD, "spent_usd": round(_spent(), 4),
+                 "left_usd": round(budget_left(), 4)},
+        "wallets": {"total_twd": total_wallet, "by_user": wallets},
+        "usage": stats,
+        "burn": {"twd_per_day": burn_twd_day, "usd_per_day": burn_usd_day,
+                 "wallet_runway_days": (round(total_wallet / burn_twd_day, 1)
+                                        if burn_twd_day > 0 else None),
+                 "pool_runway_days": (round(budget_left() / burn_usd_day, 1)
+                                      if burn_usd_day > 0 else None)},
+    }
+
+
+@app.post("/api/admin/billing")
+def admin_billing_set(payload: dict, authorization: str | None = Header(None)):
+    """動態調整計費參數（margin / twd_per_usd / prices），寫入 volume 即刻生效。"""
+    user = require_user(authorization)
+    if not is_team(user):
+        raise HTTPException(403, "團隊限定")
+    cfg = _billing()
+    if "margin" in payload:
+        m = float(payload["margin"])
+        if not (1.0 <= m <= 10.0):
+            raise HTTPException(422, "margin 限 1.0–10.0（低於 1 會虧本）")
+        cfg["margin"] = m
+    if "twd_per_usd" in payload:
+        r = float(payload["twd_per_usd"])
+        if not (20.0 <= r <= 50.0):
+            raise HTTPException(422, "twd_per_usd 限 20–50")
+        cfg["twd_per_usd"] = r
+    if "prices" in payload:
+        if not isinstance(payload["prices"], dict):
+            raise HTTPException(422, "prices 要是 {model: {in, out}} 格式")
+        for k, v in payload["prices"].items():
+            if not (isinstance(v, dict) and "in" in v and "out" in v):
+                raise HTTPException(422, f"prices[{k}] 缺 in/out")
+        cfg["prices"] = payload["prices"]
+    if payload.get("reset"):
+        cfg = {}
+    tmp = BILLING_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(cfg, ensure_ascii=False))
+    tmp.replace(BILLING_FILE)
+    return {"ok": True, "margin": cur_margin(), "twd_per_usd": cur_rate(),
+            "prices": cur_prices()}
 
 
 @app.post("/api/topup")
@@ -1266,7 +1421,7 @@ def _room_turn(room: dict, member: dict, primary: str, bill_user):
             # 模型偶爾仍會自己加名字前綴，統一剝掉
             said = re.sub(rf"^{re.escape(member['name'])}\s*[:：]\s*", "", said)
             yield ("__done__", "" if final.stop_reason == "refusal" else said,
-                   usd * MARGIN * TWD_PER_USD)
+                   usd * cur_margin() * cur_rate())
             return
         except anthropic.AnthropicError as e:
             txt = str(getattr(e, "message", "") or e).lower()
@@ -1622,9 +1777,11 @@ async def chat(payload: dict, request: Request, authorization: str | None = Head
                 mpath = pdir / "meta.json"
                 m2 = json.loads(mpath.read_text(encoding="utf-8"))
                 if m2.get("ink_twd", 0.0) > 0:
-                    m2["ink_twd"] = round(
-                        m2["ink_twd"] - _usd(final.usage, use_model) * MARGIN * TWD_PER_USD, 2)
+                    ink_usd = _usd(final.usage, use_model)
+                    ink_twd = ink_usd * cur_margin() * cur_rate()
+                    m2["ink_twd"] = round(m2["ink_twd"] - ink_twd, 2)
                     mpath.write_text(json.dumps(m2, ensure_ascii=False), encoding="utf-8")
+                    _log_usage(final.usage, use_model, ink_usd, ink_twd, "ink", None)
                     ink_billed = True
             if not ink_billed:
                 track_usage(final.usage, user=bill_user, model=use_model)
