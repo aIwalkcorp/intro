@@ -191,7 +191,37 @@ def resolve_user(authorization: str | None):
     if len(_auth_cache) > 500:
         _auth_cache.clear()
     _auth_cache[tok] = (time.time() + 600, user)
+    _welcome_credit(user)
     return user
+
+
+WELCOME_TWD = float(os.environ.get("PF_WELCOME_TWD", "10"))
+
+
+def _welcome_credit(user) -> None:
+    """帳戶第一次出現（還沒有錢包檔）就送迎新額度，取代共用體驗池的角色。"""
+    uid = user.get("id")
+    _wallet_index(uid, user.get("email"), user.get("username"))
+    if not uid or WELCOME_TWD <= 0 or _wpath(uid).exists():
+        return
+    wallet_add(uid, WELCOME_TWD)
+
+
+WALLET_INDEX = WALLETS / "_index.json"
+
+
+def _wallet_index(uid, email=None, username=None) -> dict:
+    """uid ↔ email/username 對照表（管理面加值、報表辨識用）。"""
+    try:
+        idx = json.loads(WALLET_INDEX.read_text())
+    except (OSError, ValueError):
+        idx = {}
+    if uid and (email or username):
+        row = {"email": email or "", "username": username or ""}
+        if idx.get(uid) != row:
+            idx[uid] = row
+            WALLET_INDEX.write_text(json.dumps(idx, ensure_ascii=False))
+    return idx
 
 
 def is_team(user) -> bool:
@@ -548,10 +578,15 @@ def admin_billing(authorization: str | None = Header(None)):
     if not is_team(user):
         raise HTTPException(403, "團隊限定")
     stats = _usage_stats()
+    idx = _wallet_index(None)
     wallets = {}
     for p in WALLETS.glob("*.json"):
+        if p.name.startswith("_"):
+            continue
         try:
-            wallets[p.stem] = json.loads(p.read_text())["twd"]
+            who = idx.get(p.stem, {})
+            label = who.get("username") or who.get("email") or p.stem
+            wallets[label] = json.loads(p.read_text())["twd"]
         except (OSError, ValueError, KeyError):
             pass
     total_wallet = round(sum(wallets.values()), 2)
@@ -572,6 +607,34 @@ def admin_billing(authorization: str | None = Header(None)):
                  "pool_runway_days": (round(budget_left() / burn_usd_day, 1)
                                       if burn_usd_day > 0 else None)},
     }
+
+
+@app.post("/api/admin/credit")
+def admin_credit(payload: dict, authorization: str | None = Header(None)):
+    """管理面加值：帶 uid 或 email/username（查 _index 對照）＋ twd 金額（可負值扣回）。"""
+    user = require_user(authorization)
+    if not is_team(user):
+        raise HTTPException(403, "團隊限定")
+    try:
+        twd = float(payload.get("twd"))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "twd 金額格式錯誤")
+    if not (-100000 <= twd <= 100000):
+        raise HTTPException(422, "金額超出範圍")
+    uid = payload.get("uid") or ""
+    if not uid:
+        key = (payload.get("email") or payload.get("username") or "").strip().lower()
+        if not key:
+            raise HTTPException(422, "要帶 uid 或 email/username")
+        matches = [u for u, who in _wallet_index(None).items()
+                   if key in (who.get("email", "").lower(), who.get("username", "").lower())]
+        if not matches:
+            raise HTTPException(404, "對照表找不到這個人——請對方先登入 CopyMe 一次")
+        if len(matches) > 1:
+            raise HTTPException(409, f"對到多個帳戶：{matches}")
+        uid = matches[0]
+    bal = wallet_add(uid, twd)
+    return {"ok": True, "uid": uid, "twd_added": twd, "balance": round(bal, 2)}
 
 
 @app.post("/api/admin/billing")
