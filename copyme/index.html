@@ -734,8 +734,24 @@ button,a,summary,.person,.side-item,.shelfbtn{-webkit-tap-highlight-color:transp
 }
 .mytwins{display:none;align-items:center;gap:7px;border:1.5px solid var(--bdr);
   background:var(--card);border-radius:8px;padding:7px 14px;font-size:.84rem;
-  font-weight:700;color:var(--ink)}
+  font-weight:700;color:var(--ink);position:relative;transition:transform .15s,filter .15s}
 .mytwins:hover{border-color:var(--seal);color:var(--seal)}
+/* 登入後＝蓋上朱印：全頁唯一的紅色實心鈕，帶分身數硃記 */
+.mytwins.sealed{background:var(--seal);border-color:var(--seal);color:#fff;
+  box-shadow:0 2px 10px rgba(179,56,44,.30)}
+.mytwins.sealed:hover{color:#fff;filter:brightness(1.08);transform:translateY(-1px)}
+.mytwins .cnt{display:none;min-width:17px;height:17px;padding:0 4px;border-radius:9px;
+  background:#fff;color:var(--seal);font-size:.68rem;font-weight:800;
+  line-height:17px;text-align:center}
+.mytwins.sealed .cnt.show{display:inline-block}
+@keyframes stampin{0%{transform:scale(1.6) rotate(-7deg);opacity:0}
+  55%{transform:scale(.94) rotate(1.5deg);opacity:1}
+  75%{transform:scale(1.03)}100%{transform:none}}
+@keyframes inkring{0%{box-shadow:0 0 0 0 rgba(179,56,44,.45)}
+  100%{box-shadow:0 0 0 14px rgba(179,56,44,0)}}
+.mytwins.stampin{animation:stampin .55s cubic-bezier(.2,1.3,.4,1),
+  inkring .9s ease-out .4s}
+@media (prefers-reduced-motion:reduce){.mytwins.stampin{animation:none}}
 /* 人格檔檢視 */
 .pmodal-doc{max-height:56vh;overflow-y:auto;font-family:var(--mono);font-size:.74rem;
   line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;color:var(--pri-deep);
@@ -777,6 +793,7 @@ footer a{color:var(--mist)}
   <button class="mytwins" id="mytwins">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
     <span class="lang-zh">對話匣</span><span class="lang-en">Chats</span>
+    <span class="cnt" id="twincnt"></span>
   </button>
   <button class="authchip" id="authchip">
     <span id="authchip-label"><span class="lang-zh">登入／註冊</span><span class="lang-en">Sign in</span></span>
@@ -1375,11 +1392,19 @@ function renderAuth(){
     chip.append(l);
   }
   $("mytwins").style.display = on ? "inline-flex" : "none";
+  $("mytwins").classList.toggle("sealed", on);
+  updateTwinCnt();
   // 訪客也能從示範卡片進 studio（左欄鎖定），studio 的關閉只在登出時做（見上方 out handler）
   $("lockline").style.display = on ? "none" : "flex";
   $("drop").style.display = on ? "" : "none";
   // 01 只在管線進行中（02/03 active）才讓位；04 因示範分身永遠 active，不能拿它當依據
   $("st1").classList.toggle("on", !document.querySelector("#st2.on, #st3.on"));
+}
+function updateTwinCnt(){
+  const n = (state.twins||[]).filter(t=>t.mine).length;
+  const c = $("twincnt");
+  c.textContent = n;
+  c.classList.toggle("show", n > 0);
 }
 function openAuth(){ if(!ME) $("authmodal").classList.add("open"); $("au-email").focus(); }
 function closeAuth(){ $("authmodal").classList.remove("open"); }
@@ -1448,6 +1473,10 @@ async function doAuth(){
     $("au-pass").value = "";
     closeAuth();
     await refreshMe(); await loadShelf();
+    // 登入的落印時刻：對話匣蓋上朱印（只在此刻播動畫，之後常駐紅印）
+    const mt = $("mytwins");
+    mt.classList.add("stampin");
+    mt.addEventListener("animationend", ()=> mt.classList.remove("stampin"), {once:true});
     if(ME && state.personaId && !state.shareToken){
       // 剛才那句「想留下這段對話」的意圖，登入後就地兌現
       state.saveLocal = true; $("savechk").checked = true; saveHist();
@@ -3173,6 +3202,7 @@ async function loadShelf(){
     state.twins = (j.personas||[]).slice(0,8);
   }catch(_){ state.twins = state.twins || []; }
   renderTwins();
+  updateTwinCnt();
 }
 loadShelf().then(()=>{ if(location.hash === "#studio" && ME) openStudio(); });
 refreshMe().then(()=>{
