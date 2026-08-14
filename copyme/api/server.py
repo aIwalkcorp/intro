@@ -159,6 +159,16 @@ def budget_left() -> float:
     return max(0.0, BUDGET_USD - _spent())
 
 
+DISTILL_MIN_TWD = float(os.environ.get("PF_DISTILL_MIN_TWD", "25"))
+
+
+def check_distill_budget(user=None) -> None:
+    """蒸餾成本約 NT$19–24 且為事後扣款——先擋餘額不足，避免透支成負數。"""
+    if user and not is_team(user) and wallet_get(user["id"]) < DISTILL_MIN_TWD:
+        raise HTTPException(402, f"蒸餾一次約需 NT${DISTILL_MIN_TWD:.0f}，"
+                                 f"目前餘額 NT${wallet_get(user['id']):.2f} 不足，請先儲值")
+
+
 def check_budget(user=None) -> None:
     if user and wallet_get(user["id"]) > 0:
         return
@@ -964,6 +974,7 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
     user = require_user(authorization)
     check_budget(user)
+    check_distill_budget(user)
     uid, person = payload.get("upload_id", ""), payload.get("person", "")
     upath = UPLOADS / f"{re.sub(r'[^a-f0-9]', '', uid)}.json"
     if not upath.exists():
@@ -1105,6 +1116,8 @@ async def distill_extend(payload: dict, authorization: str | None = Header(None)
     user = ext_user
     if not share_ok and not (user and meta.get("owner_id") == user.get("id")):
         raise HTTPException(403, "只有擁有者或持公開連結者能擴充語料")
+    if not share_ok:  # 擁有者自費重蒸——連結訪客走墨水/燃料，不看錢包
+        check_distill_budget(user)
 
     uid, person = payload.get("upload_id", ""), payload.get("person", "")
     upath = UPLOADS / f"{re.sub(r'[^a-f0-9]', '', uid)}.json"
