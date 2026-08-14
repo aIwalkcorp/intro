@@ -1814,9 +1814,6 @@ def check_guest_cap(request: Request) -> None:
 async def chat(payload: dict, request: Request, authorization: str | None = Header(None)):
     check_code(payload.get("access_code"))
     bill_user = resolve_user(authorization)
-    check_budget(bill_user)
-    if bill_user is None and not payload.get("share"):
-        check_guest_cap(request)
     pid = re.sub(r"[^a-f0-9]", "", payload.get("persona_id", ""))
     pdir = PERSONAS / pid
     if not (pdir / "persona.md").exists():
@@ -1830,6 +1827,12 @@ async def chat(payload: dict, request: Request, authorization: str | None = Head
                     and secrets.compare_digest(meta["share"], share_tok))
     if not share_ok and not _visible(meta, bill_user):
         raise HTTPException(403, "這個分身不是公開示範，只有本人能對話")
+    # 分享連結還有墨水 → 這筆對話燒墨水，不看錢包也不看體驗池
+    ink_ok = share_ok and meta.get("ink_twd", 0.0) > 0
+    if not ink_ok:
+        check_budget(bill_user)
+        if bill_user is None and not share_ok:
+            check_guest_cap(request)
     history = payload.get("messages", [])[-40:]
     if not history or history[-1].get("role") != "user":
         raise HTTPException(422, "缺少使用者訊息")
