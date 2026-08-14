@@ -301,6 +301,8 @@ def split_sender(rest: str, senders: list[str]):
 
 def parse_export(text: str) -> dict:
     """回傳 {room, messages:[{date,time,sender,text}]}"""
+    # iOS 版匯出常見差異：BOM 開頭、NBSP／全形空格當分隔符 → 先正規化成一般空格
+    text = text.lstrip("﻿").replace(" ", " ").replace("　", " ")
     lines = [ln.rstrip("\r\n") for ln in text.splitlines()]
     room = ""
     for line in lines[:5]:
@@ -866,6 +868,17 @@ async def upload(file: UploadFile = File(...), access_code: str = Form(""),
     parsed = parse_export(raw)
     msgs = parsed["messages"]
     if not msgs:
+        # 留樣本供除錯（僅前 200KB，最多保留 20 份，其餘先進先出）
+        try:
+            fdir = DATA / "failed_uploads"
+            fdir.mkdir(exist_ok=True)
+            for old in sorted(fdir.glob("*.txt"))[:-19]:
+                old.unlink()
+            stamp = datetime.now(TZ).strftime("%Y%m%d-%H%M%S")
+            (fdir / f"{stamp}-{re.sub(r'[^\w.-]', '_', file.filename or 'noname')[:60]}.txt"
+             ).write_text(raw[:200_000], encoding="utf-8")
+        except OSError:
+            pass
         raise HTTPException(422, "解析不到訊息——請確認是 LINE App 匯出的 .txt 聊天紀錄")
     by_sender = Counter(m["sender"] for m in msgs)
     uid = secrets.token_hex(8)
