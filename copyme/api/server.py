@@ -1742,7 +1742,7 @@ def room_chat(rid: str, payload: dict, request: Request,
     room["relay"] = relay
     _room_save(room)
     primary = {"opus": MODEL, "sonnet": FALLBACK_MODEL}.get(
-        str(payload.get("model") or ""), MODEL)
+        str(payload.get("model") or ""), FALLBACK_MODEL)  # 未指定＝Sonnet；Opus 要人為切換
 
     def gen():
         stopped = "cap"
@@ -1849,7 +1849,7 @@ async def chat(payload: dict, request: Request, authorization: str | None = Head
     remember = bool(payload.get("remember")) and share_ok
     req_tid = re.sub(r"[^a-f0-9]", "", str(payload.get("thread") or ""))
     primary = {"opus": MODEL, "sonnet": FALLBACK_MODEL}.get(
-        str(payload.get("model") or ""), MODEL)
+        str(payload.get("model") or ""), FALLBACK_MODEL)  # 未指定＝Sonnet；Opus 要人為切換
 
     def gen():
       for use_model in (primary, FALLBACK_MODEL):

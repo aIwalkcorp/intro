@@ -1180,7 +1180,7 @@ footer a{color:var(--mist)}
   <div class="memline" style="justify-content:space-between">
   <label class="memline" id="saveline" style="display:none;margin:0"><input type="checkbox" id="savechk"><span class="lang-zh">記住這段對話（存在這台裝置）</span><span class="lang-en">Remember this chat (on this device)</span></label>
   <label class="memline" id="memline" style="display:none;margin:0"><input type="checkbox" id="memchk"><span class="lang-zh">記住並共享到這條連結（其他訪客也看得到）</span><span class="lang-en">Remember &amp; share to this link (visible to other visitors)</span></label>
-  <span class="modelpick" id="modelpick"><button data-m="opus" class="on"><span class="lang-zh">準・Opus</span><span class="lang-en">Sharp·Opus</span></button><button data-m="sonnet"><span class="lang-zh">快・Sonnet</span><span class="lang-en">Fast·Sonnet</span></button></span>
+  <span class="modelpick" id="modelpick"><button data-m="sonnet" class="on"><span class="lang-zh">快・Sonnet</span><span class="lang-en">Fast·Sonnet</span></button><button data-m="opus"><span class="lang-zh">準・Opus</span><span class="lang-en">Sharp·Opus</span></button></span>
   </div>
   <div class="cl-in-inner">
     <input id="say" autocomplete="off" class="chatin-input" style="flex:1;padding:11px 15px;border:1.5px solid var(--bdr);border-radius:8px;font-family:var(--sans);font-size:.95rem;background:#fff">
@@ -1202,7 +1202,7 @@ footer a{color:var(--mist)}
 const API = (location.hostname.endsWith("fly.dev") || location.hostname === "localhost")
   ? "" : "https://copyme.fly.dev";
 const $ = id => document.getElementById(id);
-const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"opus",
+const state = { uploadId:null, person:null, personaId:null, personaName:null, history:[], shareToken:null, threads:[], threadId:"", model:"sonnet",
   walletTwd:null, fuelTwd:0,
   /* 群組：roomId 有值時，對話介面切成群組模式 */
   rooms:[], roomId:null, room:null, relay:2, relayMax:6, autoMax:12,
