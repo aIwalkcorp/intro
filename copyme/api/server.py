@@ -830,8 +830,8 @@ def share_landing(token: str, slug: str = ""):
     def _page_for(title: str) -> str:
         page = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
         page = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", page, count=1)
-        # 拆掉靜態 head 的 og 標籤——爬蟲只取第一組，留著會蓋掉分享專屬的標題
-        return re.sub(r'<meta property="og:(?:title|description)" content="[^"]*"\s*/?>\s*', "", page)
+        # 拆掉靜態 head 的 og 標籤——爬蟲只取第一組，留著會蓋掉分享專屬的標題/圖
+        return re.sub(r'<meta property="og:(?:title|description|image)" content="[^"]*"\s*/?>\s*', "", page)
 
     room = _find_shared_room(token)
     if room:
