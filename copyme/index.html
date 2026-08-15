@@ -2122,7 +2122,7 @@ function enterChat(pid, name){
   $("chatname").textContent = disp;
   $("chattag").textContent = t("aiTag");
   setWikiLink(tw);
-  sealFill($("chatseal"), tw || {name});
+  sealFill($("chatseal"), tw || {name, avatar: visitor ? state.shareAvatar : null});
   const sealEditable = !visitor && !!(tw && tw.mine);
   $("chatseal").classList.toggle("editable", sealEditable);
   $("chatseal").title = sealEditable ? (LANG==="en" ? "Change avatar" : "點擊更換頭貼") : "";
@@ -2251,7 +2251,7 @@ function renderShareSide(){
     const b = document.createElement("button");
     b.className = "side-item" + (state.threadId === th.id ? " on" : "");
     b.innerHTML = `<span class="si-seal"></span><span class="si-body"><span class="si-name"></span><span class="si-meta"></span></span>`;
-    b.querySelector(".si-seal").textContent = sealText(state.personaName || "");
+    sealFill(b.querySelector(".si-seal"), {name: state.personaName || "", avatar: state.shareAvatar});
     b.querySelector(".si-name").textContent = th.title;
     b.querySelector(".si-meta").textContent = LANG==="en" ? th.count + " lines" : th.count + " 句";
     b.addEventListener("click", ()=>{ loadThread(th.id).then(renderShareSide); });
@@ -2498,6 +2498,7 @@ async function initShared(tok){
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || t("svcDown"));
     state.shareToken = tok;
+    state.shareAvatar = j.avatar || null;
     state.threads = j.threads || [];
     state.threadId = "";
     document.title = (LANG==="en" ? `Chat with ${j.name}'s twin · CopyMe` : `跟「${j.name}」的分身聊聊 · CopyMe 復刻`);

@@ -850,10 +850,12 @@ def share_landing(token: str, slug: str = ""):
     name = _html.escape(meta["name"])
     title = f"跟「{name}」的分身聊聊 · CopyMe 復刻"
     page = _page_for(title)
+    og_img = (f"https://copyme.fly.dev/{meta['avatar']}" if meta.get("avatar")
+              else "https://copyme.fly.dev/art/alembic.webp")
     inject = (
         f'<meta property="og:title" content="{title}">\n'
         f'<meta property="og:description" content="{name} 的 AI 分身——從真實對話蒸餾而成，點開直接聊。">\n'
-        f'<meta property="og:image" content="https://copyme.fly.dev/art/alembic.webp">\n'
+        f'<meta property="og:image" content="{og_img}">\n'
         f'<meta name="twitter:card" content="summary">\n'
         f'<base href="/">\n<script>window.__SHARE_TOKEN__="{token}"</script>\n</head>'
     )
@@ -1338,6 +1340,7 @@ def shared_info(token: str):
                 return {"id": meta["id"], "name": meta["name"],
                         "room": meta.get("room", ""), "stats": meta.get("stats", {}),
                         "pool": round(meta.get("ink_twd", 0.0), 2),
+                        "avatar": meta.get("avatar"),
                         "threads": _thread_list(mp.parent)}
     raise HTTPException(404, "連結已失效或被擁有者停用")
 
