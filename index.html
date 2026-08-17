@@ -91,11 +91,11 @@
     --text-secondary: #64748b;
     --border: #e2e8f0;
     --border-warm: #e8e2d8;
-    --phase1: #3b82f6;
-    --phase2: #8b5cf6;
-    --phase3: #ec4899;
-    --phase4: #f59e0b;
-    --phase5: #ef4444;
+    --phase1: #4a729c;
+    --phase2: #35608d;
+    --phase3: #27496e;
+    --phase4: #1a3a5c;
+    --phase5: #a85a10;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
@@ -777,11 +777,11 @@
   }
   .ov-panel:hover {
     border-color: var(--orange-glow);
-    box-shadow: 0 0 20px rgba(192,106,26,0.15);
+    box-shadow: 0 6px 20px rgba(192,106,26,0.15);
   }
   .ov-panel.active {
     border-color: var(--orange-glow);
-    box-shadow: 0 0 24px rgba(192,106,26,0.25);
+    box-shadow: 0 8px 24px rgba(192,106,26,0.22);
   }
   .ov-grid.has-active .ov-panel:not(.active) img {
     filter: brightness(0.6);
@@ -1265,17 +1265,6 @@
     padding-top: 16px;
     border-top: 1px dashed rgba(0,0,0,0.08);
   }
-  .companion-eyebrow {
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #8a96a4;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .companion-eyebrow i { width: 12px; height: 12px; }
   .companion-card {
     display: flex;
     align-items: center;
@@ -1609,14 +1598,6 @@
     padding: 0 24px;
     margin-bottom: 8px;
   }
-  .roadmap-header .rh-overline {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--orange);
-    margin-bottom: 8px;
-  }
   .roadmap-header .rh-title {
     font-size: 14px;
     color: var(--text-secondary);
@@ -1944,7 +1925,7 @@
     padding: 10px 16px;
     border-radius: var(--radius-sm);
     background: rgba(26,58,92,0.03);
-    border-left: 3px solid;
+    border: 1px solid;
   }
   .dp-right .tb-label {
     font-size: 9px; font-weight: 700;
@@ -2080,7 +2061,7 @@
       opacity: 1;
       filter: brightness(1);
       border-color: var(--orange-glow);
-      box-shadow: 0 0 20px rgba(192,106,26,0.2);
+      box-shadow: 0 6px 20px rgba(192,106,26,0.2);
     }
     .ov-grid .ov-panel img {
       object-fit: contain;
