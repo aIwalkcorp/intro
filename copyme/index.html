@@ -788,7 +788,7 @@ footer a{color:var(--mist)}
   </a>
   <button class="poolchip" id="walletchip" style="display:none">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-    <span><span class="lang-zh">錢包</span><span class="lang-en">Wallet</span> <b id="walletval"></b> ・ <u style="text-underline-offset:2px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></u></span>
+    <span><span class="lang-zh">額度</span><span class="lang-en">Credits</span> <b id="walletval"></b> ・ <u style="text-underline-offset:2px"><span class="lang-zh">加購</span><span class="lang-en">Buy more</span></u></span>
   </button>
   <button class="mytwins" id="mytwins">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
@@ -998,10 +998,10 @@ footer a{color:var(--mist)}
 <div class="modal-veil" id="topupmodal">
   <div class="modal modal-box" style="max-width:420px">
     <button class="mclose" id="tu-close" aria-label="Close">✕</button>
-    <h3><span class="lang-zh">錢包儲值</span><span class="lang-en">Top up wallet</span></h3>
+    <h3><span class="lang-zh">加購對話包</span><span class="lang-en">Buy chat credits</span></h3>
     <p class="mnote">
-      <span class="lang-zh">儲值後，對話與蒸餾按實際用量從你的錢包扣款，不受體驗額度限制、用多少算多少。刷卡由綠界 ECPay 處理，本站不經手卡號。</span>
-      <span class="lang-en">With a balance, chats and distillations draw from your wallet by actual usage — no trial limits, pay only for what you use. Cards are processed by ECPay — we never see your number.</span>
+      <span class="lang-zh">對話包是一次性數位服務：購買後即時開通至你的帳號，對話與蒸餾按實際用量從剩餘額度扣除，用多少算多少；限本帳號使用、不可轉讓。刷卡由綠界 ECPay 處理，本站不經手卡號。</span>
+      <span class="lang-en">A chat pack is a one-time digital service: credits activate on your account instantly, and chats and distillations draw from them by actual usage — account-bound, non-transferable. Cards are processed by ECPay — we never see your number.</span>
     </p>
     <p class="mnote" id="tu-test" style="display:none;color:var(--seal)">
       <span class="lang-zh">⚠ 目前為金流測試模式——刷卡頁是綠界測試環境，不會真正扣款（正式金流開通後自動切換）。</span>
@@ -1012,14 +1012,14 @@ footer a{color:var(--mist)}
         style="flex:1;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font-size:.9rem;background:#fff"
         placeholder="">
       <span id="tu-usd" style="font-family:var(--mono);font-size:.68rem;color:var(--mist)"></span>
-      <button class="gobtn" id="tu-go" style="padding:9px 18px"><span class="lang-zh">儲值</span><span class="lang-en">Top up</span></button>
+      <button class="gobtn" id="tu-go" style="padding:9px 18px"><span class="lang-zh">購買</span><span class="lang-en">Buy</span></button>
     </div>
-    <p class="mnote" style="margin:6px 0 0;font-size:.68rem"><span class="lang-zh">自訂金額 NT$5 起（信用卡單筆最低限額），存多少由你決定</span><span class="lang-en">From NT$5 (card network minimum) — top up as much or as little as you like</span></p>
+    <p class="mnote" style="margin:6px 0 0;font-size:.68rem"><span class="lang-zh">自訂金額 NT$5 起（信用卡單筆最低限額），買多少由你決定</span><span class="lang-en">From NT$5 (card network minimum) — buy as much or as little as you like</span></p>
     <div class="paysec">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       <div>
-        <span class="lang-zh">按下後會前往<b>綠界 ECPay 的安全付款頁</b>輸入卡號——卡號只存在於綠界（PCI DSS 認證機構），本站不經手、不儲存任何卡片資訊；我們只記錄你的餘額，付款完成自動帶你回來。</span>
-        <span class="lang-en">You'll be taken to <b>ECPay's secure checkout</b> to enter your card. Card data lives only with ECPay (PCI DSS certified) — this site never sees or stores it. We keep only your balance, and you're brought back when payment completes.</span>
+        <span class="lang-zh">按下後會前往<b>綠界 ECPay 的安全付款頁</b>輸入卡號——卡號只存在於綠界（PCI DSS 認證機構），本站不經手、不儲存任何卡片資訊；我們只記錄你的剩餘額度，付款完成自動帶你回來。</span>
+        <span class="lang-en">You'll be taken to <b>ECPay's secure checkout</b> to enter your card. Card data lives only with ECPay (PCI DSS certified) — this site never sees or stores it. We keep only your remaining credits, and you're brought back when payment completes.</span>
       </div>
     </div>
   </div>
@@ -1192,8 +1192,8 @@ footer a{color:var(--mist)}
   <span class="lang-zh">CopyMe 復刻 by <a href="https://aiwalkcorp.com">aiwalkcorp 智意行科技</a> · 蒸餾引擎 Claude API · 對話檔用完即刪、不做訓練、分身隨時可刪</span>
   <span class="lang-en">CopyMe by <a href="https://aiwalkcorp.com">aiwalkcorp</a> · distilled with the Claude API · chat files deleted after use, never trained on, twins deletable anytime</span>
   <br>
-  <span class="lang-zh">收費方式：登入後可透過綠界（ECPay）金流儲值錢包，單筆 NT$5–100,000，AI 對話依實際用量即時自餘額扣款，錢包餘額可隨時於「儲值」面板查看 · 客服信箱 <a href="mailto:info@aiwalkcorp.com">info@aiwalkcorp.com</a></span>
-  <span class="lang-en">Pricing: top up your wallet via ECPay (NT$5–100,000 per transaction); AI chats deduct from your balance by actual usage, viewable anytime in the top-up panel · Contact <a href="mailto:info@aiwalkcorp.com">info@aiwalkcorp.com</a></span>
+  <span class="lang-zh">收費方式：本服務販售一次性「對話包」數位服務（單筆 NT$5–100,000，經綠界 ECPay 付款，購買後即時開通）；AI 對話與蒸餾依實際用量自剩餘額度扣除，剩餘額度可隨時於「加購」面板查看；限本帳號使用、不可轉讓 · 客服信箱 <a href="mailto:info@aiwalkcorp.com">info@aiwalkcorp.com</a></span>
+  <span class="lang-en">Pricing: one-time "chat pack" digital service (NT$5–100,000 per purchase via ECPay, activated instantly); AI chats and distillations deduct from your remaining credits by actual usage, viewable anytime in the buy panel; account-bound, non-transferable · Contact <a href="mailto:info@aiwalkcorp.com">info@aiwalkcorp.com</a></span>
 </footer>
 </div>
 
@@ -1252,8 +1252,8 @@ const T = {
     ownerThreads:(n)=>`歷史對話（${n}）`, threadMeta:(c,d)=>`${c} 句 ・ ${d}`,
     threadItem:(t,c)=>`${t}（${c} 句）`, newThreadHint:"勾選下方共享框，你的對話會開成新的一串",
     threadsTitle:"討論串", newChat:"＋ 新對話", privateTag:"（未共享）",
-    walletLbl:"錢包", topup:"儲值", topupTitle:"錢包儲值",
-    topupNote:"儲值後，對話與蒸餾按實際用量從你的錢包扣款，不受體驗額度限制、用多少算多少。刷卡由綠界 ECPay 處理，本站不經手卡號。",
+    walletLbl:"額度", topup:"加購", topupTitle:"加購對話包",
+    topupNote:"對話包是一次性數位服務：購買後即時開通至你的帳號，對話與蒸餾按實際用量從剩餘額度扣除，用多少算多少；限本帳號使用、不可轉讓。刷卡由綠界 ECPay 處理，本站不經手卡號。",
     modelFast:"快・Sonnet", modelSharp:"準・Opus",
     openers:["最近在忙什麼？","用三句話介紹你自己","推薦我一件事"],
     signedin:(u)=>`已登入：${u}`, needLogin:"登入後才能上傳蒸餾（示範分身可直接試聊）",
@@ -1294,8 +1294,8 @@ const T = {
     ownerThreads:(n)=>`History (${n})`, threadMeta:(c,d)=>`${c} lines · ${d}`,
     threadItem:(t,c)=>`${t} (${c})`, newThreadHint:"Tick the share box below and your chat becomes a new thread",
     threadsTitle:"Threads", newChat:"＋ New chat", privateTag:"(not shared)",
-    walletLbl:"Wallet", topup:"Top up", topupTitle:"Top up wallet",
-    topupNote:"With a balance, chats and distillations draw from your wallet by actual usage — no trial limits, pay only for what you use. Cards are processed by ECPay — we never see your number.",
+    walletLbl:"Credits", topup:"Buy more", topupTitle:"Buy chat credits",
+    topupNote:"A chat pack is a one-time digital service: credits activate on your account instantly, and chats and distillations draw from them by actual usage — account-bound, non-transferable. Cards are processed by ECPay — we never see your number.",
     modelFast:"Fast · Sonnet", modelSharp:"Sharp · Opus",
     openers:["What are you up to lately?","Introduce yourself in three lines","Recommend me something"],
     signedin:(u)=>`Signed in: ${u}`, needLogin:"Sign in to upload & distill (demo twins are open)",

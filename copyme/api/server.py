@@ -166,14 +166,14 @@ def check_distill_budget(user=None) -> None:
     """蒸餾成本約 NT$19–24 且為事後扣款——先擋餘額不足，避免透支成負數。"""
     if user and not is_team(user) and wallet_get(user["id"]) < DISTILL_MIN_TWD:
         raise HTTPException(402, f"蒸餾一次約需 NT${DISTILL_MIN_TWD:.0f}，"
-                                 f"目前餘額 NT${wallet_get(user['id']):.2f} 不足，請先儲值")
+                                 f"目前額度 NT${wallet_get(user['id']):.2f} 不足，請先加購對話包")
 
 
 def check_budget(user=None) -> None:
     if user and wallet_get(user["id"]) > 0:
         return
     if budget_left() <= 0:
-        raise HTTPException(402, "站方體驗額度用完了——登入後儲值自己的錢包即可繼續，或晚點再來！")
+        raise HTTPException(402, "站方體驗額度用完了——登入後加購對話包即可繼續，或晚點再來！")
 
 # ---- 會員：與 TrailForge 共用帳號（token 由 trailforge-api 簽發，這裡代理驗證）
 TF_API = os.environ.get("TF_API", "https://trailforge-api.fly.dev")
@@ -703,8 +703,8 @@ def topup(payload: dict, authorization: str | None = Header(None)):
         "MerchantTradeDate": datetime.now(TZ).strftime("%Y/%m/%d %H:%M:%S"),
         "PaymentType": "aio",
         "TotalAmount": str(amt),
-        "TradeDesc": "CopyMe link ink" if ink_pid else "CopyMe wallet topup",
-        "ItemName": (f"CopyMe 連結墨水 NT${amt}" if ink_pid else f"CopyMe 錢包儲值 NT${amt}"),
+        "TradeDesc": "CopyMe link ink" if ink_pid else "CopyMe chat pack",
+        "ItemName": (f"CopyMe 連結墨水 NT${amt}" if ink_pid else f"CopyMe 對話包 NT${amt}"),
         "ReturnURL": "https://copyme.fly.dev/api/ecpay/notify",
         "ClientBackURL": "https://copyme.aiwalkcorp.com/?paid=1",
         # ALL＝顯示商店當下已開通的全部付款方式。新綠界商店的信用卡要另外申請，
