@@ -658,7 +658,7 @@ button,a,summary,.person,.side-item,.shelfbtn{-webkit-tap-highlight-color:transp
 .modelpick button{background:none;border:none;padding:4px 10px;font-family:var(--mono);
   font-size:.66rem;color:var(--mist)}
 .modelpick button.on{background:var(--pri);color:#fff}
-.cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px}
+.cl-in-inner{max-width:720px;margin:0 auto;display:flex;gap:10px;align-items:flex-end}
 /* input 的 min-content 寬度會把送出鍵擠出畫面（窄螢幕上按不到）*/
 .cl-in-inner .chatin-input{min-width:0}
 .demo-badge{font-family:var(--mono);font-size:.62rem;color:var(--ok);
@@ -1183,7 +1183,7 @@ footer a{color:var(--mist)}
   <span class="modelpick" id="modelpick"><button data-m="sonnet" class="on"><span class="lang-zh">快・Sonnet</span><span class="lang-en">Fast·Sonnet</span></button><button data-m="opus"><span class="lang-zh">準・Opus</span><span class="lang-en">Sharp·Opus</span></button></span>
   </div>
   <div class="cl-in-inner">
-    <input id="say" autocomplete="off" class="chatin-input" style="flex:1;padding:11px 15px;border:1.5px solid var(--bdr);border-radius:8px;font-family:var(--sans);font-size:.95rem;background:#fff">
+    <textarea id="say" rows="1" autocomplete="off" class="chatin-input" style="flex:1;padding:11px 15px;border:1.5px solid var(--bdr);border-radius:8px;font-family:var(--sans);font-size:.95rem;background:#fff;resize:none;max-height:132px;overflow-y:auto;line-height:1.5"></textarea>
     <button id="send" style="background:var(--pri);color:#fff;border:none;padding:0 24px;border-radius:8px;font-weight:700"><span class="lang-zh">送出</span><span class="lang-en">Send</span></button>
   </div></div>
 </div>
@@ -2636,14 +2636,14 @@ async function send(){
   const input = $("say"); const text = input.value.trim();
   if(state.roomId){
     if(!text || state.roomBusy) return;
-    input.value = "";
+    input.value = ""; sayResize();
     bubble("me", text);
     roomBurst(text);
     return;
   }
   if(!text || !state.personaId) return;
   clearErr();
-  input.value = ""; $("send").disabled = true;
+  input.value = ""; sayResize(); $("send").disabled = true;
   bubble("me", text);
   state.history.push({role:"user", content:text}); saveHist();
   const live = bubble("ai", "");
@@ -3155,7 +3155,16 @@ $("modelpick").querySelectorAll("button").forEach(b=> b.addEventListener("click"
 // 手機沒有 hover：點成員列展開/收合完整名單
 $("chattag").addEventListener("click", ()=> $("chattag").classList.toggle("full"));
 $("send").addEventListener("click", send);
-$("say").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing) send(); });
+// Enter 送出、Shift+Enter 換行；輸入框跟著內容長高（上限約 5 行）
+$("say").addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); send(); }
+});
+function sayResize(){
+  const s = $("say");
+  s.style.height = "auto";
+  s.style.height = Math.min(s.scrollHeight, 132) + "px";
+}
+$("say").addEventListener("input", sayResize);
 
 /* ── 分身書架（示範＋自己的） ── */
 function twinChip(p){
