@@ -1099,13 +1099,13 @@ footer a{color:var(--mist)}
         <div class="orow total"><span class="lang-zh">應付金額</span><span class="lang-en">Total due</span><b id="tu-total2"></b></div>
       </div>
       <div class="paymethods">
-        <button class="pm" data-pm="ATM">
+        <button class="pm" data-pm="ATM" data-min="16">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 14h4"/></svg>
           <span class="pm-body"><b><span class="lang-zh">ATM 轉帳</span><span class="lang-en">ATM transfer</span></b>
           <s><span class="lang-zh">立即取得專屬轉帳帳號，網銀或 ATM 轉帳即可</span><span class="lang-en">Get a dedicated account number instantly — pay via online banking or any ATM</span></s></span>
           <i class="pm-tag"><span class="lang-zh">不離站</span><span class="lang-en">In-page</span></i>
         </button>
-        <button class="pm" data-pm="CVS">
+        <button class="pm" data-pm="CVS" data-min="34">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg>
           <span class="pm-body"><b><span class="lang-zh">超商代碼</span><span class="lang-en">Convenience store</span></b>
           <s><span class="lang-zh">取得繳費代碼，到 7-11／全家等超商機台繳費</span><span class="lang-en">Get a payment code and pay at 7-11, FamilyMart & more</span></s></span>
@@ -1130,6 +1130,7 @@ footer a{color:var(--mist)}
           <button class="pb-copy" id="pb-copy"><span class="lang-zh">複製</span><span class="lang-en">Copy</span></button>
         </div>
         <div class="pb-row"><span class="lang-zh">繳費期限</span><span class="lang-en">Pay before</span><b id="pb-expire"></b></div>
+        <div class="pb-row" id="pb-urlrow" style="display:none"><span class="lang-zh">手機條碼</span><span class="lang-en">Mobile barcode</span><b><a id="pb-url" target="_blank" rel="noopener" style="color:var(--pri)"><span class="lang-zh">開啟條碼頁 ↗</span><span class="lang-en">Open barcode ↗</span></a></b></div>
       </div>
       <p class="mnote" style="margin:10px 0 0;font-size:.72rem">
         <span class="lang-zh">付款完成後約 1 分鐘內自動入帳，右上「額度」會直接更新——這頁可以放心關掉，帳號也已寄存於此訂單。</span>
@@ -3279,6 +3280,13 @@ $("tu-go").addEventListener("click", ()=>{
   if(!tuAmt || tuAmt < 5){ $("tu-custom").focus(); return; }
   $("tu-total2").textContent = "NT$" + tuAmt.toLocaleString();
   $("tu-pmerr").style.display = "none";
+  // 各方式有綠界下限：不夠的變灰並註明
+  document.querySelectorAll("#tu-step2 .pm").forEach(x=>{
+    const min = +x.dataset.min || 0;
+    const off = tuAmt < min;
+    x.disabled = off;
+    x.title = off ? (LANG==="en" ? `Minimum NT$${min}` : `此方式最低 NT$${min}`) : "";
+  });
   tuStep(2);
 });
 $("tu-back").addEventListener("click", ()=> tuStep(1));
@@ -3303,6 +3311,8 @@ document.querySelectorAll("#tu-step2 .pm").forEach(b=> b.addEventListener("click
     $("pb-bank").textContent = j.bank_code || "";
     $("pb-code").textContent = pm==="ATM" ? (j.v_account||"") : (j.payment_no||"");
     $("pb-expire").textContent = j.expire || "";
+    $("pb-urlrow").style.display = j.payment_url ? "" : "none";
+    if(j.payment_url) $("pb-url").href = j.payment_url;
     tuStep(3);
   }catch(err){
     $("tu-pmerr").textContent = err.message;

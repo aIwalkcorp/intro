@@ -803,6 +803,11 @@ def topup_inline(payload: dict, authorization: str | None = Header(None)):
     method = payload.get("method")
     if method not in ("ATM", "CVS"):
         raise HTTPException(422, "method 要是 ATM 或 CVS")
+    # 綠界實測下限：ATM 要 >15、超商代碼/條碼要 >33
+    if method == "ATM" and amt < 16:
+        raise HTTPException(422, "ATM 轉帳最低 NT$16——金額再高一點，或改用其他付款方式")
+    if method == "CVS" and amt < 34:
+        raise HTTPException(422, "超商代碼最低 NT$34——金額再高一點，或改用其他付款方式")
     tno = "PF" + secrets.token_hex(8)[:14]
     inner = {
         "MerchantID": ECPAY_MID,
