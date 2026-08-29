@@ -537,6 +537,44 @@ def _cmv(params: dict) -> str:
     return hashlib.sha256(raw.encode()).hexdigest().upper()
 
 
+# ---- 非信用卡「幕後取號」：站內顯示 ATM 虛擬帳號／超商代碼，不跳綠界頁。
+# 傳輸格式：JSON + AES-128-CBC(PKCS7)，明文先 URLEncode 再加密（官方規格）
+ECPAY_GEN_URL = os.environ.get("PF_ECPAY_GEN_URL",
+    ("https://ecpayment-stage.ecpay.com.tw/1.0.0/Cashier/GenPaymentCode"
+     if ECPAY_MID == "2000132" else
+     "https://ecpayment.ecpay.com.tw/1.0.0/Cashier/GenPaymentCode"))
+ECPAY_ORDERS = DATA / "ecpay_orders"
+ECPAY_ORDERS.mkdir(parents=True, exist_ok=True)
+
+
+def _ec_aes(data: bytes, encrypt: bool) -> bytes:
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives import padding
+    c = Cipher(algorithms.AES(ECPAY_KEY.encode()[:16]), modes.CBC(ECPAY_IV.encode()[:16]))
+    if encrypt:
+        p = padding.PKCS7(128).padder()
+        data = p.update(data) + p.finalize()
+        e = c.encryptor()
+        return e.update(data) + e.finalize()
+    d = c.decryptor()
+    out = d.update(data) + d.finalize()
+    u = padding.PKCS7(128).unpadder()
+    return u.update(out) + u.finalize()
+
+
+def _ec_encrypt(obj: dict) -> str:
+    import base64
+    from urllib.parse import quote
+    plain = quote(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), safe="")
+    return base64.b64encode(_ec_aes(plain.encode(), True)).decode()
+
+
+def _ec_decrypt(s: str) -> dict:
+    import base64
+    from urllib.parse import unquote_plus
+    return json.loads(unquote_plus(_ec_aes(base64.b64decode(s), False).decode()))
+
+
 @app.get("/api/wallet")
 def wallet_info(authorization: str | None = Header(None)):
     user = require_user(authorization)
@@ -746,6 +784,99 @@ async def ecpay_notify(request: Request):
         mp.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     else:
         wallet_add(form.get("CustomField1", ""), amt)
+    done.add(trade)
+    ECPAY_DONE.write_text(json.dumps(sorted(done)[-500:]))
+    return PlainTextResponse("1|OK")
+
+
+@app.post("/api/topup/inline")
+def topup_inline(payload: dict, authorization: str | None = Header(None)):
+    """幕後取號：站內取得 ATM 虛擬帳號或超商繳費代碼，付款畫面全程不離站。"""
+    import time
+    user = require_user(authorization)
+    try:
+        amt = int(payload.get("amount", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "金額格式錯誤")
+    if not (TOPUP_MIN <= amt <= TOPUP_MAX):
+        raise HTTPException(422, f"金額限 NT${TOPUP_MIN}–{TOPUP_MAX:,}")
+    method = payload.get("method")
+    if method not in ("ATM", "CVS"):
+        raise HTTPException(422, "method 要是 ATM 或 CVS")
+    tno = "PF" + secrets.token_hex(8)[:14]
+    inner = {
+        "MerchantID": ECPAY_MID,
+        "ChoosePayment": method,
+        "OrderInfo": {
+            "MerchantTradeNo": tno,
+            "MerchantTradeDate": datetime.now(TZ).strftime("%Y/%m/%d %H:%M:%S"),
+            "TotalAmount": amt,
+            "ReturnURL": "https://copyme.fly.dev/api/ecpay/notify2",
+            "TradeDesc": "CopyMe chat pack",
+            "ItemName": f"CopyMe 對話包 NT${amt}",
+        },
+    }
+    if method == "ATM":
+        inner["ATMInfo"] = {"ExpireDate": 3}            # 天
+    else:
+        inner["CVSInfo"] = {"ExpireDate": 4320}         # 分鐘＝3 天
+    body = {"MerchantID": ECPAY_MID,
+            "RqHeader": {"Timestamp": int(time.time())},
+            "Data": _ec_encrypt(inner)}
+    try:
+        r = httpx.post(ECPAY_GEN_URL, json=body, timeout=20)
+        rj = r.json()
+    except (httpx.HTTPError, ValueError):
+        raise HTTPException(502, "綠界服務沒有回應，請改用「其他付款方式」")
+    if rj.get("TransCode") != 1:
+        raise HTTPException(502, f"綠界拒絕了請求：{rj.get('TransMsg', '未知錯誤')}")
+    data = _ec_decrypt(rj["Data"])
+    if data.get("RtnCode") != 1:
+        raise HTTPException(502, f"取號失敗：{data.get('RtnMsg', '未知錯誤')}")
+    # 訂單歸屬存檔，付款通知進來時據此入帳
+    (ECPAY_ORDERS / f"{tno}.json").write_text(json.dumps({
+        "uid": user["id"], "amt": amt,
+        "ink_pid": re.sub(r"[^a-f0-9]", "", str(payload.get("ink") or "")),
+        "trade_no": data.get("OrderInfo", {}).get("TradeNo", ""),
+        "created": datetime.now(TZ).isoformat(timespec="seconds"),
+    }, ensure_ascii=False))
+    atm, cvs = data.get("ATMInfo") or {}, data.get("CVSInfo") or {}
+    return {"trade": tno, "method": method, "amount": amt,
+            "bank_code": atm.get("BankCode"), "v_account": atm.get("vAccount"),
+            "payment_no": cvs.get("PaymentNo"), "payment_url": cvs.get("PaymentURL"),
+            "expire": atm.get("ExpireDate") or cvs.get("ExpireDate")}
+
+
+@app.post("/api/ecpay/notify2")
+async def ecpay_notify2(request: Request):
+    """幕後取號流程的付款結果通知（JSON+AES 版；與表單版 notify 分開）。"""
+    try:
+        body = json.loads((await request.body()).decode())
+        data = _ec_decrypt(body["Data"])
+    except (ValueError, KeyError):
+        return PlainTextResponse("0|DecryptFail", status_code=400)
+    info = data.get("OrderInfo") or {}
+    tno = re.sub(r"[^\w]", "", str(info.get("MerchantTradeNo") or ""))
+    paid = str(info.get("TradeStatus")) == "1" or data.get("RtnCode") == 1
+    opath = ECPAY_ORDERS / f"{tno}.json"
+    if not (paid and tno and opath.exists()):
+        return PlainTextResponse("1|OK")
+    trade = str(info.get("TradeNo") or tno)
+    try:
+        done = set(json.loads(ECPAY_DONE.read_text()))
+    except (OSError, ValueError):
+        done = set()
+    if trade in done:
+        return PlainTextResponse("1|OK")
+    order = json.loads(opath.read_text())
+    amt = float(info.get("TradeAmt") or order["amt"])
+    mp = PERSONAS / order["ink_pid"] / "meta.json" if order.get("ink_pid") else None
+    if mp and mp.exists():
+        meta = json.loads(mp.read_text(encoding="utf-8"))
+        meta["ink_twd"] = round(meta.get("ink_twd", 0.0) + amt, 2)
+        mp.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    else:
+        wallet_add(order["uid"], amt)
     done.add(trade)
     ECPAY_DONE.write_text(json.dumps(sorted(done)[-500:]))
     return PlainTextResponse("1|OK")
