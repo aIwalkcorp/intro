@@ -2,7 +2,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-RUN pip install --no-cache-dir fastapi uvicorn anthropic python-multipart cryptography
+RUN pip install --no-cache-dir fastapi uvicorn anthropic python-multipart cryptography httpx
 
 COPY api/server.py /app/
 COPY index.html /app/
