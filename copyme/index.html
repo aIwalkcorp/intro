@@ -1099,6 +1099,11 @@ footer a{color:var(--mist)}
         <div class="orow total"><span class="lang-zh">應付金額</span><span class="lang-en">Total due</span><b id="tu-total2"></b></div>
       </div>
       <div class="paymethods">
+        <button class="pm" data-pm="CARD">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+          <span class="pm-body"><b><span class="lang-zh">信用卡</span><span class="lang-en">Credit card</span></b>
+          <s><span class="lang-zh">於綠界安全頁輸入卡號，付款完成即時入帳</span><span class="lang-en">Enter your card on ECPay's secure page — credits land instantly</span></s></span>
+        </button>
         <button class="pm" data-pm="ATM" data-min="16">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 14h4"/></svg>
           <span class="pm-body"><b><span class="lang-zh">ATM 轉帳</span><span class="lang-en">ATM transfer</span></b>
@@ -3294,7 +3299,7 @@ $("tu-done").addEventListener("click", ()=>{ $("topupmodal").classList.remove("o
 /* 站內取號：ATM 拿虛擬帳號、CVS 拿繳費代碼；其他 → 綠界付款頁 */
 document.querySelectorAll("#tu-step2 .pm").forEach(b=> b.addEventListener("click", async ()=>{
   const pm = b.dataset.pm;
-  if(pm === "PAGE"){ doTopup(tuAmt); return; }
+  if(pm === "PAGE" || pm === "CARD"){ doTopup(tuAmt); return; }
   document.querySelectorAll("#tu-step2 .pm").forEach(x=> x.disabled = true);
   $("tu-pmerr").style.display = "none";
   try{
