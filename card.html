@@ -1199,7 +1199,7 @@
   <button class="qr-overlay-close" id="qrOverlayClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
   <div class="qr-overlay-name" id="qrOverlayName"></div>
   <img id="qrOverlayImg" src="" alt="QR code" width="520" height="520">
-  <div class="qr-overlay-hint"><span class="lbl-zh">用手機相機掃描，直接開啟數位名片</span><span class="lbl-en">Scan with a phone camera to open the digital card</span><span class="qr-url" id="qrOverlayUrl"></span></div>
+  <div class="qr-overlay-hint"><span class="lbl-zh">用手機相機掃描：開啟數位名片，並自動下載名片圖</span><span class="lbl-en">Scan with a phone camera: opens the digital card and downloads the card image</span><span class="qr-url" id="qrOverlayUrl"></span></div>
   <div class="qr-overlay-actions">
     <a class="share-opt" id="qrOverlayDlCard" href="" download="">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -2047,14 +2047,24 @@ function openQrOverlay(id) {
   const p = PEOPLE.find(x => x.id === id); const pf = (p && p.profile) || {};
   document.getElementById('qrOverlayImg').src = `assets/cards/${id}-qr.png`;
   document.getElementById('qrOverlayName').innerHTML = `${escHTML(pf.nameZh || p.zh || '')}<span class="en">${escHTML(pf.nameEn || p.en || '')}</span>`;
-  document.getElementById('qrOverlayUrl').textContent = `${CARD_SITE}/card.html?view=team&card=${id}`;
-  const base = `aIwalk_名片_${pf.nameZh || p.zh || id}_${(pf.nameEn || p.en || '').replace(/\s+/g, '_')}`;
+  document.getElementById('qrOverlayUrl').textContent = `${CARD_SITE}/card.html?view=team&card=${id}&dl=1`;
+  const base = cardPngName(id);
   const dc = document.getElementById('qrOverlayDlCard'); dc.href = `assets/cards/${id}.png`; dc.download = `${base}.png`;
   const dq = document.getElementById('qrOverlayDlQr');   dq.href = `assets/cards/${id}-qr.png`; dq.download = `${base}_QR.png`;
   qrOverlay.classList.add('show');
   document.getElementById('qrOverlayClose').focus();
 }
 function closeQrOverlay() { qrOverlay.classList.remove('show'); }
+function cardPngName(id) {
+  const p = PEOPLE.find(x => x.id === id) || {}; const pf = p.profile || {};
+  return `aIwalk_名片_${pf.nameZh || p.zh || id}_${(pf.nameEn || p.en || '').replace(/\s+/g, '_')}`;
+}
+function downloadCardPng(id) {
+  const a = document.createElement('a');
+  a.href = `assets/cards/${id}.png`; a.download = `${cardPngName(id)}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+  showCopyToast('名片圖已下載 Card image downloaded');
+}
 document.getElementById('qrOverlayClose').addEventListener('click', closeQrOverlay);
 qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) closeQrOverlay(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && qrOverlay.classList.contains('show')) closeQrOverlay(); });   // QR 圖（assets/cards/*-qr.png）編的就是這個網域，文字須一致
@@ -2204,7 +2214,16 @@ if (btnNavLang) btnNavLang.addEventListener('click', toggleOverlayLang);
   // ?card=<id> — deep link straight to a person's business card, skipping the overview
   if (cardId) {
     const idx = VP.findIndex(p => p.id === cardId);
-    if (idx !== -1) { current = idx; renderPerson(idx); return; }
+    if (idx !== -1) {
+      current = idx; renderPerson(idx);
+      // ?dl=1（QR 掃描專用）：一開頁就把名片 PNG 存下來，網址立刻拿掉 dl 以免重新整理再下載
+      if (sp.get('dl') === '1') {
+        sp.delete('dl');
+        history.replaceState(null, '', window.location.pathname + '?' + sp.toString());
+        setTimeout(() => downloadCardPng(cardId), 600);
+      }
+      return;
+    }
     // unknown id → fall through to the overview
   }
   openOverview();
