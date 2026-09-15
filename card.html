@@ -1076,6 +1076,20 @@
     border: 1px solid rgba(26,58,92,0.3);
   }
   .profile-cta-btn.secondary:hover { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
+  /* 分享名片：按下後展開三個動作；QR 面板貼在 CTA 列下方 */
+  .share-group { display: inline-flex; flex-wrap: wrap; gap: 10px; }
+  .share-group[hidden], .qr-panel[hidden], .profile-cta-btn[hidden] { display: none; }
+  a.profile-cta-btn { text-decoration: none; }
+  .profile-cta-btn.is-open { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
+  .qr-panel {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    margin-top: 16px; padding: 18px 20px;
+    background: #fff; border: 1px solid rgba(26,58,92,0.18); border-radius: 14px;
+    max-width: 520px;
+  }
+  .qr-panel img { width: 148px; height: 148px; display: block; image-rendering: pixelated; }
+  .qr-panel-text { flex: 1; min-width: 180px; font-size: 13px; line-height: 1.6; color: #1a2d42; }
+  .qr-panel-text .qr-url { display: block; margin-top: 6px; font-size: 12px; color: #6b7d8e; word-break: break-all; }
 
   /* Language gating: relies on existing global body[data-lang="en"|"zh"] rules
      for .lbl-zh / .lbl-en spans (no extra rules needed here) */
@@ -1880,12 +1894,30 @@ function renderProfile(id) {
           <button class="profile-cta-btn" data-action="view-card" data-id="${p.id}">
             <span class="lbl-zh">查看名片</span><span class="lbl-en">View Business Card</span>
           </button>
-          <button class="profile-cta-btn secondary" data-action="copy-card" data-id="${p.id}">
-            <span class="lbl-zh">複製名片連結</span><span class="lbl-en">Copy Card Link</span>
+          <button class="profile-cta-btn secondary" data-action="share-card" data-id="${p.id}" aria-expanded="false">
+            <span class="lbl-zh">分享名片</span><span class="lbl-en">Share card</span>
           </button>
+          <span class="share-group" hidden>
+            <button class="profile-cta-btn secondary" data-action="copy-card" data-id="${p.id}">
+              <span class="lbl-zh">複製連結</span><span class="lbl-en">Copy link</span>
+            </button>
+            <a class="profile-cta-btn secondary" href="assets/cards/${p.id}.png" download="aIwalk_名片_${escHTML(pf.nameZh)}_${escHTML((pf.nameEn||'').replace(/\s+/g,'_'))}.png">
+              <span class="lbl-zh">下載 PNG</span><span class="lbl-en">Download PNG</span>
+            </a>
+            <button class="profile-cta-btn secondary" data-action="show-qr" data-id="${p.id}" aria-expanded="false">
+              <span class="lbl-zh">QR Code</span><span class="lbl-en">QR code</span>
+            </button>
+          </span>
           <button class="profile-cta-btn secondary" data-action="copy-profile" data-id="${p.id}">
             <span class="lbl-zh">複製檔案連結</span><span class="lbl-en">Copy Profile Link</span>
           </button>
+        </div>
+        <div class="qr-panel" id="qrPanel" hidden>
+          <img src="assets/cards/${p.id}-qr.png" alt="QR code: ${escHTML(pf.nameEn)} business card" width="148" height="148">
+          <div class="qr-panel-text">
+            <span class="lbl-zh">用手機相機掃描，直接開啟 ${escHTML(pf.nameZh)} 的數位名片。</span><span class="lbl-en">Scan with a phone camera to open ${escHTML(pf.nameEn)}'s digital card.</span>
+            <span class="qr-url">${CARD_SITE}/card.html?view=team&amp;card=${p.id}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1906,6 +1938,16 @@ function renderProfile(id) {
           if (IS_TEAM_VIEW) history.pushState({ card: cardId }, '', setCardUrl(cardId));
           else history.replaceState(null, null, '#' + cardId);
         }
+      } else if (action === 'share-card') {
+        btn.hidden = true;                                   // 分享名片 → 換成三個動作
+        btn.nextElementSibling.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      } else if (action === 'show-qr') {
+        const panel = profileBody.querySelector('#qrPanel');
+        panel.hidden = !panel.hidden;
+        btn.classList.toggle('is-open', !panel.hidden);
+        btn.setAttribute('aria-expanded', String(!panel.hidden));
+        if (!panel.hidden) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else if (action === 'copy-card') {
         copyShareLink(absShareUrl(setCardUrl(cardId)), '已複製名片連結 Card link copied');
       } else if (action === 'copy-profile') {
@@ -1939,6 +1981,7 @@ function setCardUrl(id) {
   else u.searchParams.delete('card');
   return u.pathname + u.search;
 }
+const CARD_SITE = 'https://aiwalkcorp.com';   // QR 圖（assets/cards/*-qr.png）編的就是這個網域，文字須一致
 function absShareUrl(pathAndSearch) { return window.location.origin + pathAndSearch; }
 function copyShareLink(url, okMsg) {
   const done = () => showCopyToast(okMsg);
