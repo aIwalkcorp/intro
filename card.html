@@ -1131,6 +1131,18 @@
   .qr-overlay-close svg { width: 18px; height: 18px; }
   .qr-overlay-close:hover { background: #1a3a5c; color: #f6f1e8; }
   .qr-overlay-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  /* 掃描落地的「儲存名片」頁：iOS 不接受自動下載，改成大圖＋一顆儲存鍵（走分享面板） */
+  .save-sheet { position: fixed; inset: 0; z-index: 10003; background: #f6f1e8; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 64px 20px 32px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .save-sheet.show { opacity: 1; pointer-events: auto; }
+  .save-sheet img { width: min(92vw, 440px); height: auto; display: block; border-radius: 12px; box-shadow: 0 14px 40px rgba(26,45,66,0.14); }
+  .save-sheet-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 100px; border: none;
+    background: #1a3a5c; color: #f6f1e8; font-size: 15px; font-weight: 600; letter-spacing: 0.5px; cursor: pointer; font-family: inherit; }
+  .save-sheet-btn svg { width: 16px; height: 16px; }
+  .save-sheet-hint { font-size: 12px; color: #6b7d8e; text-align: center; line-height: 1.6; max-width: 30em; }
+  .save-sheet-skip { background: none; border: none; color: #1a3a5c; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; font-family: inherit; }
+  @media (prefers-reduced-motion: reduce) { .save-sheet { transition: none; } }
   .qr-overlay-actions .share-opt { background: #fff; }
   @media (prefers-reduced-motion: reduce) { .qr-overlay { transition: none; } }
 
@@ -1210,6 +1222,18 @@
       <span class="lbl-zh">下載 QR 圖</span><span class="lbl-en">Download QR image</span>
     </a>
   </div>
+</div>
+
+<div class="save-sheet" id="saveSheet" role="dialog" aria-modal="true" aria-label="Save business card">
+  <button class="qr-overlay-close" id="saveSheetClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  <div class="qr-overlay-name" id="saveSheetName"></div>
+  <img id="saveSheetImg" src="" alt="Business card">
+  <button class="save-sheet-btn" id="saveSheetBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span class="lbl-zh">儲存名片圖到手機</span><span class="lbl-en">Save card image</span>
+  </button>
+  <div class="save-sheet-hint"><span class="lbl-zh">iPhone：按下後在分享面板選「儲存影像」；或直接長按上方圖片。</span><span class="lbl-en">iPhone: tap, then choose “Save Image” in the share sheet, or long-press the image above.</span></div>
+  <button class="save-sheet-skip" id="saveSheetSkip"><span class="lbl-zh">先看數位名片</span><span class="lbl-en">View the digital card first</span></button>
 </div>
 
 <div class="profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Team member profile">
@@ -1967,10 +1991,10 @@ function renderProfile(id) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
               <span class="lbl-zh">複製連結</span><span class="lbl-en">Copy link</span>
             </button>
-            <a class="share-opt" href="assets/cards/${p.id}.png" download="aIwalk_名片_${escHTML(pf.nameZh)}_${escHTML((pf.nameEn||'').replace(/\s+/g,'_'))}.png">
+            <button class="share-opt" data-action="save-png" data-id="${p.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span class="lbl-zh">下載 PNG</span><span class="lbl-en">Download PNG</span>
-            </a>
+            </button>
             <button class="share-opt" data-action="show-qr" data-id="${p.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M20 20h1M17 17h1"/></svg>
               <span class="lbl-zh">QR Code</span><span class="lbl-en">QR code</span>
@@ -2007,6 +2031,8 @@ function renderProfile(id) {
         }
       } else if (action === 'show-qr') {
         openQrOverlay(cardId);
+      } else if (action === 'save-png') {
+        saveCardPng(cardId);
       } else if (action === 'copy-card') {
         copyShareLink(absShareUrl(setCardUrl(cardId)), '已複製名片連結 Card link copied');
       } else if (action === 'copy-profile') {
@@ -2050,6 +2076,7 @@ function openQrOverlay(id) {
   document.getElementById('qrOverlayUrl').textContent = `${CARD_SITE}/card.html?view=team&card=${id}&dl=1`;
   const base = cardPngName(id);
   const dc = document.getElementById('qrOverlayDlCard'); dc.href = `assets/cards/${id}.png`; dc.download = `${base}.png`;
+  dc.onclick = e => { e.preventDefault(); saveCardPng(id); };
   const dq = document.getElementById('qrOverlayDlQr');   dq.href = `assets/cards/${id}-qr.png`; dq.download = `${base}_QR.png`;
   qrOverlay.classList.add('show');
   document.getElementById('qrOverlayClose').focus();
@@ -2059,12 +2086,33 @@ function cardPngName(id) {
   const p = PEOPLE.find(x => x.id === id) || {}; const pf = p.profile || {};
   return `aIwalk_名片_${pf.nameZh || p.zh || id}_${(pf.nameEn || p.en || '').replace(/\s+/g, '_')}`;
 }
-function downloadCardPng(id) {
+async function saveCardPng(id) {
+  // iOS Safari：navigator.share 帶檔案 → 分享面板有「儲存影像」；其他平台走 <a download>
+  const url = `assets/cards/${id}.png`, name = `${cardPngName(id)}.png`;
+  try {
+    if (navigator.canShare) {
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; }
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }   // 使用者取消分享面板
   const a = document.createElement('a');
-  a.href = `assets/cards/${id}.png`; a.download = `${cardPngName(id)}.png`;
+  a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   showCopyToast('名片圖已下載 Card image downloaded');
 }
+const saveSheet = document.getElementById('saveSheet');
+function openSaveSheet(id) {
+  const p = PEOPLE.find(x => x.id === id) || {}; const pf = p.profile || {};
+  document.getElementById('saveSheetImg').src = `assets/cards/${id}.png`;
+  document.getElementById('saveSheetName').innerHTML = `${escHTML(pf.nameZh || p.zh || '')}<span class="en">${escHTML(pf.nameEn || p.en || '')}</span>`;
+  document.getElementById('saveSheetBtn').onclick = () => saveCardPng(id);
+  saveSheet.classList.add('show');
+}
+function closeSaveSheet() { saveSheet.classList.remove('show'); }
+document.getElementById('saveSheetClose').addEventListener('click', closeSaveSheet);
+document.getElementById('saveSheetSkip').addEventListener('click', closeSaveSheet);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && saveSheet.classList.contains('show')) closeSaveSheet(); });
 document.getElementById('qrOverlayClose').addEventListener('click', closeQrOverlay);
 qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) closeQrOverlay(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && qrOverlay.classList.contains('show')) closeQrOverlay(); });   // QR 圖（assets/cards/*-qr.png）編的就是這個網域，文字須一致
@@ -2220,7 +2268,7 @@ if (btnNavLang) btnNavLang.addEventListener('click', toggleOverlayLang);
       if (sp.get('dl') === '1') {
         sp.delete('dl');
         history.replaceState(null, '', window.location.pathname + '?' + sp.toString());
-        setTimeout(() => downloadCardPng(cardId), 600);
+        setTimeout(() => openSaveSheet(cardId), 300);
       }
       return;
     }
