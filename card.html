@@ -314,23 +314,24 @@
   .logo img { width: 100%; height: 100%; object-fit: cover; }
   .co { display: flex; flex-direction: column; gap: 0.3mm; flex: 1; }
   .co-names { display: flex; align-items: baseline; gap: 2mm; }
-  .co-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 3.8mm; font-weight: 700; letter-spacing: 1.2px; }
-  .co-en-sub { font-size: 5mm; font-weight: 700; letter-spacing: 0.5px; }
+  .co-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 5.6mm; font-weight: 700; letter-spacing: 1.2px; }
+  .co-en-sub { font-size: 7.6mm; font-weight: 700; letter-spacing: 0.5px; }
+  .co-suffix { font-size: 4.8mm; font-weight: 700; letter-spacing: 0.3px; }
   .serif-i { font-family: 'Noto Serif TC', 'Times New Roman', serif; }
-  .mid { position: relative; z-index: 1; }
-  .sep { height: 0.4mm; margin-bottom: 2mm; }
+  .mid { position: relative; z-index: 1; margin-bottom: 3mm; }
+  .sep { height: 0.4mm; margin-bottom: 1.5mm; }
   .name-row { display: flex; align-items: baseline; gap: 2mm; }
-  .name-zh { font-family: 'Noto Serif TC', sans-serif; font-size: 6mm; font-weight: 900; letter-spacing: 2px; }
-  .name-en { font-family: 'Inter', sans-serif; font-size: 5.4mm; font-weight: 700; letter-spacing: 0.8px; }
+  .name-zh { font-family: 'Noto Serif TC', sans-serif; font-size: 7.5mm; font-weight: 900; letter-spacing: 1em; margin-right: -3mm; }
+  .name-en { font-family: 'Inter', sans-serif; font-size: 6.6mm; font-weight: 700; letter-spacing: 0.8px; }
   .phd { font-size: 3.4mm; font-weight: 700; letter-spacing: 0.5px; }
   .phd-en { font-size: 2.6mm; font-weight: 500; letter-spacing: 0.3px; }
-  .title { font-family: 'Noto Sans TC', sans-serif; font-size: 2.5mm; font-weight: 500; letter-spacing: 0.8px; margin-top: 1mm; }
-  .bot { display: flex; flex-direction: column; gap: 1.3mm; position: relative; z-index: 1; align-self: flex-start; align-items: flex-start; }
+  .title { font-family: 'Noto Sans TC', sans-serif; font-size: 3.8mm; font-weight: 500; letter-spacing: 0.8px; margin-top: 1mm; }
+  .bot { display: flex; flex-direction: column; gap: 1mm; position: relative; z-index: 1; align-self: flex-start; align-items: flex-start; }
   .crow { display: flex; align-items: baseline; gap: 2mm; }
-  .ci-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 2mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.5px; }
-  .ci-en { font-family: 'Inter', sans-serif; font-size: 1.8mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; width: 8mm; }
-  .ct { font-family: 'Noto Sans TC', 'Inter', sans-serif; font-size: 2.2mm; font-weight: 500; letter-spacing: 0.2px; }
-  .addr-wrap { line-height: 1.6; }
+  .ci-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 2.2mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.5px; }
+  .ci-en { font-family: 'Inter', sans-serif; font-size: 2mm; font-weight: 600; flex-shrink: 0; letter-spacing: 0.3px; width: 8.5mm; }
+  .ct { font-family: 'Noto Sans TC', 'Inter', sans-serif; font-size: 2.4mm; font-weight: 500; letter-spacing: 0.2px; }
+  .addr-wrap { line-height: 1.3; }
 
   /* Style B */
   .style-b { background: #ffffff; border: 0.2mm solid #eae6e2; }
@@ -1317,13 +1318,13 @@ const PEOPLE = [
       <div class="bot"><div class="crow"><span class="ci-zh">電話</span><span class="ct">${_d(_C.t1)}</span></div><div class="crow"><span class="ci-zh">信箱</span><span class="ct">${_d(_C.e1)}</span></div><div class="crow"><span class="ci-zh">地址</span><span class="ct">103台北市大同區延平北路二段202號17樓之2</span></div><div class="crow"><span class="ci-zh">統編</span><span class="ct">60331893</span></div></div>
     </div>`,
     back: `<div class="card style-b">
-      <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+      <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk<span class="co-suffix"> Co., Ltd.</span></span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
       <div class="mid"><div class="sep"></div><div class="title">Chairman</div><div class="name-row"><span class="name-en">Arthur Huang</span><span class="phd-en">, Ph.D.</span></div></div>
       <div class="bot"><div class="crow"><span class="ci-en">Tel</span><span class="ct">${_d(_C.t1)}</span></div><div class="crow"><span class="ci-en">Email</span><span class="ct">${_d(_C.e1)}</span></div><div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div></div>
     </div>`
   },
   ...buildTeam([
-    { id: 'eddie',     zh: '賴宏達',          en: 'Eddie Lai',             titleZh: '願景發起人',        titleEn: 'Founding Visionary',
+    { id: 'eddie',     zh: '賴宏達',          en: 'Eddie Lai',             titleZh: '技術執行',          titleEn: 'Executive',
       phone: _C.t2, email: _C.e2,
       qr: { href: 'https://eddlai.github.io/open_resume/eddie.html', src: 'assets/eddie-website-qr.png', alt: 'Eddie Lai personal site' },
       profile: {
@@ -1331,7 +1332,7 @@ const PEOPLE = [
         headshotProfile: 'assets/headshot-eddie-profile.jpg',
         monogram: '賴',
         nameZh: '賴宏達', nameEn: 'Eddie Lai',
-        titleZh: '願景發起人', titleEn: 'Founding Visionary',
+        titleZh: '技術執行', titleEn: 'Executive',
         highlights: [
           { zh: 'aIwalk 願景發起',      en: 'Originated aIwalk' },
           { zh: '神經控制・終身穿戴機器人夥伴', en: 'Neural-Controlled Lifelong Wearable Robot Partner' },
@@ -1416,7 +1417,7 @@ function buildTeam(list) {
         ${qrTag}
       </div>`,
       back: `<div class="card style-b">
-        <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk Co., Ltd.</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
+        <div class="top"><div class="co"><div class="co-names"><span class="co-en-sub"><span class="ac">a<span class="serif-i">I</span></span>walk<span class="co-suffix"> Co., Ltd.</span></span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
         <div class="mid"><div class="sep"></div><div class="title">${p.titleEn}</div><div class="name-row"><span class="name-en">${p.en}</span></div></div>
         <div class="bot"${botPad}>${phoneRowEn}${emailRowEn}<div class="crow"><span class="ci-en">Addr</span><span class="ct addr-wrap">17F-2, No. 202, Sec. 2, Yanping N. Rd.,<br>Datong Dist., Taipei 103, Taiwan (R.O.C.)</span></div><div class="crow"><span class="ci-en">Tax ID</span><span class="ct">60331893</span></div></div>
         ${qrTag}
