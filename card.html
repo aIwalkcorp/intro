@@ -1130,6 +1130,8 @@
   }
   .qr-overlay-close svg { width: 18px; height: 18px; }
   .qr-overlay-close:hover { background: #1a3a5c; color: #f6f1e8; }
+  .qr-overlay-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .qr-overlay-actions .share-opt { background: #fff; }
   @media (prefers-reduced-motion: reduce) { .qr-overlay { transition: none; } }
 
   /* Language gating: relies on existing global body[data-lang="en"|"zh"] rules
@@ -1198,6 +1200,16 @@
   <div class="qr-overlay-name" id="qrOverlayName"></div>
   <img id="qrOverlayImg" src="" alt="QR code" width="520" height="520">
   <div class="qr-overlay-hint"><span class="lbl-zh">用手機相機掃描，直接開啟數位名片</span><span class="lbl-en">Scan with a phone camera to open the digital card</span><span class="qr-url" id="qrOverlayUrl"></span></div>
+  <div class="qr-overlay-actions">
+    <a class="share-opt" id="qrOverlayDlCard" href="" download="">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="lbl-zh">下載名片 PNG</span><span class="lbl-en">Download card PNG</span>
+    </a>
+    <a class="share-opt" id="qrOverlayDlQr" href="" download="">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M20 20h1M17 17h1"/></svg>
+      <span class="lbl-zh">下載 QR 圖</span><span class="lbl-en">Download QR image</span>
+    </a>
+  </div>
 </div>
 
 <div class="profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Team member profile">
@@ -2036,6 +2048,9 @@ function openQrOverlay(id) {
   document.getElementById('qrOverlayImg').src = `assets/cards/${id}-qr.png`;
   document.getElementById('qrOverlayName').innerHTML = `${escHTML(pf.nameZh || p.zh || '')}<span class="en">${escHTML(pf.nameEn || p.en || '')}</span>`;
   document.getElementById('qrOverlayUrl').textContent = `${CARD_SITE}/card.html?view=team&card=${id}`;
+  const base = `aIwalk_名片_${pf.nameZh || p.zh || id}_${(pf.nameEn || p.en || '').replace(/\s+/g, '_')}`;
+  const dc = document.getElementById('qrOverlayDlCard'); dc.href = `assets/cards/${id}.png`; dc.download = `${base}.png`;
+  const dq = document.getElementById('qrOverlayDlQr');   dq.href = `assets/cards/${id}-qr.png`; dq.download = `${base}_QR.png`;
   qrOverlay.classList.add('show');
   document.getElementById('qrOverlayClose').focus();
 }
