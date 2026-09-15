@@ -1103,13 +1103,34 @@
   }
   .share-opt:hover, .share-opt.is-open { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
   .share-opt svg { width: 13px; height: 13px; }
-  .share-tray .qr-panel {
-    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-    margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(26,58,92,0.18);
+  /* QR 全片幅：整個畫面就是 QR，讓對方拿手機掃 */
+  .qr-overlay {
+    position: fixed; inset: 0; z-index: 10002;
+    background: #f6f1e8;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 24px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
   }
-  .qr-panel img { width: 140px; height: 140px; display: block; image-rendering: pixelated; }
-  .qr-panel-text { flex: 1; min-width: 180px; font-size: 13px; line-height: 1.6; color: #1a2d42; }
-  .qr-panel-text .qr-url { display: block; margin-top: 6px; font-size: 12px; color: #6b7d8e; word-break: break-all; }
+  .qr-overlay.show { opacity: 1; pointer-events: auto; }
+  .qr-overlay img {
+    width: min(78vw, 62vh, 520px); height: auto; display: block;
+    padding: 18px; background: #fff; border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(26,45,66,0.14);
+    image-rendering: pixelated;
+  }
+  .qr-overlay-name { font-family: 'Noto Serif TC', serif; font-size: 22px; font-weight: 700; color: #1a2d42; letter-spacing: 1px; text-align: center; }
+  .qr-overlay-name .en { display: block; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #6b7d8e; letter-spacing: 0.5px; margin-top: 4px; }
+  .qr-overlay-hint { font-size: 13px; color: #1a2d42; text-align: center; line-height: 1.6; max-width: 32em; }
+  .qr-overlay-hint .qr-url { display: block; margin-top: 4px; font-size: 12px; color: #6b7d8e; word-break: break-all; }
+  .qr-overlay-close {
+    position: absolute; top: 18px; right: 18px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; border: 1px solid rgba(26,58,92,0.18); color: #1a3a5c;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .qr-overlay-close svg { width: 18px; height: 18px; }
+  .qr-overlay-close:hover { background: #1a3a5c; color: #f6f1e8; }
+  @media (prefers-reduced-motion: reduce) { .qr-overlay { transition: none; } }
 
   /* Language gating: relies on existing global body[data-lang="en"|"zh"] rules
      for .lbl-zh / .lbl-en spans (no extra rules needed here) */
@@ -1172,6 +1193,13 @@
 </div>
 
 <!-- Profile detail panel (rich team-page view per person) -->
+<div class="qr-overlay" id="qrOverlay" role="dialog" aria-modal="true" aria-label="QR code">
+  <button class="qr-overlay-close" id="qrOverlayClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  <div class="qr-overlay-name" id="qrOverlayName"></div>
+  <img id="qrOverlayImg" src="" alt="QR code" width="520" height="520">
+  <div class="qr-overlay-hint"><span class="lbl-zh">用手機相機掃描，直接開啟數位名片</span><span class="lbl-en">Scan with a phone camera to open the digital card</span><span class="qr-url" id="qrOverlayUrl"></span></div>
+</div>
+
 <div class="profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Team member profile">
   <div class="profile-topbar">
     <span class="profile-eyebrow"><span class="lbl-zh">團隊介紹</span><span class="lbl-en">Team / Profile</span></span>
@@ -1931,17 +1959,10 @@ function renderProfile(id) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span class="lbl-zh">下載 PNG</span><span class="lbl-en">Download PNG</span>
             </a>
-            <button class="share-opt" data-action="show-qr" data-id="${p.id}" aria-expanded="false">
+            <button class="share-opt" data-action="show-qr" data-id="${p.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M20 20h1M17 17h1"/></svg>
               <span class="lbl-zh">QR Code</span><span class="lbl-en">QR code</span>
             </button>
-          </div>
-          <div class="qr-panel" id="qrPanel" hidden>
-            <img src="assets/cards/${p.id}-qr.png" alt="QR code: ${escHTML(pf.nameEn)} business card" width="140" height="140">
-            <div class="qr-panel-text">
-              <span class="lbl-zh">用手機相機掃描，直接開啟 ${escHTML(pf.nameZh)} 的數位名片。</span><span class="lbl-en">Scan with a phone camera to open ${escHTML(pf.nameEn)}'s digital card.</span>
-              <span class="qr-url">${CARD_SITE}/card.html?view=team&amp;card=${p.id}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -1973,11 +1994,7 @@ function renderProfile(id) {
           tray.style.setProperty('--notch-x', Math.max(20, b.left + b.width / 2 - t.left) + 'px');
         }
       } else if (action === 'show-qr') {
-        const panel = profileBody.querySelector('#qrPanel');
-        panel.hidden = !panel.hidden;
-        btn.classList.toggle('is-open', !panel.hidden);
-        btn.setAttribute('aria-expanded', String(!panel.hidden));
-        if (!panel.hidden) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        openQrOverlay(cardId);
       } else if (action === 'copy-card') {
         copyShareLink(absShareUrl(setCardUrl(cardId)), '已複製名片連結 Card link copied');
       } else if (action === 'copy-profile') {
@@ -2011,7 +2028,21 @@ function setCardUrl(id) {
   else u.searchParams.delete('card');
   return u.pathname + u.search;
 }
-const CARD_SITE = 'https://aiwalkcorp.com';   // QR 圖（assets/cards/*-qr.png）編的就是這個網域，文字須一致
+const CARD_SITE = 'https://aiwalkcorp.com';
+// QR 全片幅覆蓋層
+const qrOverlay = document.getElementById('qrOverlay');
+function openQrOverlay(id) {
+  const p = PEOPLE.find(x => x.id === id); const pf = (p && p.profile) || {};
+  document.getElementById('qrOverlayImg').src = `assets/cards/${id}-qr.png`;
+  document.getElementById('qrOverlayName').innerHTML = `${escHTML(pf.nameZh || p.zh || '')}<span class="en">${escHTML(pf.nameEn || p.en || '')}</span>`;
+  document.getElementById('qrOverlayUrl').textContent = `${CARD_SITE}/card.html?view=team&card=${id}`;
+  qrOverlay.classList.add('show');
+  document.getElementById('qrOverlayClose').focus();
+}
+function closeQrOverlay() { qrOverlay.classList.remove('show'); }
+document.getElementById('qrOverlayClose').addEventListener('click', closeQrOverlay);
+qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) closeQrOverlay(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && qrOverlay.classList.contains('show')) closeQrOverlay(); });   // QR 圖（assets/cards/*-qr.png）編的就是這個網域，文字須一致
 function absShareUrl(pathAndSearch) { return window.location.origin + pathAndSearch; }
 function copyShareLink(url, okMsg) {
   const done = () => showCopyToast(okMsg);
