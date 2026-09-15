@@ -1135,7 +1135,9 @@ async def distill(payload: dict, authorization: str | None = Header(None)):
             "id": pid, "name": person, "room": parsed["room"],
             "stats": stats,
             "owner_id": user["id"], "owner_email": user["email"],
-            "demo": is_team(user),
+            # 一律私有：官方示範分身只從 demo/<slug>/ 種子檔來（見 _seed_demos），
+            # 不該因為蒸餾者剛好是團隊成員就把他的分身變成全公開。
+            "demo": False,
             "created": datetime.now(TZ).isoformat(timespec="seconds"),
         }, ensure_ascii=False), encoding="utf-8")
         upath.unlink(missing_ok=True)  # 一次性承諾：蒸餾完成，原始對話檔立即刪除
