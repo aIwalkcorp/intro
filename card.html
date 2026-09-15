@@ -1076,18 +1076,38 @@
     border: 1px solid rgba(26,58,92,0.3);
   }
   .profile-cta-btn.secondary:hover { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
-  /* 分享名片：按下後展開三個動作；QR 面板貼在 CTA 列下方 */
-  .share-group { display: inline-flex; flex-wrap: wrap; gap: 10px; }
-  .share-group[hidden], .qr-panel[hidden], .profile-cta-btn[hidden] { display: none; }
-  a.profile-cta-btn { text-decoration: none; }
+  /* 分享名片：按鈕留在原位，按下後 CTA 列下方展開一個貼附的托盤（小箭頭指向按鈕） */
   .profile-cta-btn.is-open { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
-  .qr-panel {
-    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-    margin-top: 16px; padding: 18px 20px;
+  a.profile-cta-btn { text-decoration: none; }
+  .share-tray {
+    position: relative; margin-top: 14px; padding: 14px 16px;
     background: #fff; border: 1px solid rgba(26,58,92,0.18); border-radius: 14px;
-    max-width: 520px;
+    max-width: 560px;
   }
-  .qr-panel img { width: 148px; height: 148px; display: block; image-rendering: pixelated; }
+  .share-tray[hidden], .share-tray .qr-panel[hidden] { display: none; }
+  .share-tray::before {
+    content: ''; position: absolute; top: -7px; left: var(--notch-x, 40px);
+    width: 12px; height: 12px; background: #fff;
+    border-left: 1px solid rgba(26,58,92,0.18); border-top: 1px solid rgba(26,58,92,0.18);
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .share-tray-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .share-opt {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 100px;
+    background: transparent; color: #1a3a5c;
+    border: 1px solid rgba(26,58,92,0.25);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+    cursor: pointer; font-family: inherit; text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .share-opt:hover, .share-opt.is-open { background: #1a3a5c; color: #f6f1e8; border-color: #1a3a5c; }
+  .share-opt svg { width: 13px; height: 13px; }
+  .share-tray .qr-panel {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(26,58,92,0.18);
+  }
+  .qr-panel img { width: 140px; height: 140px; display: block; image-rendering: pixelated; }
   .qr-panel-text { flex: 1; min-width: 180px; font-size: 13px; line-height: 1.6; color: #1a2d42; }
   .qr-panel-text .qr-url { display: block; margin-top: 6px; font-size: 12px; color: #6b7d8e; word-break: break-all; }
 
@@ -1897,33 +1917,38 @@ function renderProfile(id) {
           <button class="profile-cta-btn secondary" data-action="share-card" data-id="${p.id}" aria-expanded="false">
             <span class="lbl-zh">分享名片</span><span class="lbl-en">Share card</span>
           </button>
-          <span class="share-group" hidden>
-            <button class="profile-cta-btn secondary" data-action="copy-card" data-id="${p.id}">
-              <span class="lbl-zh">複製連結</span><span class="lbl-en">Copy link</span>
-            </button>
-            <a class="profile-cta-btn secondary" href="assets/cards/${p.id}.png" download="aIwalk_名片_${escHTML(pf.nameZh)}_${escHTML((pf.nameEn||'').replace(/\s+/g,'_'))}.png">
-              <span class="lbl-zh">下載 PNG</span><span class="lbl-en">Download PNG</span>
-            </a>
-            <button class="profile-cta-btn secondary" data-action="show-qr" data-id="${p.id}" aria-expanded="false">
-              <span class="lbl-zh">QR Code</span><span class="lbl-en">QR code</span>
-            </button>
-          </span>
           <button class="profile-cta-btn secondary" data-action="copy-profile" data-id="${p.id}">
             <span class="lbl-zh">複製檔案連結</span><span class="lbl-en">Copy Profile Link</span>
           </button>
         </div>
-        <div class="qr-panel" id="qrPanel" hidden>
-          <img src="assets/cards/${p.id}-qr.png" alt="QR code: ${escHTML(pf.nameEn)} business card" width="148" height="148">
-          <div class="qr-panel-text">
-            <span class="lbl-zh">用手機相機掃描，直接開啟 ${escHTML(pf.nameZh)} 的數位名片。</span><span class="lbl-en">Scan with a phone camera to open ${escHTML(pf.nameEn)}'s digital card.</span>
-            <span class="qr-url">${CARD_SITE}/card.html?view=team&amp;card=${p.id}</span>
+        <div class="share-tray" id="shareTray" hidden>
+          <div class="share-tray-actions">
+            <button class="share-opt" data-action="copy-card" data-id="${p.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
+              <span class="lbl-zh">複製連結</span><span class="lbl-en">Copy link</span>
+            </button>
+            <a class="share-opt" href="assets/cards/${p.id}.png" download="aIwalk_名片_${escHTML(pf.nameZh)}_${escHTML((pf.nameEn||'').replace(/\s+/g,'_'))}.png">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span class="lbl-zh">下載 PNG</span><span class="lbl-en">Download PNG</span>
+            </a>
+            <button class="share-opt" data-action="show-qr" data-id="${p.id}" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M20 20h1M17 17h1"/></svg>
+              <span class="lbl-zh">QR Code</span><span class="lbl-en">QR code</span>
+            </button>
+          </div>
+          <div class="qr-panel" id="qrPanel" hidden>
+            <img src="assets/cards/${p.id}-qr.png" alt="QR code: ${escHTML(pf.nameEn)} business card" width="140" height="140">
+            <div class="qr-panel-text">
+              <span class="lbl-zh">用手機相機掃描，直接開啟 ${escHTML(pf.nameZh)} 的數位名片。</span><span class="lbl-en">Scan with a phone camera to open ${escHTML(pf.nameEn)}'s digital card.</span>
+              <span class="qr-url">${CARD_SITE}/card.html?view=team&amp;card=${p.id}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   `;
   // Wire CTA buttons
-  profileBody.querySelectorAll('.profile-cta-btn').forEach(btn => {
+  profileBody.querySelectorAll('.profile-cta-btn, .share-opt[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action;
       const cardId = btn.dataset.id;
@@ -1939,9 +1964,14 @@ function renderProfile(id) {
           else history.replaceState(null, null, '#' + cardId);
         }
       } else if (action === 'share-card') {
-        btn.hidden = true;                                   // 分享名片 → 換成三個動作
-        btn.nextElementSibling.hidden = false;
-        btn.setAttribute('aria-expanded', 'true');
+        const tray = profileBody.querySelector('#shareTray');
+        tray.hidden = !tray.hidden;
+        btn.classList.toggle('is-open', !tray.hidden);
+        btn.setAttribute('aria-expanded', String(!tray.hidden));
+        if (!tray.hidden) {                                  // 小箭頭對準分享按鈕中心
+          const b = btn.getBoundingClientRect(), t = tray.getBoundingClientRect();
+          tray.style.setProperty('--notch-x', Math.max(20, b.left + b.width / 2 - t.left) + 'px');
+        }
       } else if (action === 'show-qr') {
         const panel = profileBody.querySelector('#qrPanel');
         panel.hidden = !panel.hidden;
