@@ -579,6 +579,20 @@
   .flip-btn svg { width: 14px; height: 14px; transition: transform 0.3s ease; }
   .flip-btn.flipped svg { transform: rotate(180deg); }
 
+  /* NFC 名片入口的核心動作：一鍵存入通訊錄（vCard 下載） */
+  .save-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; margin-top: 6px; margin-left: 8px;
+    border-radius: 24px; border: 1px solid #c06a1a;
+    background: #c06a1a; color: #fff;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .save-btn:hover { background: #a95b13; box-shadow: 0 2px 12px rgba(192,106,26,0.35); }
+  .save-btn:active { transform: scale(0.97); }
+  .save-btn svg { width: 14px; height: 14px; }
+  .save-btn.hidden { display: none; }
+
   .swipe-hint {
     font-size: 10px; color: #b0a89a; letter-spacing: 0.5px;
     text-align: center; margin-top: 4px;
@@ -1309,6 +1323,10 @@
       <svg id="flipBtnIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
       <span id="flipBtnText"></span>
     </button>
+    <button class="save-btn hidden" id="saveBtn" aria-label="Save contact">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+      <span id="saveBtnText">儲存聯絡人 · Save</span>
+    </button>
     <div class="side-label zh" id="sideLabel"></div>
   </div>
   <div class="swipe-hint" id="swipeHint"></div>
@@ -1386,6 +1404,8 @@ const PEOPLE = [
     id: 'arthur',
     name: '黃志仁', sub: '董事長 / Chairman, Ph.D.',
     nameZh: '黃志仁', nameEn: 'Arthur Huang, Ph.D.',
+    titleZh: '董事長', titleEn: 'Chairman',
+    phone: _C.t1, email: _C.e1,
     profile: {
       headshot: 'assets/headshot-arthur.jpg',
       monogram: '黃',
@@ -1507,6 +1527,8 @@ function buildTeam(list) {
       id: p.id,
       name: p.en, sub: `${p.titleZh} / ${p.titleEn}`,
       nameZh: p.zh, nameEn: p.en,
+      titleZh: p.titleZh, titleEn: p.titleEn,
+      phone: p.phone, email: p.email,
       profile: p.profile,
       front: `<div class="card style-b">
         <div class="top"><div class="co"><div class="co-names"><span class="co-zh">智意行科技股份有限公司</span></div></div><div class="logo"><img src="${LOGO_SRC}" alt="logo"></div></div>
@@ -1671,7 +1693,35 @@ function renderPerson(idx) {
   // Team view's authoritative URL lives in ?profile=…; writing #arthur here
   // would pollute deep links like ?view=team&profile=lin.
   if (!IS_TEAM_VIEW) history.replaceState(null, null, '#' + p.id);
+  saveBtn.classList.toggle('hidden', !(p.phone || p.email));
 }
+
+// vCard 下載：NFC 碰卡開頁後的核心動作——一鍵把這個人存進通訊錄
+function vcardFor(p) {
+  const lines = ['BEGIN:VCARD', 'VERSION:3.0',
+    `N:${p.nameZh};;;;`,
+    `FN:${p.nameZh} ${p.nameEn}`,
+    'ORG:智意行科技股份有限公司 aIwalk Co.\\, Ltd.'];
+  if (p.titleZh) lines.push(`TITLE:${p.titleZh} / ${p.titleEn}`);
+  if (p.phone) lines.push(`TEL;TYPE=CELL:${_d(p.phone).replace(/[ -]/g, '')}`);
+  if (p.email) lines.push(`EMAIL;TYPE=WORK:${_d(p.email)}`);
+  lines.push('URL:https://aiwalkcorp.com',
+    'ADR;TYPE=WORK:;;延平北路二段202號17樓之2;台北市大同區;;103;Taiwan',
+    'END:VCARD');
+  return lines.join('\r\n');
+}
+const saveBtn = document.getElementById('saveBtn');
+saveBtn.addEventListener('click', () => {
+  const p = VP[current];
+  if (!p || !(p.phone || p.email)) return;
+  const blob = new Blob([vcardFor(p)], { type: 'text/vcard;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `aiwalk-${p.id}.vcf`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+});
 
 const flipBtn = document.getElementById('flipBtn');
 const flipBtnText = document.getElementById('flipBtnText');
