@@ -580,6 +580,25 @@
   .flip-btn.flipped svg { transform: rotate(180deg); }
 
 
+  /* 出示 QR 覆蓋層（雙擊名片觸發） */
+  .qr-veil {
+    position: fixed; inset: 0; z-index: 10000;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(248,246,241,0.96); backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .qr-veil.show { display: flex; }
+  .qr-sheet { text-align: center; padding: 24px; }
+  .qr-sheet img {
+    width: min(66vw, 264px); height: auto; display: block; margin: 0 auto;
+    background: #fff; padding: 14px; border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(26,58,92,0.15);
+  }
+  .qr-name { margin-top: 18px; font-size: 20px; font-weight: 900; color: #1a3a5c; }
+  .qr-hint { margin-top: 8px; font-size: 14px; font-weight: 600; color: #1a3a5c; line-height: 1.6; }
+  .qr-hint span { font-size: 12px; font-weight: 500; color: rgba(26,58,92,0.55); }
+  .qr-close-hint { margin-top: 22px; font-size: 11px; color: rgba(26,58,92,0.45); letter-spacing: 0.5px; }
+
   .swipe-hint {
     font-size: 10px; color: #b0a89a; letter-spacing: 0.5px;
     text-align: center; margin-top: 4px;
@@ -1315,6 +1334,16 @@
   <div class="swipe-hint" id="swipeHint"></div>
 </div>
 
+<!-- 雙擊名片 → 出示 QR：對方相機一掃即自動加入聯絡人（無常駐按鈕） -->
+<div class="qr-veil" id="qrVeil" role="dialog" aria-label="Show QR to save contact">
+  <div class="qr-sheet">
+    <img id="qrImg" alt="QR code" width="264" height="264">
+    <div class="qr-name" id="qrName"></div>
+    <div class="qr-hint">請對方用相機掃描，即可將名片存入聯絡人<br><span>Scan with camera to save this contact</span></div>
+    <div class="qr-close-hint">點擊任意處關閉 · Tap anywhere to close</div>
+  </div>
+</div>
+
 <script>
 const LOGO_SRC = "assets/logo_signature%20bg%20removed.png";
 
@@ -1692,6 +1721,18 @@ function vcardFor(p) {
     'END:VCARD');
   return lines.join('\r\n');
 }
+// 出示 QR：雙擊/雙點名片觸發；QR 內容是 ?save=1 直達網址，掃到即自動加聯絡人
+const QR_IDS = new Set(['arthur', 'eddie', 'lin', 'sean']);
+const qrVeil = document.getElementById('qrVeil');
+function showQR() {
+  const p = VP[current];
+  if (!p || !QR_IDS.has(p.id)) return;
+  document.getElementById('qrImg').src = `assets/qr-save-${p.id}.png`;
+  document.getElementById('qrName').textContent = `${p.nameZh} ${p.nameEn}`;
+  qrVeil.classList.add('show');
+}
+qrVeil.addEventListener('click', () => qrVeil.classList.remove('show'));
+
 function downloadVcard(p) {
   if (!p || !(p.phone || p.email)) return;
   const blob = new Blob([vcardFor(p)], { type: 'text/vcard;charset=utf-8' });
@@ -1789,7 +1830,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Touch swipe — horizontal = switch person, vertical = flip
-let tx0 = 0, ty0 = 0, swiping = false;
+let tx0 = 0, ty0 = 0, swiping = false, lastTap = 0;
 const stageEl = document.getElementById('stage');
 stageEl.addEventListener('touchstart', (e) => {
   tx0 = e.touches[0].clientX;
@@ -1802,7 +1843,12 @@ stageEl.addEventListener('touchend', (e) => {
   const dx = e.changedTouches[0].clientX - tx0;
   const dy = e.changedTouches[0].clientY - ty0;
   const absDx = Math.abs(dx), absDy = Math.abs(dy);
-  if (absDx < 30 && absDy < 30) return; // tap, not swipe
+  if (absDx < 30 && absDy < 30) {      // tap, not swipe — 兩次快點＝出示 QR
+    const now = Date.now();
+    if (now - lastTap < 350) { lastTap = 0; showQR(); }
+    else lastTap = now;
+    return;
+  }
   if (absDx > absDy) {
     // Horizontal swipe
     if (dx < -50) goToPerson(current + 1, 'left');
@@ -1819,6 +1865,7 @@ let hintShown = true;
 function hideHint() {
   if (hintShown) { hint.style.opacity = '0'; hintShown = false; }
 }
+stageEl.addEventListener('dblclick', showQR);   // 桌機：雙擊出示 QR
 stageEl.addEventListener('touchstart', hideHint, { once: true });
 document.addEventListener('keydown', hideHint, { once: true });
 
