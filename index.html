@@ -69,12 +69,20 @@
   "description": "AI-driven rehabilitation technology company developing NTKCAP markerless motion capture, ExoPulse Patient Cloud clinical platform, and ExoPulse digital-twin-powered Exoskeleton."
 }
 </script>
+<!-- 字型與圖示都改成不擋畫面：@import 要等 CSS 解析才被發現（1MB 字型表卡住首次繪製），
+     改用 link + preconnect 讓握手與 HTML 解析並行；lucide 加 defer 不再中斷解析。
+     300 字重全頁未使用，已移除。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap">
 <!-- Lucide Icons -->
-<script src="https://unpkg.com/lucide@1.7.0/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/lucide@1.7.0/dist/umd/lucide.js" defer></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&display=swap');
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* 圖示改 defer 後，<i> 佔位元素會先畫出來再被換成 svg；先留一格寬度，
+     否則同列文字會在換圖那一刻右移。只比對 i：換上的 svg 不受此規則影響。 */
+  i[data-lucide] { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.2em; }
   html { scroll-behavior: smooth; }
 
   :root {
@@ -2859,8 +2867,9 @@
 </footer>
 
 <script>
-  // Initialize Lucide icons
-  lucide.createIcons();
+  // Initialize Lucide icons — 腳本改為 defer，會在 DOMContentLoaded 之前執行完畢，
+  // 所以這裡等該事件再呼叫，避免這段 inline 先跑而找不到 lucide。
+  document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
 
   // Hero chip proximity reveal.
   // EN: pivot = chip's image-relative centre (PIVOT_X / PIVOT_Y of hero).

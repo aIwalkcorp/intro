@@ -11,8 +11,12 @@
 <meta property="og:description" content="aIwalk Co., Ltd. 數位名片">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://aiwalkcorp.github.io/intro/card.html">
+<!-- 字型改用 link 載入：@import 會等 CSS 解析完才被發現，讓 1MB 的字型表卡住首次繪製；
+     preconnect 先把 DNS/TLS 握手與 HTML 解析並行。300 字重全頁未用到，已移除。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -1919,8 +1923,9 @@ function renderOverview() {
       }</div>`;
       const pf = p.profile;
       if (pf) {
+        // 團隊總覽預設收合，人像延後到真的展開才抓（十來張大頭照約 1.5MB）
         const portraitInner = pf.headshot
-          ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(nameZh)}">`
+          ? `<img src="${escHTML(pf.headshot)}" alt="${escHTML(nameZh)}" loading="lazy" decoding="async">`
           : `<span class="ov-portrait-monogram">${escHTML(pf.monogram || (nameZh && nameZh[0]) || '·')}</span>`;
         const chips = (pf.highlights || []).slice(0, 2).map(h =>
           `<span class="ov-chip lbl-zh">${escHTML(h.zh)}</span><span class="ov-chip lbl-en">${escHTML(h.en)}</span>`
@@ -1995,8 +2000,10 @@ function renderProfile(id) {
   if (!p || !p.profile) { profileBody.innerHTML = ''; return; }
   const pf = p.profile;
   const profileImg = pf.headshotProfile || pf.headshot;  // detail view can use a sharper/closer crop
+  // 個人頁的人像是這個畫面最大的視覺元素（分享連結 ?profile=<id> 直接落在這），
+  // 不能延後抓——只做非同步解碼並提高優先度。
   const portraitInner = profileImg
-    ? `<img src="${escHTML(profileImg)}" alt="${escHTML(pf.nameZh)}">`
+    ? `<img src="${escHTML(profileImg)}" alt="${escHTML(pf.nameZh)}" decoding="async" fetchpriority="high">`
     : `<span class="profile-portrait-monogram">${escHTML(pf.monogram || (p.name && p.name[0]) || '·')}</span>`;
   const chipsHTML = (pf.highlights || []).map(h =>
     `<span class="profile-chip lbl-zh">${escHTML(h.zh)}</span><span class="profile-chip lbl-en">${escHTML(h.en)}</span>`
